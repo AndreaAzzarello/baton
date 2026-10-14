@@ -44,7 +44,7 @@ chrome.storage.onChanged.addListener(updateBadge);
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const url = info.menuItemId === MENU_MEDIA ? info.srcUrl : info.linkUrl;
-  if (!url || !/^https?:/i.test(url)) {
+  if (!url || !/^(https?|ftps?|ftpes):/i.test(url)) {
     notify("Questo collegamento non può essere scaricato con DownloadManager.");
     return;
   }
@@ -99,7 +99,9 @@ function shouldIntercept(item, settings) {
 
 async function sendToApp({ url, referrer, fileName, incognito }) {
   // Cookies of a private window are never handed to the app, which keeps them until the download ends.
-  const cookies = incognito ? [] : await chrome.cookies.getAll({ url });
+  // Cookies exist only for web pages; a private window's are never handed to the app.
+  const cookies = incognito || !/^https?:/i.test(url) ? [] : await chrome.cookies.getAll({ url });
+  const { queue } = await loadSettings();
   const message = {
     type: "add",
     download: {
@@ -108,6 +110,7 @@ async function sendToApp({ url, referrer, fileName, incognito }) {
       referrer: referrer && /^https?:/i.test(referrer) ? referrer : null,
       userAgent: navigator.userAgent,
       cookies: cookies.map((c) => ({ name: c.name, value: c.value, domain: c.domain, path: c.path, secure: c.secure, hostOnly: c.hostOnly })),
+      queue: queue || null, // older apps ignore it; newer ones fall back to the main queue for unknown names
     },
   };
   const reply = await chrome.runtime.sendNativeMessage(HOST, message);

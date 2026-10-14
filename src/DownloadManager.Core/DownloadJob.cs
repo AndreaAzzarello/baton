@@ -1,17 +1,18 @@
 using System.Buffers;
 using System.Net;
-using System.Net.Http.Headers;
+using DownloadManager.Core.Net;
 
 namespace DownloadManager.Core;
 
 /// <summary>
-/// Downloads one file with several range connections into a single preallocated part file.
+/// Downloads one file with several range connections into a single preallocated part file, over HTTP(S) or FTP(S).
 /// Progress is checkpointed so a cancelled or crashed job can resume where it stopped.
 /// </summary>
 public sealed class DownloadJob
 {
     private readonly HttpClient _sharedHttp;
-    private HttpClient _http;
+    private readonly NetworkContext? _network;
+    private ITransport _transport = null!;
     private readonly RateLimiter _limiter;
     private readonly EngineOptions _options;
     private readonly Func<DownloadRecord, Task> _onCheckpoint;
@@ -28,10 +29,12 @@ public sealed class DownloadJob
         RateLimiter limiter,
         EngineOptions options,
         Func<DownloadRecord, Task>? onCheckpoint = null,
-        Action<DownloadRecord, ProbeResult>? onProbed = null)
+        Action<DownloadRecord, ProbeResult>? onProbed = null,
+        NetworkContext? network = null)
     {
         Record = record;
-        _sharedHttp = _http = http;
+        _sharedHttp = http;
+        _network = network;
         _limiter = limiter;
         _options = options;
         _onCheckpoint = onCheckpoint ?? (_ => Task.CompletedTask);
@@ -52,11 +55,8 @@ public sealed class DownloadJob
     public async Task RunAsync(CancellationToken ct)
     {
         Record.Error = null;
-        // Browser cookies need a client of their own so they never reach other downloads.
-        using var ownHttp = Record.Context is { Cookies.Count: > 0 } context
-            ? DownloadService.CreateHttpClient(RequestContexts.ToCookieContainer(context.Cookies))
-            : null;
-        _http = ownHttp ?? _sharedHttp;
+        using var transport = CreateTransport();
+        _transport = transport;
         for (var attempt = 0; ; attempt++)
         {
             try
@@ -72,9 +72,25 @@ public sealed class DownloadJob
         }
     }
 
+    /// <summary>
+    /// Browser cookies and a login given for this download get a client of their own, so they never reach other
+    /// downloads or other sites.
+    /// </summary>
+    private ITransport CreateTransport()
+    {
+        if (_network is not null)
+            return _network.CreateTransport(Record, _sharedHttp);
+        if (FtpTransport.IsFtp(new Uri(Record.Url)))
+            return NetworkContext.Default.CreateTransport(Record);
+        var own = Record.Context is { Cookies.Count: > 0 } context
+            ? DownloadService.CreateHttpClient(RequestContexts.ToCookieContainer(context.Cookies))
+            : null;
+        return new HttpTransport(own ?? _sharedHttp, own is not null, Record.Url, Record.Context, _options.ReadTimeout);
+    }
+
     private async Task RunOnceAsync(CancellationToken ct)
     {
-        var probe = await WithRetriesAsync(() => HttpProbe.ProbeAsync(_http, Record.Url, ct, Record.Context, _options.ReadTimeout), ct);
+        var probe = await WithRetriesAsync(() => _transport.ProbeAsync(ct), ct);
         if (!CanResume(probe))
             DiscardPartialData();
 
@@ -221,7 +237,7 @@ public sealed class DownloadJob
             {
                 await TransferAsync(segment, ct);
             }
-            catch (Exception ex) when (IsTransient(ex) && !ct.IsCancellationRequested)
+            catch (Exception ex) when ((IsTransient(ex) || IsExtraLoginRefused(ex)) && !ct.IsCancellationRequested)
             {
                 if (_scheduler.PositionOf(segment) > before)
                     failures = 0;
@@ -229,6 +245,8 @@ public sealed class DownloadJob
                 // While other connections still work, a refused or failing extra connection is dropped
                 // instead of failing the download: servers often cap connections per client.
                 var othersActive = Volatile.Read(ref _connections) > 1;
+                if (!othersActive && !IsTransient(ex))
+                    throw; // the only connection was refused its login: the user is asked for one
                 var limit = othersActive && IsServerBusy(ex) ? 2 : _options.MaxRetries;
                 if (++failures > limit)
                 {
@@ -241,8 +259,17 @@ public sealed class DownloadJob
         }
     }
 
-    private static bool IsServerBusy(Exception ex) =>
-        ex is HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable };
+    private bool IsServerBusy(Exception ex) =>
+        ex is HttpRequestException { StatusCode: HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable }
+            or ServerBusyException
+            || IsExtraLoginRefused(ex);
+
+    /// <summary>
+    /// FTP servers answer 530 both for a wrong password and for "too many users". When the same login already works on
+    /// another connection, it means the latter: handled like HTTP 429.
+    /// </summary>
+    private bool IsExtraLoginRefused(Exception ex) =>
+        ex is AuthenticationRequiredException { FtpCode: "530" } && Volatile.Read(ref _connections) > 1;
 
     private sealed class RetireConnectionException : Exception;
 
@@ -265,7 +292,7 @@ public sealed class DownloadJob
 
     private static bool IsTransient(Exception ex) =>
         // Cancellation not requested by the caller means an internal timeout (e.g. connect timeout).
-        ex is HttpRequestException or IOException or TimeoutException or OperationCanceledException;
+        ex is HttpRequestException or IOException or TimeoutException or OperationCanceledException or ServerBusyException;
 
     private async Task TransferAsync(SegmentState segment, CancellationToken ct)
     {
@@ -278,22 +305,8 @@ public sealed class DownloadJob
         }
 
         var offset = _scheduler!.PositionOf(segment);
-        using var request = new HttpRequestMessage(HttpMethod.Get, Record.Url);
-        Record.Context.ApplyTo(request);
-        if (Record.SupportsRanges)
-        {
-            var end = _scheduler.EndOf(segment);
-            request.Headers.Range = new RangeHeaderValue(offset, end >= 0 ? end : null);
-            if (Record.ETag is not null)
-                request.Headers.IfRange = new RangeConditionHeaderValue(new EntityTagHeaderValue(Record.ETag));
-            else if (Record.LastModified is not null && DateTimeOffset.TryParse(Record.LastModified, out var date))
-                request.Headers.IfRange = new RangeConditionHeaderValue(date);
-        }
-
-        using var response = await HttpErrors.SendAsync(_http, request, _options.ReadTimeout, ct);
-        ValidateResponse(response, offset);
-
-        await using var body = await response.Content.ReadAsStreamAsync(ct);
+        var end = Record.SupportsRanges ? _scheduler.EndOf(segment) : -1;
+        await using var body = await _transport.OpenAsync(Record, offset, end, ct);
         var buffer = ArrayPool<byte>.Shared.Rent(_options.BufferSize);
         try
         {
@@ -339,26 +352,6 @@ public sealed class DownloadJob
         finally
         {
             ArrayPool<byte>.Shared.Return(buffer);
-        }
-    }
-
-    private void ValidateResponse(HttpResponseMessage response, long offset)
-    {
-        if (Record.SupportsRanges)
-        {
-            if (response.StatusCode == HttpStatusCode.OK)
-                throw new ResourceChangedException("The server sent the whole file instead of the requested range.");
-            if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
-                throw new ResourceChangedException("The requested range no longer exists on the server.");
-            if (!response.IsSuccessStatusCode)
-                throw HttpErrors.FromStatus(response.StatusCode);
-            var range = response.Content.Headers.ContentRange;
-            if (range?.From != offset || (range.Length is { } length && length != Record.TotalSize))
-                throw new ResourceChangedException("The server returned a different range than requested.");
-        }
-        else if (!response.IsSuccessStatusCode)
-        {
-            throw HttpErrors.FromStatus(response.StatusCode);
         }
     }
 

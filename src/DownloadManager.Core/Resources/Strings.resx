@@ -74,6 +74,26 @@ Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></da
   <data name="CategoryNewName" xml:space="preserve"><value>Nuova categoria</value></data>
   <data name="CategoryPrograms" xml:space="preserve"><value>Programmi</value></data>
   <data name="CategoryVideo" xml:space="preserve"><value>Video</value></data>
+  <data name="CertificateAcceptAlways" xml:space="preserve"><value>Accetta _sempre per questo server</value></data>
+  <data name="CertificateAcceptOnce" xml:space="preserve"><value>Accetta solo _questa volta</value></data>
+  <data name="CertificateAdvice" xml:space="preserve"><value>Accetta solo se sai che è il certificato giusto, per esempio confrontando l'impronta con quella comunicata dal gestore del server. Se rifiuti, il download si interrompe.</value></data>
+  <data name="CertificateExpired" xml:space="preserve"><value>Il certificato è scaduto o non ancora valido.</value></data>
+  <data name="CertificateFingerprint" xml:space="preserve"><value>Impronta SHA-256</value></data>
+  <data name="CertificateForget" xml:space="preserve"><value>_Dimentica il certificato</value></data>
+  <data name="CertificateHeading" xml:space="preserve"><value>Windows non riconosce il certificato di {0}</value></data>
+  <data name="CertificateIssuer" xml:space="preserve"><value>Emesso da</value></data>
+  <data name="CertificateMissing" xml:space="preserve"><value>Il server non ha presentato un certificato.</value></data>
+  <data name="CertificateNameMismatch" xml:space="preserve"><value>Il certificato è intestato a un altro nome.</value></data>
+  <data name="CertificateReject" xml:space="preserve"><value>_Rifiuta</value></data>
+  <data name="CertificateRejected" xml:space="preserve"><value>Il certificato di {0} non è attendibile e non è stato accettato.</value></data>
+  <data name="CertificateSubject" xml:space="preserve"><value>Intestato a</value></data>
+  <data name="CertificateTitle" xml:space="preserve"><value>Certificato non attendibile</value></data>
+  <data name="CertificateUntrustedIssuer" xml:space="preserve"><value>Il certificato non è emesso da un'autorità riconosciuta (per esempio è autofirmato).</value></data>
+  <data name="CertificateValidity" xml:space="preserve"><value>Validità</value></data>
+  <data name="CertificateValidityRange" xml:space="preserve"><value>dal {0:d} al {1:d}</value></data>
+  <data name="CertificatesHint" xml:space="preserve"><value>Certificati FTPS che Windows non riconosce ma che hai scelto di accettare sempre per un server.</value></data>
+  <data name="CertificatesListName" xml:space="preserve"><value>Certificati accettati</value></data>
+  <data name="CertificatesTitle" xml:space="preserve"><value>Certificati accettati</value></data>
   <data name="Close" xml:space="preserve"><value>Chiudi</value></data>
   <data name="ClosingTitle" xml:space="preserve"><value>DownloadManager — salvataggio in corso…</value></data>
   <data name="ColumnAdded" xml:space="preserve"><value>Aggiunto</value></data>
@@ -90,12 +110,14 @@ Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></da
   <data name="ColumnStatus" xml:space="preserve"><value>Stato</value></data>
   <data name="ConfirmAddLinks" xml:space="preserve"><value>Aggiungere {0} download alla coda?</value></data>
   <data name="ConfirmDeleteCategory" xml:space="preserve"><value>Eliminare la categoria "{0}"? I suoi download passeranno alla categoria Generale; i file restano dove sono.</value></data>
+  <data name="ConfirmDeleteLogin" xml:space="preserve"><value>Eliminare le credenziali {0}?</value></data>
   <data name="ConfirmDeleteQueue" xml:space="preserve"><value>Eliminare la coda "{0}"? I suoi download passeranno alla Coda principale.</value></data>
   <data name="ConfirmRemove" xml:space="preserve"><value>Rimuovere {0} download dall'elenco? I dati parziali verranno eliminati.</value></data>
   <data name="ConfirmRemoveCompleted" xml:space="preserve"><value>Eliminare dal disco anche i file già scaricati?
 
 Sì: elimina file ed elemento
 No: rimuovi solo dall'elenco</value></data>
+  <data name="ConnectionTitle" xml:space="preserve"><value>Connessioni</value></data>
   <data name="CountdownAnnouncement" xml:space="preserve"><value>{0} secondi</value></data>
   <data name="CountdownCancel" xml:space="preserve"><value>_Annulla</value></data>
   <data name="CountdownHeading" xml:space="preserve"><value>La coda «{0}» ha finito</value></data>
@@ -103,6 +125,8 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="CountdownNow" xml:space="preserve"><value>{0} _ora</value></data>
   <data name="CountdownSecondsName" xml:space="preserve"><value>Secondi rimanenti</value></data>
   <data name="CountdownTitle" xml:space="preserve"><value>{0} tra poco</value></data>
+  <data name="CredentialsHint" xml:space="preserve"><value>Credenziali salvate per server (autenticazione HTTP e FTP). Le password sono cifrate con il tuo account di Windows e non vengono mai mostrate.</value></data>
+  <data name="CredentialsListName" xml:space="preserve"><value>Credenziali salvate</value></data>
   <data name="EmptyFilteredHint" xml:space="preserve"><value>Scegli un altro filtro nel pannello a sinistra o cambia la ricerca</value></data>
   <data name="EmptyFilteredTitle" xml:space="preserve"><value>Nessun download corrisponde</value></data>
   <data name="EmptyHint" xml:space="preserve"><value>Premi Aggiungi (Ctrl+N), incolla un link con Ctrl+V oppure trascinalo qui</value></data>
@@ -120,8 +144,12 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="ErrorConnectionsRange" xml:space="preserve"><value>Le connessioni per download devono essere un numero tra 1 e 32.</value></data>
   <data name="ErrorFileMissing" xml:space="preserve"><value>Il file non esiste più: potrebbe essere stato spostato o eliminato.</value></data>
   <data name="ErrorFolderNotAbsolute" xml:space="preserve"><value>Indica una cartella completa (es. C:\Users\…\Downloads).</value></data>
-  <data name="ErrorInvalidUrl" xml:space="preserve"><value>Inserisci un indirizzo http:// o https:// valido.</value></data>
-  <data name="ErrorOnlyHttp" xml:space="preserve"><value>Sono supportati solo indirizzi http e https.</value></data>
+  <data name="ErrorInvalidUrl" xml:space="preserve"><value>Inserisci un indirizzo valido: http://, https://, ftp://, ftps:// (TLS implicito) o ftpes:// (TLS esplicito).</value></data>
+  <data name="ErrorOnlyHttp" xml:space="preserve"><value>Sono supportati solo indirizzi http, https, ftp, ftps e ftpes.</value></data>
+  <data name="ErrorPacUrl" xml:space="preserve"><value>Indica l'indirizzo del file PAC.</value></data>
+  <data name="ErrorPerServer" xml:space="preserve"><value>Le connessioni per server devono essere tra 1 e 256.</value></data>
+  <data name="ErrorProxyHost" xml:space="preserve"><value>Indica il server del proxy.</value></data>
+  <data name="ErrorProxyPort" xml:space="preserve"><value>La porta del proxy deve essere un numero tra 1 e 65535.</value></data>
   <data name="ErrorQueueConcurrent" xml:space="preserve"><value>i file simultanei devono essere un numero tra 1 e 20.</value></data>
   <data name="ErrorQueueDate" xml:space="preserve"><value>scegli la data.</value></data>
   <data name="ErrorQueueDays" xml:space="preserve"><value>scegli almeno un giorno della settimana.</value></data>
@@ -134,10 +162,13 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="ErrorQueueStart" xml:space="preserve"><value>indica l'ora di avvio nel formato hh:mm, per esempio 22:30.</value></data>
   <data name="ErrorQueueStop" xml:space="preserve"><value>l'ora di arresto deve essere nel formato hh:mm e diversa da quella di avvio.</value></data>
   <data name="ErrorSpeedLimit" xml:space="preserve"><value>Il limite di velocità deve essere 0 o un numero positivo.</value></data>
+  <data name="ErrorTimeout" xml:space="preserve"><value>Il timeout deve essere tra 5 e 600 secondi.</value></data>
   <data name="ErrorUnexpected" xml:space="preserve"><value>Errore imprevisto</value></data>
   <data name="ErrorUnknownMessage" xml:space="preserve"><value>Messaggio sconosciuto: {0}</value></data>
   <data name="FromBrowser" xml:space="preserve"><value>Inviato dal browser.</value></data>
   <data name="FromBrowserWithCookies" xml:space="preserve"><value>Inviato dal browser: verranno usati i cookie della sessione e la pagina di provenienza.</value></data>
+  <data name="FtpActiveMode" xml:space="preserve"><value>FTP in modalità _attiva (il server apre la connessione dati)</value></data>
+  <data name="FtpActiveModeToolTip" xml:space="preserve"><value>La modalità passiva, predefinita, funziona quasi sempre; quella attiva serve solo con alcuni server e spesso è bloccata dal firewall.</value></data>
   <data name="GestureAltEnter" xml:space="preserve"><value>Alt+Invio</value></data>
   <data name="GestureDelete" xml:space="preserve"><value>Canc</value></data>
   <data name="GestureEnter" xml:space="preserve"><value>Invio</value></data>
@@ -145,6 +176,30 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="LegendDone" xml:space="preserve"><value>Scaricato</value></data>
   <data name="LegendMissing" xml:space="preserve"><value>Da scaricare</value></data>
   <data name="ListName" xml:space="preserve"><value>Elenco dei download</value></data>
+  <data name="LoginDelete" xml:space="preserve"><value>_Elimina</value></data>
+  <data name="LoginDetails" xml:space="preserve"><value>Per scaricare «{0}» (autenticazione {1}).</value></data>
+  <data name="LoginHeading" xml:space="preserve"><value>{0} chiede le credenziali</value></data>
+  <data name="LoginHostLabel" xml:space="preserve"><value>_Server (nome, facoltativamente :porta)</value></data>
+  <data name="LoginHostName" xml:space="preserve"><value>Server delle credenziali</value></data>
+  <data name="LoginNew" xml:space="preserve"><value>_Nuova</value></data>
+  <data name="LoginPasswordKeep" xml:space="preserve"><value>Lascia vuoto per mantenere la password salvata</value></data>
+  <data name="LoginPasswordLabel" xml:space="preserve"><value>_Password</value></data>
+  <data name="LoginPasswordName" xml:space="preserve"><value>Password</value></data>
+  <data name="LoginPasswordRequired" xml:space="preserve"><value>Inserisci la password.</value></data>
+  <data name="LoginProxyHeading" xml:space="preserve"><value>Il proxy {0} chiede le credenziali</value></data>
+  <data name="LoginProxyTitle" xml:space="preserve"><value>Accesso al proxy</value></data>
+  <data name="LoginRealm" xml:space="preserve"><value>Area: «{0}».</value></data>
+  <data name="LoginRemember" xml:space="preserve"><value>_Ricorda (salvate cifrate)</value></data>
+  <data name="LoginRememberToolTip" xml:space="preserve"><value>Se non selezionato, le credenziali valgono solo finché l'app resta aperta.</value></data>
+  <data name="LoginSave" xml:space="preserve"><value>Sa_lva credenziali</value></data>
+  <data name="LoginSaved" xml:space="preserve"><value>Credenziali salvate per {0}.</value></data>
+  <data name="LoginSignIn" xml:space="preserve"><value>_Accedi</value></data>
+  <data name="LoginTitle" xml:space="preserve"><value>Accesso richiesto</value></data>
+  <data name="LoginUnencrypted" xml:space="preserve"><value>Attenzione: la connessione non è cifrata, la password viaggerà leggibile.</value></data>
+  <data name="LoginUserLabel" xml:space="preserve"><value>Nome _utente</value></data>
+  <data name="LoginUserName" xml:space="preserve"><value>Nome utente</value></data>
+  <data name="LoginWindowsAccount" xml:space="preserve"><value>Usa il mio account di _Windows (NTLM/Kerberos, per la rete aziendale)</value></data>
+  <data name="LoginWindowsAccountToolTip" xml:space="preserve"><value>L'account di Windows viene offerto solo a questo server e solo con NTLM o Negotiate, mai come password in chiaro.</value></data>
   <data name="MenuCopyUrl" xml:space="preserve"><value>Copia indirizzo</value></data>
   <data name="MenuDeleteCategory" xml:space="preserve"><value>Elimina categoria</value></data>
   <data name="MenuDeleteQueue" xml:space="preserve"><value>Elimina coda</value></data>
@@ -173,6 +228,9 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="NavigationName" xml:space="preserve"><value>Filtri e categorie</value></data>
   <data name="No" xml:space="preserve"><value>No</value></data>
   <data name="Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="PacUrlLabel" xml:space="preserve"><value>Indirizzo del file PAC (http, https o percorso locale)</value></data>
+  <data name="PacUrlName" xml:space="preserve"><value>Indirizzo del file PAC</value></data>
+  <data name="PerServerLabel" xml:space="preserve"><value>Connessioni _massime per server (1–256)</value></data>
   <data name="PickDestinationFolder" xml:space="preserve"><value>Scegli la cartella di destinazione</value></data>
   <data name="ProgressConnections" xml:space="preserve"><value>{0} attive su {1} segmenti</value></data>
   <data name="ProgressConnectionsLabel" xml:space="preserve"><value>Connessioni</value></data>
@@ -200,6 +258,34 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="PropertiesType" xml:space="preserve"><value>Tipo</value></data>
   <data name="PropertiesUrlLabel" xml:space="preserve"><value>_Indirizzo</value></data>
   <data name="PropertiesUrlName" xml:space="preserve"><value>Indirizzo del download</value></data>
+  <data name="ProxyBypassHint" xml:space="preserve"><value>Separate da ; o spazi, per esempio: *.intranet.local; 10.*; &lt;local&gt; (nomi senza punto). localhost e 127.0.0.1 non usano mai il proxy.</value></data>
+  <data name="ProxyBypassLabel" xml:space="preserve"><value>_Eccezioni: server raggiunti senza proxy</value></data>
+  <data name="ProxyBypassName" xml:space="preserve"><value>Eccezioni del proxy</value></data>
+  <data name="ProxyHostLabel" xml:space="preserve"><value>_Server</value></data>
+  <data name="ProxyHostName" xml:space="preserve"><value>Server proxy</value></data>
+  <data name="ProxyManual" xml:space="preserve"><value>Proxy _manuale</value></data>
+  <data name="ProxyNone" xml:space="preserve"><value>_Nessun proxy</value></data>
+  <data name="ProxyPac" xml:space="preserve"><value>Configurazione automatica (file _PAC)</value></data>
+  <data name="ProxyPacFailed" xml:space="preserve"><value>(il file PAC non è stato letto: {0})</value></data>
+  <data name="ProxyPasswordLabel" xml:space="preserve"><value>Pass_word</value></data>
+  <data name="ProxyPasswordName" xml:space="preserve"><value>Password del proxy</value></data>
+  <data name="ProxyPortLabel" xml:space="preserve"><value>P_orta</value></data>
+  <data name="ProxyPortName" xml:space="preserve"><value>Porta del proxy</value></data>
+  <data name="ProxyRouteDirect" xml:space="preserve"><value>con connessione diretta</value></data>
+  <data name="ProxyRouteVia" xml:space="preserve"><value>tramite {0}</value></data>
+  <data name="ProxySystem" xml:space="preserve"><value>Usa il proxy di _sistema (impostazioni di Windows)</value></data>
+  <data name="ProxyTest" xml:space="preserve"><value>_Verifica</value></data>
+  <data name="ProxyTestFailed" xml:space="preserve"><value>Verifica non riuscita: {0}</value></data>
+  <data name="ProxyTestNeedsLogin" xml:space="preserve"><value>Il proxy chiede le credenziali ({0}): inseriscile qui sopra.</value></data>
+  <data name="ProxyTestOk" xml:space="preserve"><value>Risposta HTTP {0} in {1} ms, {2}.</value></data>
+  <data name="ProxyTestToolTip" xml:space="preserve"><value>Scarica l'indirizzo di prova con le impostazioni scritte qui, prima di salvarle</value></data>
+  <data name="ProxyTestUrlName" xml:space="preserve"><value>Indirizzo di prova</value></data>
+  <data name="ProxyTesting" xml:space="preserve"><value>Verifica in corso…</value></data>
+  <data name="ProxyTitle" xml:space="preserve"><value>Proxy</value></data>
+  <data name="ProxyTypeLabel" xml:space="preserve"><value>_Tipo</value></data>
+  <data name="ProxyTypeName" xml:space="preserve"><value>Tipo di proxy</value></data>
+  <data name="ProxyUserLabel" xml:space="preserve"><value>_Utente (facoltativo)</value></data>
+  <data name="ProxyUserName" xml:space="preserve"><value>Utente del proxy</value></data>
   <data name="QueueAdd" xml:space="preserve"><value>Aggiungi</value></data>
   <data name="QueueConcurrentLabel" xml:space="preserve"><value>File _simultanei (1–20)</value></data>
   <data name="QueueConcurrentName" xml:space="preserve"><value>File simultanei</value></data>
@@ -272,6 +358,9 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="SettingsRunAtStartup" xml:space="preserve"><value>Avvia DownloadManager con _Windows, ridotto nell'area di notifica</value></data>
   <data name="SettingsSpeedLimit" xml:space="preserve"><value>_Limite di velocità globale in KB/s (0 = nessuno)</value></data>
   <data name="SettingsSystem" xml:space="preserve"><value>Sistema</value></data>
+  <data name="SettingsTabCredentials" xml:space="preserve"><value>Credenziali</value></data>
+  <data name="SettingsTabGeneral" xml:space="preserve"><value>Generale</value></data>
+  <data name="SettingsTabNetwork" xml:space="preserve"><value>Rete</value></data>
   <data name="SettingsTheme" xml:space="preserve"><value>Tema</value></data>
   <data name="SettingsTitle" xml:space="preserve"><value>Impostazioni</value></data>
   <data name="SpeedCustomLabel" xml:space="preserve"><value>_Limite in KB/s (0 = nessun limite)</value></data>
@@ -291,6 +380,7 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="ThemeDark" xml:space="preserve"><value>Scuro</value></data>
   <data name="ThemeLight" xml:space="preserve"><value>Chiaro</value></data>
   <data name="ThemeSystem" xml:space="preserve"><value>Segui il sistema</value></data>
+  <data name="TimeoutLabel" xml:space="preserve"><value>_Timeout in secondi (5–600)</value></data>
   <data name="ToastCompletedDetails" xml:space="preserve"><value>{0} · {1}</value></data>
   <data name="ToastCompletedTitle" xml:space="preserve"><value>Download completato</value></data>
   <data name="ToastOpen" xml:space="preserve"><value>Apri</value></data>
@@ -322,6 +412,10 @@ Limite: {2}</value></data>
   <data name="UrlCheckUnverifiable" xml:space="preserve"><value>il server indica la stessa dimensione ma non fornisce ETag né data di ultima modifica</value></data>
   <data name="UrlUpdatedKept" xml:space="preserve"><value>Indirizzo aggiornato: i dati già scaricati ({0}) sono stati mantenuti.</value></data>
   <data name="UrlUpdatedRestart" xml:space="preserve"><value>Indirizzo aggiornato: il download ripartirà da zero.</value></data>
+  <data name="UserAgentLabel" xml:space="preserve"><value>User-agent _inviato ai server</value></data>
+  <data name="UserAgentName" xml:space="preserve"><value>User-agent</value></data>
+  <data name="WaitingLogin" xml:space="preserve"><value>In attesa delle credenziali per {0}</value></data>
+  <data name="WaitingProxyLogin" xml:space="preserve"><value>In attesa delle credenziali del proxy {0}</value></data>
   <data name="WaitingQuota" xml:space="preserve"><value>Quota oraria raggiunta: riprende verso le {0}</value></data>
   <data name="WaitingRetry" xml:space="preserve"><value>Tentativo {0} fallito, nuovo tentativo alle {1}. Errore: {2}</value></data>
   <data name="Yes" xml:space="preserve"><value>Sì</value></data>

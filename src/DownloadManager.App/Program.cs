@@ -21,11 +21,11 @@ internal static class Program
             return exitCode;
 
         // One instance per user: a second launch brings the running window forward instead.
-        using var instance = new Mutex(true, @"Local\" + AppChannel.DefaultPipeName, out var first);
+        using var instance = new Mutex(true, @"Local\" + AppEnvironment.PipeName, out var first);
         if (!first)
         {
             BrowserIntegration.AllowForeground();
-            AppChannel.SendAsync(AppChannel.DefaultPipeName, new ChannelMessage(Messages.Activate), TimeSpan.FromSeconds(3))
+            AppChannel.SendAsync(AppEnvironment.PipeName, new ChannelMessage(Messages.Activate), TimeSpan.FromSeconds(3))
                 .GetAwaiter().GetResult();
             return 0;
         }

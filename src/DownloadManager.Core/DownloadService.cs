@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net;
+using DownloadManager.Core.Net;
 using DownloadManager.Core.Resources;
+using DownloadManager.Core.Security;
 
 namespace DownloadManager.Core;
 
@@ -23,9 +25,13 @@ public sealed class DownloadService : IAsyncDisposable
 
     private readonly object _lock = new();
     private readonly DownloadStore _store;
-    private readonly HttpClient _http;
+    private readonly HttpClient? _fixedHttp; // given by a test: used as is, whatever the network settings
+    private HttpClient _http;
     private readonly bool _ownsHttp;
     private readonly EngineOptions _engineTemplate;
+    private readonly bool _customEngine;
+    private NetworkContext _network;
+    private NetworkCredential? _sessionProxyLogin;
     private readonly RateLimiter _limiter = new();
     private readonly List<DownloadRecord> _items;
     private readonly List<Category> _categories;
@@ -47,11 +53,17 @@ public sealed class DownloadService : IAsyncDisposable
         IClock? clock = null, bool autoTick = true)
     {
         _store = store;
-        _ownsHttp = http is null;
-        _http = http ?? CreateHttpClient();
+        _ownsHttp = false;
+        _fixedHttp = http;
         _engineTemplate = engineTemplate ?? new EngineOptions();
+        _customEngine = engineTemplate is not null;
         _clock = clock ?? SystemClock.Instance;
         _settings = store.LoadSettings();
+        Credentials = new CredentialStore(store);
+        Certificates = new CertificateTrust(store);
+        _network = new NetworkContext(_settings, Credentials, Certificates);
+        _http = http ?? _network.SharedHttp;
+        _ = _network.Proxy.LoadPacAsync();
         _limiter.BytesPerSecond = _settings.SpeedLimitKBps * 1024;
         _items = store.LoadAll();
         _categories = store.LoadCategories();
@@ -98,6 +110,24 @@ public sealed class DownloadService : IAsyncDisposable
         client.DefaultRequestHeaders.UserAgent.ParseAdd("DownloadManager/1.0");
         return client;
     }
+
+    /// <summary>Saved and temporary logins for servers (HTTP authentication, FTP).</summary>
+    public CredentialStore Credentials { get; }
+
+    /// <summary>FTPS certificates the user accepted; the app sets <see cref="CertificateTrust.Ask"/> to ask about new ones.</summary>
+    public CertificateTrust Certificates { get; }
+
+    /// <summary>The network as configured now (proxy, timeouts...), for example to test the proxy.</summary>
+    public NetworkContext Network
+    {
+        get { lock (_lock) return _network; }
+    }
+
+    /// <summary>
+    /// Raised when a server (401, FTP login refused) or the proxy (407) wants a login the app does not have. The
+    /// download is paused; <see cref="ProvideLogin"/> resumes it.
+    /// </summary>
+    public event Action<LoginRequest>? LoginRequired;
 
     /// <summary>Raised on a worker thread when a download finishes successfully.</summary>
     public event Action<DownloadSnapshot>? DownloadCompleted;
@@ -205,8 +235,12 @@ public sealed class DownloadService : IAsyncDisposable
     public long Add(string url, string? directory = null, string? fileName = null, bool startNow = true, RequestContext? context = null,
         long? categoryId = null, long? queueId = null)
     {
-        if (!Urls.TryParseHttp(url, out var uri))
-            throw new ArgumentException("Enter a valid http:// or https:// address.", nameof(url));
+        if (!Urls.TryParseDownload(url, out var parsed))
+            throw new ArgumentException("Enter a valid http, https, ftp, ftps or ftpes address.", nameof(url));
+        // A login written in the address is kept encrypted with the download, never in the address shown.
+        var (uri, user, password) = Urls.SplitLogin(parsed);
+        if (user is not null)
+            context = (context ?? new RequestContext(null, null, [])) with { Username = user, Password = password };
 
         lock (_lock)
         {
@@ -369,11 +403,59 @@ public sealed class DownloadService : IAsyncDisposable
             _settings.MaxConcurrentDownloads = Math.Clamp(settings.MaxConcurrentDownloads, 1, 50);
             _settings.SpeedLimitKBps = Math.Max(0, settings.SpeedLimitKBps);
             _settings.GlobalQuotaMBPerHour = Math.Max(0, settings.GlobalQuotaMBPerHour);
+            _settings.TimeoutSeconds = Math.Clamp(settings.TimeoutSeconds, 5, 600);
+            _settings.MaxConnectionsPerServer = Math.Clamp(settings.MaxConnectionsPerServer, 1, 256);
+            _settings.ProxyPort = Math.Clamp(settings.ProxyPort, 1, 65535);
             _settings.QueueRunning = queueRunning;
             _limiter.BytesPerSecond = _settings.SpeedLimitKBps * 1024;
             _store.SaveSettings(_settings);
+            RebuildNetworkLocked();
             Pump();
         }
+    }
+
+    /// <summary>
+    /// New downloads use the new network settings; running ones finish on the connections they have. The old client
+    /// is not disposed here because running transfers may still be using it.
+    /// </summary>
+    private void RebuildNetworkLocked()
+    {
+        _network = new NetworkContext(_settings, Credentials, Certificates, _sessionProxyLogin);
+        if (_fixedHttp is null)
+            _http = _network.SharedHttp;
+        _ = _network.Proxy.LoadPacAsync();
+    }
+
+    /// <summary>
+    /// The user's answer to <see cref="LoginRequired"/>: saved (encrypted) when <paramref name="remember"/>, otherwise
+    /// kept until the app closes. The paused download then resumes.
+    /// </summary>
+    public void ProvideLogin(LoginRequest request, string username, string password, bool remember)
+    {
+        if (request.IsProxy)
+        {
+            lock (_lock)
+            {
+                if (remember)
+                {
+                    _settings.ProxyUser = username;
+                    _settings.ProxyPassword = password;
+                    _store.SaveSettings(_settings);
+                    _sessionProxyLogin = null;
+                }
+                else
+                {
+                    _sessionProxyLogin = new NetworkCredential(username, password);
+                }
+                RebuildNetworkLocked();
+            }
+        }
+        else
+        {
+            var port = FtpTransport.IsFtp(request.Target) ? FtpTransport.PortOf(request.Target) : request.Target.Port;
+            Credentials.Save(new SiteCredential { Host = request.Target.Host, Port = port, Username = username, Password = password }, remember);
+        }
+        Start(request.DownloadId);
     }
 
     /// <summary>Changes only the global speed limit, for example from the notification area menu.</summary>
@@ -532,21 +614,27 @@ public sealed class DownloadService : IAsyncDisposable
     /// </summary>
     public async Task<UrlCheck> CheckNewUrlAsync(long id, string newUrl, CancellationToken ct = default)
     {
-        if (!Urls.TryParseHttp(newUrl, out var uri))
-            throw new ArgumentException("Enter a valid http:// or https:// address.", nameof(newUrl));
+        if (!Urls.TryParseDownload(newUrl, out var parsed))
+            throw new ArgumentException("Enter a valid http, https, ftp, ftps or ftpes address.", nameof(newUrl));
         DownloadRecord record;
+        NetworkContext network;
         lock (_lock)
         {
             var stored = Find(id) ?? throw new InvalidOperationException("The download no longer exists.");
             record = _active.TryGetValue(id, out var active) ? active.Job.Record.Clone() : stored.Clone();
             record.Status = stored.Status;
+            network = _network;
         }
 
-        using var ownHttp = record.Context is { Cookies.Count: > 0 } context
-            ? CreateHttpClient(RequestContexts.ToCookieContainer(context.Cookies))
-            : null;
-        var probe = await HttpProbe.ProbeAsync(ownHttp ?? _http, uri.AbsoluteUri, ct, record.Context);
-        return UrlCheck.Compare(record, uri.AbsoluteUri, probe);
+        // The new address is asked with the same network, cookies and login a download would use.
+        var (uri, user, password) = Urls.SplitLogin(parsed);
+        var probeRecord = record.Clone();
+        probeRecord.Url = uri.AbsoluteUri;
+        if (user is not null)
+            probeRecord.Context = (record.Context ?? new RequestContext(null, null, [])) with { Username = user, Password = password };
+        // On a worker thread: an FTPS certificate question waits for the UI, which must not be the waiting thread.
+        var probe = await Task.Run(() => network.ProbeAsync(probeRecord, ct), ct);
+        return UrlCheck.Compare(record, parsed.AbsoluteUri, probe);
     }
 
     /// <summary>
@@ -566,7 +654,10 @@ public sealed class DownloadService : IAsyncDisposable
         {
             if (Find(id) is not { Status: not DownloadStatus.Completed } record || _active.ContainsKey(id))
                 return;
-            record.Url = check.NewUrl;
+            var (address, user, password) = Urls.SplitLogin(new Uri(check.NewUrl));
+            record.Url = address.AbsoluteUri;
+            if (user is not null)
+                record.Context = (record.Context ?? new RequestContext(null, null, [])) with { Username = user, Password = password };
             record.Error = null;
             if (record.Status == DownloadStatus.Failed)
                 record.Status = DownloadStatus.Paused;
@@ -848,12 +939,12 @@ public sealed class DownloadService : IAsyncDisposable
             MaxConnections = _settings.MaxConnections,
             MinSegmentSize = _engineTemplate.MinSegmentSize,
             BufferSize = _engineTemplate.BufferSize,
-            ReadTimeout = _engineTemplate.ReadTimeout,
+            ReadTimeout = _customEngine ? _engineTemplate.ReadTimeout : _network.Timeout,
             MaxRetries = _engineTemplate.MaxRetries,
             RetryBaseDelay = _engineTemplate.RetryBaseDelay,
             CheckpointInterval = _engineTemplate.CheckpointInterval,
         };
-        var job = new DownloadJob(record.Clone(), _http, _limiter, options, OnCheckpoint, OnProbed);
+        var job = new DownloadJob(record.Clone(), _http, _limiter, options, OnCheckpoint, OnProbed, _network);
         var active = new ActiveJob(job, fromQueue) { CountedBytes = job.BytesDownloaded };
         _active[record.Id] = active;
         active.Task = Task.Run(() => RunJobAsync(active));
@@ -863,6 +954,7 @@ public sealed class DownloadService : IAsyncDisposable
     {
         DownloadStatus final;
         string? error = null;
+        LoginRequest? login = null;
         try
         {
             await active.Job.RunAsync(active.Cts.Token);
@@ -871,6 +963,19 @@ public sealed class DownloadService : IAsyncDisposable
         catch (OperationCanceledException) when (active.Cts.IsCancellationRequested)
         {
             final = active.StopStatus;
+        }
+        catch (AuthenticationRequiredException ex)
+        {
+            // Paused, not failed: it continues as soon as the user gives the login.
+            final = DownloadStatus.Paused;
+            error = string.Format(CultureInfo.CurrentCulture, ex.IsProxy ? Strings.WaitingProxyLogin : Strings.WaitingLogin, ex.Target.Host);
+            login = new LoginRequest(active.Job.Record.Id, ex.IsProxy ? ProxyAddress(ex.Target) : ex.Target, ex.IsProxy, ex.Scheme, ex.Realm,
+                active.Job.Record.FileName ?? FileNames.FromUrl(new Uri(active.Job.Record.Url)));
+        }
+        catch (UntrustedCertificateException ex)
+        {
+            final = DownloadStatus.Failed;
+            error = string.Format(CultureInfo.CurrentCulture, Strings.CertificateRejected, ex.Host);
         }
         catch (Exception ex)
         {
@@ -910,6 +1015,8 @@ public sealed class DownloadService : IAsyncDisposable
             finished = CollectFinished();
         }
         active.Cts.Dispose();
+        if (login is not null)
+            LoginRequired?.Invoke(login);
         if (completed is not null)
             DownloadCompleted?.Invoke(completed);
         if (finished.Count > 0)
@@ -1010,6 +1117,13 @@ public sealed class DownloadService : IAsyncDisposable
     }
 
     private DownloadRecord? Find(long id) => _items.FirstOrDefault(i => i.Id == id);
+
+    /// <summary>The proxy that asked for a login (407), as the proxy settings would pick it for that address.</summary>
+    private Uri ProxyAddress(Uri target)
+    {
+        lock (_lock)
+            return _network.Proxy.Resolve(target) ?? target;
+    }
 
     private static bool SamePath(string a, string b) =>
         string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(a)), Path.TrimEndingDirectorySeparator(Path.GetFullPath(b)),

@@ -2,7 +2,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using DownloadManager.Core;
-using Microsoft.Win32;
 using Windows.UI.Notifications;
 
 namespace DownloadManager.App.Services;
@@ -25,26 +24,15 @@ public sealed class ToastService(string dataDirectory)
     /// <summary>Repeated on every start so a moved executable keeps working.</summary>
     public void Register()
     {
-        if (Environment.ProcessPath is not { } exe)
+        // Windows shows notifications only for an identity registered in the real registry: none in a sandboxed run.
+        if (AppEnvironment.IsSandboxed)
             return;
         try
         {
             var icon = Path.Combine(dataDirectory, "notification.png");
             SaveIcon(icon);
 
-            using (var identity = Registry.CurrentUser.CreateSubKey($@"Software\Classes\AppUserModelId\{AppUserModelId}"))
-            {
-                identity.SetValue("DisplayName", "DownloadManager");
-                identity.SetValue("IconUri", icon);
-            }
-
-            using (var scheme = Registry.CurrentUser.CreateSubKey($@"Software\Classes\{NotificationLinks.Scheme}"))
-            {
-                scheme.SetValue("", "URL:DownloadManager");
-                scheme.SetValue("URL Protocol", "");
-                using var command = scheme.CreateSubKey(@"shell\open\command");
-                command.SetValue("", $"\"{exe}\" \"%1\"");
-            }
+            AppEnvironment.Registration.RegisterNotifications(icon);
             _registered = true;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)

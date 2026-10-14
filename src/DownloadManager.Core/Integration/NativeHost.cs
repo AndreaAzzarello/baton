@@ -44,8 +44,11 @@ public static class NativeHost
         var reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromMilliseconds(500));
         if (reply is not null)
             return reply;
+        // Questions from the popup never start the app.
         if (message.Type == Messages.Ping)
             return new ChannelReply(true, Running: false);
+        if (message.Type == Messages.Queues)
+            return new ChannelReply(true, Running: false, Queues: []);
 
         if (!launchApp())
             return new ChannelReply(false, Running: false, Error: "Impossibile avviare DownloadManager.");

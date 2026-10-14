@@ -3,48 +3,20 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
+using DownloadManager.App.Services;
 using DownloadManager.Core.Integration;
-using Microsoft.Win32;
 
 namespace DownloadManager.App;
 
-/// <summary>Registers this executable as the browsers' native messaging host and runs it in that role.</summary>
+/// <summary>Registers this executable as the browsers' native messaging host (through <see cref="AppEnvironment"/>) and runs it in that role.</summary>
 internal static class BrowserIntegration
 {
-    // Per-user registry locations where Chromium-based browsers look up native messaging hosts.
-    private static readonly string[] BrowserKeys =
-    [
-        @"Software\Google\Chrome\NativeMessagingHosts",
-        @"Software\Microsoft\Edge\NativeMessagingHosts",
-        @"Software\Chromium\NativeMessagingHosts",
-        @"Software\BraveSoftware\Brave-Browser\NativeMessagingHosts",
-    ];
-
     /// <summary>Points the browsers at the current executable; repeated on every start so a moved exe keeps working.</summary>
     public static void Register(string dataDirectory)
     {
-        if (Environment.ProcessPath is not { } exe)
-            return;
         try
         {
-            Directory.CreateDirectory(dataDirectory);
-            var manifestPath = Path.Combine(dataDirectory, NativeHost.Name + ".json");
-            var manifest = new
-            {
-                name = NativeHost.Name,
-                description = "DownloadManager",
-                path = exe,
-                type = "stdio",
-                allowed_origins = new[] { $"chrome-extension://{NativeHost.ExtensionId}/" },
-            };
-            File.WriteAllText(manifestPath, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
-
-            foreach (var key in BrowserKeys)
-            {
-                using var hosts = Registry.CurrentUser.CreateSubKey($@"{key}\{NativeHost.Name}");
-                hosts.SetValue("", manifestPath);
-            }
+            AppEnvironment.Registration.RegisterBrowserHost(dataDirectory);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {

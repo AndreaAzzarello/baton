@@ -53,6 +53,19 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
         return window.ShowDialog() == true ? window.Value : null;
     }
 
+    public (string Username, string Password, bool Remember)? AskLogin(Core.Net.LoginRequest request)
+    {
+        var window = new LoginWindow(request);
+        return window.ShowDialog() == true ? (window.Username, window.Password, window.Remember) : null;
+    }
+
+    public Core.Security.CertificateDecision AskCertificate(Core.Security.CertificateQuestion question)
+    {
+        var window = new CertificateWindow(question);
+        window.ShowDialog();
+        return window.Decision;
+    }
+
     public void ShowProperties(PropertiesViewModel viewModel) => new PropertiesWindow(viewModel) { Owner = Owner }.ShowDialog();
 
     public void ShowProgress(DownloadItemViewModel item)

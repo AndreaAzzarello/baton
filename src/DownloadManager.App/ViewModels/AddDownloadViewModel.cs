@@ -147,7 +147,7 @@ public sealed class AddDownloadViewModel : ObservableObject
     private void Validate()
     {
         string? error = null;
-        if (Url.Trim().Length > 0 && !Urls.TryParseHttp(Url, out _))
+        if (Url.Trim().Length > 0 && !Urls.TryParseDownload(Url, out _))
             error = Strings.ErrorInvalidUrl;
         else if (Folder.Trim().Length == 0 || !Path.IsPathFullyQualified(Folder.Trim()))
             error = Strings.ErrorFolderNotAbsolute;

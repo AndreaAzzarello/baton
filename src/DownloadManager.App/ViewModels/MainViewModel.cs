@@ -579,7 +579,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void ShowSettings()
     {
-        var dialog = new SettingsViewModel(_dialogs, _service.Settings, _startup.IsEnabled);
+        var dialog = new SettingsViewModel(_dialogs, _service.Settings, _startup.IsEnabled, _service.Credentials, _service.Certificates);
         if (!_dialogs.ShowSettings(dialog) || dialog.Result is null)
             return;
         _service.UpdateSettings(dialog.Result);

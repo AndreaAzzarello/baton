@@ -7,6 +7,7 @@ using DownloadManager.App.ViewModels;
 using DownloadManager.App.Views;
 using DownloadManager.Core;
 using DownloadManager.Core.Integration;
+using DownloadManager.Core.Net;
 using DownloadManager.Core.Resources;
 
 namespace DownloadManager.App;
@@ -24,11 +25,8 @@ public partial class App : Application
     private TrayIcon? _tray;
     private bool _runningEndAction;
 
-    /// <summary>Database and settings; DOWNLOADMANAGER_DATA points the app at another folder, for example to test.</summary>
-    public static string DataDirectory { get; } =
-        Environment.GetEnvironmentVariable("DOWNLOADMANAGER_DATA") is { Length: > 0 } custom
-            ? custom
-            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DownloadManager");
+    /// <summary>Database and settings; DOWNLOADMANAGER_DATA points the app at another folder (and sandboxes it), for tests.</summary>
+    public static string DataDirectory => AppEnvironment.DataDirectory;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -73,11 +71,15 @@ public partial class App : Application
             : new WindowsPower();
         service.QueueFinished += queue => Dispatcher.InvokeAsync(() => RunEndAction(queue, dialogs, power, window));
 
+        // A server or proxy wants a login, or an FTPS server shows a certificate Windows does not trust: ask the user.
+        service.LoginRequired += request => Dispatcher.InvokeAsync(() => AskLogin(request, dialogs));
+        service.Certificates.Ask = question => Dispatcher.InvokeAsync(() => dialogs.AskCertificate(question)).Task;
+
         _systemTimer.Tick += (_, _) => UpdateSystemState();
         _systemTimer.Start();
         UpdateSystemState();
 
-        var startHidden = e.Args.Contains(StartupRegistration.TrayArgument);
+        var startHidden = e.Args.Contains(Core.Platform.SystemRegistration.TrayArgument);
         var fromBrowser = e.Args.Contains(BrowserIntegration.BackgroundArgument);
         if (!startHidden)
         {
@@ -90,7 +92,49 @@ public partial class App : Application
         }
 
         BrowserIntegration.Register(DataDirectory);
-        _ = AppChannel.ServeAsync(AppChannel.DefaultPipeName, OnChannelMessage, _channelCts.Token);
+        RepairStartEntry();
+        _ = AppChannel.ServeAsync(AppEnvironment.PipeName, OnChannelMessage, _channelCts.Token);
+    }
+
+    private readonly Dictionary<string, List<LoginRequest>> _waitingForLogin = [];
+
+    /// <summary>
+    /// One dialog per server: downloads that ask while it is open wait for the same answer instead of opening
+    /// a dialog each.
+    /// </summary>
+    private void AskLogin(LoginRequest request, IDialogService dialogs)
+    {
+        var key = $"{request.IsProxy}|{request.Target.Host}:{request.Target.Port}";
+        if (_waitingForLogin.TryGetValue(key, out var waiting))
+        {
+            waiting.Add(request);
+            return;
+        }
+        _waitingForLogin[key] = waiting = [request];
+        try
+        {
+            if (dialogs.AskLogin(request) is not { } answer || _service is null)
+                return;
+            _service.ProvideLogin(request, answer.Username, answer.Password, answer.Remember);
+            foreach (var other in waiting.Skip(1))
+                _service.Start(other.DownloadId);
+        }
+        finally
+        {
+            _waitingForLogin.Remove(key);
+        }
+    }
+
+    /// <summary>One start entry at most, pointing at this executable (only if the user turned it on).</summary>
+    private static void RepairStartEntry()
+    {
+        try
+        {
+            AppEnvironment.Registration.RepairStartEntry();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -160,8 +204,13 @@ public partial class App : Application
                 Dispatcher.InvokeAsync(() => (MainWindow as MainWindow)?.BringToFront());
                 return Task.FromResult(new ChannelReply(true));
 
+            case Messages.Queues:
+                // For the extension's popup: the main queue first, as in the app.
+                var names = _service?.Queues.OrderByDescending(q => q.IsMain).Select(q => q.Name).ToList() ?? [];
+                return Task.FromResult(new ChannelReply(true, Queues: names));
+
             case Messages.Add when message.Download is { } download:
-                if (!Urls.TryParseHttp(download.Url, out _))
+                if (!Urls.TryParseDownload(download.Url, out _))
                     return Task.FromResult(new ChannelReply(false, Error: Strings.ErrorOnlyHttp));
                 // The browser gets its answer right away; the confirmation dialog does not keep it waiting.
                 Dispatcher.InvokeAsync(() => _viewModel?.ReceiveFromBrowser(download, (MainWindow as MainWindow)?.IsClosing == true));

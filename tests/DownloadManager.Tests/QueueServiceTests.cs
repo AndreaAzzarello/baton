@@ -416,7 +416,7 @@ public sealed class QueueServiceTests : IAsyncLifetime
         }
 
         using var store = new DownloadStore(DbPath);
-        Assert.Equal(3, store.Version);
+        Assert.Equal(DownloadStore.SchemaVersion, store.Version);
         Assert.EndsWith(".v2.bak", store.BackupPath);
 
         var main = Assert.Single(store.LoadQueues());

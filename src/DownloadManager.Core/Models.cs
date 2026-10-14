@@ -90,10 +90,14 @@ public sealed class DownloadRecord
 /// <summary>A cookie as the browser reported it for the download URL.</summary>
 public sealed record BrowserCookie(string Name, string Value, string Domain, string Path, bool Secure, bool HostOnly);
 
-/// <summary>What the browser would have sent with the request: some servers refuse a download without it.</summary>
-public sealed record RequestContext(string? Referrer, string? UserAgent, IReadOnlyList<BrowserCookie> Cookies)
+/// <summary>
+/// What the browser would have sent with the request (some servers refuse a download without it), and the login
+/// given in the address itself (ftp://user:password@host/...). Stored encrypted and cleared when the download completes.
+/// </summary>
+public sealed record RequestContext(string? Referrer, string? UserAgent, IReadOnlyList<BrowserCookie> Cookies,
+    string? Username = null, string? Password = null)
 {
-    public bool IsEmpty => Referrer is null && UserAgent is null && Cookies.Count == 0;
+    public bool IsEmpty => Referrer is null && UserAgent is null && Cookies.Count == 0 && Username is null;
 }
 
 /// <summary>Immutable view of a download for the UI.</summary>
@@ -151,6 +155,36 @@ public sealed class AppSettings
     /// <summary>Closing the main window keeps the app running in the notification area.</summary>
     public bool CloseToTray { get; set; } = true;
 
+    // Network
+
+    /// <summary>System by default: the proxy configured in Windows, as the app always used.</summary>
+    public ProxyMode ProxyMode { get; set; } = ProxyMode.System;
+
+    public ProxyType ProxyType { get; set; } = ProxyType.Http;
+    public string ProxyHost { get; set; } = "";
+    public int ProxyPort { get; set; } = 8080;
+    public string ProxyUser { get; set; } = "";
+
+    /// <summary>Kept in memory only; stored encrypted with DPAPI.</summary>
+    public string ProxyPassword { get; set; } = "";
+
+    /// <summary>Hosts reached without the proxy, separated by ";" or spaces; "*" is a wildcard, "&lt;local&gt;" means names without a dot.</summary>
+    public string ProxyBypass { get; set; } = "";
+
+    /// <summary>Address (http, https or file) of the proxy auto-configuration script.</summary>
+    public string PacUrl { get; set; } = "";
+
+    /// <summary>FTP data connections opened by the server (PORT/EPRT) instead of the default passive mode.</summary>
+    public bool FtpActiveMode { get; set; }
+
+    /// <summary>How long to wait for a connection, a response or more data.</summary>
+    public int TimeoutSeconds { get; set; } = 30;
+
+    public int MaxConnectionsPerServer { get; set; } = 16;
+    public string UserAgent { get; set; } = DefaultUserAgent;
+
+    public const string DefaultUserAgent = "DownloadManager/0.5";
+
     /// <summary>Show the add dialog for downloads sent by the browser extension instead of starting them directly.</summary>
     public bool ConfirmBrowserDownloads { get; set; } = true;
 
@@ -160,6 +194,21 @@ public sealed class AppSettings
     public bool NotifyOnCompletion { get; set; } = true;
 
     public AppSettings Clone() => (AppSettings)MemberwiseClone();
+}
+
+public enum ProxyMode
+{
+    None,
+    System,
+    Manual,
+    Pac,
+}
+
+public enum ProxyType
+{
+    Http,
+    Https,
+    Socks5,
 }
 
 public enum AppTheme

@@ -30,6 +30,12 @@ public interface IDialogService
     /// <summary>Asks for a speed limit in KB/s; null when cancelled.</summary>
     long? AskSpeedLimit(long current);
 
+    /// <summary>Asks for the login a server or proxy wants; null when cancelled.</summary>
+    (string Username, string Password, bool Remember)? AskLogin(Core.Net.LoginRequest request);
+
+    /// <summary>Asks what to do with a certificate Windows does not trust; refusing is the default.</summary>
+    Core.Security.CertificateDecision AskCertificate(Core.Security.CertificateQuestion question);
+
     void ShowProperties(PropertiesViewModel viewModel);
 
     /// <summary>Opens (or brings forward) the progress window of a download.</summary>
@@ -56,9 +62,9 @@ public interface IStartupService
 
 public sealed class StartupService : IStartupService
 {
-    public bool IsEnabled => StartupRegistration.IsEnabled;
+    public bool IsEnabled => AppEnvironment.Registration.StartsWithWindows;
 
-    public void Set(bool enabled) => StartupRegistration.Set(enabled);
+    public void Set(bool enabled) => AppEnvironment.Registration.SetStartWithWindows(enabled);
 }
 
 /// <summary>Explorer, default programs and the clipboard.</summary>

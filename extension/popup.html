@@ -24,6 +24,12 @@
   <label for="minSize" class="label">Solo file più grandi di (MB, 0 = tutti)</label>
   <input type="number" id="minSize" min="0" step="1">
 
+  <label for="queue" class="label">Coda dei download inviati dal browser</label>
+  <select id="queue" aria-describedby="queueHint">
+    <option value="">Coda principale</option>
+  </select>
+  <p id="queueHint" class="hint small">Le code sono quelle create nell'app; con la conferma attiva puoi cambiarla per ogni download.</p>
+
   <p class="hint">Per qualsiasi link: tasto destro → <b>Scarica con DownloadManager</b>.</p>
   <script type="module" src="popup.js"></script>
 </body>

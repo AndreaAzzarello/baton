@@ -14,3 +14,6 @@ textarea, input[type=number] { box-sizing: border-box; width: 100%; padding: 6px
 textarea { resize: vertical; }
 input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
 .hint { color: var(--muted); margin: 12px 0 0; }
+.hint.small { margin-top: 4px; font-size: 12px; }
+select { box-sizing: border-box; width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: inherit; font: inherit; }
+select:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }

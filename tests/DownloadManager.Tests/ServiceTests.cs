@@ -149,12 +149,13 @@ public sealed class ServiceTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Add_RejectsNonHttpUrls()
+    public async Task Add_RejectsUnsupportedUrls()
     {
         using var store = new DownloadStore(DbPath);
         await using var service = new DownloadService(store);
 
-        Assert.Throws<ArgumentException>(() => service.Add("ftp://example.com/file"));
+        Assert.Throws<ArgumentException>(() => service.Add("gopher://example.com/file"));
+        Assert.Throws<ArgumentException>(() => service.Add("file:///C:/Windows/notepad.exe"));
         Assert.Throws<ArgumentException>(() => service.Add("not a url"));
     }
 }

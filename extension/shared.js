@@ -4,6 +4,8 @@ export const DEFAULTS = {
   intercept: true,
   extensions: "zip rar 7z gz bz2 xz tar iso img exe msi msix apk dmg bin mp4 mkv avi mov wmv webm mp3 flac wav",
   minSizeMB: 0,
+  // Queue for downloads sent from the browser; "" = the app's main queue.
+  queue: "",
 };
 
 export async function loadSettings() {

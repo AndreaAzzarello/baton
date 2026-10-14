@@ -3,39 +3,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using DownloadManager.Core;
-using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 
 namespace DownloadManager.App.Services;
-
-/// <summary>Starts the app with Windows, in the notification area, through the user's "Run" registry key.</summary>
-public static class StartupRegistration
-{
-    private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string ValueName = "DownloadManager";
-
-    /// <summary>Argument used by the Run entry: the app starts hidden in the notification area.</summary>
-    public const string TrayArgument = "--tray";
-
-    public static bool IsEnabled
-    {
-        get
-        {
-            using var key = Registry.CurrentUser.OpenSubKey(RunKey);
-            return key?.GetValue(ValueName) is string command && Environment.ProcessPath is { } exe
-                   && command.Contains(exe, StringComparison.OrdinalIgnoreCase);
-        }
-    }
-
-    public static void Set(bool enabled)
-    {
-        using var key = Registry.CurrentUser.CreateSubKey(RunKey);
-        if (enabled && Environment.ProcessPath is { } exe)
-            key.SetValue(ValueName, $"\"{exe}\" {TrayArgument}");
-        else
-            key.DeleteValue(ValueName, throwOnMissingValue: false);
-    }
-}
 
 /// <summary>Sleep, hibernation and shutdown through Windows.</summary>
 public sealed class WindowsPower : IPowerController

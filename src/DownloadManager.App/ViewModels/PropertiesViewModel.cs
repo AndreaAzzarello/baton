@@ -99,7 +99,7 @@ public sealed class PropertiesViewModel : ObservableObject
     }
 
     private bool CanUpdateUrl =>
-        !IsBusy && !IsCompleted && Urls.TryParseHttp(Url, out var uri) && uri.AbsoluteUri != _snapshot.Url;
+        !IsBusy && !IsCompleted && Urls.TryParseDownload(Url, out var uri) && uri.AbsoluteUri != _snapshot.Url;
 
     private async void UpdateUrl()
     {

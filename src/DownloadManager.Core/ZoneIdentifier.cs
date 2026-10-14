@@ -28,5 +28,6 @@ public static class ZoneIdentifier
     }
 
     private static bool IsWebUrl(string? value) =>
-        Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https" && !value!.Contains('\n');
+        Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https" or "ftp" or "ftps" or "ftpes"
+        && uri.UserInfo.Length == 0 && !value!.Contains('\n');
 }

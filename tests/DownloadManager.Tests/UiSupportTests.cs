@@ -22,7 +22,10 @@ public sealed class UiSupportTests : IAsyncLifetime
     [Theory]
     [InlineData("https://example.com/a.zip", true)]
     [InlineData("  http://example.com/file?x=1  ", true)]
-    [InlineData("ftp://example.com/a.zip", false)]
+    [InlineData("ftp://example.com/a.zip", true)]
+    [InlineData("ftps://example.com/a.zip", true)]
+    [InlineData("gopher://example.com/a.zip", false)]
+    [InlineData("file:///C:/a.zip", false)]
     [InlineData("https://example.com/a b.zip", false)]
     [InlineData("example.com/a.zip", false)]
     [InlineData("", false)]
@@ -36,9 +39,9 @@ public sealed class UiSupportTests : IAsyncLifetime
     public void DroppedText_YieldsEveryDistinctWebAddress()
     {
         var text = "Scarica (https://example.com/one.zip), poi http://example.com/two.iso.\r\n" +
-                   "https://example.com/one.zip\nmailto:x@example.com ftp://no.example.com/f https://example.com/three?x=1&y=2\0";
+                   "https://example.com/one.zip\nmailto:x@example.com ftp://files.example.com/f gopher://no.example.com/g https://example.com/three?x=1&y=2\0";
         Assert.Equal(
-            ["https://example.com/one.zip", "http://example.com/two.iso", "https://example.com/three?x=1&y=2"],
+            ["https://example.com/one.zip", "http://example.com/two.iso", "ftp://files.example.com/f", "https://example.com/three?x=1&y=2"],
             Urls.ExtractHttpUrls(text));
         Assert.Empty(Urls.ExtractHttpUrls("nessun link qui"));
     }

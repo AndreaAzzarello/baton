@@ -1,4 +1,5 @@
 using System.Globalization;
+using DownloadManager.Core.Security;
 using Microsoft.Data.Sqlite;
 
 namespace DownloadManager.Core;
@@ -7,7 +8,7 @@ namespace DownloadManager.Core;
 public sealed class DownloadStore : IDisposable
 {
     /// <summary>Version written by this build. Every older version is upgraded by <see cref="Migrate"/>.</summary>
-    public const int SchemaVersion = 3;
+    public const int SchemaVersion = 4;
 
     private const string PreferencePrefix = "ui.";
 
@@ -60,6 +61,8 @@ public sealed class DownloadStore : IDisposable
             MigrateTo2(tx);
         if (version < 3)
             MigrateTo3(tx);
+        if (version < 4)
+            MigrateTo4(tx);
         Execute($"PRAGMA user_version = {SchemaVersion};", tx);
         tx.Commit();
     }
@@ -182,6 +185,123 @@ public sealed class DownloadStore : IDisposable
         using var update = Command("UPDATE downloads SET queue_id = $q;", tx);
         update.Parameters.AddWithValue("$q", main.Id);
         update.ExecuteNonQuery();
+    }
+
+    /// <summary>Saved logins (password encrypted with DPAPI) and certificates the user chose to trust.</summary>
+    private void MigrateTo4(SqliteTransaction tx)
+    {
+        Execute("""
+            CREATE TABLE credentials (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                host TEXT NOT NULL,
+                port INTEGER,
+                username TEXT NOT NULL,
+                secret TEXT NOT NULL,
+                windows_account INTEGER NOT NULL DEFAULT 0,
+                added_utc TEXT NOT NULL);
+            CREATE TABLE trusted_certificates (
+                host TEXT NOT NULL,
+                port INTEGER NOT NULL,
+                fingerprint TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                added_utc TEXT NOT NULL,
+                PRIMARY KEY (host, port, fingerprint));
+            """, tx);
+    }
+
+    public List<SiteCredential> LoadCredentials()
+    {
+        lock (_lock)
+        {
+            var result = new List<SiteCredential>();
+            using var cmd = Command("SELECT id, host, port, username, secret, windows_account, added_utc FROM credentials ORDER BY host, id;");
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                result.Add(new SiteCredential
+                {
+                    Id = reader.GetInt64(0),
+                    Host = reader.GetString(1),
+                    Port = reader.IsDBNull(2) ? null : reader.GetInt32(2),
+                    Username = reader.GetString(3),
+                    // A password that cannot be decrypted (another Windows profile) is treated as missing.
+                    Password = Secrets.Unprotect(reader.GetString(4)) ?? "",
+                    UseWindowsAccount = reader.GetInt64(5) != 0,
+                    AddedUtc = ParseDate(reader.GetString(6)),
+                });
+            }
+            return result;
+        }
+    }
+
+    public void SaveCredential(SiteCredential credential)
+    {
+        lock (_lock)
+        {
+            using var cmd = Command(credential.Id == 0
+                ? """
+                  INSERT INTO credentials (host, port, username, secret, windows_account, added_utc) VALUES ($host, $port, $user, $secret, $windows, $added);
+                  SELECT last_insert_rowid();
+                  """
+                : "UPDATE credentials SET host = $host, port = $port, username = $user, secret = $secret, windows_account = $windows WHERE id = $id; SELECT $id;");
+            cmd.Parameters.AddWithValue("$host", credential.Host);
+            cmd.Parameters.AddWithValue("$port", (object?)credential.Port ?? DBNull.Value);
+            cmd.Parameters.AddWithValue("$user", credential.Username);
+            cmd.Parameters.AddWithValue("$secret", Secrets.Protect(credential.Password));
+            cmd.Parameters.AddWithValue("$windows", credential.UseWindowsAccount ? 1 : 0);
+            cmd.Parameters.AddWithValue("$added", credential.AddedUtc.ToString("O", CultureInfo.InvariantCulture));
+            cmd.Parameters.AddWithValue("$id", credential.Id);
+            credential.Id = (long)cmd.ExecuteScalar()!;
+        }
+    }
+
+    public void DeleteCredential(long id)
+    {
+        lock (_lock)
+        {
+            using var cmd = Command("DELETE FROM credentials WHERE id = $id;");
+            cmd.Parameters.AddWithValue("$id", id);
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public List<TrustedCertificate> LoadTrustedCertificates()
+    {
+        lock (_lock)
+        {
+            var result = new List<TrustedCertificate>();
+            using var cmd = Command("SELECT host, port, fingerprint, subject, added_utc FROM trusted_certificates ORDER BY host;");
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                result.Add(new TrustedCertificate(reader.GetString(0), reader.GetInt32(1), reader.GetString(2), reader.GetString(3), ParseDate(reader.GetString(4))));
+            return result;
+        }
+    }
+
+    public void SaveTrustedCertificate(TrustedCertificate certificate)
+    {
+        lock (_lock)
+        {
+            using var cmd = Command("INSERT OR REPLACE INTO trusted_certificates (host, port, fingerprint, subject, added_utc) VALUES ($h, $p, $f, $s, $a);");
+            cmd.Parameters.AddWithValue("$h", certificate.Host);
+            cmd.Parameters.AddWithValue("$p", certificate.Port);
+            cmd.Parameters.AddWithValue("$f", certificate.Fingerprint);
+            cmd.Parameters.AddWithValue("$s", certificate.Subject);
+            cmd.Parameters.AddWithValue("$a", certificate.AddedUtc.ToString("O", CultureInfo.InvariantCulture));
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    public void DeleteTrustedCertificate(TrustedCertificate certificate)
+    {
+        lock (_lock)
+        {
+            using var cmd = Command("DELETE FROM trusted_certificates WHERE host = $h AND port = $p AND fingerprint = $f;");
+            cmd.Parameters.AddWithValue("$h", certificate.Host);
+            cmd.Parameters.AddWithValue("$p", certificate.Port);
+            cmd.Parameters.AddWithValue("$f", certificate.Fingerprint);
+            cmd.ExecuteNonQuery();
+        }
     }
 
     public List<DownloadQueue> LoadQueues()
@@ -466,6 +586,18 @@ public sealed class DownloadStore : IDisposable
                     case nameof(AppSettings.NotifyOnCompletion): settings.NotifyOnCompletion = value == "1"; break;
                     case nameof(AppSettings.GlobalQuotaMBPerHour): settings.GlobalQuotaMBPerHour = long.Parse(value, CultureInfo.InvariantCulture); break;
                     case nameof(AppSettings.CloseToTray): settings.CloseToTray = value == "1"; break;
+                    case nameof(AppSettings.ProxyMode) when Enum.TryParse<ProxyMode>(value, out var mode): settings.ProxyMode = mode; break;
+                    case nameof(AppSettings.ProxyType) when Enum.TryParse<ProxyType>(value, out var type): settings.ProxyType = type; break;
+                    case nameof(AppSettings.ProxyHost): settings.ProxyHost = value; break;
+                    case nameof(AppSettings.ProxyPort): settings.ProxyPort = int.Parse(value, CultureInfo.InvariantCulture); break;
+                    case nameof(AppSettings.ProxyUser): settings.ProxyUser = value; break;
+                    case nameof(AppSettings.ProxyPassword): settings.ProxyPassword = Secrets.Unprotect(value) ?? ""; break;
+                    case nameof(AppSettings.ProxyBypass): settings.ProxyBypass = value; break;
+                    case nameof(AppSettings.PacUrl): settings.PacUrl = value; break;
+                    case nameof(AppSettings.FtpActiveMode): settings.FtpActiveMode = value == "1"; break;
+                    case nameof(AppSettings.TimeoutSeconds): settings.TimeoutSeconds = int.Parse(value, CultureInfo.InvariantCulture); break;
+                    case nameof(AppSettings.MaxConnectionsPerServer): settings.MaxConnectionsPerServer = int.Parse(value, CultureInfo.InvariantCulture); break;
+                    case nameof(AppSettings.UserAgent): settings.UserAgent = value; break;
                     case nameof(AppSettings.Theme) when Enum.TryParse<AppTheme>(value, out var theme): settings.Theme = theme; break;
                 }
             }
@@ -487,6 +619,19 @@ public sealed class DownloadStore : IDisposable
             [nameof(AppSettings.Theme)] = settings.Theme.ToString(),
             [nameof(AppSettings.GlobalQuotaMBPerHour)] = settings.GlobalQuotaMBPerHour.ToString(CultureInfo.InvariantCulture),
             [nameof(AppSettings.CloseToTray)] = settings.CloseToTray ? "1" : "0",
+            [nameof(AppSettings.ProxyMode)] = settings.ProxyMode.ToString(),
+            [nameof(AppSettings.ProxyType)] = settings.ProxyType.ToString(),
+            [nameof(AppSettings.ProxyHost)] = settings.ProxyHost,
+            [nameof(AppSettings.ProxyPort)] = settings.ProxyPort.ToString(CultureInfo.InvariantCulture),
+            [nameof(AppSettings.ProxyUser)] = settings.ProxyUser,
+            // Never stored in clear: encrypted with the Windows user's key.
+            [nameof(AppSettings.ProxyPassword)] = settings.ProxyPassword.Length == 0 ? "" : Secrets.Protect(settings.ProxyPassword),
+            [nameof(AppSettings.ProxyBypass)] = settings.ProxyBypass,
+            [nameof(AppSettings.PacUrl)] = settings.PacUrl,
+            [nameof(AppSettings.FtpActiveMode)] = settings.FtpActiveMode ? "1" : "0",
+            [nameof(AppSettings.TimeoutSeconds)] = settings.TimeoutSeconds.ToString(CultureInfo.InvariantCulture),
+            [nameof(AppSettings.MaxConnectionsPerServer)] = settings.MaxConnectionsPerServer.ToString(CultureInfo.InvariantCulture),
+            [nameof(AppSettings.UserAgent)] = settings.UserAgent,
         };
         lock (_lock)
         {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DownloadManager",
-  "version": "0.2.0",
+  "version": "0.5.0",
   "description": "Invia i download del browser all'app DownloadManager per Windows.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxjvhoIw0LitPK2ndxh2e5nZfWSvOWhPraZxZec8bIya0FeDhXv5eUenZxwbkgX6v6u3kY9+Zp235S7LfAcCAplH4UM6N/1lLTj6aNTxSl9pTKNG4g4lmf2rW2iqNwxQZBDfsad9i5vQq0OzGh7M6nbexspIoDJr2jiJhhyRK8hPo5KrR1pdGjgINo7yA6oEFAedMC0qtxTb/TwdTOu1BNTOMp43NfDvzTRWA8HVqxHkwgKwpoBVBhKL6j0JhnIYnTTBDkSsxUISFsHtE7YCsQH6m8EcxlL6sntj/KjAvbXcg+xRzd0/L5PYol1CtlukQBdm1gaaaz+8JUPsROty80QIDAQAB",
   "minimum_chrome_version": "116",

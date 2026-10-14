@@ -28,7 +28,7 @@ public static class HttpProbe
         }
 
         if (!response.IsSuccessStatusCode)
-            throw HttpErrors.FromStatus(response.StatusCode);
+            throw HttpErrors.FromResponse(response);
 
         long? total;
         bool ranges;
@@ -74,6 +74,34 @@ internal static class HttpErrors
 
     public static bool IsTransient(HttpStatusCode status) =>
         status is HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests || (int)status >= 500;
+
+    /// <summary>The error for a failed response; 401 and 407 ask for a login instead of failing.</summary>
+    public static Exception FromResponse(HttpResponseMessage response)
+    {
+        var target = response.RequestMessage?.RequestUri;
+        if (response.StatusCode == HttpStatusCode.Unauthorized && target is not null)
+        {
+            var challenge = response.Headers.WwwAuthenticate.FirstOrDefault();
+            return new Net.AuthenticationRequiredException(target, false, challenge?.Scheme ?? "Basic", RealmOf(challenge));
+        }
+        if (response.StatusCode == HttpStatusCode.ProxyAuthenticationRequired && target is not null)
+        {
+            var challenge = response.Headers.ProxyAuthenticate.FirstOrDefault();
+            return new Net.AuthenticationRequiredException(target, true, challenge?.Scheme ?? "Basic", RealmOf(challenge));
+        }
+        return FromStatus(response.StatusCode);
+    }
+
+    private static string? RealmOf(System.Net.Http.Headers.AuthenticationHeaderValue? challenge)
+    {
+        var parameter = challenge?.Parameter;
+        var at = parameter?.IndexOf("realm=", StringComparison.OrdinalIgnoreCase) ?? -1;
+        if (at < 0)
+            return null;
+        var value = parameter![(at + 6)..].TrimStart('"');
+        var end = value.IndexOf('"');
+        return end >= 0 ? value[..end] : value.Split(',')[0];
+    }
 
     public static Exception FromStatus(HttpStatusCode status)
     {

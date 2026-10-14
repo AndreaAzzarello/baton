@@ -40,10 +40,19 @@ public sealed class ServedFile
     /// <summary>Requests this returns false for are refused with 403, like a site that wants its session cookie.</summary>
     public Func<HttpRequest, bool>? Authorize { get; set; }
 
+    /// <summary>Requires HTTP Basic authentication with this login (401 otherwise).</summary>
+    public (string User, string Password)? BasicLogin { get; set; }
+
+    /// <summary>Requires HTTP Digest authentication (MD5, qop=auth) with this login.</summary>
+    public (string User, string Password)? DigestLogin { get; set; }
+
+    /// <summary>Answers 302 to this address instead of serving the file.</summary>
+    public string? RedirectTo { get; set; }
+
     public string Sha256 => Convert.ToHexString(SHA256.HashData(Content));
 }
 
-public sealed record LoggedRequest(string Path, long? From, long? To, bool HasIfRange);
+public sealed record LoggedRequest(string Path, long? From, long? To, bool HasIfRange, string Host = "", string Cookie = "", string Authorization = "");
 
 /// <summary>Local HTTP server with single-range, If-Range, throttling and fault injection.</summary>
 public sealed class TestFileServer : IAsyncDisposable
@@ -75,6 +84,9 @@ public sealed class TestFileServer : IAsyncDisposable
         return $"{BaseUrl}/files/{name}";
     }
 
+    /// <summary>The same file under a made-up host name that only the test proxies can reach.</summary>
+    public string UrlVia(string name, string host) => $"http://{host}:{new Uri(BaseUrl).Port}/files/{name}";
+
     public static byte[] RandomBytes(int length, int seed = 42)
     {
         var data = new byte[length];
@@ -93,7 +105,31 @@ public sealed class TestFileServer : IAsyncDisposable
         RangeItemHeaderValue? requested = null;
         if (RangeHeaderValue.TryParse(ctx.Request.Headers.Range.ToString(), out var range) && range.Ranges.Count == 1)
             requested = range.Ranges.First();
-        Requests.Enqueue(new LoggedRequest(name, requested?.From, requested?.To, !string.IsNullOrEmpty(ctx.Request.Headers.IfRange.ToString())));
+        Requests.Enqueue(new LoggedRequest(name, requested?.From, requested?.To, !string.IsNullOrEmpty(ctx.Request.Headers.IfRange.ToString()),
+            ctx.Request.Host.Host, ctx.Request.Headers.Cookie.ToString(), ctx.Request.Headers.Authorization.ToString()));
+
+        if (file.RedirectTo is { } target)
+        {
+            ctx.Response.StatusCode = 302;
+            ctx.Response.Headers.Location = target;
+            return;
+        }
+        if (file.BasicLogin is { } basic)
+        {
+            var expected = "Basic " + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{basic.User}:{basic.Password}"));
+            if (ctx.Request.Headers.Authorization.ToString() != expected)
+            {
+                ctx.Response.StatusCode = 401;
+                ctx.Response.Headers.WWWAuthenticate = "Basic realm=\"Test files\"";
+                return;
+            }
+        }
+        if (file.DigestLogin is { } digest && !DigestAuthorized(ctx.Request, digest.User, digest.Password))
+        {
+            ctx.Response.StatusCode = 401;
+            ctx.Response.Headers.WWWAuthenticate = $"Digest realm=\"{DigestRealm}\", nonce=\"{Guid.NewGuid():N}\", qop=\"auth\", algorithm=MD5";
+            return;
+        }
 
         if (file.Authorize is { } authorize && !authorize(ctx.Request))
         {
@@ -121,6 +157,25 @@ public sealed class TestFileServer : IAsyncDisposable
             if (file.MaxConcurrent > 0)
                 Interlocked.Decrement(ref file.InFlight);
         }
+    }
+
+    private const string DigestRealm = "Digest files";
+
+    /// <summary>RFC 7616 digest check (MD5, qop=auth): response = MD5(HA1:nonce:nc:cnonce:qop:HA2).</summary>
+    private static bool DigestAuthorized(HttpRequest request, string user, string password)
+    {
+        var header = request.Headers.Authorization.ToString();
+        if (!header.StartsWith("Digest ", StringComparison.OrdinalIgnoreCase))
+            return false;
+        var fields = System.Text.RegularExpressions.Regex.Matches(header[7..], @"(\w+)=(?:""([^""]*)""|([^,\s]*))")
+            .ToDictionary(m => m.Groups[1].Value, m => m.Groups[2].Success ? m.Groups[2].Value : m.Groups[3].Value, StringComparer.OrdinalIgnoreCase);
+        static string Md5(string text) => Convert.ToHexStringLower(MD5.HashData(System.Text.Encoding.UTF8.GetBytes(text)));
+        if (!fields.TryGetValue("username", out var name) || name != user || !fields.TryGetValue("response", out var response))
+            return false;
+        var ha1 = Md5($"{user}:{DigestRealm}:{password}");
+        var ha2 = Md5($"{request.Method}:{fields.GetValueOrDefault("uri")}");
+        var expected = Md5($"{ha1}:{fields.GetValueOrDefault("nonce")}:{fields.GetValueOrDefault("nc")}:{fields.GetValueOrDefault("cnonce")}:{fields.GetValueOrDefault("qop")}:{ha2}");
+        return expected == response;
     }
 
     private static async Task SendBodyAsync(HttpContext ctx, ServedFile file)
