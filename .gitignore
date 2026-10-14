@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Extension builds (node tools/build-extension.mjs)
+dist/

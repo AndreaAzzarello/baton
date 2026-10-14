@@ -6,7 +6,7 @@
         Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="/app.ico">
     <StackPanel Margin="20">
         <Label Content="{x:Static r:Strings.AddUrlLabel}" Target="{Binding ElementName=UrlBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
-        <TextBox x:Name="UrlBox" Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.AddUrlName}" />
+        <TextBox x:Name="UrlBox" Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding UrlReadOnly, Mode=OneTime}" AutomationProperties.Name="{x:Static r:Strings.AddUrlName}" />
 
         <Grid Margin="0,0,0,0">
             <Grid.ColumnDefinitions>

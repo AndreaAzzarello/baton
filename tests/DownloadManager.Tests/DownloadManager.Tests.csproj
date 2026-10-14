@@ -23,4 +23,9 @@
     <ProjectReference Include="..\..\src\DownloadManager.Core\DownloadManager.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Local HLS and DASH manifests served by the media tests -->
+    <None Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

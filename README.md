@@ -1,7 +1,8 @@
 # DownloadManager
 
 Download manager per Windows (C# / .NET 10 LTS / WPF) con download segmentato, pausa/ripresa persistente,
-code con nome e pianificazione, categorie, FTP/FTPS, proxy, autenticazione e integrazione con il browser. Versione 0.5.0.
+code con nome e pianificazione, categorie, FTP/FTPS, proxy, autenticazione, video HLS/DASH e integrazione con Chrome, Edge,
+Opera, Brave e Firefox. Versione 0.6.0.
 
 ## Struttura
 
@@ -9,8 +10,12 @@ code con nome e pianificazione, categorie, FTP/FTPS, proxy, autenticazione e int
 |---|---|
 | `src/DownloadManager.Core` | Motore: segmenti, connessioni, checkpoint, code e scheduler, categorie, SQLite; `Net` (trasporti HTTP e FTP, proxy, PAC), `Security` (credenziali, certificati, segreti DPAPI), `Platform` (registro iniettabile e registrazioni di sistema); testi in `Resources/Strings.resx` |
 | `src/DownloadManager.App` | Interfaccia WPF in MVVM: `ViewModels`, `Views`, `Services` (finestre, tema, notifiche, area di notifica, avvio con Windows, risparmio energia), `Themes`, `Controls` |
-| `tests/DownloadManager.Tests` | Test xUnit con server locali avviati dai test: HTTP (Range, ETag, 429, cookie, Basic/Digest), FTP/FTPS, proxy HTTP e SOCKS5 |
-| `extension` | Estensione per Chrome/Edge/Opera/Brave (Manifest V3) |
+| `src/DownloadManager.Core/Media` | Video: parser HLS (`HlsPlaylist`) e DASH (`DashManifest`), scelta delle qualità e controlli (`MediaCatalog`), download dei segmenti (`MediaJob`), ffmpeg facoltativo |
+| `src/DownloadManager.Core/Integration` | Protocollo con l'estensione (`Messages`, versione 2), validazione (`MessageValidator`), host nativo, pipe, "Scarica tutto" (`BatchLinks`) |
+| `tests/DownloadManager.Tests` | Test xUnit con server locali avviati dai test: HTTP (Range, ETag, 429, cookie, Basic/Digest, moduli POST), FTP/FTPS, proxy HTTP e SOCKS5; fixture HLS/DASH in `Fixtures/Media` |
+| `extension` | Sorgente unico dell'estensione (Manifest V3); è anche la build per Chromium, caricabile così com'è |
+| `tools/build-extension.mjs` | Build per Chromium e Firefox in `dist/` (cartelle e pacchetti .zip / .xpi) |
+| `tests/extension` | Test dell'estensione con `node --test` (regole, moduli, media, ripiego), eseguiti anche da `dotnet test` |
 | `publish/DownloadManager.exe` | Build Release self-contained win-x64 (non richiede il runtime .NET) |
 
 ## Come funziona il download
@@ -134,52 +139,150 @@ Compressi, Documenti, Musica, Video, Programmi e Generale, ognuna con estensioni
 
 ## Dati
 
-`%LOCALAPPDATA%\DownloadManager\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 4):
+`%LOCALAPPDATA%\DownloadManager\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 5):
 all'avvio i database delle versioni precedenti vengono aggiornati un passo alla volta in un'unica transazione, dopo averne
 salvato una copia accanto (`downloads.db.v<versione>.bak`). Un database creato da una versione più recente non viene modificato.
 Passando alla 3, tutti i download entrano nella Coda principale, che eredita il vecchio limite e lo stato avviata/fermata;
 il nuovo limite totale parte da 10. La 4 aggiunge le tabelle delle credenziali (password cifrate) e dei certificati accettati.
+La 5 aggiunge ai download la colonna `media` (tipo di stream e qualità scelta) per i video HLS/DASH.
 
 Pubblicazione: eseguibile singolo self-contained non compresso (circa 164 MB). Il trimming non è possibile con WPF (l'SDK lo
 rifiuta, NETSDK1168); ReadyToRun è stato misurato (finestra in 604 ms invece di 675, ma +66 MB su disco e +10 MB di RAM) e
 non è usato.
 
-## Integrazione con il browser (Chrome, Edge, Opera, Brave, Chromium)
+## Integrazione con il browser
 
-1. Avvia DownloadManager almeno una volta: registra da solo l'host di native messaging
-   (`HKCU\Software\<browser>\NativeMessagingHosts\com.downloadmanager.host`).
-2. Apri `edge://extensions`, `chrome://extensions` oppure `opera://extensions`, attiva **Modalità sviluppatore**,
-   scegli **Carica estensione decompressa** e seleziona la cartella `extension`.
+### Installazione
 
-Cosa fa:
-- **Tasto destro → Scarica con DownloadManager** su link, immagini, video e audio.
-- **Intercettazione**: i download del browser con le estensioni scelte nel popup vengono passati all'app.
-  Il popup mostra se l'app è collegata e permette di disattivare l'intercettazione.
-- L'app riceve URL, pagina di provenienza, user agent e cookie della sessione, così funzionano anche i siti con login.
-  I cookie sono cifrati con DPAPI nel database e cancellati a download completato.
-  Le finestre in incognito non vengono intercettate e i loro cookie non vengono mai inviati.
-- Il download arriva come una piccola finestra di conferma in primo piano; la finestra principale resta dov'è.
-  Se l'app è chiusa, il browser la avvia ridotta a icona; se non risponde, il file viene scaricato dal browser.
-- Se è attiva anche l'estensione di un altro download manager, entrambe intercettano lo stesso download: tienine attiva una sola.
-- In Impostazioni si può scegliere se confermare ogni download in arrivo dal browser o avviarlo subito.
+In ogni caso, prima avvia DownloadManager almeno una volta: registra da sé, per l'utente corrente, l'host di native messaging
+per Chrome, Edge, Chromium, Brave (Opera usa la registrazione di Chrome) e Firefox
+(`HKCU\Software\<browser>\NativeMessagingHosts\com.downloadmanager.host` e `HKCU\Software\Mozilla\NativeMessagingHosts\...`).
 
-Protocollo: il messaggio `add` accetta dalla 0.4 un campo facoltativo `queue` (nome della coda); le estensioni che non lo
-inviano usano la Coda principale. Dalla 0.5 il messaggio `queues` restituisce i nomi delle code: il popup dell'estensione li
-mostra per scegliere la coda dei download intercettati (senza mai avviare l'app solo per chiederli). Il menu *Scarica con
-DownloadManager* accetta anche link ftp, ftps e ftpes.
+- **Edge** — `edge://extensions` → attiva **Modalità sviluppatore** → **Carica decompressa** → cartella `extension`
+  (oppure `dist\chromium`).
+- **Chrome / Brave / Chromium** — `chrome://extensions` → **Modalità sviluppatore** → **Carica estensione non pacchettizzata**
+  → cartella `extension`.
+- **Opera** — `opera://extensions` → **Modalità sviluppatore** → **Carica estensione decompressa** → cartella `extension`.
+  Se l'estensione era già caricata, premi **Aggiorna** sulla sua scheda.
+- **Firefox** (128 o successivo) — esegui `node tools/build-extension.mjs`, poi `about:debugging#/runtime/this-firefox` →
+  **Carica componente aggiuntivo temporaneo** → `dist\firefox\manifest.json`. Firefox in versione normale rimuove i componenti
+  temporanei alla chiusura; per un'installazione permanente il pacchetto `dist\downloadmanager-firefox-0.6.0.xpi` va firmato
+  (su addons.mozilla.org, anche come "non elencato") oppure si usa Firefox Developer Edition/Nightly con
+  `xpinstall.signatures.required = false`.
 
-Come funziona: l'estensione avvia `DownloadManager.exe` come host di native messaging (stesso eseguibile,
-senza finestra), che inoltra il messaggio all'app tramite una named pipe accessibile solo all'utente corrente.
-È attiva una sola istanza dell'app: un secondo avvio porta in primo piano la finestra esistente.
+L'ID dell'estensione è fisso (chiave nel manifest per Chromium, `downloadmanager@extension.local` per Firefox): l'host accetta
+solo quello.
 
-Limiti: i download che il sito avvia con un POST (moduli) vengono ripetuti come GET e potrebbero non funzionare.
-Firefox non è ancora supportato.
+### Verifica connessione
+
+La pagina **Verifica connessione** (link nel popup, oppure *Opzioni* dell'estensione) controlla l'host nativo e la versione del
+protocollo. Se l'host manca, rifiuta l'estensione o l'app è una versione precedente, mostra cosa fare e un pulsante
+**Registra**: apre il link `downloadmanager:register`, che (dopo la conferma del browser) avvia DownloadManager e registra di nuovo
+l'host per tutti i browser. Se l'app non è mai stata avviata, il link non è ancora registrato: basta avviarla una volta.
+
+### Modalità (dal popup)
+
+- **Intercetta automaticamente** (icona colorata): i download avviati dal browser che rispettano le regole passano all'app.
+- **Solo menu contestuale** (icona grigia): il browser scarica come sempre; si usa il tasto destro.
+
+Regole (popup › Regole, e "Su questo sito"): tipi di file, dimensione minima (predefinita 1 MB; se la dimensione non è nota il
+download viene intercettato), siti da intercettare **sempre** (qualsiasi tipo e dimensione) o **mai** (vincono sui "sempre"),
+anche per la pagina da cui parte il download. **Alt+clic** su un link: quel download resta al browser, una volta sola.
+Le finestre in incognito non vengono mai intercettate e i loro cookie non vengono mai inviati.
+
+Come avviene l'intercettazione:
+- **Chromium**: `downloads.onDeterminingFilename` dà l'indirizzo finale dopo i redirect, il nome, la dimensione e il tipo.
+  Il download resta in attesa (il nome non viene ancora confermato) mentre l'app viene interpellata; solo quando l'app lo ha
+  accettato viene annullato e cancellato dall'elenco del browser. Rispetto a "annulla, poi invia" l'ordine è invertito di
+  proposito: se l'app non risponde entro 15 s (o rifiuta), il download **prosegue nel browser senza ricominciare**, quindi
+  nulla va perso e niente viene scaricato due volte; compare una notifica e un "!" sull'icona.
+- **Firefox** non ha `onDeterminingFilename`: si usa `downloads.onCreated`. Il download viene messo in pausa subito, poi, se
+  l'app lo accetta, annullato, il file parziale rimosso (`removeFile`) e cancellato dall'elenco (`erase`); se l'app non risponde
+  viene ripreso (`resume`), e se il server non consente la ripresa il browser lo riscarica da capo. In Firefox la dimensione e il
+  tipo possono non essere ancora noti alla creazione: in quel caso decidono il tipo di file e i siti.
+- Firefox non scarica con Alt+clic come Chromium: lì l'estensione segna il link e lo apre lei, così il download resta al browser.
+
+### Moduli (POST)
+
+I download avviati inviando un modulo vengono riconosciuti (`webRequest` vede il modulo inviato dalla pagina) e passati all'app
+con metodo, campi, cookie e pagina di provenienza; l'app rinvia il modulo nello stesso formato (urlencoded o multipart).
+Il modulo è inviato una sola volta per tentativo: la risposta della verifica iniziale è già il download. Un download da modulo
+non si può riprendere a metà: se si interrompe, il modulo viene rinviato e il file riparte da capo. I moduli che caricano file
+(o con corpi non rappresentabili come campi) restano al browser. I campi sono cifrati con DPAPI insieme ai cookie e cancellati
+a download completato.
+
+### Video (pulsante "Scarica questo video")
+
+L'estensione nota le risorse video e audio caricate dalla pagina: manifest HLS (`.m3u8`, `application/vnd.apple.mpegurl`) e DASH
+(`.mpd`, `application/dash+xml`) e file `video/*` / `audio/*` caricati da un elemento `<video>`/`<audio>` (non i segmenti che i
+player scaricano a pezzi). Compare allora un pulsante discreto in basso a destra, trascinabile (la posizione viene ricordata),
+con l'elenco delle qualità e delle dimensioni stimate (bitrate × durata, o la dimensione esatta per i file). Si può nascondere su
+un sito (dal pannello o dal popup) o disattivare del tutto.
+
+Nell'app un video è un download come gli altri (code, limiti di velocità, quote, proxy, cookie): i segmenti vengono scaricati in
+parallelo in una cartella accanto al file finale e conservati uno per uno, quindi pausa e ripresa ripartono dal primo segmento
+mancante. Al termine i segmenti vengono uniti (TS e MP4 frammentato sono fatti per essere concatenati) e, se c'è **ffmpeg**
+(Impostazioni › Generale, oppure nel PATH; non è incluso nell'app), video e audio vengono copiati senza ricodifica in un unico
+`.mp4`. Senza ffmpeg il video viene salvato in `.ts` o in due file (`.video.mp4` / `.audio.m4a`) e il download lo dice
+("Completato (vedi nota)").
+
+Non vengono scaricati, e il pannello lo spiega:
+- contenuti **protetti**: pagine che usano Encrypted Media Extensions (DRM), DASH con `ContentProtection`, HLS con
+  `EXT-X-KEY` / `EXT-X-SESSION-KEY` di qualsiasi tipo (anche AES-128 con chiave raggiungibile: è comunque una protezione);
+- siti i cui termini di servizio lo vietano (YouTube, Netflix, Prime Video, Disney+, Twitch, Spotify, TikTok, Instagram,
+  Facebook e altri; elenco in `MediaPolicy`/`rules.js`);
+- dirette (HLS senza `EXT-X-ENDLIST`, DASH `dynamic`).
+I manifest DASH sono letti con DTD disattivate (nessuna entità esterna). L'app interroga solo indirizzi che la scheda ha
+davvero caricato.
+
+### Scarica tutto
+
+Tasto destro sulla pagina → **Scarica tutto con DownloadManager…**: l'app apre una finestra con tutti i link e le immagini della
+pagina (o del frame), una volta sola ciascuno, già spuntati quelli che sembrano file (non le pagine web). Filtri per testo
+(nome, testo del link, indirizzo), tipo di file e link/immagini; selezione multipla (Barra spaziatrice sulle righe evidenziate,
+"Seleziona/Deseleziona visibili"); categoria (automatica per tipo o una scelta), coda e cartella. "Scarica ora" avvia la coda,
+così i file rispettano comunque il limite di download contemporanei.
+
+### Permessi dell'estensione
+
+| Permesso | Perché |
+|---|---|
+| `nativeMessaging` | parlare con l'app |
+| `downloads` | vedere i download del browser per intercettarli, annullarli, metterli in pausa o lasciarli proseguire |
+| `contextMenus` | le voci del tasto destro |
+| `cookies` | passare all'app i cookie del sito, perché i download con login funzionino |
+| `storage` | impostazioni (`local`) e stato del service worker non persistente (`session`) |
+| `notifications` | avvisare quando un download torna al browser |
+| `webRequest` | riconoscere video/manifest dalle intestazioni delle risposte e i moduli inviati (solo lettura, nessun blocco) |
+| `scripting` | leggere link e immagini della pagina per "Scarica tutto", solo quando lo si chiede |
+| host `<all_urls>` | tutto quanto sopra deve funzionare su qualsiasi sito; lo script di contenuto solo su http/https |
+
+Non usa `tabs`, `webRequestBlocking`, `declarativeNetRequest` né `history`. Il service worker (o la pagina di eventi in
+Firefox) non resta attivo: si sveglia solo per gli eventi del browser, non fa polling, e salva ciò che deve ricordare in
+`chrome.storage.session`. L'estensione è localizzata in italiano e inglese (`_locales`).
+
+### Protocollo
+
+Versione esplicita: la 0.6 parla il **protocollo 2** (`version: 2` in ogni messaggio; `hello` risponde con `protocol` e
+`appVersion` senza avviare l'app). Restano validi, invariati, i messaggi del protocollo 1 dell'estensione 0.5 (`ping`, `queues`,
+`add` senza versione); un'app 0.5 risponde a `hello` con un errore e la pagina di verifica la indica come "da aggiornare".
+Nuovi messaggi: `hello`, `probeMedia`, `addMedia`, `batch`, e `add` con `method`/`body`/`bodyType`.
+Ogni messaggio viene validato due volte (nell'host, prima di avviare l'app, e nella pipe dell'app, raggiungibile da qualsiasi
+programma dell'utente): tipi noti, solo indirizzi http/https/ftp/ftps/ftpes, referrer solo http/https, niente caratteri di
+controllo, limiti a lunghezze, cookie (300), campi del modulo (1 MB) e link (10.000).
+
+### Riferimenti
+
+Le modalità di integrazione sono ispirate, come idea, a "Download with…" di webextension.org (licenza MPL 2.0). Nessuna parte
+del suo codice è stata copiata o riusata: l'estensione è scritta da zero.
 
 ## Comandi
 
 ```powershell
 $dn = "C:\Program Files\dotnet\dotnet.exe"
-& $dn test                                    # test
+& $dn test                                    # test (anche quelli dell'estensione: serve Node.js)
+node --test "tests/extension/*.test.mjs"      # solo i test dell'estensione
+node tools/build-extension.mjs                # estensione per Chromium e Firefox in dist\
 & $dn run --project src\DownloadManager.App   # avvio in debug
 & $dn publish src\DownloadManager.App -c Release -r win-x64 -o publish   # exe self-contained
 ```
@@ -196,5 +299,5 @@ un file `Strings.<lingua>.resx`.
 
 ## Non ancora presente
 
-Firefox, FTP, grabber video (il link di una pagina YouTube scarica la pagina HTML, non il video),
-sincronizzazione dei siti, SFTP (SSH), FTP tramite proxy HTTPS.
+Sincronizzazione dei siti, SFTP (SSH), FTP tramite proxy HTTPS, sottotitoli e tracce audio alternative dei video (viene
+scaricata la traccia audio predefinita), DASH con più periodi (solo il primo), estensione firmata per Firefox.

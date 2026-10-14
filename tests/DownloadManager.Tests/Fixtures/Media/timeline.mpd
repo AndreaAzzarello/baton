@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static" mediaPresentationDuration="PT3.5S">
+  <BaseURL>media/</BaseURL>
+  <Period>
+    <AdaptationSet mimeType="video/mp4">
+      <SegmentTemplate timescale="90000" media="t_$Time$.m4s" initialization="t_init.mp4">
+        <SegmentTimeline>
+          <S t="0" d="90000" r="2" />
+          <S d="45000" />
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation id="only" bandwidth="900000" width="854" height="480" />
+    </AdaptationSet>
+  </Period>
+</MPD>

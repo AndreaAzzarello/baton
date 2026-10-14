@@ -1,0 +1,299 @@
+{
+  "extName": {
+    "message": "DownloadManager"
+  },
+  "extDescription": {
+    "message": "Sends browser downloads, page links and videos to the DownloadManager app for Windows."
+  },
+  "menuLink": {
+    "message": "Download with DownloadManager"
+  },
+  "menuAll": {
+    "message": "Download all with DownloadManager…"
+  },
+  "titleAuto": {
+    "message": "DownloadManager — intercepting downloads"
+  },
+  "titleMenu": {
+    "message": "DownloadManager — context menu only"
+  },
+  "fallbackNotice": {
+    "message": "DownloadManager did not take the download ($1). The browser downloads it instead."
+  },
+  "errorBadReply": {
+    "message": "invalid reply from the app"
+  },
+  "errorTimeout": {
+    "message": "the app did not answer in time"
+  },
+  "errorBlobMedia": {
+    "message": "This video is played from data inside the page: use the “Download this video” button that appears on the page."
+  },
+  "errorNotDownloadable": {
+    "message": "This link cannot be downloaded with DownloadManager."
+  },
+  "errorNotReceived": {
+    "message": "DownloadManager did not receive it: $1"
+  },
+  "errorPageAccess": {
+    "message": "The page cannot be read: $1"
+  },
+  "errorNoLinks": {
+    "message": "This page has no links to download."
+  },
+  "errorUnknownMedia": {
+    "message": "This video was not loaded by the page."
+  },
+  "mediaTerms": {
+    "message": "This site's terms of service do not allow downloading its videos, so DownloadManager does not offer it."
+  },
+  "mediaDrm": {
+    "message": "This video is protected (DRM). It cannot be downloaded, and DownloadManager does not get around protections."
+  },
+  "mediaLive": {
+    "message": "This is a live stream: only complete videos can be downloaded."
+  },
+  "mediaButton": {
+    "message": "Download this video"
+  },
+  "mediaButtonCount": {
+    "message": "Download this video ($1 found)"
+  },
+  "mediaPanelTitle": {
+    "message": "Videos on this page"
+  },
+  "close": {
+    "message": "Close"
+  },
+  "mediaHideOnSite": {
+    "message": "Don't show on this site"
+  },
+  "mediaStream": {
+    "message": "Video $1 · $2"
+  },
+  "mediaQualities": {
+    "message": "Qualities"
+  },
+  "mediaLoading": {
+    "message": "Reading the available qualities…"
+  },
+  "mediaAppOutdated": {
+    "message": "Update DownloadManager to version 0.6 or later to download videos."
+  },
+  "mediaSizeUnknown": {
+    "message": "size unknown"
+  },
+  "mediaDownload": {
+    "message": "Download"
+  },
+  "mediaDownloadQuality": {
+    "message": "Download in $1"
+  },
+  "mediaSending": {
+    "message": "Sending…"
+  },
+  "mediaSent": {
+    "message": "Sent ✓"
+  },
+  "mediaSentStatus": {
+    "message": "$1 sent to DownloadManager."
+  },
+  "mediaEstimateHint": {
+    "message": "Sizes are estimates from the stream's bit rate."
+  },
+  "mediaKindFile": {
+    "message": "file"
+  },
+  "statusChecking": {
+    "message": "Checking…"
+  },
+  "modeLegend": {
+    "message": "Browser downloads"
+  },
+  "modeAuto": {
+    "message": "Intercept automatically"
+  },
+  "modeAutoHint": {
+    "message": "Matching downloads go to the app; if it does not answer, the browser keeps them."
+  },
+  "modeMenu": {
+    "message": "Context menu only"
+  },
+  "modeMenuHint": {
+    "message": "The browser downloads as usual; right-click a link to use the app."
+  },
+  "queueLabel": {
+    "message": "Queue for downloads from the browser"
+  },
+  "queueHint": {
+    "message": "The queues are those created in the app."
+  },
+  "siteTitle": {
+    "message": "On $1"
+  },
+  "siteRuleLabel": {
+    "message": "Downloads from this site"
+  },
+  "siteRuleNormal": {
+    "message": "Follow the rules"
+  },
+  "siteRuleAlways": {
+    "message": "Always intercept"
+  },
+  "siteRuleNever": {
+    "message": "Never intercept"
+  },
+  "siteButton": {
+    "message": "“Download this video” button"
+  },
+  "rulesTitle": {
+    "message": "Rules"
+  },
+  "extensionsLabel": {
+    "message": "File types to intercept"
+  },
+  "minSizeLabel": {
+    "message": "Only files larger than (MB, 0 = any)"
+  },
+  "alwaysSitesLabel": {
+    "message": "Always intercept from these sites (any type and size)"
+  },
+  "neverSitesLabel": {
+    "message": "Never intercept from these sites"
+  },
+  "sitesPlaceholder": {
+    "message": "example.com files.example.org"
+  },
+  "mediaButtonSetting": {
+    "message": "Show the “Download this video” button"
+  },
+  "mediaDisabledLabel": {
+    "message": "Sites without the video button"
+  },
+  "altHint": {
+    "message": "Alt+click a link to let the browser download it this once."
+  },
+  "checkLink": {
+    "message": "Check connection"
+  },
+  "mainQueue": {
+    "message": "Main queue"
+  },
+  "queueMissing": {
+    "message": "$1 (not found: the main queue is used)"
+  },
+  "chip_running": {
+    "message": "App running"
+  },
+  "chip_ready": {
+    "message": "Ready"
+  },
+  "chip_outdated": {
+    "message": "Update the app"
+  },
+  "chip_missing": {
+    "message": "Not connected"
+  },
+  "chip_forbidden": {
+    "message": "Not allowed"
+  },
+  "chip_error": {
+    "message": "No answer"
+  },
+  "state_checking": {
+    "message": "Checking the connection…"
+  },
+  "state_running": {
+    "message": "Connected, app running"
+  },
+  "state_ready": {
+    "message": "Connected (the app starts when needed)"
+  },
+  "state_outdated": {
+    "message": "The app needs updating"
+  },
+  "state_missing": {
+    "message": "App not registered for this browser"
+  },
+  "state_forbidden": {
+    "message": "The browser refuses the app"
+  },
+  "state_error": {
+    "message": "Connection problem"
+  },
+  "checkTitle": {
+    "message": "DownloadManager — check connection"
+  },
+  "checkIntro": {
+    "message": "The extension talks to the app through a small helper (the “native host”) that the app registers for each browser."
+  },
+  "checkRegister": {
+    "message": "Register"
+  },
+  "checkRetry": {
+    "message": "Check again"
+  },
+  "checkExtension": {
+    "message": "Extension"
+  },
+  "checkHost": {
+    "message": "Native host"
+  },
+  "checkApp": {
+    "message": "App"
+  },
+  "checkExtensionValue": {
+    "message": "$1 in $2, protocol $3"
+  },
+  "checkHostMissing": {
+    "message": "not found for this browser"
+  },
+  "checkHostFound": {
+    "message": "registered"
+  },
+  "checkAppValue": {
+    "message": "version $1, protocol $2, $3"
+  },
+  "checkAppStopped": {
+    "message": "not running (starts on the first download)"
+  },
+  "checkAppRunning": {
+    "message": "running"
+  },
+  "checkAppOld": {
+    "message": "version 0.5 or earlier (protocol 1)"
+  },
+  "checkText_running": {
+    "message": "Everything works: downloads, “Download all” and the video button."
+  },
+  "checkText_ready": {
+    "message": "Everything works. The app is not running now: it starts by itself when the browser sends it something."
+  },
+  "checkText_outdated": {
+    "message": "The app answers but is an older version: plain downloads work, videos and “Download all” need DownloadManager 0.6 or later."
+  },
+  "checkText_missing": {
+    "message": "This browser cannot find the app's native host. It is registered by the app itself, for the current Windows user."
+  },
+  "checkText_forbidden": {
+    "message": "The host is registered, but not for this extension's ID (for example a copy loaded from another folder in Firefox)."
+  },
+  "checkText_error": {
+    "message": "The app could not be reached. Try again; if it persists, restart DownloadManager."
+  },
+  "checkStepStart": {
+    "message": "Start DownloadManager once: it registers itself for Chrome, Edge, Opera, Brave and Firefox."
+  },
+  "checkStepRegister": {
+    "message": "Or press “Register”: the browser asks to open DownloadManager, which registers the host again."
+  },
+  "checkStepFirefox": {
+    "message": "Firefox needs DownloadManager 0.6 or later (earlier versions do not register for Firefox)."
+  },
+  "checkStepChromium": {
+    "message": "Opera, Brave and Chromium use Chrome's registration; restart the browser if it was open during the registration."
+  },
+  "checkStepRetry": {
+    "message": "Then press “Check again”."
+  }
+}

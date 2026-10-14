@@ -33,6 +33,14 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
         return window.ShowDialog() == true;
     }
 
+    public bool ShowBatch(BatchViewModel viewModel)
+    {
+        // Like the add dialog for browser requests: it comes forward on its own, the main window stays where it is.
+        var window = new BatchWindow(viewModel) { Topmost = true };
+        window.Activated += (_, _) => window.Topmost = false; // once in front, it behaves like any window
+        return window.ShowDialog() == true;
+    }
+
     public bool ShowSettings(SettingsViewModel viewModel) => new SettingsWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
 
     public bool ShowCategories(CategoriesViewModel viewModel) => new CategoriesWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
@@ -99,6 +107,17 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
         if (initialFolder is not null)
             dialog.InitialDirectory = initialFolder;
         return dialog.ShowDialog(Owner) == true ? dialog.FolderName : null;
+    }
+
+    public string? PickFile(string title, string filter, string? initialFile)
+    {
+        var dialog = new OpenFileDialog { Title = title, Filter = filter, CheckFileExists = true };
+        if (initialFile is not null && System.IO.Path.GetDirectoryName(initialFile) is { Length: > 0 } folder && System.IO.Directory.Exists(folder))
+        {
+            dialog.InitialDirectory = folder;
+            dialog.FileName = System.IO.Path.GetFileName(initialFile);
+        }
+        return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
     }
 
     private static Answer Show(string message, string title, MessageKind kind, IReadOnlyList<(string, Answer)> buttons, Answer defaultAnswer)

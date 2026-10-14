@@ -1,0 +1,14 @@
+#EXTM3U
+#EXT-X-VERSION:4
+#EXT-X-TARGETDURATION:5
+# One file, three byte ranges; the second and third continue where the previous ended.
+#EXTINF:5.0,
+#EXT-X-BYTERANGE:1000@0
+range.ts
+#EXTINF:5.0,
+#EXT-X-BYTERANGE:1500
+range.ts
+#EXTINF:2.0,
+#EXT-X-BYTERANGE:700
+range.ts
+#EXT-X-ENDLIST

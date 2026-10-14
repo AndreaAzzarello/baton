@@ -24,24 +24,41 @@ public sealed class SystemRegistration(IUserRegistry registry, string executable
         @"Software\BraveSoftware\Brave-Browser\NativeMessagingHosts",
     ];
 
+    /// <summary>Where Firefox looks up native messaging hosts for the current user.</summary>
+    public const string FirefoxHostKey = @"Software\Mozilla\NativeMessagingHosts";
+
     public string Executable => executable;
 
-    /// <summary>Writes the host manifest next to the data and points every browser at it.</summary>
+    /// <summary>
+    /// Writes the host manifests next to the data and points every browser at them. Firefox needs a manifest of
+    /// its own: it lists extension IDs (allowed_extensions) instead of Chromium's origins.
+    /// </summary>
     public void RegisterBrowserHost(string dataDirectory)
     {
         Directory.CreateDirectory(dataDirectory);
+        var options = new JsonSerializerOptions { WriteIndented = true };
         var manifestPath = Path.Combine(dataDirectory, NativeHost.Name + ".json");
-        var manifest = new
+        File.WriteAllText(manifestPath, JsonSerializer.Serialize(new
         {
             name = NativeHost.Name,
             description = "DownloadManager",
             path = executable,
             type = "stdio",
             allowed_origins = new[] { $"chrome-extension://{NativeHost.ExtensionId}/" },
-        };
-        File.WriteAllText(manifestPath, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
+        }, options));
         foreach (var key in BrowserHostKeys)
             registry.SetString($@"{key}\{NativeHost.Name}", null, manifestPath);
+
+        var firefoxPath = Path.Combine(dataDirectory, NativeHost.Name + ".firefox.json");
+        File.WriteAllText(firefoxPath, JsonSerializer.Serialize(new
+        {
+            name = NativeHost.Name,
+            description = "DownloadManager",
+            path = executable,
+            type = "stdio",
+            allowed_extensions = new[] { NativeHost.FirefoxExtensionId },
+        }, options));
+        registry.SetString($@"{FirefoxHostKey}\{NativeHost.Name}", null, firefoxPath);
     }
 
     /// <summary>Name and icon shown on notifications, and the "downloadmanager:" scheme behind their buttons.</summary>

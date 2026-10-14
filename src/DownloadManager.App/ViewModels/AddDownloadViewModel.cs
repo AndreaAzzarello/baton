@@ -50,6 +50,9 @@ public sealed class AddDownloadViewModel : ObservableObject
 
     public string? Note { get; }
 
+    /// <summary>The address comes with data the dialog cannot show (a form's fields, a stream's chosen quality).</summary>
+    public bool UrlReadOnly { get; init; }
+
     public ICommand BrowseCommand { get; }
 
     public string Url

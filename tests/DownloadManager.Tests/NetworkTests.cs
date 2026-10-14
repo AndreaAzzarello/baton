@@ -344,7 +344,7 @@ public sealed class NetworkTests : IAsyncLifetime
         }
 
         using var upgraded = new DownloadStore(DbPath);
-        Assert.Equal(4, upgraded.Version);
+        Assert.Equal(DownloadStore.SchemaVersion, upgraded.Version);
         Assert.EndsWith(".v3.bak", upgraded.BackupPath);
         Assert.Single(upgraded.LoadAll());
         Assert.Empty(upgraded.LoadCredentials());

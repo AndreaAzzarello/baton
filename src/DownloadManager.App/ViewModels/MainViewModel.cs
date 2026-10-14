@@ -25,7 +25,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IStartupService _startup;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private readonly Stopwatch _clock = Stopwatch.StartNew();
-    private readonly Queue<BrowserDownload> _fromBrowser = new();
+    private readonly Queue<object> _fromBrowser = new(); // downloads, streams and "download all" requests, in arrival order
     private readonly ListCollectionView _view;
     private TimeSpan _lastTick;
     private IReadOnlyList<Category> _categories = [];
@@ -274,9 +274,17 @@ public sealed class MainViewModel : ObservableObject
     }
 
     /// <summary>A download sent by the browser extension: confirmed in the add dialog, or started directly.</summary>
-    public void ReceiveFromBrowser(BrowserDownload download, bool closing)
+    public void ReceiveFromBrowser(BrowserDownload download, bool closing) => ReceiveRequest(download, closing);
+
+    /// <summary>A video or audio stream in the quality chosen in the page: confirmed like any download from the browser.</summary>
+    public void ReceiveMedia(MediaRequest media, bool closing) => ReceiveRequest(media, closing);
+
+    /// <summary>"Download all": the links and images of a page, to choose from.</summary>
+    public void ReceiveBatch(BatchRequest batch, bool closing) => ReceiveRequest(batch, closing);
+
+    private void ReceiveRequest(object request, bool closing)
     {
-        _fromBrowser.Enqueue(download);
+        _fromBrowser.Enqueue(request);
         // Requests that arrive while a dialog is open wait for it to close.
         if (_showingBrowserDialogs || closing)
             return;
@@ -285,20 +293,18 @@ public sealed class MainViewModel : ObservableObject
         {
             while (_fromBrowser.TryDequeue(out var next))
             {
-                var fileName = string.IsNullOrWhiteSpace(next.FileName) ? null : Path.GetFileName(next.FileName);
-                // Extensions before 0.4 send no queue: the main queue.
-                var queueId = _service.ResolveQueue(next.Queue);
-                if (!_service.Settings.ConfirmBrowserDownloads)
+                switch (next)
                 {
-                    _service.Add(next.Url, null, fileName, startNow: true, next.ToContext(), queueId: queueId);
-                    continue;
+                    case BrowserDownload download:
+                        HandleDownload(download);
+                        break;
+                    case MediaRequest media:
+                        HandleMedia(media);
+                        break;
+                    case BatchRequest batch:
+                        HandleBatch(batch);
+                        break;
                 }
-
-                var note = next.Cookies is { Count: > 0 } ? Strings.FromBrowserWithCookies : Strings.FromBrowser;
-                var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, next.Url, fileName, note,
-                    _service.Queues, queueId);
-                if (_dialogs.ShowAddDownload(dialog, standalone: true))
-                    Submit(dialog, next.ToContext());
             }
         }
         finally
@@ -306,6 +312,91 @@ public sealed class MainViewModel : ObservableObject
             _showingBrowserDialogs = false;
         }
         Refresh();
+    }
+
+    private void HandleDownload(BrowserDownload next)
+    {
+        var fileName = string.IsNullOrWhiteSpace(next.FileName) ? null : Path.GetFileName(next.FileName);
+        // Extensions before 0.4 send no queue: the main queue.
+        var queueId = _service.ResolveQueue(next.Queue);
+        var context = next.ToContext();
+        if (!_service.Settings.ConfirmBrowserDownloads)
+        {
+            _service.Add(next.Url, null, fileName, startNow: true, context, queueId: queueId);
+            return;
+        }
+
+        var note = context.IsPost ? Strings.FromBrowserForm
+            : next.Cookies is { Count: > 0 } ? Strings.FromBrowserWithCookies : Strings.FromBrowser;
+        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, next.Url, fileName, note,
+            _service.Queues, queueId)
+        {
+            // A form's address only makes sense with the form's data.
+            UrlReadOnly = context.IsPost,
+        };
+        if (_dialogs.ShowAddDownload(dialog, standalone: true))
+            Submit(dialog, context);
+    }
+
+    private void HandleMedia(MediaRequest media)
+    {
+        var variant = media.VariantId ?? "";
+        if (variant == "file")
+        {
+            // A plain video or audio file: an ordinary download.
+            HandleDownload(new BrowserDownload(media.Url, null, media.Referrer ?? media.PageUrl, media.UserAgent, media.Cookies, media.Queue));
+            return;
+        }
+        var kind = variant.StartsWith("dash:", StringComparison.Ordinal) ? "dash" : "hls";
+        var queueId = _service.ResolveQueue(media.Queue);
+        var fileName = Core.Media.MediaCatalog.FileNameFor(media.Title, media.Url, ".mp4");
+        if (!_service.Settings.ConfirmBrowserDownloads)
+        {
+            _service.AddMedia(media, kind, media.Label, fileName: fileName, queueId: queueId);
+            return;
+        }
+
+        var note = string.Format(CultureInfo.CurrentCulture, Strings.FromBrowserMedia, kind.ToUpperInvariant(), media.Label ?? "");
+        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, media.Url, fileName, note,
+            _service.Queues, queueId)
+        {
+            UrlReadOnly = true, // the manifest of the quality chosen in the page
+        };
+        if (!_dialogs.ShowAddDownload(dialog, standalone: true))
+            return;
+        var (_, folder, name, categoryId, chosenQueue) = dialog.ToRequest();
+        try
+        {
+            _service.AddMedia(media, kind, media.Label, folder, name, dialog.StartNow, categoryId, chosenQueue);
+        }
+        catch (ArgumentException ex)
+        {
+            _dialogs.ShowError(ex.Message, Strings.AddTitle);
+        }
+    }
+
+    private void HandleBatch(BatchRequest batch)
+    {
+        var queueId = _service.ResolveQueue(batch.Queue);
+        var dialog = new BatchViewModel(batch, _dialogs, _service.Categories, _service.Settings.DownloadFolder, _service.Queues, queueId);
+        if (dialog.Items.Count == 0)
+        {
+            _dialogs.Inform(Strings.BatchNothing, Strings.BatchTitle);
+            return;
+        }
+        if (!_dialogs.ShowBatch(dialog))
+            return;
+
+        // Every file is fetched like the page would: its address as referrer, the browser's cookies (each sent only
+        // to its own site).
+        var context = new RequestContext(batch.PageUrl, batch.UserAgent, batch.Cookies ?? []);
+        var folder = dialog.Folder.Trim().Length > 0 ? dialog.Folder.Trim() : null;
+        var queue = dialog.Queue?.Id ?? queueId;
+        foreach (var item in dialog.Selected)
+            _service.Add(item.Url, folder, null, startNow: false, context, dialog.Category.Category?.Id, queue);
+        // "Download now" starts the queue, so the files still respect its limit instead of all starting at once.
+        if (dialog.StartNow)
+            _service.StartQueue(queue);
     }
 
     public void Stop() => _timer.Stop();

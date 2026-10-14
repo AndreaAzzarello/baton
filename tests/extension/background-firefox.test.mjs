@@ -1,0 +1,56 @@
+// Firefox: no onDeterminingFilename. The download is paused when created; cancelled, its file removed and erased
+// once the app has it, or resumed (or restarted) when the app does not take it.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { createFakeChrome, settle } from "./fake-chrome.mjs";
+
+let reply = async () => ({ ok: true });
+const fake = createFakeChrome({ firefox: true, nativeReply: (message) => reply(message) });
+globalThis.chrome = fake.chrome;
+await import("../../extension/background.js");
+
+test("onDeterminingFilename is not used in Firefox", () => {
+  assert.equal(fake.listeners["downloads.onDeterminingFilename"], undefined);
+  assert.equal(fake.listeners["downloads.onCreated"].length, 1);
+});
+
+const created = fake.listeners["downloads.onCreated"]?.[0];
+const download = { id: 9, url: "https://files.test/big.iso", filename: "C:\\dl\\big.iso", mime: "application/x-iso9660-image",
+  totalBytes: -1, startTime: new Date().toISOString(), incognito: false };
+const names = () => fake.calls.map((c) => c[0]).filter((n) => n !== "badge");
+
+test("accepted: pause, then cancel, remove the partial file and erase", async () => {
+  fake.calls.length = 0;
+  reply = async () => ({ ok: true });
+  await created(download);
+  await settle();
+  assert.deepEqual(names(), ["pause", "native", "cancel", "removeFile", "erase"]);
+});
+
+test("app unreachable: the paused download is resumed in Firefox", async () => {
+  fake.calls.length = 0;
+  reply = async () => {
+    throw new Error("No such native application com.downloadmanager.host");
+  };
+  await created(download);
+  await settle();
+  assert.deepEqual(names(), ["pause", "native", "resume", "notify"]);
+});
+
+test("not resumable: Firefox downloads it again itself, and that copy is not intercepted", async () => {
+  fake.calls.length = 0;
+  reply = async () => ({ ok: false, error: "no" });
+  fake.chrome.downloads.resume = async () => {
+    throw new Error("cannot resume");
+  };
+  await created(download);
+  await settle();
+  assert.deepEqual(names(), ["pause", "native", "cancel", "erase", "download", "notify"]);
+  const again = fake.calls.find((c) => c[0] === "download")[1];
+  assert.equal(again.url, download.url);
+
+  fake.calls.length = 0;
+  await created({ ...download, id: 10, byExtensionId: "test-extension" });
+  await settle();
+  assert.deepEqual(names(), []);
+});

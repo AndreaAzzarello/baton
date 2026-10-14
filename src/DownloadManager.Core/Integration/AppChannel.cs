@@ -11,7 +11,7 @@ namespace DownloadManager.Core.Integration;
 /// </summary>
 public static class AppChannel
 {
-    private const int MaxMessageBytes = 1024 * 1024;
+    private const int MaxMessageBytes = 8 * 1024 * 1024;
 
     public static string DefaultPipeName { get; } =
         "DownloadManager." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{Environment.UserDomainName}\\{Environment.UserName}")))[..16];
@@ -73,7 +73,10 @@ public static class AppChannel
                 {
                     var message = JsonSerializer.Deserialize<ChannelMessage>(line, Messages.Json)
                                   ?? throw new JsonException("Empty message.");
-                    reply = await handler(message);
+                    // The pipe is reachable by any program of this user, not only the native host: checked again.
+                    reply = MessageValidator.Validate(message) is { } error
+                        ? new ChannelReply(false, Error: error, Protocol: Messages.ProtocolVersion)
+                        : await handler(message);
                 }
                 catch (Exception ex) when (ex is JsonException or ArgumentException)
                 {

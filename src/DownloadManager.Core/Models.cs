@@ -72,6 +72,12 @@ public sealed class DownloadRecord
     /// <summary>Browser session details needed to fetch the file; null for downloads added by hand.</summary>
     public RequestContext? Context { get; set; }
 
+    /// <summary>
+    /// Set for a video or audio stream (HLS or DASH): <see cref="Url"/> is then its manifest, and the file is put
+    /// together from many small segments instead of byte ranges of one file.
+    /// </summary>
+    public MediaSource? Media { get; set; }
+
     public long DownloadedBytes =>
         Status == DownloadStatus.Completed && TotalSize is { } size ? size : Segments.Sum(s => s.Written);
 
@@ -83,6 +89,7 @@ public sealed class DownloadRecord
     {
         var copy = (DownloadRecord)MemberwiseClone();
         copy.Segments = Segments.Select(s => s.Clone()).ToList();
+        copy.Media = Media?.Clone();
         return copy;
     }
 }
@@ -97,7 +104,39 @@ public sealed record BrowserCookie(string Name, string Value, string Domain, str
 public sealed record RequestContext(string? Referrer, string? UserAgent, IReadOnlyList<BrowserCookie> Cookies,
     string? Username = null, string? Password = null)
 {
-    public bool IsEmpty => Referrer is null && UserAgent is null && Cookies.Count == 0 && Username is null;
+    /// <summary>"POST" for a download started by submitting a form; null for GET.</summary>
+    public string? Method { get; init; }
+
+    /// <summary>The form fields, URL-encoded (name=value&amp;...), sent again with each request.</summary>
+    public string? Body { get; init; }
+
+    /// <summary>How the form encoded its fields: application/x-www-form-urlencoded or multipart/form-data.</summary>
+    public string? BodyType { get; init; }
+
+    public bool IsPost => Method == "POST";
+
+    public bool IsEmpty => Referrer is null && UserAgent is null && Cookies.Count == 0 && Username is null && Method is null;
+}
+
+/// <summary>What a video stream download needs besides its manifest address.</summary>
+public sealed class MediaSource
+{
+    /// <summary>"hls" or "dash".</summary>
+    public string Kind { get; set; } = "";
+
+    /// <summary>The quality the user picked, as listed by the media probe.</summary>
+    public string VariantId { get; set; } = "";
+
+    /// <summary>The quality as shown to the user, e.g. "1080p".</summary>
+    public string? Label { get; set; }
+
+    /// <summary>
+    /// Set when the download completed without the single MP4 the user may expect (ffmpeg missing or failed): what
+    /// was saved instead. Shown with the finished download.
+    /// </summary>
+    public string? Note { get; set; }
+
+    public MediaSource Clone() => (MediaSource)MemberwiseClone();
 }
 
 /// <summary>Immutable view of a download for the UI.</summary>
@@ -183,7 +222,10 @@ public sealed class AppSettings
     public int MaxConnectionsPerServer { get; set; } = 16;
     public string UserAgent { get; set; } = DefaultUserAgent;
 
-    public const string DefaultUserAgent = "DownloadManager/0.5";
+    public const string DefaultUserAgent = "DownloadManager/0.6";
+
+    /// <summary>ffmpeg.exe used to put the video and audio of a stream into one MP4; empty = look for it in PATH.</summary>
+    public string FfmpegPath { get; set; } = "";
 
     /// <summary>Show the add dialog for downloads sent by the browser extension instead of starting them directly.</summary>
     public bool ConfirmBrowserDownloads { get; set; } = true;

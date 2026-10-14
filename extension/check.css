@@ -1,0 +1,34 @@
+:root {
+  --bg: #f4f6fa; --surface: #ffffff; --text: #1b2230; --muted: #5b6475; --border: #dfe3ea;
+  --accent: #2457d1; --accent-fg: #ffffff; --ok: #167a4b; --ok-soft: #e6f4ec; --bad: #bf2a2a; --bad-soft: #fdf0ee;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14161b; --surface: #1c1f26; --text: #e7eaf0; --muted: #a7afbd; --border: #353b47;
+          --accent: #82aaff; --accent-fg: #0a1428; --ok: #56cf91; --ok-soft: #1d3328; --bad: #ff8080; --bad-soft: #3a2020; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 "Segoe UI", system-ui, sans-serif; }
+main { max-width: 640px; margin: 40px auto; padding: 0 16px; }
+header { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; }
+h1 { margin: 0; font-size: 22px; font-weight: 600; }
+h2 { margin: 0 0 6px; font-size: 16px; }
+.muted { margin: 2px 0 0; color: var(--muted); }
+.result { background: var(--surface); border: 1px solid var(--border); border-left-width: 4px; border-radius: 10px; padding: 16px 18px; }
+.result.ok { border-left-color: var(--ok); }
+.result.ok h2 { color: var(--ok); }
+.result.bad { border-left-color: var(--bad); }
+.result.bad h2 { color: var(--bad); }
+.result p { margin: 0 0 8px; }
+ol { margin: 8px 0 12px; padding-left: 20px; }
+li { margin: 4px 0; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.button { display: inline-flex; align-items: center; height: 34px; padding: 0 16px; border-radius: 6px; border: 1px solid var(--border);
+          background: var(--surface); color: var(--text); font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+.button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.button[hidden] { display: none; }
+.button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 20px 0 0; padding: 16px 18px;
+         background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+dt { color: var(--muted); }
+dd { margin: 0; overflow-wrap: anywhere; }

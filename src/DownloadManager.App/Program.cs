@@ -16,6 +16,10 @@ internal static class Program
         if (NativeHost.IsHostInvocation(args))
             return BrowserIntegration.RunHost();
 
+        // "Register" on the extension's connection page: point the browsers at this executable again.
+        if (args.Length == 1 && BrowserIntegration.IsRegisterLink(args[0]))
+            return BrowserIntegration.RegisterFromBrowser();
+
         // A button of a completion notification ("downloadmanager:open?..."): handled without starting the app.
         if (args.Length == 1 && NotificationLinks.IsLink(args[0]) && HandleNotificationLink(args[0]) is { } exitCode)
             return exitCode;

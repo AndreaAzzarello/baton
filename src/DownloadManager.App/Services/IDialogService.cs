@@ -18,6 +18,9 @@ public interface IDialogService
     /// </summary>
     bool ShowAddDownload(AddDownloadViewModel viewModel, bool standalone);
 
+    /// <summary>"Download all": the links and images of a page sent by the browser; true when the user chose some.</summary>
+    bool ShowBatch(BatchViewModel viewModel);
+
     bool ShowSettings(SettingsViewModel viewModel);
 
     bool ShowCategories(CategoriesViewModel viewModel);
@@ -50,6 +53,9 @@ public interface IDialogService
     void ShowError(string message, string title);
 
     string? PickFolder(string title, string? initialFolder);
+
+    /// <summary>Asks for an existing file, e.g. ffmpeg.exe; <paramref name="filter"/> uses the "Name|*.ext" format.</summary>
+    string? PickFile(string title, string filter, string? initialFile);
 }
 
 /// <summary>Whether the app starts with Windows (in the notification area).</summary>

@@ -13,7 +13,10 @@ namespace DownloadManager.App.Services;
 /// </summary>
 public static class AppEnvironment
 {
-    private static readonly string? CustomData = Environment.GetEnvironmentVariable("DOWNLOADMANAGER_DATA") is { Length: > 0 } custom ? custom : null;
+    // Normalized, so "C:/x/data" and "C:\x\data\" name the same sandbox (same pipe, same single instance).
+    private static readonly string? CustomData = Environment.GetEnvironmentVariable("DOWNLOADMANAGER_DATA") is { Length: > 0 } custom
+        ? Path.TrimEndingDirectorySeparator(Path.GetFullPath(custom))
+        : null;
 
     public static bool IsSandboxed => CustomData is not null;
 

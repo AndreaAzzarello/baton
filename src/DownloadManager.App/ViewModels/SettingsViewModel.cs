@@ -71,6 +71,7 @@ public sealed class SettingsViewModel : ObservableObject
         MaxPerServer = current.MaxConnectionsPerServer.ToString(CultureInfo.CurrentCulture);
         UserAgent = current.UserAgent;
         FtpActiveMode = current.FtpActiveMode;
+        _ffmpegPath = current.FfmpegPath;
 
         BrowseCommand = new RelayCommand(() =>
         {
@@ -79,6 +80,11 @@ public sealed class SettingsViewModel : ObservableObject
                 Folder = picked;
                 OnPropertyChanged(nameof(Folder));
             }
+        });
+        BrowseFfmpegCommand = new RelayCommand(() =>
+        {
+            if (_dialogs.PickFile(Strings.SettingsFfmpegPick, "ffmpeg|ffmpeg.exe|*.exe|*.exe", FfmpegPath.Length > 0 ? FfmpegPath : null) is { } picked)
+                FfmpegPath = picked;
         });
         TestProxyCommand = new RelayCommand(TestProxy, () => !_testing);
         NewLoginCommand = new RelayCommand(() => SelectedLogin = null);
@@ -96,6 +102,26 @@ public sealed class SettingsViewModel : ObservableObject
     public string SpeedLimit { get; set; }
     public string Folder { get; set; }
     public bool ConfirmBrowserDownloads { get; set; }
+
+    private string _ffmpegPath;
+
+    /// <summary>ffmpeg.exe for joining the video and audio of streams; empty = look in PATH.</summary>
+    public string FfmpegPath
+    {
+        get => _ffmpegPath;
+        set
+        {
+            if (Set(ref _ffmpegPath, value ?? ""))
+                OnPropertyChanged(nameof(FfmpegStatus));
+        }
+    }
+
+    /// <summary>Which ffmpeg streams will use, or that there is none (they are then saved as separate files or .ts).</summary>
+    public string FfmpegStatus => Core.Media.Ffmpeg.Find(FfmpegPath) is { } found
+        ? string.Format(CultureInfo.CurrentCulture, Strings.SettingsFfmpegFound, found)
+        : FfmpegPath.Trim().Length > 0 ? Strings.SettingsFfmpegMissingFile : Strings.SettingsFfmpegNone;
+
+    public ICommand BrowseFfmpegCommand { get; }
     public bool NotifyOnCompletion { get; set; }
     public bool RunAtStartup { get; set; }
     public bool CloseToTray { get; set; }
@@ -228,6 +254,7 @@ public sealed class SettingsViewModel : ObservableObject
             result.SpeedLimitKBps = limit;
             result.DownloadFolder = Folder.Trim();
             result.ConfirmBrowserDownloads = ConfirmBrowserDownloads;
+            result.FfmpegPath = FfmpegPath.Trim();
             result.NotifyOnCompletion = NotifyOnCompletion;
             result.Theme = Theme;
             result.CloseToTray = CloseToTray;

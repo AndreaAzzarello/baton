@@ -73,7 +73,7 @@ public sealed class DownloadItemViewModel : ObservableObject
         // No connection open yet (first request, or retrying after a network error).
         DownloadStatus.Downloading => _snapshot.Connections == 0 ? Strings.StatusConnecting : Strings.StatusDownloading,
         DownloadStatus.Paused => Strings.StatusPaused,
-        DownloadStatus.Completed => Strings.StatusCompleted,
+        DownloadStatus.Completed => _snapshot.Error is not null ? Strings.StatusCompletedWithNote : Strings.StatusCompleted, // e.g. a stream saved without ffmpeg
         DownloadStatus.Failed => Strings.StatusFailed,
         _ => "",
     };

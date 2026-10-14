@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Net;
+using DownloadManager.Core.Integration;
+using DownloadManager.Core.Media;
 using DownloadManager.Core.Net;
 using DownloadManager.Core.Resources;
 using DownloadManager.Core.Security;
@@ -13,9 +15,9 @@ namespace DownloadManager.Core;
 /// </summary>
 public sealed class DownloadService : IAsyncDisposable
 {
-    private sealed class ActiveJob(DownloadJob job, bool fromQueue)
+    private sealed class ActiveJob(IDownloadJob job, bool fromQueue)
     {
-        public DownloadJob Job { get; } = job;
+        public IDownloadJob Job { get; } = job;
         public bool FromQueue { get; } = fromQueue;
         public CancellationTokenSource Cts { get; } = new();
         public DownloadStatus StopStatus { get; set; } = DownloadStatus.Paused;
@@ -269,6 +271,80 @@ public sealed class DownloadService : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// What a video or audio address offers: its qualities with an estimated size, or why it cannot be downloaded
+    /// (protected, live, or from a site whose terms forbid it). Asked with the same network, cookies and referrer
+    /// the download would use.
+    /// </summary>
+    public async Task<MediaInfoReply> ProbeMediaAsync(MediaRequest request, CancellationToken ct = default)
+    {
+        HttpClient http;
+        bool owned;
+        lock (_lock)
+            (http, owned) = ClientFor(request.ToContext());
+        try
+        {
+            return await Task.Run(() => MediaCatalog.ProbeAsync(http, request.Url, request.ToContext(), request.PageUrl, ct), ct);
+        }
+        finally
+        {
+            if (owned)
+                http.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Adds a stream in the chosen quality. It is downloaded like any other download (queues, speed limit, proxy)
+    /// and put together at the end. Without a file name it is named after the page title.
+    /// </summary>
+    public long AddMedia(MediaRequest request, string kind, string? label, string? directory = null, string? fileName = null,
+        bool startNow = true, long? categoryId = null, long? queueId = null)
+    {
+        if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+            throw new ArgumentException("Streams must come from an http or https address.", nameof(request));
+        if (string.IsNullOrEmpty(request.VariantId))
+            throw new ArgumentException("No quality chosen.", nameof(request));
+        if (MediaPolicy.IsRestricted(request.Url) || MediaPolicy.IsRestricted(request.PageUrl))
+            throw new ArgumentException(Strings.MediaBlockedTerms, nameof(request));
+
+        var name = string.IsNullOrWhiteSpace(fileName) ? MediaCatalog.FileNameFor(request.Title, request.Url, ".mp4") : FileNames.Sanitize(fileName);
+        var context = request.ToContext();
+        lock (_lock)
+        {
+            var category = _categories.FirstOrDefault(c => c.Id == categoryId) ?? Core.Categories.Match(_categories, name, "video/mp4");
+            var record = new DownloadRecord
+            {
+                Url = uri.AbsoluteUri,
+                Directory = string.IsNullOrWhiteSpace(directory) ? category.ResolveFolder(_settings.DownloadFolder) : directory,
+                FileName = name,
+                Status = startNow ? DownloadStatus.Paused : DownloadStatus.Queued,
+                SortOrder = NextSortOrder(),
+                AddedUtc = _clock.UtcNow,
+                Context = context is { IsEmpty: false } ? context : null,
+                CategoryId = category.Id,
+                QueueId = _queues.FirstOrDefault(q => q.Id == queueId)?.Id ?? MainQueue.Id,
+                ContentType = kind == "dash" ? "application/dash+xml" : "application/vnd.apple.mpegurl",
+                Media = new MediaSource { Kind = kind, VariantId = request.VariantId, Label = label },
+            };
+            _store.Insert(record);
+            _items.Add(record);
+            if (startNow)
+                StartLocked(record, fromQueue: false);
+            else
+                Pump();
+            return record.Id;
+        }
+    }
+
+    /// <summary>A client with the request's cookies (owned by the caller), or the shared one.</summary>
+    private (HttpClient Client, bool Owned) ClientFor(RequestContext? context)
+    {
+        if (context is not { Cookies.Count: > 0 })
+            return (_http, false);
+        var cookies = RequestContexts.ToCookieContainer(context.Cookies);
+        return (_fixedHttp is not null ? CreateHttpClient(cookies) : _network.CreateHttpClient(cookies), true);
+    }
+
     /// <summary>Starts (or resumes) a download right away, outside the queue limits and quotas.</summary>
     public void Start(long id)
     {
@@ -346,6 +422,8 @@ public sealed class DownloadService : IAsyncDisposable
             _items.Remove(record);
             _store.Delete(id);
             TryDelete(record.PartPath);
+            if (record.Media is not null && record.Status != DownloadStatus.Completed)
+                TryDeleteFolder(MediaJob.PartsFolderOf(record));
             if (deleteFile && record.Status == DownloadStatus.Completed)
                 TryDelete(record.FinalPath);
         }
@@ -616,6 +694,11 @@ public sealed class DownloadService : IAsyncDisposable
     {
         if (!Urls.TryParseDownload(newUrl, out var parsed))
             throw new ArgumentException("Enter a valid http, https, ftp, ftps or ftpes address.", nameof(newUrl));
+        lock (_lock)
+        {
+            if (Find(id) is { Media: not null })
+                throw new ArgumentException(Strings.MediaCannotChangeUrl, nameof(newUrl));
+        }
         DownloadRecord record;
         NetworkContext network;
         lock (_lock)
@@ -865,7 +948,8 @@ public sealed class DownloadService : IAsyncDisposable
         _active.TryGetValue(r.Id, out var active);
         var live = active?.Job.Record;
         var name = live?.FileName ?? r.FileName ?? DisplayNameFromUrl(r.Url);
-        var error = r.Error;
+        // A finished stream saved without ffmpeg says what was saved instead of a single MP4.
+        var error = r.Status == DownloadStatus.Completed ? r.Media?.Note ?? r.Error : r.Error;
         // A waiting download says why it does not start.
         if (r.Status == DownloadStatus.Queued && active is null)
         {
@@ -944,7 +1028,9 @@ public sealed class DownloadService : IAsyncDisposable
             RetryBaseDelay = _engineTemplate.RetryBaseDelay,
             CheckpointInterval = _engineTemplate.CheckpointInterval,
         };
-        var job = new DownloadJob(record.Clone(), _http, _limiter, options, OnCheckpoint, OnProbed, _network);
+        IDownloadJob job = record.Media is not null
+            ? new MediaJob(record.Clone(), _http, _limiter, options, OnCheckpoint, _network, () => Ffmpeg.Find(Settings.FfmpegPath))
+            : new DownloadJob(record.Clone(), _http, _limiter, options, OnCheckpoint, OnProbed, _network);
         var active = new ActiveJob(job, fromQueue) { CountedBytes = job.BytesDownloaded };
         _active[record.Id] = active;
         active.Task = Task.Run(() => RunJobAsync(active));
@@ -1073,6 +1159,7 @@ public sealed class DownloadService : IAsyncDisposable
         to.SupportsRanges = from.SupportsRanges;
         to.Segments = from.Segments.Select(s => s.Clone()).ToList();
         to.CompletedUtc = from.CompletedUtc;
+        to.Media = from.Media?.Clone();
     }
 
     /// <summary>Starts waiting downloads, queue by queue in list order, within every limit and quota.</summary>
@@ -1131,6 +1218,21 @@ public sealed class DownloadService : IAsyncDisposable
 
     private static string DisplayNameFromUrl(string url) =>
         Uri.TryCreate(url, UriKind.Absolute, out var uri) ? FileNames.Sanitize(FileNames.FromUrl(uri)) : url;
+
+    private static void TryDeleteFolder(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
 
     private static void TryDelete(string? path)
     {

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static" mediaPresentationDuration="PT9S" minBufferTime="PT2S" profiles="urn:mpeg:dash:profile:isoff-live:2011">
+  <Period id="1">
+    <AdaptationSet contentType="video" mimeType="video/mp4" segmentAlignment="true">
+      <SegmentTemplate media="$RepresentationID$_$Number%03d$.m4s" initialization="$RepresentationID$_init.mp4" duration="2" timescale="1" startNumber="1" />
+      <Representation id="v720" bandwidth="1500000" width="1280" height="720" codecs="avc1.64001f" />
+      <Representation id="v360" bandwidth="600000" width="640" height="360" codecs="avc1.4d401e" />
+    </AdaptationSet>
+    <AdaptationSet contentType="audio" mimeType="audio/mp4" lang="en">
+      <SegmentTemplate media="$RepresentationID$_$Number%03d$.m4s" initialization="$RepresentationID$_init.mp4" duration="2" timescale="1" startNumber="1" />
+      <Representation id="a128" bandwidth="128000" codecs="mp4a.40.2" />
+      <Representation id="a64" bandwidth="64000" codecs="mp4a.40.2" />
+    </AdaptationSet>
+    <AdaptationSet contentType="text" mimeType="text/vtt" lang="en">
+      <Representation id="subs" bandwidth="1000"><BaseURL>subs.vtt</BaseURL></Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>

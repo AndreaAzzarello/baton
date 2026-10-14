@@ -33,7 +33,10 @@ internal static class BrowserIntegration
         using var output = Console.OpenStandardOutput();
         try
         {
-            NativeHost.RunAsync(input, output, AppChannel.DefaultPipeName, LaunchApp, TimeSpan.FromSeconds(30)).GetAwaiter().GetResult();
+            // A cold start gets 12 s: the extension gives up after 15 s and lets the browser keep the download, so the host
+            // must have given up first, or the app could still receive a download the browser is also fetching.
+            // The pipe of the real app; a sandboxed test run (DOWNLOADMANAGER_DATA inherited from the browser) uses its own.
+            NativeHost.RunAsync(input, output, AppEnvironment.PipeName, LaunchApp, TimeSpan.FromSeconds(12), App.AppVersion).GetAwaiter().GetResult();
             return 0;
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException)
@@ -43,6 +46,24 @@ internal static class BrowserIntegration
     }
 
     public static void AllowForeground() => AllowSetForegroundWindow(AsfwAny);
+
+    /// <summary>Opened by the "Register" button of the extension's connection page (a link, so it works without the host).</summary>
+    public const string RegisterLink = Core.NotificationLinks.Scheme + ":register";
+
+    public static bool IsRegisterLink(string argument) =>
+        string.Equals(argument.TrimEnd('/'), RegisterLink, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Registers the host for every browser and says so. Harmless if a web page opens the link: it only points the
+    /// browsers at this same executable, and the browser asks before opening it.
+    /// </summary>
+    public static int RegisterFromBrowser()
+    {
+        Register(AppEnvironment.DataDirectory);
+        System.Windows.MessageBox.Show(Core.Resources.Strings.BrowserRegistered, Core.Resources.Strings.AppName,
+            System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        return 0;
+    }
 
     /// <summary>
     /// Starts the app outside the browser's job object: otherwise closing the browser could also close

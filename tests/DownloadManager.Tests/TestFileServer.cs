@@ -49,10 +49,16 @@ public sealed class ServedFile
     /// <summary>Answers 302 to this address instead of serving the file.</summary>
     public string? RedirectTo { get; set; }
 
+    /// <summary>
+    /// Served only to a POST whose form this accepts (like a download behind a form); 405 to a GET, 400 to a wrong form.
+    /// </summary>
+    public Func<IFormCollection, bool>? RequireForm { get; set; }
+
     public string Sha256 => Convert.ToHexString(SHA256.HashData(Content));
 }
 
-public sealed record LoggedRequest(string Path, long? From, long? To, bool HasIfRange, string Host = "", string Cookie = "", string Authorization = "");
+public sealed record LoggedRequest(string Path, long? From, long? To, bool HasIfRange, string Host = "", string Cookie = "", string Authorization = "",
+    string Method = "GET", string Referer = "");
 
 /// <summary>Local HTTP server with single-range, If-Range, throttling and fault injection.</summary>
 public sealed class TestFileServer : IAsyncDisposable
@@ -73,6 +79,7 @@ public sealed class TestFileServer : IAsyncDisposable
         var app = builder.Build();
         var server = new TestFileServer(app);
         app.MapGet("/files/{name}", server.HandleAsync);
+        app.MapPost("/files/{name}", server.HandleAsync);
         await app.StartAsync();
         server.BaseUrl = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!.Addresses.First();
         return server;
@@ -106,7 +113,27 @@ public sealed class TestFileServer : IAsyncDisposable
         if (RangeHeaderValue.TryParse(ctx.Request.Headers.Range.ToString(), out var range) && range.Ranges.Count == 1)
             requested = range.Ranges.First();
         Requests.Enqueue(new LoggedRequest(name, requested?.From, requested?.To, !string.IsNullOrEmpty(ctx.Request.Headers.IfRange.ToString()),
-            ctx.Request.Host.Host, ctx.Request.Headers.Cookie.ToString(), ctx.Request.Headers.Authorization.ToString()));
+            ctx.Request.Host.Host, ctx.Request.Headers.Cookie.ToString(), ctx.Request.Headers.Authorization.ToString(),
+            ctx.Request.Method, ctx.Request.Headers.Referer.ToString()));
+
+        if (file.RequireForm is { } accepts)
+        {
+            if (!HttpMethods.IsPost(ctx.Request.Method))
+            {
+                ctx.Response.StatusCode = 405;
+                return;
+            }
+            if (!ctx.Request.HasFormContentType || !accepts(await ctx.Request.ReadFormAsync()))
+            {
+                ctx.Response.StatusCode = 400;
+                return;
+            }
+        }
+        else if (HttpMethods.IsPost(ctx.Request.Method))
+        {
+            ctx.Response.StatusCode = 405;
+            return;
+        }
 
         if (file.RedirectTo is { } target)
         {

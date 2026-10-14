@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="it">
+<html>
 <head>
   <meta charset="utf-8">
   <title>DownloadManager</title>
@@ -9,28 +9,61 @@
   <header>
     <img src="icons/icon32.png" alt="" width="20" height="20">
     <h1>DownloadManager</h1>
+    <p id="status" class="chip" role="status"><span class="dot" aria-hidden="true"></span><span id="statusText" data-i18n="statusChecking"></span></p>
   </header>
 
-  <p id="status" class="status" role="status">Verifica dell'app…</p>
+  <fieldset class="modes">
+    <legend data-i18n="modeLegend"></legend>
+    <label class="mode">
+      <input type="radio" name="mode" value="auto">
+      <span><b data-i18n="modeAuto"></b><small data-i18n="modeAutoHint"></small></span>
+    </label>
+    <label class="mode">
+      <input type="radio" name="mode" value="menu">
+      <span><b data-i18n="modeMenu"></b><small data-i18n="modeMenuHint"></small></span>
+    </label>
+  </fieldset>
 
-  <label class="row">
-    <input type="checkbox" id="intercept">
-    <span>Intercetta i download del browser</span>
-  </label>
+  <label for="queue" class="label" data-i18n="queueLabel"></label>
+  <select id="queue" aria-describedby="queueHint"></select>
+  <p id="queueHint" class="hint" data-i18n="queueHint"></p>
 
-  <label for="extensions" class="label">Tipi di file da intercettare</label>
-  <textarea id="extensions" rows="3" spellcheck="false"></textarea>
+  <section id="site" class="site" hidden>
+    <h2 id="siteName"></h2>
+    <label for="siteRule" class="label" data-i18n="siteRuleLabel"></label>
+    <select id="siteRule">
+      <option value="" data-i18n="siteRuleNormal"></option>
+      <option value="always" data-i18n="siteRuleAlways"></option>
+      <option value="never" data-i18n="siteRuleNever"></option>
+    </select>
+    <label class="row">
+      <input type="checkbox" id="siteButton">
+      <span data-i18n="siteButton"></span>
+    </label>
+  </section>
 
-  <label for="minSize" class="label">Solo file più grandi di (MB, 0 = tutti)</label>
-  <input type="number" id="minSize" min="0" step="1">
+  <details>
+    <summary data-i18n="rulesTitle"></summary>
+    <label for="extensions" class="label" data-i18n="extensionsLabel"></label>
+    <textarea id="extensions" rows="3" spellcheck="false"></textarea>
+    <label for="minSize" class="label" data-i18n="minSizeLabel"></label>
+    <input type="number" id="minSize" min="0" step="1">
+    <label for="alwaysSites" class="label" data-i18n="alwaysSitesLabel"></label>
+    <textarea id="alwaysSites" rows="2" spellcheck="false" data-i18n-placeholder="sitesPlaceholder"></textarea>
+    <label for="neverSites" class="label" data-i18n="neverSitesLabel"></label>
+    <textarea id="neverSites" rows="2" spellcheck="false" data-i18n-placeholder="sitesPlaceholder"></textarea>
+    <label class="row">
+      <input type="checkbox" id="mediaButton">
+      <span data-i18n="mediaButtonSetting"></span>
+    </label>
+    <label for="mediaDisabledSites" class="label" data-i18n="mediaDisabledLabel"></label>
+    <textarea id="mediaDisabledSites" rows="2" spellcheck="false" data-i18n-placeholder="sitesPlaceholder"></textarea>
+  </details>
 
-  <label for="queue" class="label">Coda dei download inviati dal browser</label>
-  <select id="queue" aria-describedby="queueHint">
-    <option value="">Coda principale</option>
-  </select>
-  <p id="queueHint" class="hint small">Le code sono quelle create nell'app; con la conferma attiva puoi cambiarla per ogni download.</p>
-
-  <p class="hint">Per qualsiasi link: tasto destro → <b>Scarica con DownloadManager</b>.</p>
+  <footer>
+    <p class="hint" data-i18n="altHint"></p>
+    <a href="check.html" target="_blank" id="check" data-i18n="checkLink"></a>
+  </footer>
   <script type="module" src="popup.js"></script>
 </body>
 </html>

@@ -59,6 +59,16 @@
                         <CheckBox Content="{x:Static r:Strings.SettingsConfirmBrowser}" IsChecked="{Binding ConfirmBrowserDownloads}" Margin="0,2" />
                         <CheckBox Content="{x:Static r:Strings.SettingsNotify}" IsChecked="{Binding NotifyOnCompletion}" Margin="0,2" />
 
+                        <TextBlock Text="{x:Static r:Strings.SettingsVideo}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                        <Label Content="{x:Static r:Strings.SettingsFfmpegLabel}" Target="{Binding ElementName=FfmpegBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseFfmpegCommand}" />
+                            <TextBox x:Name="FfmpegBox" Text="{Binding FfmpegPath, UpdateSourceTrigger=PropertyChanged, Delay=300}"
+                                     AutomationProperties.Name="{x:Static r:Strings.SettingsFfmpegName}" AutomationProperties.HelpText="{Binding FfmpegStatus}" />
+                        </DockPanel>
+                        <TextBlock Text="{Binding FfmpegStatus}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap"
+                                   AutomationProperties.LiveSetting="Polite" />
+
                         <TextBlock Text="{x:Static r:Strings.SettingsSystem}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
                         <CheckBox Content="{x:Static r:Strings.SettingsRunAtStartup}" IsChecked="{Binding RunAtStartup}" Margin="0,2" />
                         <CheckBox Content="{x:Static r:Strings.SettingsCloseToTray}" IsChecked="{Binding CloseToTray}" Margin="0,2" />

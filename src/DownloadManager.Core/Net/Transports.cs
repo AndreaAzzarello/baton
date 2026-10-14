@@ -21,13 +21,46 @@ public interface ITransport : IDisposable
     Task<Stream> OpenAsync(DownloadRecord record, long offset, long end, CancellationToken ct);
 }
 
-/// <summary>HTTP and HTTPS with byte ranges, guarded by If-Range.</summary>
+/// <summary>
+/// HTTP and HTTPS with byte ranges, guarded by If-Range. A download started by a form (POST) is sent once per
+/// attempt: the probe's response is the download itself, so the form is not submitted twice, and it is fetched as
+/// one stream because servers do not answer ranges of a POST.
+/// </summary>
 public sealed class HttpTransport(HttpClient http, bool ownsClient, string url, RequestContext? context, TimeSpan timeout) : ITransport
 {
-    public Task<ProbeResult> ProbeAsync(CancellationToken ct) => HttpProbe.ProbeAsync(http, url, ct, context, timeout);
+    private HttpResponseMessage? _pending; // a POST response kept from the probe for the first OpenAsync
+
+    public async Task<ProbeResult> ProbeAsync(CancellationToken ct)
+    {
+        if (context is not { IsPost: true })
+            return await HttpProbe.ProbeAsync(http, url, ct, context, timeout);
+
+        Interlocked.Exchange(ref _pending, null)?.Dispose();
+        var response = await HttpErrors.SendAsync(http, CreatePost(), timeout, ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            using (response)
+                throw HttpErrors.FromResponse(response);
+        }
+        _pending = response;
+        var finalUri = response.RequestMessage?.RequestUri ?? new Uri(url);
+        return new ProbeResult(response.Content.Headers.ContentLength, false, null, response.Content.Headers.LastModified?.ToString("R"),
+            FileNames.FromResponse(response.Content.Headers.ContentDisposition, finalUri), response.Content.Headers.ContentType?.MediaType);
+    }
 
     public async Task<Stream> OpenAsync(DownloadRecord record, long offset, long end, CancellationToken ct)
     {
+        if (context is { IsPost: true })
+        {
+            var response = Interlocked.Exchange(ref _pending, null) ?? await HttpErrors.SendAsync(http, CreatePost(), timeout, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                using (response)
+                    throw HttpErrors.FromResponse(response);
+            }
+            return new OwnedStream(await response.Content.ReadAsStreamAsync(ct), response);
+        }
+
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
         context.ApplyTo(request);
         if (record.SupportsRanges)
@@ -39,17 +72,24 @@ public sealed class HttpTransport(HttpClient http, bool ownsClient, string url, 
                 request.Headers.IfRange = new RangeConditionHeaderValue(date);
         }
 
-        var response = await HttpErrors.SendAsync(http, request, timeout, ct);
+        var get = await HttpErrors.SendAsync(http, request, timeout, ct);
         try
         {
-            Validate(response, record, offset);
-            return new OwnedStream(await response.Content.ReadAsStreamAsync(ct), response);
+            Validate(get, record, offset);
+            return new OwnedStream(await get.Content.ReadAsStreamAsync(ct), get);
         }
         catch
         {
-            response.Dispose();
+            get.Dispose();
             throw;
         }
+    }
+
+    private HttpRequestMessage CreatePost()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = FormBody.Create(context!.Body, context.BodyType) };
+        context.ApplyTo(request);
+        return request;
     }
 
     private static void Validate(HttpResponseMessage response, DownloadRecord record, long offset)
@@ -74,9 +114,45 @@ public sealed class HttpTransport(HttpClient http, bool ownsClient, string url, 
 
     public void Dispose()
     {
+        Interlocked.Exchange(ref _pending, null)?.Dispose();
         if (ownsClient)
             http.Dispose();
     }
+}
+
+/// <summary>The fields of a submitted form, sent again the way the form encoded them.</summary>
+public static class FormBody
+{
+    public const string UrlEncoded = "application/x-www-form-urlencoded";
+    public const string Multipart = "multipart/form-data";
+
+    /// <summary>
+    /// <paramref name="fields"/> is always URL-encoded (that is how the extension passes them); a multipart form gets a
+    /// multipart body with the same fields, as text parts (forms that upload files are left to the browser).
+    /// </summary>
+    public static HttpContent Create(string? fields, string? type)
+    {
+        fields ??= "";
+        if (type != Multipart)
+            return new StringContent(fields, null, UrlEncoded);
+        var content = new MultipartFormDataContent();
+        foreach (var (name, value) in Parse(fields))
+            content.Add(new StringContent(value), name);
+        return content;
+    }
+
+    public static List<(string Name, string Value)> Parse(string fields) =>
+        fields.Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(pair =>
+            {
+                var at = pair.IndexOf('=');
+                var name = at < 0 ? pair : pair[..at];
+                var value = at < 0 ? "" : pair[(at + 1)..];
+                return (Decode(name), Decode(value));
+            })
+            .ToList();
+
+    private static string Decode(string value) => Uri.UnescapeDataString(value.Replace('+', ' '));
 }
 
 public enum FtpSecurity

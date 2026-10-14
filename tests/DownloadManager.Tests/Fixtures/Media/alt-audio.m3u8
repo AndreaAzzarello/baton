@@ -1,0 +1,11 @@
+#EXTM3U
+#EXT-X-VERSION:7
+#EXT-X-TARGETDURATION:6
+#EXT-X-MAP:URI="alt-ainit.mp4"
+#EXTINF:6.0,
+alt-a0.m4s
+#EXTINF:6.0,
+alt-a1.m4s
+#EXTINF:3.5,
+alt-a2.m4s
+#EXT-X-ENDLIST

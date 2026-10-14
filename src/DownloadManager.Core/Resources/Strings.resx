@@ -53,7 +53,37 @@ No: usa il nuovo indirizzo e ricomincia da zero</value></data>
   <data name="AskRestartDifferent" xml:space="preserve"><value>Il file al nuovo indirizzo è diverso: {0}.
 
 Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></data>
+  <data name="BatchAllTypes" xml:space="preserve"><value>Tutti i tipi</value></data>
+  <data name="BatchCategoryAuto" xml:space="preserve"><value>Automatica (per tipo)</value></data>
+  <data name="BatchClearVisible" xml:space="preserve"><value>_Deseleziona visibili</value></data>
+  <data name="BatchColumnKind" xml:space="preserve"><value>Origine</value></data>
+  <data name="BatchColumnText" xml:space="preserve"><value>Testo del link</value></data>
+  <data name="BatchColumnType" xml:space="preserve"><value>Tipo</value></data>
+  <data name="BatchColumnUrl" xml:space="preserve"><value>Indirizzo</value></data>
+  <data name="BatchCount" xml:space="preserve"><value>{0} selezionati su {1} · {2} visibili</value></data>
+  <data name="BatchFilterLabel" xml:space="preserve"><value>_Cerca nel nome, nel testo o nell'indirizzo</value></data>
+  <data name="BatchFilterName" xml:space="preserve"><value>Cerca</value></data>
+  <data name="BatchFolderLabel" xml:space="preserve"><value>_Cartella (vuoto = quella di ogni categoria)</value></data>
+  <data name="BatchFolderToolTip" xml:space="preserve"><value>Lascia vuoto per salvare ogni file nella cartella della sua categoria.</value></data>
+  <data name="BatchHeading" xml:space="preserve"><value>Link e immagini della pagina</value></data>
+  <data name="BatchItemNotSelected" xml:space="preserve"><value>Non selezionato</value></data>
+  <data name="BatchItemSelected" xml:space="preserve"><value>Selezionato</value></data>
+  <data name="BatchKindAll" xml:space="preserve"><value>Link e immagini</value></data>
+  <data name="BatchKindImage" xml:space="preserve"><value>Immagine</value></data>
+  <data name="BatchKindImages" xml:space="preserve"><value>Solo immagini</value></data>
+  <data name="BatchKindLabel" xml:space="preserve"><value>_Mostra</value></data>
+  <data name="BatchKindLink" xml:space="preserve"><value>Link</value></data>
+  <data name="BatchKindLinks" xml:space="preserve"><value>Solo link</value></data>
+  <data name="BatchKindName" xml:space="preserve"><value>Link o immagini</value></data>
+  <data name="BatchListHelp" xml:space="preserve"><value>Barra spaziatrice: seleziona o deseleziona le righe evidenziate.</value></data>
+  <data name="BatchListName" xml:space="preserve"><value>Link della pagina</value></data>
+  <data name="BatchNothing" xml:space="preserve"><value>La pagina non contiene link che DownloadManager possa scaricare.</value></data>
+  <data name="BatchSelectVisible" xml:space="preserve"><value>Seleziona _visibili</value></data>
+  <data name="BatchTitle" xml:space="preserve"><value>Scarica tutto</value></data>
+  <data name="BatchTypeLabel" xml:space="preserve"><value>_Tipo di file</value></data>
+  <data name="BatchTypeName" xml:space="preserve"><value>Tipo di file</value></data>
   <data name="Browse" xml:space="preserve"><value>Sfoglia…</value></data>
+  <data name="BrowserRegistered" xml:space="preserve"><value>DownloadManager è di nuovo collegato ai browser (Chrome, Edge, Opera, Brave, Chromium e Firefox). Ricarica la pagina «Verifica connessione» dell'estensione.</value></data>
   <data name="Cancel" xml:space="preserve"><value>Annulla</value></data>
   <data name="CategoriesListName" xml:space="preserve"><value>Elenco delle categorie</value></data>
   <data name="CategoriesTitle" xml:space="preserve"><value>Categorie</value></data>
@@ -145,7 +175,6 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="ErrorFileMissing" xml:space="preserve"><value>Il file non esiste più: potrebbe essere stato spostato o eliminato.</value></data>
   <data name="ErrorFolderNotAbsolute" xml:space="preserve"><value>Indica una cartella completa (es. C:\Users\…\Downloads).</value></data>
   <data name="ErrorInvalidUrl" xml:space="preserve"><value>Inserisci un indirizzo valido: http://, https://, ftp://, ftps:// (TLS implicito) o ftpes:// (TLS esplicito).</value></data>
-  <data name="ErrorOnlyHttp" xml:space="preserve"><value>Sono supportati solo indirizzi http, https, ftp, ftps e ftpes.</value></data>
   <data name="ErrorPacUrl" xml:space="preserve"><value>Indica l'indirizzo del file PAC.</value></data>
   <data name="ErrorPerServer" xml:space="preserve"><value>Le connessioni per server devono essere tra 1 e 256.</value></data>
   <data name="ErrorProxyHost" xml:space="preserve"><value>Indica il server del proxy.</value></data>
@@ -166,6 +195,8 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="ErrorUnexpected" xml:space="preserve"><value>Errore imprevisto</value></data>
   <data name="ErrorUnknownMessage" xml:space="preserve"><value>Messaggio sconosciuto: {0}</value></data>
   <data name="FromBrowser" xml:space="preserve"><value>Inviato dal browser.</value></data>
+  <data name="FromBrowserForm" xml:space="preserve"><value>Inviato dal browser compilando un modulo: verranno rinviati i dati del modulo (POST), i cookie e la pagina di provenienza. Un modulo non si può riprendere: se si interrompe, riparte da capo.</value></data>
+  <data name="FromBrowserMedia" xml:space="preserve"><value>Video {0} dalla pagina, qualità {1}: i segmenti vengono scaricati in parallelo e poi uniti.</value></data>
   <data name="FromBrowserWithCookies" xml:space="preserve"><value>Inviato dal browser: verranno usati i cookie della sessione e la pagina di provenienza.</value></data>
   <data name="FtpActiveMode" xml:space="preserve"><value>FTP in modalità _attiva (il server apre la connessione dati)</value></data>
   <data name="FtpActiveModeToolTip" xml:space="preserve"><value>La modalità passiva, predefinita, funziona quasi sempre; quella attiva serve solo con alcuni server e spesso è bloccata dal firewall.</value></data>
@@ -200,6 +231,16 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="LoginUserName" xml:space="preserve"><value>Nome utente</value></data>
   <data name="LoginWindowsAccount" xml:space="preserve"><value>Usa il mio account di _Windows (NTLM/Kerberos, per la rete aziendale)</value></data>
   <data name="LoginWindowsAccountToolTip" xml:space="preserve"><value>L'account di Windows viene offerto solo a questo server e solo con NTLM o Negotiate, mai come password in chiaro.</value></data>
+  <data name="MediaBlockedDrm" xml:space="preserve"><value>Il video è protetto (DRM o segmenti cifrati): non può essere scaricato e DownloadManager non aggira le protezioni.</value></data>
+  <data name="MediaBlockedLive" xml:space="preserve"><value>È una diretta: si possono scaricare solo video completi, non trasmissioni in corso.</value></data>
+  <data name="MediaBlockedTerms" xml:space="preserve"><value>Questo sito non consente di scaricare i suoi video nei termini di servizio: DownloadManager non lo fa.</value></data>
+  <data name="MediaCannotChangeUrl" xml:space="preserve"><value>L'indirizzo di un video non si può cambiare: riaprilo dalla pagina e scaricalo di nuovo.</value></data>
+  <data name="MediaMuxFailed" xml:space="preserve"><value>ffmpeg non è riuscito a unire le tracce ({0}): video e audio sono stati salvati separatamente così come scaricati.</value></data>
+  <data name="MediaNoFfmpegTracks" xml:space="preserve"><value>ffmpeg non trovato: video e audio sono stati salvati in due file separati. Indica ffmpeg in Impostazioni › Generale per ottenere un unico MP4.</value></data>
+  <data name="MediaNoFfmpegTs" xml:space="preserve"><value>ffmpeg non trovato: il video è stato salvato in formato .ts (MPEG-TS), riproducibile da VLC e dai lettori più diffusi. Indica ffmpeg in Impostazioni › Generale per ottenere un MP4.</value></data>
+  <data name="MediaProbeFailed" xml:space="preserve"><value>Impossibile leggere il video: {0}</value></data>
+  <data name="MediaSingleQuality" xml:space="preserve"><value>Unica qualità</value></data>
+  <data name="MediaUnsupported" xml:space="preserve"><value>Formato non riconosciuto ({0}).</value></data>
   <data name="MenuCopyUrl" xml:space="preserve"><value>Copia indirizzo</value></data>
   <data name="MenuDeleteCategory" xml:space="preserve"><value>Elimina categoria</value></data>
   <data name="MenuDeleteQueue" xml:space="preserve"><value>Elimina coda</value></data>
@@ -350,6 +391,12 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="SettingsConnections" xml:space="preserve"><value>_Connessioni per download (1–32)</value></data>
   <data name="SettingsConnectionsHint" xml:space="preserve"><value>Il numero di connessioni vale per i download avviati dopo il salvataggio. Il limite di file simultanei di ogni coda si imposta in Code.</value></data>
   <data name="SettingsDownloads" xml:space="preserve"><value>Download</value></data>
+  <data name="SettingsFfmpegFound" xml:space="preserve"><value>Verrà usato: {0}</value></data>
+  <data name="SettingsFfmpegLabel" xml:space="preserve"><value>ffmpeg, per unire audio e video in un MP4 (_vuoto = cerca nel PATH)</value></data>
+  <data name="SettingsFfmpegMissingFile" xml:space="preserve"><value>Il file indicato non esiste.</value></data>
+  <data name="SettingsFfmpegName" xml:space="preserve"><value>Percorso di ffmpeg</value></data>
+  <data name="SettingsFfmpegNone" xml:space="preserve"><value>ffmpeg non trovato nel PATH: i video verranno salvati in .ts o in tracce separate. ffmpeg non è incluso nell'app.</value></data>
+  <data name="SettingsFfmpegPick" xml:space="preserve"><value>Scegli ffmpeg.exe</value></data>
   <data name="SettingsFolder" xml:space="preserve"><value>Cartella _predefinita dei download</value></data>
   <data name="SettingsFolderHint" xml:space="preserve"><value>Le categorie con una cartella relativa (per esempio "Video") creano una sottocartella qui.</value></data>
   <data name="SettingsGlobalQuota" xml:space="preserve"><value>_Quota globale in MB all'ora (0 = nessuna)</value></data>
@@ -363,6 +410,7 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="SettingsTabNetwork" xml:space="preserve"><value>Rete</value></data>
   <data name="SettingsTheme" xml:space="preserve"><value>Tema</value></data>
   <data name="SettingsTitle" xml:space="preserve"><value>Impostazioni</value></data>
+  <data name="SettingsVideo" xml:space="preserve"><value>Video dal browser</value></data>
   <data name="SpeedCustomLabel" xml:space="preserve"><value>_Limite in KB/s (0 = nessun limite)</value></data>
   <data name="SpeedCustomName" xml:space="preserve"><value>Limite di velocità in KB/s</value></data>
   <data name="SpeedCustomTitle" xml:space="preserve"><value>Limite di velocità</value></data>
@@ -371,6 +419,7 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="StartupWarning" xml:space="preserve"><value>Una coda è pianificata, ma DownloadManager non si avvia con Windows: la pianificazione funziona solo con l'app aperta (anche ridotta nell'area di notifica).</value></data>
   <data name="StatusBar" xml:space="preserve"><value>{0} di {1} code attive  ·  {2} in download  ·  {3} in attesa  ·  {4} totali</value></data>
   <data name="StatusCompleted" xml:space="preserve"><value>Completato</value></data>
+  <data name="StatusCompletedWithNote" xml:space="preserve"><value>Completato (vedi nota)</value></data>
   <data name="StatusConnecting" xml:space="preserve"><value>Connessione…</value></data>
   <data name="StatusDownloading" xml:space="preserve"><value>In download</value></data>
   <data name="StatusFailed" xml:space="preserve"><value>Errore</value></data>

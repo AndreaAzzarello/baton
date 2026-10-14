@@ -193,33 +193,64 @@ public partial class App : Application
     }
 
     /// <summary>Messages from the browser extension (via the native host) or from a second app launch.</summary>
-    private Task<ChannelReply> OnChannelMessage(ChannelMessage message)
+    private async Task<ChannelReply> OnChannelMessage(ChannelMessage message)
     {
+        // Messages were validated by the channel (known types, sizes, address schemes) before reaching here.
         switch (message.Type)
         {
             case Messages.Ping:
-                return Task.FromResult(new ChannelReply(true));
+                return new ChannelReply(true);
+
+            case Messages.Hello:
+                return new ChannelReply(true, Protocol: Messages.ProtocolVersion, AppVersion: AppVersion);
 
             case Messages.Activate:
-                Dispatcher.InvokeAsync(() => (MainWindow as MainWindow)?.BringToFront());
-                return Task.FromResult(new ChannelReply(true));
+                _ = Dispatcher.InvokeAsync(() => (MainWindow as MainWindow)?.BringToFront());
+                return new ChannelReply(true);
 
             case Messages.Queues:
                 // For the extension's popup: the main queue first, as in the app.
                 var names = _service?.Queues.OrderByDescending(q => q.IsMain).Select(q => q.Name).ToList() ?? [];
-                return Task.FromResult(new ChannelReply(true, Queues: names));
+                return new ChannelReply(true, Queues: names);
 
             case Messages.Add when message.Download is { } download:
-                if (!Urls.TryParseDownload(download.Url, out _))
-                    return Task.FromResult(new ChannelReply(false, Error: Strings.ErrorOnlyHttp));
                 // The browser gets its answer right away; the confirmation dialog does not keep it waiting.
-                Dispatcher.InvokeAsync(() => _viewModel?.ReceiveFromBrowser(download, (MainWindow as MainWindow)?.IsClosing == true));
-                return Task.FromResult(new ChannelReply(true));
+                OnUi(closing => _viewModel?.ReceiveFromBrowser(download, closing));
+                return new ChannelReply(true);
+
+            case Messages.ProbeMedia when message.Media is { } media && _service is not null:
+                try
+                {
+                    return new ChannelReply(true, Protocol: Messages.ProtocolVersion, Media: await _service.ProbeMediaAsync(media));
+                }
+                catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or TimeoutException or DownloadFailedException
+                                               or AuthenticationRequiredException or FormatException or System.Xml.XmlException
+                                               or OperationCanceledException)
+                {
+                    return new ChannelReply(false, Error: string.Format(CultureInfo.CurrentCulture, Strings.MediaProbeFailed, ex.Message));
+                }
+
+            case Messages.AddMedia when message.Media is { } media:
+                if (Core.Media.MediaPolicy.IsRestricted(media.Url) || Core.Media.MediaPolicy.IsRestricted(media.PageUrl))
+                    return new ChannelReply(false, Error: Strings.MediaBlockedTerms);
+                OnUi(closing => _viewModel?.ReceiveMedia(media, closing));
+                return new ChannelReply(true);
+
+            case Messages.Batch when message.Batch is { } batch:
+                OnUi(closing => _viewModel?.ReceiveBatch(batch, closing));
+                return new ChannelReply(true);
 
             default:
-                return Task.FromResult(new ChannelReply(false, Error: string.Format(Strings.ErrorUnknownMessage, message.Type)));
+                return new ChannelReply(false, Error: string.Format(Strings.ErrorUnknownMessage, message.Type));
         }
     }
+
+    /// <summary>Runs on the UI thread, telling whether the app is closing (requests then wait instead of opening dialogs).</summary>
+    private void OnUi(Action<bool> action) =>
+        Dispatcher.InvokeAsync(() => action((MainWindow as MainWindow)?.IsClosing == true));
+
+    /// <summary>The app's version, e.g. "0.6.0", reported to the extension's connection check.</summary>
+    public static string AppVersion => typeof(App).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "?";
 
     private static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {

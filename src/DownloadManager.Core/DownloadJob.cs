@@ -4,11 +4,21 @@ using DownloadManager.Core.Net;
 
 namespace DownloadManager.Core;
 
+/// <summary>A running download, as the service sees it: a file (<see cref="DownloadJob"/>) or a stream (<see cref="Media.MediaJob"/>).</summary>
+public interface IDownloadJob
+{
+    DownloadRecord Record { get; }
+    long BytesDownloaded { get; }
+    int ActiveConnections { get; }
+    List<SegmentView>? SegmentsView();
+    Task RunAsync(CancellationToken ct);
+}
+
 /// <summary>
 /// Downloads one file with several range connections into a single preallocated part file, over HTTP(S) or FTP(S).
 /// Progress is checkpointed so a cancelled or crashed job can resume where it stopped.
 /// </summary>
-public sealed class DownloadJob
+public sealed class DownloadJob : IDownloadJob
 {
     private readonly HttpClient _sharedHttp;
     private readonly NetworkContext? _network;

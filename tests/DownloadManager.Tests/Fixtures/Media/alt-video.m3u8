@@ -1,0 +1,11 @@
+#EXTM3U
+#EXT-X-VERSION:7
+#EXT-X-TARGETDURATION:6
+#EXT-X-MAP:URI="alt-vinit.mp4"
+#EXTINF:6.0,
+alt-v0.m4s
+#EXTINF:6.0,
+alt-v1.m4s
+#EXTINF:3.5,
+alt-v2.m4s
+#EXT-X-ENDLIST

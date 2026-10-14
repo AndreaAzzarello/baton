@@ -12,16 +12,26 @@ public static class NativeHost
 {
     public const string Name = "com.downloadmanager.host";
 
-    /// <summary>ID of the bundled extension, fixed by the public key in its manifest.</summary>
+    /// <summary>ID of the bundled extension in Chromium browsers, fixed by the public key in its manifest.</summary>
     public const string ExtensionId = "fngmjmgaglmoebphcjohnhlaceogneno";
 
+    /// <summary>ID of the extension in Firefox (browser_specific_settings.gecko.id).</summary>
+    public const string FirefoxExtensionId = "downloadmanager@extension.local";
+
+    /// <summary>The browser limits messages to the host to 4 MB; "download all" of a big page comes close.</summary>
     private const int MaxIncomingBytes = 4 * 1024 * 1024;
 
-    /// <summary>Chromium passes the caller's origin as the first argument (Firefox would pass the manifest path).</summary>
+    /// <summary>
+    /// Chromium passes the caller's origin as the first argument; Firefox passes the path of the host manifest and
+    /// then the extension's ID.
+    /// </summary>
     public static bool IsHostInvocation(string[] args) =>
-        args.Length > 0 && args[0].StartsWith("chrome-extension://", StringComparison.OrdinalIgnoreCase);
+        args.Length > 0 && args[0].StartsWith("chrome-extension://", StringComparison.OrdinalIgnoreCase)
+        || args.Length > 1 && args[1] == FirefoxExtensionId && args[0].EndsWith(".json", StringComparison.OrdinalIgnoreCase);
 
-    public static async Task RunAsync(Stream input, Stream output, string pipeName, Func<bool> launchApp, TimeSpan startupTimeout)
+    /// <param name="appVersion">This executable's version, reported to the extension's connection check.</param>
+    public static async Task RunAsync(Stream input, Stream output, string pipeName, Func<bool> launchApp, TimeSpan startupTimeout,
+        string? appVersion = null)
     {
         while (await ReadMessageAsync(input) is { } json)
         {
@@ -29,26 +39,32 @@ public static class NativeHost
             try
             {
                 var message = JsonSerializer.Deserialize<ChannelMessage>(json, Messages.Json) ?? throw new JsonException("Empty message.");
-                reply = await ForwardAsync(message, pipeName, launchApp, startupTimeout);
+                // Checked here as well as in the app: an invalid message never even starts the app.
+                reply = MessageValidator.Validate(message) is { } error
+                    ? new ChannelReply(false, Error: error, Protocol: Messages.ProtocolVersion)
+                    : await ForwardAsync(message, pipeName, launchApp, startupTimeout, appVersion);
             }
-            catch (JsonException ex)
+            catch (JsonException)
             {
-                reply = new ChannelReply(false, Error: ex.Message);
+                reply = new ChannelReply(false, Error: "Malformed message.", Protocol: Messages.ProtocolVersion);
             }
             await WriteMessageAsync(output, JsonSerializer.SerializeToUtf8Bytes(reply, Messages.Json));
         }
     }
 
-    public static async Task<ChannelReply> ForwardAsync(ChannelMessage message, string pipeName, Func<bool> launchApp, TimeSpan startupTimeout)
+    public static async Task<ChannelReply> ForwardAsync(ChannelMessage message, string pipeName, Func<bool> launchApp, TimeSpan startupTimeout,
+        string? appVersion = null)
     {
         var reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromMilliseconds(500));
         if (reply is not null)
             return reply;
-        // Questions from the popup never start the app.
+        // Questions from the popup and the connection check never start the app.
         if (message.Type == Messages.Ping)
             return new ChannelReply(true, Running: false);
         if (message.Type == Messages.Queues)
             return new ChannelReply(true, Running: false, Queues: []);
+        if (message.Type == Messages.Hello)
+            return new ChannelReply(true, Running: false, Protocol: Messages.ProtocolVersion, AppVersion: appVersion);
 
         if (!launchApp())
             return new ChannelReply(false, Running: false, Error: "Impossibile avviare DownloadManager.");

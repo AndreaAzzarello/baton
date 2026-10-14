@@ -1,0 +1,299 @@
+{
+  "extName": {
+    "message": "DownloadManager"
+  },
+  "extDescription": {
+    "message": "Invia i download del browser, i link delle pagine e i video all'app DownloadManager per Windows."
+  },
+  "menuLink": {
+    "message": "Scarica con DownloadManager"
+  },
+  "menuAll": {
+    "message": "Scarica tutto con DownloadManager…"
+  },
+  "titleAuto": {
+    "message": "DownloadManager — intercetta i download"
+  },
+  "titleMenu": {
+    "message": "DownloadManager — solo menu contestuale"
+  },
+  "fallbackNotice": {
+    "message": "DownloadManager non ha preso il download ($1). Lo scarica il browser."
+  },
+  "errorBadReply": {
+    "message": "risposta non valida dall'app"
+  },
+  "errorTimeout": {
+    "message": "l'app non ha risposto in tempo"
+  },
+  "errorBlobMedia": {
+    "message": "Questo video è riprodotto da dati interni alla pagina: usa il pulsante «Scarica questo video» che compare sulla pagina."
+  },
+  "errorNotDownloadable": {
+    "message": "Questo collegamento non può essere scaricato con DownloadManager."
+  },
+  "errorNotReceived": {
+    "message": "DownloadManager non l'ha ricevuto: $1"
+  },
+  "errorPageAccess": {
+    "message": "Impossibile leggere la pagina: $1"
+  },
+  "errorNoLinks": {
+    "message": "Questa pagina non ha link da scaricare."
+  },
+  "errorUnknownMedia": {
+    "message": "Questo video non è stato caricato dalla pagina."
+  },
+  "mediaTerms": {
+    "message": "I termini di servizio di questo sito non consentono di scaricarne i video: DownloadManager non lo propone."
+  },
+  "mediaDrm": {
+    "message": "Questo video è protetto (DRM): non si può scaricare e DownloadManager non aggira le protezioni."
+  },
+  "mediaLive": {
+    "message": "È una diretta: si possono scaricare solo video completi."
+  },
+  "mediaButton": {
+    "message": "Scarica questo video"
+  },
+  "mediaButtonCount": {
+    "message": "Scarica questo video ($1 trovati)"
+  },
+  "mediaPanelTitle": {
+    "message": "Video della pagina"
+  },
+  "close": {
+    "message": "Chiudi"
+  },
+  "mediaHideOnSite": {
+    "message": "Non mostrare su questo sito"
+  },
+  "mediaStream": {
+    "message": "Video $1 · $2"
+  },
+  "mediaQualities": {
+    "message": "Qualità"
+  },
+  "mediaLoading": {
+    "message": "Lettura delle qualità disponibili…"
+  },
+  "mediaAppOutdated": {
+    "message": "Aggiorna DownloadManager alla versione 0.6 o successiva per scaricare i video."
+  },
+  "mediaSizeUnknown": {
+    "message": "dimensione ignota"
+  },
+  "mediaDownload": {
+    "message": "Scarica"
+  },
+  "mediaDownloadQuality": {
+    "message": "Scarica in $1"
+  },
+  "mediaSending": {
+    "message": "Invio…"
+  },
+  "mediaSent": {
+    "message": "Inviato ✓"
+  },
+  "mediaSentStatus": {
+    "message": "$1 inviato a DownloadManager."
+  },
+  "mediaEstimateHint": {
+    "message": "Le dimensioni sono stime basate sul bitrate."
+  },
+  "mediaKindFile": {
+    "message": "file"
+  },
+  "statusChecking": {
+    "message": "Verifica…"
+  },
+  "modeLegend": {
+    "message": "Download del browser"
+  },
+  "modeAuto": {
+    "message": "Intercetta automaticamente"
+  },
+  "modeAutoHint": {
+    "message": "I download che rispettano le regole passano all'app; se non risponde, restano al browser."
+  },
+  "modeMenu": {
+    "message": "Solo menu contestuale"
+  },
+  "modeMenuHint": {
+    "message": "Il browser scarica come sempre; usa il tasto destro su un link per l'app."
+  },
+  "queueLabel": {
+    "message": "Coda dei download dal browser"
+  },
+  "queueHint": {
+    "message": "Le code sono quelle create nell'app."
+  },
+  "siteTitle": {
+    "message": "Su $1"
+  },
+  "siteRuleLabel": {
+    "message": "Download da questo sito"
+  },
+  "siteRuleNormal": {
+    "message": "Segui le regole"
+  },
+  "siteRuleAlways": {
+    "message": "Intercetta sempre"
+  },
+  "siteRuleNever": {
+    "message": "Non intercettare mai"
+  },
+  "siteButton": {
+    "message": "Pulsante «Scarica questo video»"
+  },
+  "rulesTitle": {
+    "message": "Regole"
+  },
+  "extensionsLabel": {
+    "message": "Tipi di file da intercettare"
+  },
+  "minSizeLabel": {
+    "message": "Solo file più grandi di (MB, 0 = tutti)"
+  },
+  "alwaysSitesLabel": {
+    "message": "Intercetta sempre da questi siti (qualsiasi tipo e dimensione)"
+  },
+  "neverSitesLabel": {
+    "message": "Non intercettare mai da questi siti"
+  },
+  "sitesPlaceholder": {
+    "message": "esempio.it file.esempio.org"
+  },
+  "mediaButtonSetting": {
+    "message": "Mostra il pulsante «Scarica questo video»"
+  },
+  "mediaDisabledLabel": {
+    "message": "Siti senza pulsante video"
+  },
+  "altHint": {
+    "message": "Alt+clic su un link: questa volta scarica il browser."
+  },
+  "checkLink": {
+    "message": "Verifica connessione"
+  },
+  "mainQueue": {
+    "message": "Coda principale"
+  },
+  "queueMissing": {
+    "message": "$1 (non trovata: verrà usata la principale)"
+  },
+  "chip_running": {
+    "message": "App in esecuzione"
+  },
+  "chip_ready": {
+    "message": "Pronta"
+  },
+  "chip_outdated": {
+    "message": "App da aggiornare"
+  },
+  "chip_missing": {
+    "message": "Non collegata"
+  },
+  "chip_forbidden": {
+    "message": "Non autorizzata"
+  },
+  "chip_error": {
+    "message": "Nessuna risposta"
+  },
+  "state_checking": {
+    "message": "Verifica della connessione…"
+  },
+  "state_running": {
+    "message": "Collegata, app in esecuzione"
+  },
+  "state_ready": {
+    "message": "Collegata (l'app si avvia quando serve)"
+  },
+  "state_outdated": {
+    "message": "L'app va aggiornata"
+  },
+  "state_missing": {
+    "message": "App non registrata per questo browser"
+  },
+  "state_forbidden": {
+    "message": "Il browser rifiuta l'app"
+  },
+  "state_error": {
+    "message": "Problema di collegamento"
+  },
+  "checkTitle": {
+    "message": "DownloadManager — verifica connessione"
+  },
+  "checkIntro": {
+    "message": "L'estensione parla con l'app tramite un piccolo programma ponte (l'«host nativo») che l'app registra per ogni browser."
+  },
+  "checkRegister": {
+    "message": "Registra"
+  },
+  "checkRetry": {
+    "message": "Verifica di nuovo"
+  },
+  "checkExtension": {
+    "message": "Estensione"
+  },
+  "checkHost": {
+    "message": "Host nativo"
+  },
+  "checkApp": {
+    "message": "App"
+  },
+  "checkExtensionValue": {
+    "message": "$1 su $2, protocollo $3"
+  },
+  "checkHostMissing": {
+    "message": "non trovato per questo browser"
+  },
+  "checkHostFound": {
+    "message": "registrato"
+  },
+  "checkAppValue": {
+    "message": "versione $1, protocollo $2, $3"
+  },
+  "checkAppStopped": {
+    "message": "non in esecuzione (si avvia al primo download)"
+  },
+  "checkAppRunning": {
+    "message": "in esecuzione"
+  },
+  "checkAppOld": {
+    "message": "versione 0.5 o precedente (protocollo 1)"
+  },
+  "checkText_running": {
+    "message": "Tutto funziona: download, «Scarica tutto» e pulsante video."
+  },
+  "checkText_ready": {
+    "message": "Tutto funziona. L'app ora non è aperta: si avvia da sola quando il browser le invia qualcosa."
+  },
+  "checkText_outdated": {
+    "message": "L'app risponde ma è una versione precedente: i download semplici funzionano, i video e «Scarica tutto» richiedono DownloadManager 0.6 o successiva."
+  },
+  "checkText_missing": {
+    "message": "Questo browser non trova l'host nativo dell'app. Lo registra l'app stessa, per l'utente Windows corrente."
+  },
+  "checkText_forbidden": {
+    "message": "L'host è registrato, ma non per l'ID di questa estensione (per esempio una copia caricata da un'altra cartella in Firefox)."
+  },
+  "checkText_error": {
+    "message": "Impossibile raggiungere l'app. Riprova; se continua, riavvia DownloadManager."
+  },
+  "checkStepStart": {
+    "message": "Avvia DownloadManager una volta: si registra da sé per Chrome, Edge, Opera, Brave e Firefox."
+  },
+  "checkStepRegister": {
+    "message": "Oppure premi «Registra»: il browser chiede di aprire DownloadManager, che registra di nuovo l'host."
+  },
+  "checkStepFirefox": {
+    "message": "Firefox richiede DownloadManager 0.6 o successiva (le versioni precedenti non si registrano per Firefox)."
+  },
+  "checkStepChromium": {
+    "message": "Opera, Brave e Chromium usano la registrazione di Chrome; riavvia il browser se era aperto durante la registrazione."
+  },
+  "checkStepRetry": {
+    "message": "Poi premi «Verifica di nuovo»."
+  }
+}

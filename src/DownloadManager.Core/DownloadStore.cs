@@ -8,7 +8,7 @@ namespace DownloadManager.Core;
 public sealed class DownloadStore : IDisposable
 {
     /// <summary>Version written by this build. Every older version is upgraded by <see cref="Migrate"/>.</summary>
-    public const int SchemaVersion = 4;
+    public const int SchemaVersion = 5;
 
     private const string PreferencePrefix = "ui.";
 
@@ -63,6 +63,8 @@ public sealed class DownloadStore : IDisposable
             MigrateTo3(tx);
         if (version < 4)
             MigrateTo4(tx);
+        if (version < 5)
+            MigrateTo5(tx);
         Execute($"PRAGMA user_version = {SchemaVersion};", tx);
         tx.Commit();
     }
@@ -207,6 +209,12 @@ public sealed class DownloadStore : IDisposable
                 added_utc TEXT NOT NULL,
                 PRIMARY KEY (host, port, fingerprint));
             """, tx);
+    }
+
+    /// <summary>Video streams (HLS, DASH): the chosen quality and what the download is put together from.</summary>
+    private void MigrateTo5(SqliteTransaction tx)
+    {
+        AddColumnIfMissing("downloads", "media", "TEXT", tx);
     }
 
     public List<SiteCredential> LoadCredentials()
@@ -410,9 +418,9 @@ public sealed class DownloadStore : IDisposable
             using var cmd = Command("""
                 INSERT INTO downloads (url, directory, file_name, total_size, etag, last_modified, supports_ranges, status, error,
                                        sort_order, added_utc, completed_utc, request_context, category_id, auto_category, content_type,
-                                       queue_id, failures, retry_at)
+                                       queue_id, failures, retry_at, media)
                 VALUES ($url, $dir, $name, $size, $etag, $lm, $ranges, $status, $error,
-                        $order, $added, $completed, $context, $category, $auto, $ctype, $queue, $failures, $retry);
+                        $order, $added, $completed, $context, $category, $auto, $ctype, $queue, $failures, $retry, $media);
                 SELECT last_insert_rowid();
                 """, tx);
             Bind(cmd, record);
@@ -433,7 +441,7 @@ public sealed class DownloadStore : IDisposable
                     last_modified = $lm, supports_ranges = $ranges, status = $status, error = $error,
                     sort_order = $order, added_utc = $added, completed_utc = $completed, request_context = $context,
                     category_id = $category, auto_category = $auto, content_type = $ctype,
-                    queue_id = $queue, failures = $failures, retry_at = $retry
+                    queue_id = $queue, failures = $failures, retry_at = $retry, media = $media
                 WHERE id = $id;
                 """, tx);
             Bind(cmd, record);
@@ -486,6 +494,7 @@ public sealed class DownloadStore : IDisposable
                         QueueId = NullableLong(reader, "queue_id"),
                         Failures = reader.GetInt32(reader.GetOrdinal("failures")),
                         RetryAtUtc = NullableString(reader, "retry_at") is { } retry ? ParseDate(retry) : null,
+                        Media = ReadMedia(NullableString(reader, "media")),
                     };
                     records[r.Id] = r;
                 }
@@ -597,7 +606,9 @@ public sealed class DownloadStore : IDisposable
                     case nameof(AppSettings.FtpActiveMode): settings.FtpActiveMode = value == "1"; break;
                     case nameof(AppSettings.TimeoutSeconds): settings.TimeoutSeconds = int.Parse(value, CultureInfo.InvariantCulture); break;
                     case nameof(AppSettings.MaxConnectionsPerServer): settings.MaxConnectionsPerServer = int.Parse(value, CultureInfo.InvariantCulture); break;
-                    case nameof(AppSettings.UserAgent): settings.UserAgent = value; break;
+                    // The default of an earlier version follows the app's version instead of staying behind.
+                    case nameof(AppSettings.UserAgent): settings.UserAgent = value.StartsWith("DownloadManager/0.", StringComparison.Ordinal) ? AppSettings.DefaultUserAgent : value; break;
+                    case nameof(AppSettings.FfmpegPath): settings.FfmpegPath = value; break;
                     case nameof(AppSettings.Theme) when Enum.TryParse<AppTheme>(value, out var theme): settings.Theme = theme; break;
                 }
             }
@@ -632,6 +643,7 @@ public sealed class DownloadStore : IDisposable
             [nameof(AppSettings.TimeoutSeconds)] = settings.TimeoutSeconds.ToString(CultureInfo.InvariantCulture),
             [nameof(AppSettings.MaxConnectionsPerServer)] = settings.MaxConnectionsPerServer.ToString(CultureInfo.InvariantCulture),
             [nameof(AppSettings.UserAgent)] = settings.UserAgent,
+            [nameof(AppSettings.FfmpegPath)] = settings.FfmpegPath,
         };
         lock (_lock)
         {
@@ -737,6 +749,21 @@ public sealed class DownloadStore : IDisposable
         cmd.Parameters.AddWithValue("$queue", (object?)r.QueueId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$failures", r.Failures);
         cmd.Parameters.AddWithValue("$retry", r.RetryAtUtc is { } retry ? retry.ToString("O", CultureInfo.InvariantCulture) : DBNull.Value);
+        cmd.Parameters.AddWithValue("$media", r.Media is { } media ? System.Text.Json.JsonSerializer.Serialize(media, MediaJson) : DBNull.Value);
+    }
+
+    private static readonly System.Text.Json.JsonSerializerOptions MediaJson = new(System.Text.Json.JsonSerializerDefaults.Web);
+
+    private static MediaSource? ReadMedia(string? json)
+    {
+        try
+        {
+            return json is null ? null : System.Text.Json.JsonSerializer.Deserialize<MediaSource>(json, MediaJson);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
     }
 
     private SqliteCommand Command(string sql, SqliteTransaction? tx = null)
