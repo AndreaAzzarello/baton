@@ -1,0 +1,97 @@
+using System.Buffers.Binary;
+using System.Text.Json;
+
+namespace DownloadManager.Core.Integration;
+
+/// <summary>
+/// Browser native messaging host: the browser starts it with stdin/stdout pipes and exchanges
+/// JSON messages, each prefixed by its length as a 32-bit little-endian integer.
+/// Messages are forwarded to the running app, which is started first when needed.
+/// </summary>
+public static class NativeHost
+{
+    public const string Name = "com.downloadmanager.host";
+
+    /// <summary>ID of the bundled extension, fixed by the public key in its manifest.</summary>
+    public const string ExtensionId = "fngmjmgaglmoebphcjohnhlaceogneno";
+
+    private const int MaxIncomingBytes = 4 * 1024 * 1024;
+
+    /// <summary>Chromium passes the caller's origin as the first argument (Firefox would pass the manifest path).</summary>
+    public static bool IsHostInvocation(string[] args) =>
+        args.Length > 0 && args[0].StartsWith("chrome-extension://", StringComparison.OrdinalIgnoreCase);
+
+    public static async Task RunAsync(Stream input, Stream output, string pipeName, Func<bool> launchApp, TimeSpan startupTimeout)
+    {
+        while (await ReadMessageAsync(input) is { } json)
+        {
+            ChannelReply reply;
+            try
+            {
+                var message = JsonSerializer.Deserialize<ChannelMessage>(json, Messages.Json) ?? throw new JsonException("Empty message.");
+                reply = await ForwardAsync(message, pipeName, launchApp, startupTimeout);
+            }
+            catch (JsonException ex)
+            {
+                reply = new ChannelReply(false, Error: ex.Message);
+            }
+            await WriteMessageAsync(output, JsonSerializer.SerializeToUtf8Bytes(reply, Messages.Json));
+        }
+    }
+
+    public static async Task<ChannelReply> ForwardAsync(ChannelMessage message, string pipeName, Func<bool> launchApp, TimeSpan startupTimeout)
+    {
+        var reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromMilliseconds(500));
+        if (reply is not null)
+            return reply;
+        if (message.Type == Messages.Ping)
+            return new ChannelReply(true, Running: false);
+
+        if (!launchApp())
+            return new ChannelReply(false, Running: false, Error: "Impossibile avviare DownloadManager.");
+        var deadline = DateTime.UtcNow + startupTimeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromSeconds(1));
+            if (reply is not null)
+                return reply;
+        }
+        return new ChannelReply(false, Running: false, Error: "DownloadManager non ha risposto in tempo.");
+    }
+
+    public static async Task<byte[]?> ReadMessageAsync(Stream input)
+    {
+        var header = new byte[4];
+        if (!await ReadExactlyOrEndAsync(input, header))
+            return null;
+        var length = BinaryPrimitives.ReadInt32LittleEndian(header);
+        if (length < 0 || length > MaxIncomingBytes)
+            throw new InvalidDataException($"Invalid message length {length}.");
+        var body = new byte[length];
+        if (!await ReadExactlyOrEndAsync(input, body))
+            throw new EndOfStreamException("Truncated message.");
+        return body;
+    }
+
+    public static async Task WriteMessageAsync(Stream output, byte[] json)
+    {
+        var header = new byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(header, json.Length);
+        await output.WriteAsync(header);
+        await output.WriteAsync(json);
+        await output.FlushAsync();
+    }
+
+    private static async Task<bool> ReadExactlyOrEndAsync(Stream input, byte[] buffer)
+    {
+        var total = 0;
+        while (total < buffer.Length)
+        {
+            var read = await input.ReadAsync(buffer.AsMemory(total));
+            if (read == 0)
+                return total == 0 && buffer.Length > 0 ? false : throw new EndOfStreamException("Truncated message.");
+            total += read;
+        }
+        return true;
+    }
+}

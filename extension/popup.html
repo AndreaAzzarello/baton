@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <title>DownloadManager</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="icons/icon32.png" alt="" width="20" height="20">
+    <h1>DownloadManager</h1>
+  </header>
+
+  <p id="status" class="status" role="status">Verifica dell'app…</p>
+
+  <label class="row">
+    <input type="checkbox" id="intercept">
+    <span>Intercetta i download del browser</span>
+  </label>
+
+  <label for="extensions" class="label">Tipi di file da intercettare</label>
+  <textarea id="extensions" rows="3" spellcheck="false"></textarea>
+
+  <label for="minSize" class="label">Solo file più grandi di (MB, 0 = tutti)</label>
+  <input type="number" id="minSize" min="0" step="1">
+
+  <p class="hint">Per qualsiasi link: tasto destro → <b>Scarica con DownloadManager</b>.</p>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

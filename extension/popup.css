@@ -1,0 +1,16 @@
+:root { --bg: #ffffff; --text: #1d2433; --muted: #6b7385; --border: #e2e5ee; --accent: #2f6feb; --ok: #1f9d63; --bad: #d64545; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #1d2129; --text: #e7eaf0; --muted: #9aa2b4; --border: #343a46; --accent: #6b9bff; --ok: #3ccf8e; --bad: #ff7b7b; }
+}
+body { margin: 0; padding: 14px 16px; width: 300px; background: var(--bg); color: var(--text); font: 13px/1.4 "Segoe UI", system-ui, sans-serif; }
+header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+h1 { font-size: 15px; margin: 0; font-weight: 600; }
+.status { margin: 0 0 12px; color: var(--muted); }
+.status.ok { color: var(--ok); }
+.status.bad { color: var(--bad); }
+.row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; cursor: pointer; }
+.label { display: block; color: var(--muted); margin: 8px 0 4px; }
+textarea, input[type=number] { box-sizing: border-box; width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: inherit; font: inherit; }
+textarea { resize: vertical; }
+input[type=checkbox] { accent-color: var(--accent); width: 16px; height: 16px; }
+.hint { color: var(--muted); margin: 12px 0 0; }
