@@ -19,16 +19,20 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _vm;
     private readonly Func<Task> _shutdown;
+    private readonly Func<bool> _closeToTray;
     private readonly DispatcherTimer _saveLayout = new() { Interval = TimeSpan.FromSeconds(1) };
     private ColumnLayout _layout = new();
     private Point? _dragStart;
     private bool _closingDone;
+    private bool _exiting;
 
-    public MainWindow(MainViewModel viewModel, Func<Task> shutdown)
+    /// <param name="closeToTray">Whether closing the window only hides it (the app keeps running in the notification area).</param>
+    public MainWindow(MainViewModel viewModel, Func<Task> shutdown, Func<bool> closeToTray)
     {
         InitializeComponent();
         _vm = viewModel;
         _shutdown = shutdown;
+        _closeToTray = closeToTray;
         DataContext = viewModel;
         RowMenu = BuildRowMenu();
         NavigationMenu = BuildNavigationMenu();
@@ -50,6 +54,16 @@ public partial class MainWindow : Window
 
     /// <summary>True while the window is saving downloads before closing; new requests must wait.</summary>
     public bool IsClosing { get; private set; }
+
+    /// <summary>Raised the first time the window hides in the notification area instead of closing.</summary>
+    public event Action? HiddenToTray;
+
+    /// <summary>Closes the window and ends the app (menu "Exit", or a queue's "close app" action).</summary>
+    public void ExitApp()
+    {
+        _exiting = true;
+        Close();
+    }
 
     public void BringToFront()
     {
@@ -229,8 +243,29 @@ public partial class MainWindow : Window
         Add(Strings.MenuProgress, _vm.ProgressCommand, Strings.GestureEnter);
         Add(Strings.MenuProperties, _vm.PropertiesCommand, Strings.GestureAltEnter);
         Add(Strings.MenuCopyUrl, _vm.CopyUrlCommand);
+        var moveTo = new MenuItem { Header = Strings.MenuMoveToQueue };
+        menu.Items.Add(moveTo);
         menu.Items.Add(new Separator());
         Add(Strings.MenuRemove, _vm.RemoveCommand, Strings.GestureDelete);
+        menu.Opened += (_, _) =>
+        {
+            // One entry per queue; the queue all selected downloads are already in is checked.
+            moveTo.Items.Clear();
+            var ids = _vm.SelectedItems.Select(i => i.Id).ToList();
+            foreach (var queue in _vm.Queues)
+            {
+                var item = new MenuItem
+                {
+                    Header = queue.Name,
+                    IsCheckable = true,
+                    IsChecked = _vm.SelectedItems.Count > 0 && _vm.SelectedItems.All(i => i.QueueId == queue.Id),
+                };
+                var target = queue.Id;
+                item.Click += (_, _) => _vm.MoveToQueue(ids, target);
+                moveTo.Items.Add(item);
+            }
+            moveTo.IsEnabled = ids.Count > 0;
+        };
         return menu;
     }
 
@@ -238,17 +273,30 @@ public partial class MainWindow : Window
     private ContextMenu BuildNavigationMenu()
     {
         var menu = new ContextMenu();
+        var startQueue = new MenuItem { Header = Strings.MenuStartQueue, Command = _vm.StartQueueCommand };
+        var stopQueue = new MenuItem { Header = Strings.MenuStopQueue, Command = _vm.StopQueueCommand };
+        var editQueue = new MenuItem { Header = Strings.MenuEditQueue, Command = _vm.QueuesCommand };
+        var deleteQueue = new MenuItem { Header = Strings.MenuDeleteQueue, Command = _vm.DeleteQueueCommand };
+        var newQueue = new MenuItem { Header = Strings.MenuNewQueue, Command = _vm.NewQueueCommand };
+        var queueSeparator = new Separator();
         var add = new MenuItem { Header = Strings.MenuNewCategory, Command = _vm.NewCategoryCommand };
         var edit = new MenuItem { Header = Strings.MenuEditCategory, Command = _vm.CategoriesCommand };
         var delete = new MenuItem { Header = Strings.MenuDeleteCategory, Command = _vm.DeleteCategoryCommand };
-        menu.Items.Add(add);
-        menu.Items.Add(edit);
-        menu.Items.Add(delete);
+        foreach (var item in new Control[] { startQueue, stopQueue, editQueue, deleteQueue, queueSeparator, newQueue, add, edit, delete })
+            menu.Items.Add(item);
         menu.Opened += (_, _) =>
         {
             var node = (menu.PlacementTarget as FrameworkElement)?.DataContext as NavigationNodeViewModel;
+            static Visibility Show(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
+            var isQueue = node?.IsQueue == true;
+            var queueArea = isQueue || node?.IsQueuesRoot == true;
+            startQueue.CommandParameter = stopQueue.CommandParameter = editQueue.CommandParameter = deleteQueue.CommandParameter = node?.QueueId;
+            startQueue.Visibility = stopQueue.Visibility = editQueue.Visibility = deleteQueue.Visibility = Show(isQueue);
+            newQueue.Visibility = Show(queueArea);
+            queueSeparator.Visibility = Show(isQueue); // between the actions on this queue and "New queue"
+            add.Visibility = Show(!queueArea);
             edit.CommandParameter = delete.CommandParameter = node?.CategoryId;
-            edit.Visibility = delete.Visibility = node?.IsCategory == true ? Visibility.Visible : Visibility.Collapsed;
+            edit.Visibility = delete.Visibility = Show(node?.IsCategory == true);
         };
         return menu;
     }
@@ -329,12 +377,36 @@ public partial class MainWindow : Window
             .Where(i => i.IsCompleted && i.Snapshot.FinalPath is { } p && File.Exists(p))
             .Select(i => i.Snapshot.FinalPath!)
             .ToArray();
-        if (files.Length == 0)
-            return;
         var data = new DataObject();
-        data.SetFileDropList([.. files]);
-        data.SetData(InternalDragFormat, "1"); // a plain string: other programs may read every format offered
-        DragDrop.DoDragDrop(Grid, data, DragDropEffects.Copy);
+        if (files.Length > 0)
+            data.SetFileDropList([.. files]);
+        // The ids as a plain string: other programs may read every format offered.
+        data.SetData(InternalDragFormat, string.Join(",", _vm.SelectedItems.Select(i => i.Id)));
+        DragDrop.DoDragDrop(Grid, data, DragDropEffects.Copy | DragDropEffects.Move);
+    }
+
+    private static NavigationNodeViewModel? NodeAt(DragEventArgs e) =>
+        e.OriginalSource is DependencyObject source && FindAncestor<TreeViewItem>(source) is { DataContext: NavigationNodeViewModel node } ? node : null;
+
+    private static IReadOnlyList<long> DraggedIds(IDataObject data) =>
+        data.GetData(InternalDragFormat) is string ids
+            ? ids.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(long.Parse).ToList()
+            : [];
+
+    /// <summary>Downloads dragged from the list onto a queue (moves them) or a category (re-files them).</summary>
+    private void OnTreeDragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(InternalDragFormat) && NodeAt(e) is { } node && MainViewModel.AcceptsDrop(node)
+            ? DragDropEffects.Move
+            : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnTreeDrop(object sender, DragEventArgs e)
+    {
+        e.Handled = true;
+        if (e.Data.GetDataPresent(InternalDragFormat) && NodeAt(e) is { } node)
+            _vm.DropOnNode(node, DraggedIds(e.Data));
     }
 
     private static T? FindAncestor<T>(DependencyObject? node) where T : DependencyObject
@@ -349,6 +421,15 @@ public partial class MainWindow : Window
         base.OnClosing(e);
         if (_closingDone)
             return;
+
+        // With the notification area icon, closing the window keeps the app (and its schedules) running.
+        if (!_exiting && _closeToTray())
+        {
+            e.Cancel = true;
+            Hide();
+            HiddenToTray?.Invoke();
+            return;
+        }
 
         // Checkpoint running downloads before the process exits so they resume next time.
         e.Cancel = true;

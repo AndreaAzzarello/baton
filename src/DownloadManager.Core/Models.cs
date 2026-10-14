@@ -61,6 +61,14 @@ public sealed class DownloadRecord
     /// <summary>Media type reported by the server, without parameters.</summary>
     public string? ContentType { get; set; }
 
+    public long? QueueId { get; set; }
+
+    /// <summary>Failed attempts since the last success; compared with the queue's retry count.</summary>
+    public int Failures { get; set; }
+
+    /// <summary>A failed download waiting in its queue is not started again before this time.</summary>
+    public DateTime? RetryAtUtc { get; set; }
+
     /// <summary>Browser session details needed to fetch the file; null for downloads added by hand.</summary>
     public RequestContext? Context { get; set; }
 
@@ -107,7 +115,9 @@ public sealed record DownloadSnapshot(
     DateTime? CompletedUtc = null,
     string? ETag = null,
     string? LastModified = null,
-    string? ContentType = null);
+    string? ContentType = null,
+    long? QueueId = null,
+    DateTime? RetryAtUtc = null);
 
 /// <summary>A byte range for the progress view; <see cref="Active"/> when a connection is downloading it right now.</summary>
 public sealed record SegmentView(long Start, long End, long Written, bool Active);
@@ -126,10 +136,20 @@ public sealed class EngineOptions
 public sealed class AppSettings
 {
     public int MaxConnections { get; set; } = 8;
-    public int MaxConcurrentDownloads { get; set; } = 3;
+
+    /// <summary>Downloads that all queues together may run at once; each queue also has its own limit.</summary>
+    public int MaxConcurrentDownloads { get; set; } = 10;
     public long SpeedLimitKBps { get; set; }
     public string DownloadFolder { get; set; } = KnownFolders.Downloads;
+
+    /// <summary>Until version 0.3 the state of the only queue; now the main queue keeps it (read during the upgrade).</summary>
     public bool QueueRunning { get; set; } = true;
+
+    /// <summary>MB that all downloads together may transfer in any 60 minutes; 0 = no quota.</summary>
+    public long GlobalQuotaMBPerHour { get; set; }
+
+    /// <summary>Closing the main window keeps the app running in the notification area.</summary>
+    public bool CloseToTray { get; set; } = true;
 
     /// <summary>Show the add dialog for downloads sent by the browser extension instead of starting them directly.</summary>
     public bool ConfirmBrowserDownloads { get; set; } = true;

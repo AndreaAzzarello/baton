@@ -10,7 +10,7 @@
 
         <Grid Margin="0,0,0,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="12" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
@@ -20,11 +20,15 @@
                           AutomationProperties.Name="{x:Static r:Strings.AddCategoryName}" />
             </StackPanel>
             <StackPanel Grid.Column="2">
-                <Label Content="{x:Static r:Strings.AddNameLabel}" Target="{Binding ElementName=NameBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
-                <TextBox x:Name="NameBox" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.AddNameName}"
-                         ToolTip="{x:Static r:Strings.AddNameToolTip}" />
+                <Label Content="{x:Static r:Strings.AddQueueLabel}" Target="{Binding ElementName=QueueBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <ComboBox x:Name="QueueBox" ItemsSource="{Binding Queues}" SelectedItem="{Binding Queue}" DisplayMemberPath="Name"
+                          AutomationProperties.Name="{x:Static r:Strings.AddQueueName}" ToolTip="{x:Static r:Strings.AddQueueToolTip}" />
             </StackPanel>
         </Grid>
+
+        <Label Content="{x:Static r:Strings.AddNameLabel}" Target="{Binding ElementName=NameBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+        <TextBox x:Name="NameBox" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.AddNameName}"
+                 ToolTip="{x:Static r:Strings.AddNameToolTip}" />
 
         <Label Content="{x:Static r:Strings.AddFolderLabel}" Target="{Binding ElementName=FolderBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
         <DockPanel>

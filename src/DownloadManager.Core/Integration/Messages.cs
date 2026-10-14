@@ -8,7 +8,8 @@ public sealed record BrowserDownload(
     string? FileName = null,
     string? Referrer = null,
     string? UserAgent = null,
-    List<BrowserCookie>? Cookies = null)
+    List<BrowserCookie>? Cookies = null,
+    string? Queue = null) // name of the queue; added in 0.4, older extensions omit it and get the main queue
 {
     public RequestContext ToContext() => new(Referrer, UserAgent, Cookies ?? []);
 }

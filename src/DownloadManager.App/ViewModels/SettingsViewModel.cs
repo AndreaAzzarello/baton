@@ -14,8 +14,11 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly AppSettings _original;
     private string? _error;
 
-    public SettingsViewModel(IDialogService dialogs, AppSettings current)
+    public SettingsViewModel(IDialogService dialogs, AppSettings current, bool runAtStartup)
     {
+        RunAtStartup = runAtStartup;
+        CloseToTray = current.CloseToTray;
+        GlobalQuota = current.GlobalQuotaMBPerHour.ToString(CultureInfo.CurrentCulture);
         _dialogs = dialogs;
         _original = current.Clone();
         Connections = current.MaxConnections.ToString(CultureInfo.CurrentCulture);
@@ -41,6 +44,9 @@ public sealed class SettingsViewModel : ObservableObject
     public string Folder { get; set; }
     public bool ConfirmBrowserDownloads { get; set; }
     public bool NotifyOnCompletion { get; set; }
+    public bool RunAtStartup { get; set; }
+    public bool CloseToTray { get; set; }
+    public string GlobalQuota { get; set; }
     public AppTheme Theme { get; set; }
 
     // One property per radio button keeps the XAML free of converters.
@@ -63,8 +69,10 @@ public sealed class SettingsViewModel : ObservableObject
     {
         if (!int.TryParse(Connections, out var connections) || connections is < 1 or > 32)
             Error = Strings.ErrorConnectionsRange;
-        else if (!int.TryParse(Concurrent, out var concurrent) || concurrent is < 1 or > 20)
+        else if (!int.TryParse(Concurrent, out var concurrent) || concurrent is < 1 or > 50)
             Error = Strings.ErrorConcurrentRange;
+        else if (!long.TryParse(GlobalQuota, out var quota) || quota < 0)
+            Error = Strings.ErrorQueueQuota;
         else if (!long.TryParse(SpeedLimit, out var limit) || limit < 0)
             Error = Strings.ErrorSpeedLimit;
         else if (!Path.IsPathFullyQualified(Folder.Trim()))
@@ -79,6 +87,8 @@ public sealed class SettingsViewModel : ObservableObject
             result.ConfirmBrowserDownloads = ConfirmBrowserDownloads;
             result.NotifyOnCompletion = NotifyOnCompletion;
             result.Theme = Theme;
+            result.CloseToTray = CloseToTray;
+            result.GlobalQuotaMBPerHour = quota;
             Result = result;
             return true;
         }

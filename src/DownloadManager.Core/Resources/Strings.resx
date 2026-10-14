@@ -20,6 +20,8 @@
   <data name="ActionProgressToolTip" xml:space="preserve"><value>Mostra segmenti, connessioni e velocità del download selezionato (Invio)</value></data>
   <data name="ActionProperties" xml:space="preserve"><value>Proprietà</value></data>
   <data name="ActionPropertiesToolTip" xml:space="preserve"><value>Dettagli, categoria e aggiornamento dell'indirizzo del download selezionato (Alt+Invio)</value></data>
+  <data name="ActionQueues" xml:space="preserve"><value>Code</value></data>
+  <data name="ActionQueuesToolTip" xml:space="preserve"><value>Gestisci code, pianificazioni, limiti e azioni a fine coda</value></data>
   <data name="ActionRemove" xml:space="preserve"><value>Rimuovi</value></data>
   <data name="ActionRemoveToolTip" xml:space="preserve"><value>Rimuovi dall'elenco (Canc)</value></data>
   <data name="ActionResume" xml:space="preserve"><value>Riprendi</value></data>
@@ -35,6 +37,9 @@
   <data name="AddNameLabel" xml:space="preserve"><value>_Nome file (facoltativo)</value></data>
   <data name="AddNameName" xml:space="preserve"><value>Nome file</value></data>
   <data name="AddNameToolTip" xml:space="preserve"><value>Lascia vuoto per usare il nome indicato dal server</value></data>
+  <data name="AddQueueLabel" xml:space="preserve"><value>C_oda</value></data>
+  <data name="AddQueueName" xml:space="preserve"><value>Coda</value></data>
+  <data name="AddQueueToolTip" xml:space="preserve"><value>«Scarica ora» avvia subito il download; «Aggiungi alla coda» lo fa partire quando tocca a lui in questa coda</value></data>
   <data name="AddStartNow" xml:space="preserve"><value>Scarica ora</value></data>
   <data name="AddTitle" xml:space="preserve"><value>Aggiungi download</value></data>
   <data name="AddToQueue" xml:space="preserve"><value>Aggiungi alla coda</value></data>
@@ -78,30 +83,56 @@ Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></da
   <data name="ColumnFolder" xml:space="preserve"><value>Cartella</value></data>
   <data name="ColumnName" xml:space="preserve"><value>Nome file</value></data>
   <data name="ColumnProgress" xml:space="preserve"><value>Avanzamento</value></data>
+  <data name="ColumnQueue" xml:space="preserve"><value>Coda</value></data>
   <data name="ColumnRemaining" xml:space="preserve"><value>Tempo rimasto</value></data>
   <data name="ColumnSize" xml:space="preserve"><value>Dimensione</value></data>
   <data name="ColumnSpeed" xml:space="preserve"><value>Velocità</value></data>
   <data name="ColumnStatus" xml:space="preserve"><value>Stato</value></data>
   <data name="ConfirmAddLinks" xml:space="preserve"><value>Aggiungere {0} download alla coda?</value></data>
   <data name="ConfirmDeleteCategory" xml:space="preserve"><value>Eliminare la categoria "{0}"? I suoi download passeranno alla categoria Generale; i file restano dove sono.</value></data>
+  <data name="ConfirmDeleteQueue" xml:space="preserve"><value>Eliminare la coda "{0}"? I suoi download passeranno alla Coda principale.</value></data>
   <data name="ConfirmRemove" xml:space="preserve"><value>Rimuovere {0} download dall'elenco? I dati parziali verranno eliminati.</value></data>
   <data name="ConfirmRemoveCompleted" xml:space="preserve"><value>Eliminare dal disco anche i file già scaricati?
 
 Sì: elimina file ed elemento
 No: rimuovi solo dall'elenco</value></data>
+  <data name="CountdownAnnouncement" xml:space="preserve"><value>{0} secondi</value></data>
+  <data name="CountdownCancel" xml:space="preserve"><value>_Annulla</value></data>
+  <data name="CountdownHeading" xml:space="preserve"><value>La coda «{0}» ha finito</value></data>
+  <data name="CountdownMessage" xml:space="preserve"><value>Azione prevista: {0} tra {1} secondi. Puoi annullarla.</value></data>
+  <data name="CountdownNow" xml:space="preserve"><value>{0} _ora</value></data>
+  <data name="CountdownSecondsName" xml:space="preserve"><value>Secondi rimanenti</value></data>
+  <data name="CountdownTitle" xml:space="preserve"><value>{0} tra poco</value></data>
   <data name="EmptyFilteredHint" xml:space="preserve"><value>Scegli un altro filtro nel pannello a sinistra o cambia la ricerca</value></data>
   <data name="EmptyFilteredTitle" xml:space="preserve"><value>Nessun download corrisponde</value></data>
   <data name="EmptyHint" xml:space="preserve"><value>Premi Aggiungi (Ctrl+N), incolla un link con Ctrl+V oppure trascinalo qui</value></data>
   <data name="EmptyTitle" xml:space="preserve"><value>Nessun download</value></data>
+  <data name="EnableStartup" xml:space="preserve"><value>Avvia con Windows</value></data>
+  <data name="EndActionCloseApp" xml:space="preserve"><value>Chiudi l'app</value></data>
+  <data name="EndActionHibernate" xml:space="preserve"><value>Iberna</value></data>
+  <data name="EndActionNone" xml:space="preserve"><value>Nessuna</value></data>
+  <data name="EndActionShutdown" xml:space="preserve"><value>Spegni il PC</value></data>
+  <data name="EndActionSleep" xml:space="preserve"><value>Sospendi</value></data>
   <data name="ErrorCategoryDuplicate" xml:space="preserve"><value>Esiste già una categoria chiamata "{0}".</value></data>
   <data name="ErrorCategoryFolder" xml:space="preserve"><value>La cartella della categoria "{0}" deve essere un percorso completo.</value></data>
   <data name="ErrorCategoryName" xml:space="preserve"><value>Ogni categoria deve avere un nome.</value></data>
-  <data name="ErrorConcurrentRange" xml:space="preserve"><value>I download simultanei devono essere un numero tra 1 e 20.</value></data>
+  <data name="ErrorConcurrentRange" xml:space="preserve"><value>I download simultanei in totale devono essere un numero tra 1 e 50.</value></data>
   <data name="ErrorConnectionsRange" xml:space="preserve"><value>Le connessioni per download devono essere un numero tra 1 e 32.</value></data>
   <data name="ErrorFileMissing" xml:space="preserve"><value>Il file non esiste più: potrebbe essere stato spostato o eliminato.</value></data>
   <data name="ErrorFolderNotAbsolute" xml:space="preserve"><value>Indica una cartella completa (es. C:\Users\…\Downloads).</value></data>
   <data name="ErrorInvalidUrl" xml:space="preserve"><value>Inserisci un indirizzo http:// o https:// valido.</value></data>
   <data name="ErrorOnlyHttp" xml:space="preserve"><value>Sono supportati solo indirizzi http e https.</value></data>
+  <data name="ErrorQueueConcurrent" xml:space="preserve"><value>i file simultanei devono essere un numero tra 1 e 20.</value></data>
+  <data name="ErrorQueueDate" xml:space="preserve"><value>scegli la data.</value></data>
+  <data name="ErrorQueueDays" xml:space="preserve"><value>scegli almeno un giorno della settimana.</value></data>
+  <data name="ErrorQueueDuplicate" xml:space="preserve"><value>esiste già una coda chiamata "{0}".</value></data>
+  <data name="ErrorQueueName" xml:space="preserve"><value>la coda deve avere un nome.</value></data>
+  <data name="ErrorQueueQuota" xml:space="preserve"><value>la quota deve essere 0 o un numero positivo di MB.</value></data>
+  <data name="ErrorQueueRepeat" xml:space="preserve"><value>la ripetizione deve essere tra 0 e 1440 minuti.</value></data>
+  <data name="ErrorQueueRetries" xml:space="preserve"><value>i tentativi devono essere un numero tra 0 e 100.</value></data>
+  <data name="ErrorQueueRetryDelay" xml:space="preserve"><value>la pausa tra i tentativi deve essere tra 0 e 86400 secondi.</value></data>
+  <data name="ErrorQueueStart" xml:space="preserve"><value>indica l'ora di avvio nel formato hh:mm, per esempio 22:30.</value></data>
+  <data name="ErrorQueueStop" xml:space="preserve"><value>l'ora di arresto deve essere nel formato hh:mm e diversa da quella di avvio.</value></data>
   <data name="ErrorSpeedLimit" xml:space="preserve"><value>Il limite di velocità deve essere 0 o un numero positivo.</value></data>
   <data name="ErrorUnexpected" xml:space="preserve"><value>Errore imprevisto</value></data>
   <data name="ErrorUnknownMessage" xml:space="preserve"><value>Messaggio sconosciuto: {0}</value></data>
@@ -116,9 +147,13 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="ListName" xml:space="preserve"><value>Elenco dei download</value></data>
   <data name="MenuCopyUrl" xml:space="preserve"><value>Copia indirizzo</value></data>
   <data name="MenuDeleteCategory" xml:space="preserve"><value>Elimina categoria</value></data>
+  <data name="MenuDeleteQueue" xml:space="preserve"><value>Elimina coda</value></data>
   <data name="MenuEditCategory" xml:space="preserve"><value>Modifica categoria…</value></data>
+  <data name="MenuEditQueue" xml:space="preserve"><value>Modifica coda…</value></data>
   <data name="MenuEnqueue" xml:space="preserve"><value>Metti in coda</value></data>
+  <data name="MenuMoveToQueue" xml:space="preserve"><value>Sposta nella coda</value></data>
   <data name="MenuNewCategory" xml:space="preserve"><value>Nuova categoria…</value></data>
+  <data name="MenuNewQueue" xml:space="preserve"><value>Nuova coda…</value></data>
   <data name="MenuOpen" xml:space="preserve"><value>Apri</value></data>
   <data name="MenuOpenFolder" xml:space="preserve"><value>Apri cartella</value></data>
   <data name="MenuPause" xml:space="preserve"><value>Pausa</value></data>
@@ -128,8 +163,11 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="MenuRemove" xml:space="preserve"><value>Rimuovi</value></data>
   <data name="MenuResetColumns" xml:space="preserve"><value>Ripristina colonne</value></data>
   <data name="MenuStart" xml:space="preserve"><value>Avvia / riprendi</value></data>
+  <data name="MenuStartQueue" xml:space="preserve"><value>Avvia coda</value></data>
+  <data name="MenuStopQueue" xml:space="preserve"><value>Ferma coda</value></data>
   <data name="NavAll" xml:space="preserve"><value>Tutti i download</value></data>
   <data name="NavFinished" xml:space="preserve"><value>Completati</value></data>
+  <data name="NavQueues" xml:space="preserve"><value>Code</value></data>
   <data name="NavUnfinished" xml:space="preserve"><value>Non completati</value></data>
   <data name="NavigationAccessibleName" xml:space="preserve"><value>{0}, {1} download</value></data>
   <data name="NavigationName" xml:space="preserve"><value>Filtri e categorie</value></data>
@@ -162,12 +200,50 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="PropertiesType" xml:space="preserve"><value>Tipo</value></data>
   <data name="PropertiesUrlLabel" xml:space="preserve"><value>_Indirizzo</value></data>
   <data name="PropertiesUrlName" xml:space="preserve"><value>Indirizzo del download</value></data>
-  <data name="QueueRunning" xml:space="preserve"><value>attiva</value></data>
+  <data name="QueueAdd" xml:space="preserve"><value>Aggiungi</value></data>
+  <data name="QueueConcurrentLabel" xml:space="preserve"><value>File _simultanei (1–20)</value></data>
+  <data name="QueueConcurrentName" xml:space="preserve"><value>File simultanei</value></data>
+  <data name="QueueDateName" xml:space="preserve"><value>Data della pianificazione</value></data>
+  <data name="QueueDelete" xml:space="preserve"><value>Elimina</value></data>
+  <data name="QueueEndActionLabel" xml:space="preserve"><value>_Al termine della coda</value></data>
+  <data name="QueueEndActionName" xml:space="preserve"><value>Azione al termine della coda</value></data>
+  <data name="QueueMainHint" xml:space="preserve"><value>La coda predefinita: non può essere eliminata e accoglie i download delle code eliminate.</value></data>
+  <data name="QueueMainName" xml:space="preserve"><value>Coda principale</value></data>
+  <data name="QueueNameLabel" xml:space="preserve"><value>_Nome</value></data>
+  <data name="QueueNameName" xml:space="preserve"><value>Nome della coda</value></data>
+  <data name="QueueNewName" xml:space="preserve"><value>Nuova coda</value></data>
+  <data name="QueueNextStart" xml:space="preserve"><value>Prossimo avvio: {0:dddd d MMMM, HH:mm}</value></data>
+  <data name="QueueNoNextStart" xml:space="preserve"><value>Nessun avvio previsto nei prossimi giorni.</value></data>
+  <data name="QueueNotScheduled" xml:space="preserve"><value>La coda si avvia e si ferma solo a mano.</value></data>
+  <data name="QueueOnce" xml:space="preserve"><value>Solo il giorno:</value></data>
+  <data name="QueueQuotaLabel" xml:space="preserve"><value>_Quota in MB all'ora (0 = nessuna)</value></data>
+  <data name="QueueQuotaName" xml:space="preserve"><value>Quota in MB all'ora</value></data>
+  <data name="QueueRepeatLabel" xml:space="preserve"><value>Ri_peti ogni (minuti)</value></data>
+  <data name="QueueRepeatName" xml:space="preserve"><value>Ripeti ogni minuti</value></data>
+  <data name="QueueRepeatToolTip" xml:space="preserve"><value>Dentro la finestra pianificata la coda riparte ogni tanti minuti e ritenta i download falliti. 0 = una sola volta.</value></data>
+  <data name="QueueRetriesLabel" xml:space="preserve"><value>_Tentativi in caso di errore (0–100)</value></data>
+  <data name="QueueRetriesName" xml:space="preserve"><value>Tentativi in caso di errore</value></data>
+  <data name="QueueRetryDelayLabel" xml:space="preserve"><value>_Pausa tra i tentativi (secondi)</value></data>
+  <data name="QueueRetryDelayName" xml:space="preserve"><value>Pausa tra i tentativi in secondi</value></data>
+  <data name="QueueScheduleInvalid" xml:space="preserve"><value>Completa la pianificazione per vedere il prossimo avvio.</value></data>
+  <data name="QueueScheduled" xml:space="preserve"><value>_Pianifica l'avvio e l'arresto</value></data>
   <data name="QueueStart" xml:space="preserve"><value>Avvia coda</value></data>
-  <data name="QueueStartToolTip" xml:space="preserve"><value>Avvia la coda dei download</value></data>
+  <data name="QueueStartLabel" xml:space="preserve"><value>_Avvio (hh:mm)</value></data>
+  <data name="QueueStartName" xml:space="preserve"><value>Ora di avvio</value></data>
+  <data name="QueueStartToolTip" xml:space="preserve"><value>Avvia la coda «{0}» (la coda selezionata nel pannello laterale, altrimenti la principale)</value></data>
+  <data name="QueueStateRunning" xml:space="preserve"><value>Attiva</value></data>
+  <data name="QueueStateScheduled" xml:space="preserve"><value>Pianificata: {0:ddd HH:mm}</value></data>
+  <data name="QueueStateStopped" xml:space="preserve"><value>Ferma</value></data>
   <data name="QueueStop" xml:space="preserve"><value>Ferma coda</value></data>
-  <data name="QueueStopToolTip" xml:space="preserve"><value>Ferma la coda: i download avviati dalla coda tornano in attesa</value></data>
-  <data name="QueueStopped" xml:space="preserve"><value>ferma</value></data>
+  <data name="QueueStopLabel" xml:space="preserve"><value>A_rresto (facoltativo)</value></data>
+  <data name="QueueStopName" xml:space="preserve"><value>Ora di arresto</value></data>
+  <data name="QueueStopTimeToolTip" xml:space="preserve"><value>Vuoto: la coda resta attiva fino a mezzanotte o finché ha download da fare. Un'ora precedente all'avvio indica il giorno dopo.</value></data>
+  <data name="QueueStopToolTip" xml:space="preserve"><value>Ferma la coda «{0}»: i download che ha avviato tornano in attesa</value></data>
+  <data name="QueueWake" xml:space="preserve"><value>_Riattiva il PC dalla sospensione o dall'ibernazione per l'avvio</value></data>
+  <data name="QueueWakeToolTip" xml:space="preserve"><value>Usa un timer di Windows. Funziona solo se nelle opzioni di risparmio energia è consentito l'uso dei timer di riattivazione.</value></data>
+  <data name="QueueWeekly" xml:space="preserve"><value>Ogni settimana nei giorni:</value></data>
+  <data name="QueuesListName" xml:space="preserve"><value>Elenco delle code</value></data>
+  <data name="QueuesTitle" xml:space="preserve"><value>Code</value></data>
   <data name="RemoveTitle" xml:space="preserve"><value>Rimuovi download</value></data>
   <data name="ResumeNotSupported" xml:space="preserve"><value>No: il server non permette di riprendere</value></data>
   <data name="Save" xml:space="preserve"><value>Salva</value></data>
@@ -182,26 +258,36 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="SegmentState" xml:space="preserve"><value>Stato</value></data>
   <data name="SegmentWaiting" xml:space="preserve"><value>In attesa</value></data>
   <data name="SettingsAppearance" xml:space="preserve"><value>Aspetto</value></data>
-  <data name="SettingsConcurrent" xml:space="preserve"><value>Download _simultanei avviati dalla coda (1–20)</value></data>
+  <data name="SettingsCloseToTray" xml:space="preserve"><value>Chiudendo la finestra, resta _attivo nell'area di notifica</value></data>
+  <data name="SettingsConcurrent" xml:space="preserve"><value>Download _simultanei in totale, per tutte le code (1–50)</value></data>
   <data name="SettingsConfirmBrowser" xml:space="preserve"><value>Chiedi conferma per i download inviati dall'estensione del browser</value></data>
   <data name="SettingsConnections" xml:space="preserve"><value>_Connessioni per download (1–32)</value></data>
-  <data name="SettingsConnectionsHint" xml:space="preserve"><value>Il numero di connessioni vale per i download avviati dopo il salvataggio.</value></data>
+  <data name="SettingsConnectionsHint" xml:space="preserve"><value>Il numero di connessioni vale per i download avviati dopo il salvataggio. Il limite di file simultanei di ogni coda si imposta in Code.</value></data>
   <data name="SettingsDownloads" xml:space="preserve"><value>Download</value></data>
   <data name="SettingsFolder" xml:space="preserve"><value>Cartella _predefinita dei download</value></data>
   <data name="SettingsFolderHint" xml:space="preserve"><value>Le categorie con una cartella relativa (per esempio "Video") creano una sottocartella qui.</value></data>
+  <data name="SettingsGlobalQuota" xml:space="preserve"><value>_Quota globale in MB all'ora (0 = nessuna)</value></data>
   <data name="SettingsIntegration" xml:space="preserve"><value>Browser e notifiche</value></data>
   <data name="SettingsNotify" xml:space="preserve"><value>Mostra una notifica di Windows quando un download è completato</value></data>
+  <data name="SettingsRunAtStartup" xml:space="preserve"><value>Avvia DownloadManager con _Windows, ridotto nell'area di notifica</value></data>
   <data name="SettingsSpeedLimit" xml:space="preserve"><value>_Limite di velocità globale in KB/s (0 = nessuno)</value></data>
+  <data name="SettingsSystem" xml:space="preserve"><value>Sistema</value></data>
   <data name="SettingsTheme" xml:space="preserve"><value>Tema</value></data>
   <data name="SettingsTitle" xml:space="preserve"><value>Impostazioni</value></data>
+  <data name="SpeedCustomLabel" xml:space="preserve"><value>_Limite in KB/s (0 = nessun limite)</value></data>
+  <data name="SpeedCustomName" xml:space="preserve"><value>Limite di velocità in KB/s</value></data>
+  <data name="SpeedCustomTitle" xml:space="preserve"><value>Limite di velocità</value></data>
   <data name="SpeedLimitStatus" xml:space="preserve"><value>(limite {0} KB/s)</value></data>
-  <data name="StatusBar" xml:space="preserve"><value>Coda {0}  ·  {1} in download  ·  {2} in attesa  ·  {3} totali</value></data>
+  <data name="SpeedNoLimit" xml:space="preserve"><value>Nessun limite</value></data>
+  <data name="StartupWarning" xml:space="preserve"><value>Una coda è pianificata, ma DownloadManager non si avvia con Windows: la pianificazione funziona solo con l'app aperta (anche ridotta nell'area di notifica).</value></data>
+  <data name="StatusBar" xml:space="preserve"><value>{0} di {1} code attive  ·  {2} in download  ·  {3} in attesa  ·  {4} totali</value></data>
   <data name="StatusCompleted" xml:space="preserve"><value>Completato</value></data>
   <data name="StatusConnecting" xml:space="preserve"><value>Connessione…</value></data>
   <data name="StatusDownloading" xml:space="preserve"><value>In download</value></data>
   <data name="StatusFailed" xml:space="preserve"><value>Errore</value></data>
   <data name="StatusPaused" xml:space="preserve"><value>In pausa</value></data>
   <data name="StatusQueued" xml:space="preserve"><value>In coda</value></data>
+  <data name="StatusWaiting" xml:space="preserve"><value>In attesa</value></data>
   <data name="ThemeDark" xml:space="preserve"><value>Scuro</value></data>
   <data name="ThemeLight" xml:space="preserve"><value>Chiaro</value></data>
   <data name="ThemeSystem" xml:space="preserve"><value>Segui il sistema</value></data>
@@ -209,6 +295,17 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="ToastCompletedTitle" xml:space="preserve"><value>Download completato</value></data>
   <data name="ToastOpen" xml:space="preserve"><value>Apri</value></data>
   <data name="ToastOpenFolder" xml:space="preserve"><value>Apri cartella</value></data>
+  <data name="TrayExit" xml:space="preserve"><value>Esci</value></data>
+  <data name="TrayHiddenHint" xml:space="preserve"><value>DownloadManager resta attivo qui per completare download e code pianificate. Usa «Esci» nel menu per chiuderlo.</value></data>
+  <data name="TrayMenuName" xml:space="preserve"><value>Menu di DownloadManager</value></data>
+  <data name="TrayOpen" xml:space="preserve"><value>Apri DownloadManager</value></data>
+  <data name="TraySpeedCustom" xml:space="preserve"><value>Personalizzato…</value></data>
+  <data name="TraySpeedLimit" xml:space="preserve"><value>Limite di velocità: {0}</value></data>
+  <data name="TrayStartQueues" xml:space="preserve"><value>Avvia tutte le code</value></data>
+  <data name="TrayStatus" xml:space="preserve"><value>DownloadManager
+{0} in download · {1} code attive
+Limite: {2}</value></data>
+  <data name="TrayStopQueues" xml:space="preserve"><value>Ferma tutte le code</value></data>
   <data name="Unknown" xml:space="preserve"><value>Sconosciuto</value></data>
   <data name="UpdateUrl" xml:space="preserve"><value>Aggiorna indirizzo</value></data>
   <data name="UpdateUrlTitle" xml:space="preserve"><value>Aggiorna indirizzo</value></data>
@@ -225,5 +322,7 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="UrlCheckUnverifiable" xml:space="preserve"><value>il server indica la stessa dimensione ma non fornisce ETag né data di ultima modifica</value></data>
   <data name="UrlUpdatedKept" xml:space="preserve"><value>Indirizzo aggiornato: i dati già scaricati ({0}) sono stati mantenuti.</value></data>
   <data name="UrlUpdatedRestart" xml:space="preserve"><value>Indirizzo aggiornato: il download ripartirà da zero.</value></data>
+  <data name="WaitingQuota" xml:space="preserve"><value>Quota oraria raggiunta: riprende verso le {0}</value></data>
+  <data name="WaitingRetry" xml:space="preserve"><value>Tentativo {0} fallito, nuovo tentativo alle {1}. Errore: {2}</value></data>
   <data name="Yes" xml:space="preserve"><value>Sì</value></data>
 </root>

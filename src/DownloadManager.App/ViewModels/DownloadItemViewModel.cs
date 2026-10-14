@@ -11,12 +11,14 @@ public sealed class DownloadItemViewModel : ObservableObject
     private long _lastBytes;
     private double _speed;
     private string _categoryName;
+    private string _queueName;
 
-    public DownloadItemViewModel(DownloadSnapshot snapshot, string categoryName)
+    public DownloadItemViewModel(DownloadSnapshot snapshot, string categoryName, string queueName)
     {
         _snapshot = snapshot;
         _lastBytes = snapshot.Downloaded;
         _categoryName = categoryName;
+        _queueName = queueName;
     }
 
     public DownloadSnapshot Snapshot => _snapshot;
@@ -27,6 +29,8 @@ public sealed class DownloadItemViewModel : ObservableObject
     public DownloadStatus Status => _snapshot.Status;
     public long? CategoryId => _snapshot.CategoryId;
     public string CategoryName => _categoryName;
+    public long? QueueId => _snapshot.QueueId;
+    public string QueueName => _queueName;
     public int SortOrder => _snapshot.SortOrder;
     public bool IsActive => Status == DownloadStatus.Downloading;
     public bool IsCompleted => Status == DownloadStatus.Completed;
@@ -65,7 +69,7 @@ public sealed class DownloadItemViewModel : ObservableObject
 
     public string StatusText => Status switch
     {
-        DownloadStatus.Queued => Strings.StatusQueued,
+        DownloadStatus.Queued => _snapshot.Error is not null ? Strings.StatusWaiting : Strings.StatusQueued, // retry or quota: see the tooltip
         // No connection open yet (first request, or retrying after a network error).
         DownloadStatus.Downloading => _snapshot.Connections == 0 ? Strings.StatusConnecting : Strings.StatusDownloading,
         DownloadStatus.Paused => Strings.StatusPaused,
@@ -103,7 +107,7 @@ public sealed class DownloadItemViewModel : ObservableObject
     /// <summary>What screen readers announce for the row.</summary>
     public override string ToString() => $"{Name}, {StatusText}, {ProgressText}";
 
-    public void Update(DownloadSnapshot snapshot, string categoryName, double elapsedSeconds)
+    public void Update(DownloadSnapshot snapshot, string categoryName, string queueName, double elapsedSeconds)
     {
         var delta = snapshot.Downloaded - _lastBytes;
         _lastBytes = snapshot.Downloaded;
@@ -113,6 +117,7 @@ public sealed class DownloadItemViewModel : ObservableObject
             _speed = 0;
         _snapshot = snapshot;
         _categoryName = categoryName;
+        _queueName = queueName;
         OnPropertyChanged(string.Empty);
     }
 }

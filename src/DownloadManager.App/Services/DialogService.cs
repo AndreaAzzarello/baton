@@ -37,6 +37,22 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
 
     public bool ShowCategories(CategoriesViewModel viewModel) => new CategoriesWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
 
+    public bool ShowQueues(QueuesViewModel viewModel) => new QueuesWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
+
+    public bool ShowCountdown(EndAction action, string queueName, TimeSpan length)
+    {
+        // Topmost and without an owner: it must be seen even when the main window is hidden in the notification area.
+        var window = new CountdownWindow(action, queueName, length);
+        window.ShowDialog();
+        return window.Confirmed;
+    }
+
+    public long? AskSpeedLimit(long current)
+    {
+        var window = new SpeedLimitWindow(current);
+        return window.ShowDialog() == true ? window.Value : null;
+    }
+
     public void ShowProperties(PropertiesViewModel viewModel) => new PropertiesWindow(viewModel) { Owner = Owner }.ShowDialog();
 
     public void ShowProgress(DownloadItemViewModel item)

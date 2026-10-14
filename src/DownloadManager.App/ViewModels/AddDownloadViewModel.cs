@@ -25,8 +25,10 @@ public sealed class AddDownloadViewModel : ObservableObject
     private string? _error;
 
     public AddDownloadViewModel(IDialogService dialogs, IReadOnlyList<Category> categories, string defaultFolder,
-        string? url, string? fileName = null, string? note = null)
+        string? url, string? fileName = null, string? note = null, IReadOnlyList<DownloadQueue>? queues = null, long? queueId = null)
     {
+        Queues = queues ?? [];
+        Queue = Queues.FirstOrDefault(q => q.Id == queueId) ?? Queues.FirstOrDefault(q => q.IsMain) ?? Queues.FirstOrDefault();
         _dialogs = dialogs;
         _defaultFolder = defaultFolder;
         Categories = categories;
@@ -40,6 +42,11 @@ public sealed class AddDownloadViewModel : ObservableObject
     }
 
     public IReadOnlyList<Category> Categories { get; }
+
+    public IReadOnlyList<DownloadQueue> Queues { get; }
+
+    /// <summary>The queue the download joins: "Download now" starts it at once, "Add to queue" waits for the queue.</summary>
+    public DownloadQueue? Queue { get; set; }
 
     public string? Note { get; }
 
@@ -105,11 +112,12 @@ public sealed class AddDownloadViewModel : ObservableObject
     public bool StartNow { get; set; }
 
     /// <summary>The download as the service should receive it: unchanged automatic choices stay automatic.</summary>
-    public (string Url, string? Folder, string? FileName, long? CategoryId) ToRequest() => (
+    public (string Url, string? Folder, string? FileName, long? CategoryId, long? QueueId) ToRequest() => (
         Url.Trim(),
         _folderChosen ? Folder.Trim() : null,
         string.IsNullOrWhiteSpace(FileName) ? null : FileName.Trim(),
-        _categoryChosen ? Category.Id : null);
+        _categoryChosen ? Category.Id : null,
+        Queue?.Id);
 
     private Category Guess() =>
         Core.Categories.MatchUrl(Categories, Url.Trim(), string.IsNullOrWhiteSpace(FileName) ? null : FileName.Trim());

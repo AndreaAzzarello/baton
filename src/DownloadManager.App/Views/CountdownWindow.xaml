@@ -1,0 +1,30 @@
+<Window x:Class="DownloadManager.App.Views.CountdownWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:r="clr-namespace:DownloadManager.Core.Resources;assembly=DownloadManager.Core"
+        Width="440" SizeToContent="Height" ResizeMode="NoResize" Topmost="True" ShowInTaskbar="True"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterScreen" Icon="/app.ico">
+    <StackPanel Margin="24">
+        <DockPanel>
+            <TextBlock DockPanel.Dock="Left" FontFamily="{StaticResource IconFont}" Text="&#xE7E8;" FontSize="30" Margin="0,2,18,0"
+                       VerticalAlignment="Top" Foreground="{DynamicResource AccentBrush}" />
+            <StackPanel>
+                <TextBlock x:Name="Heading" Style="{StaticResource SectionTitle}" TextWrapping="Wrap" />
+                <TextBlock x:Name="Message" TextWrapping="Wrap" Margin="0,6,0,0" Foreground="{DynamicResource MutedBrush}" />
+            </StackPanel>
+        </DockPanel>
+
+        <TextBlock x:Name="Seconds" FontSize="44" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,18,0,4"
+                   AutomationProperties.Name="{x:Static r:Strings.CountdownSecondsName}" />
+        <ProgressBar x:Name="Progress" Height="6" Minimum="0" Focusable="False" AutomationProperties.Name="{x:Static r:Strings.CountdownSecondsName}" />
+        <!-- Read by screen readers every 10 seconds and in the last 5, not every second -->
+        <TextBlock x:Name="Announcement" Margin="0,8,0,0" HorizontalAlignment="Center" Foreground="{DynamicResource MutedBrush}"
+                   AutomationProperties.LiveSetting="Assertive" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button x:Name="NowButton" Style="{StaticResource DialogButton}" Click="OnNow" />
+            <Button x:Name="CancelButton" Content="{x:Static r:Strings.CountdownCancel}" Style="{StaticResource PrimaryButton}"
+                    IsDefault="True" IsCancel="True" Click="OnCancel" />
+        </StackPanel>
+    </StackPanel>
+</Window>

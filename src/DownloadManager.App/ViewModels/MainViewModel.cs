@@ -22,12 +22,15 @@ public sealed class MainViewModel : ObservableObject
     private readonly DownloadStore _store;
     private readonly IDialogService _dialogs;
     private readonly IShellService _shell;
+    private readonly IStartupService _startup;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private readonly Queue<BrowserDownload> _fromBrowser = new();
     private readonly ListCollectionView _view;
     private TimeSpan _lastTick;
     private IReadOnlyList<Category> _categories = [];
+    private IReadOnlyList<DownloadQueue> _queues = [];
+    private IReadOnlyList<QueueStatus> _queueStatuses = [];
     private List<DownloadItemViewModel> _selected = [];
     private NavigationNodeViewModel _selectedNode = null!;
     private DownloadFilter _filter = new();
@@ -36,18 +39,20 @@ public sealed class MainViewModel : ObservableObject
     private bool _sortDescending;
     private bool _showingBrowserDialogs;
 
-    public MainViewModel(DownloadService service, DownloadStore store, IDialogService dialogs, IShellService shell)
+    public MainViewModel(DownloadService service, DownloadStore store, IDialogService dialogs, IShellService shell, IStartupService startup)
     {
         _service = service;
         _store = store;
         _dialogs = dialogs;
         _shell = shell;
+        _startup = startup;
 
         _view = (ListCollectionView)CollectionViewSource.GetDefaultView(Items);
-        _view.Filter = o => o is DownloadItemViewModel item && _filter.Matches(item.Status, item.CategoryId, item.Name, item.Url);
+        _view.Filter = o => o is DownloadItemViewModel item && _filter.Matches(item.Status, item.CategoryId, item.Name, item.Url, item.QueueId);
         _view.IsLiveFiltering = true;
         _view.LiveFilteringProperties.Add(nameof(DownloadItemViewModel.Status));
         _view.LiveFilteringProperties.Add(nameof(DownloadItemViewModel.CategoryId));
+        _view.LiveFilteringProperties.Add(nameof(DownloadItemViewModel.QueueId));
         _view.IsLiveSorting = true;
 
         AddCommand = new RelayCommand(() => ShowAddDialog(Urls.SingleHttpUrl(_shell.GetClipboardText())));
@@ -59,6 +64,16 @@ public sealed class MainViewModel : ObservableObject
         MoveUpCommand = new RelayCommand(() => Move(-1), () => _selected.Count == 1 && IsQueueOrder);
         MoveDownCommand = new RelayCommand(() => Move(1), () => _selected.Count == 1 && IsQueueOrder);
         ToggleQueueCommand = new RelayCommand(ToggleQueue);
+        QueuesCommand = new RelayCommand(p => ShowQueues(p as long?, addNew: false));
+        NewQueueCommand = new RelayCommand(() => ShowQueues(null, addNew: true));
+        DeleteQueueCommand = new RelayCommand(p => DeleteQueue(p as long?), p => p is long id && _queues.Any(q => q.Id == id && !q.IsMain));
+        StartQueueCommand = new RelayCommand(p => { if (p is long id) _service.StartQueue(id); Refresh(); }, p => p is long id && !IsRunning(id));
+        StopQueueCommand = new RelayCommand(async p => { if (p is long id) await _service.StopQueueAsync(id); Refresh(); }, p => p is long id && IsRunning(id));
+        EnableStartupCommand = new RelayCommand(() =>
+        {
+            _startup.Set(true);
+            OnPropertyChanged(nameof(ShowStartupWarning));
+        });
         SettingsCommand = new RelayCommand(ShowSettings);
         CategoriesCommand = new RelayCommand(p => ShowCategories(p as long?, addNew: false));
         NewCategoryCommand = new RelayCommand(() => ShowCategories(null, addNew: true));
@@ -74,6 +89,7 @@ public sealed class MainViewModel : ObservableObject
 
         BuildNavigation();
         _service.CategoriesChanged += () => _timer.Dispatcher.InvokeAsync(BuildNavigation);
+        _service.QueuesChanged += () => _timer.Dispatcher.InvokeAsync(OnQueuesChanged);
         _timer.Tick += (_, _) => Refresh();
         _timer.Start();
         Refresh();
@@ -95,6 +111,12 @@ public sealed class MainViewModel : ObservableObject
     public ICommand MoveUpCommand { get; }
     public ICommand MoveDownCommand { get; }
     public ICommand ToggleQueueCommand { get; }
+    public ICommand QueuesCommand { get; }
+    public ICommand NewQueueCommand { get; }
+    public ICommand DeleteQueueCommand { get; }
+    public ICommand StartQueueCommand { get; }
+    public ICommand StopQueueCommand { get; }
+    public ICommand EnableStartupCommand { get; }
     public ICommand SettingsCommand { get; }
     public ICommand CategoriesCommand { get; }
     public ICommand NewCategoryCommand { get; }
@@ -119,9 +141,19 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    public string Heading => _selectedNode.IsCategory
+    public string Heading => _selectedNode.IsCategory || _selectedNode.IsQueue
         ? $"{FindRoot(_selectedNode)?.Title} · {_selectedNode.Title}"
         : _selectedNode.Title;
+
+    /// <summary>The queue the toolbar button acts on: the one selected in the side panel, otherwise the main queue.</summary>
+    public long CurrentQueueId => _selectedNode?.QueueId ?? _service.MainQueueId;
+
+    public IReadOnlyList<DownloadQueue> Queues => _queues;
+
+    /// <summary>A schedule works only while the app runs: warn when it does not start with Windows.</summary>
+    public bool ShowStartupWarning => _queues.Any(q => q.Schedule.Enabled) && !_startup.IsEnabled;
+
+    private bool IsRunning(long queueId) => _queueStatuses.FirstOrDefault(s => s.QueueId == queueId)?.State == QueueState.Running;
 
     public bool IsEmpty => _view.IsEmpty;
 
@@ -129,13 +161,15 @@ public sealed class MainViewModel : ObservableObject
 
     public string EmptyHint => Items.Count == 0 ? Strings.EmptyHint : Strings.EmptyFilteredHint;
 
-    public bool QueueRunning => _service.QueueRunning;
+    public bool QueueRunning => IsRunning(CurrentQueueId);
+
+    private string CurrentQueueName => _queues.FirstOrDefault(q => q.Id == CurrentQueueId)?.Name ?? "";
 
     public string QueueText => QueueRunning ? Strings.QueueStop : Strings.QueueStart;
 
     public string QueueGlyph => QueueRunning ? "" : "";
 
-    public string QueueToolTip => QueueRunning ? Strings.QueueStopToolTip : Strings.QueueStartToolTip;
+    public string QueueToolTip => string.Format(CultureInfo.CurrentCulture, QueueRunning ? Strings.QueueStopToolTip : Strings.QueueStartToolTip, CurrentQueueName);
 
     public string StatusText { get; private set; } = "";
 
@@ -200,6 +234,30 @@ public sealed class MainViewModel : ObservableObject
         CommandManager.InvalidateRequerySuggested();
     }
 
+    public void MoveToQueue(IEnumerable<long> ids, long queueId)
+    {
+        _service.MoveToQueue(ids, queueId);
+        Refresh();
+    }
+
+    /// <summary>Downloads dragged onto a side panel node: a queue node moves them, a category node re-files them.</summary>
+    public bool DropOnNode(NavigationNodeViewModel node, IReadOnlyList<long> ids)
+    {
+        if (node.QueueId is { } queueId)
+            MoveToQueue(ids, queueId);
+        else if (node.CategoryId is { } categoryId)
+        {
+            foreach (var id in ids)
+                _service.SetCategory(id, categoryId);
+            Refresh();
+        }
+        else
+            return false;
+        return true;
+    }
+
+    public static bool AcceptsDrop(NavigationNodeViewModel node) => node.IsQueue || node.IsCategory;
+
     /// <summary>Links dropped on the window: one opens the add dialog, several go to the queue after a confirmation.</summary>
     public void AddLinks(IReadOnlyList<string> urls)
     {
@@ -211,7 +269,7 @@ public sealed class MainViewModel : ObservableObject
         if (urls.Count == 0 || !_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmAddLinks, urls.Count), Strings.AddTitle))
             return;
         foreach (var url in urls)
-            _service.Add(url, startNow: false);
+            _service.Add(url, startNow: false, queueId: CurrentQueueId);
         Refresh();
     }
 
@@ -228,14 +286,17 @@ public sealed class MainViewModel : ObservableObject
             while (_fromBrowser.TryDequeue(out var next))
             {
                 var fileName = string.IsNullOrWhiteSpace(next.FileName) ? null : Path.GetFileName(next.FileName);
+                // Extensions before 0.4 send no queue: the main queue.
+                var queueId = _service.ResolveQueue(next.Queue);
                 if (!_service.Settings.ConfirmBrowserDownloads)
                 {
-                    _service.Add(next.Url, null, fileName, startNow: true, next.ToContext());
+                    _service.Add(next.Url, null, fileName, startNow: true, next.ToContext(), queueId: queueId);
                     continue;
                 }
 
                 var note = next.Cookies is { Count: > 0 } ? Strings.FromBrowserWithCookies : Strings.FromBrowser;
-                var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, next.Url, fileName, note);
+                var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, next.Url, fileName, note,
+                    _service.Queues, queueId);
                 if (_dialogs.ShowAddDownload(dialog, standalone: true))
                     Submit(dialog, next.ToContext());
             }
@@ -255,6 +316,7 @@ public sealed class MainViewModel : ObservableObject
         var elapsed = (now - _lastTick).TotalSeconds;
         _lastTick = now;
 
+        _queueStatuses = _service.GetQueueStatuses();
         var snapshots = _service.GetSnapshots();
         var byId = Items.ToDictionary(i => i.Id);
         var keep = snapshots.Select(s => s.Id).ToHashSet();
@@ -263,23 +325,36 @@ public sealed class MainViewModel : ObservableObject
         foreach (var snap in snapshots)
         {
             var category = CategoryName(snap.CategoryId);
+            var queue = _queues.FirstOrDefault(q => q.Id == snap.QueueId)?.Name ?? "";
             if (byId.TryGetValue(snap.Id, out var vm))
-                vm.Update(snap, category, elapsed);
+                vm.Update(snap, category, queue, elapsed);
             else
-                Items.Add(new DownloadItemViewModel(snap, category));
+                Items.Add(new DownloadItemViewModel(snap, category, queue));
         }
 
         foreach (var root in Navigation)
         {
-            root.Count = Items.Count(i => root.Filter.Matches(i.Status, i.CategoryId, "", ""));
+            root.Count = Items.Count(i => root.Filter.Matches(i.Status, i.CategoryId, "", "", i.QueueId));
             foreach (var child in root.Children)
-                child.Count = Items.Count(i => child.Filter.Matches(i.Status, i.CategoryId, "", ""));
+            {
+                child.Count = Items.Count(i => child.Filter.Matches(i.Status, i.CategoryId, "", "", i.QueueId));
+                if (child.QueueId is { } queueId && _queueStatuses.FirstOrDefault(s => s.QueueId == queueId) is { } status)
+                {
+                    child.Detail = QueueStateText(status);
+                    child.Glyph = status.State switch
+                    {
+                        QueueState.Running => "\uE768",
+                        QueueState.Scheduled => "\uE823",
+                        _ => "\uE71A",
+                    };
+                }
+            }
         }
 
         var active = Items.Count(i => i.IsActive);
         var queued = Items.Count(i => i.Status == DownloadStatus.Queued);
         StatusText = string.Format(CultureInfo.CurrentCulture, Strings.StatusBar,
-            QueueRunning ? Strings.QueueRunning : Strings.QueueStopped, active, queued, Items.Count);
+            _queueStatuses.Count(s => s.State == QueueState.Running), _queueStatuses.Count, active, queued, Items.Count);
         var limit = _service.Settings.SpeedLimitKBps;
         SpeedText = Format.Speed(Items.Sum(i => i.Speed))
                     + (limit > 0 ? "   " + string.Format(CultureInfo.CurrentCulture, Strings.SpeedLimitStatus, limit) : "");
@@ -290,6 +365,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(QueueText));
         OnPropertyChanged(nameof(QueueGlyph));
         OnPropertyChanged(nameof(QueueToolTip));
+        OnPropertyChanged(nameof(ShowStartupWarning));
         RaiseEmptyState();
         CommandManager.InvalidateRequerySuggested();
     }
@@ -303,11 +379,36 @@ public sealed class MainViewModel : ObservableObject
 
     private string CategoryName(long? id) => _categories.FirstOrDefault(c => c.Id == id)?.Name ?? "";
 
+    /// <summary>"Running", "Scheduled: Mon 22:00" or "Stopped", for the side panel and the tray.</summary>
+    public string QueueStateText(QueueStatus status) => status.State switch
+    {
+        QueueState.Running => Strings.QueueStateRunning,
+        QueueState.Scheduled when status.NextStartUtc is { } next =>
+            string.Format(CultureInfo.CurrentCulture, Strings.QueueStateScheduled, TimeZoneInfo.ConvertTimeFromUtc(next, TimeZoneInfo.Local)),
+        _ => Strings.QueueStateStopped,
+    };
+
+    public IReadOnlyList<QueueStatus> QueueStatuses => _queueStatuses;
+
+    /// <summary>Queues added, removed or renamed rebuild the side panel; a start or stop only refreshes it.</summary>
+    private void OnQueuesChanged()
+    {
+        var fresh = _service.Queues;
+        var changed = fresh.Count != _queues.Count || fresh.Zip(_queues).Any(p => p.First.Id != p.Second.Id || p.First.Name != p.Second.Name);
+        _queues = fresh;
+        if (changed)
+            BuildNavigation();
+        else
+            Refresh();
+    }
+
     private void BuildNavigation()
     {
         _categories = _service.Categories;
+        _queues = _service.Queues;
         var previous = _selectedNode is null ? new DownloadFilter() : _selectedNode.Filter;
-        var expanded = Navigation.Where(n => n.IsExpanded).Select(n => n.Status).ToHashSet();
+        var expanded = Navigation.Where(n => n.IsExpanded && !n.IsQueuesRoot).Select(n => n.Status).ToHashSet();
+        var queuesExpanded = Navigation.Count == 0 || Navigation.Any(n => n.IsQueuesRoot && n.IsExpanded);
         if (Navigation.Count == 0)
             expanded.Add(StatusFilter.All);
 
@@ -325,10 +426,20 @@ public sealed class MainViewModel : ObservableObject
             Navigation.Add(root);
         }
 
+        var queuesRoot = new NavigationNodeViewModel(Strings.NavQueues, "\uE8FD", StatusFilter.All, null, OnNodeSelected)
+        {
+            IsQueuesRoot = true,
+            IsExpanded = queuesExpanded,
+        };
+        foreach (var queue in _queues)
+            queuesRoot.Children.Add(new NavigationNodeViewModel(queue.Name, "\uE71A", StatusFilter.All, null, OnNodeSelected, queue.Id));
+        Navigation.Add(queuesRoot);
+
         var all = Navigation.SelectMany(n => n.Children.Prepend(n)).ToList();
-        var select = all.FirstOrDefault(n => n.Filter == previous with { Search = null }) ?? Navigation[0];
-        if (select.IsCategory)
-            Navigation.First(n => n.Status == select.Status).IsExpanded = true;
+        var select = all.FirstOrDefault(n => n.Filter == previous with { Search = null } && n.IsQueuesRoot == _selectedNode?.IsQueuesRoot)
+                     ?? Navigation[0];
+        if (select.IsCategory || select.IsQueue)
+            FindRoot(select)!.IsExpanded = true;
         select.IsSelected = true;
         OnNodeSelected(select);
         if (Items.Count > 0)
@@ -353,6 +464,9 @@ public sealed class MainViewModel : ObservableObject
         _selectedNode = node;
         ApplyFilter();
         OnPropertyChanged(nameof(Heading));
+        OnPropertyChanged(nameof(QueueText));
+        OnPropertyChanged(nameof(QueueGlyph));
+        OnPropertyChanged(nameof(QueueToolTip));
     }
 
     private void ApplyFilter()
@@ -371,15 +485,16 @@ public sealed class MainViewModel : ObservableObject
 
     private void ShowAddDialog(string? url)
     {
-        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, url);
+        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, url,
+            queues: _service.Queues, queueId: CurrentQueueId);
         if (_dialogs.ShowAddDownload(dialog, standalone: false))
             Submit(dialog, null);
     }
 
     private void Submit(AddDownloadViewModel dialog, RequestContext? context)
     {
-        var (url, folder, fileName, categoryId) = dialog.ToRequest();
-        _service.Add(url, folder, fileName, dialog.StartNow, context, categoryId);
+        var (url, folder, fileName, categoryId, queueId) = dialog.ToRequest();
+        _service.Add(url, folder, fileName, dialog.StartNow, context, categoryId, queueId);
         Refresh();
     }
 
@@ -431,19 +546,45 @@ public sealed class MainViewModel : ObservableObject
 
     private async void ToggleQueue()
     {
-        if (_service.QueueRunning)
-            await _service.StopQueueAsync();
+        var queueId = CurrentQueueId;
+        if (IsRunning(queueId))
+            await _service.StopQueueAsync(queueId);
         else
-            _service.StartQueue();
+            _service.StartQueue(queueId);
         Refresh();
+    }
+
+    private void ShowQueues(long? selectId, bool addNew)
+    {
+        var dialog = new QueuesViewModel(_dialogs, _service.Queues, () => _service.UtcNow, _startup.IsEnabled, () => _startup.Set(true),
+            selectId ?? (_selectedNode.QueueId));
+        if (addNew)
+            dialog.AddCommand.Execute(null);
+        if (!_dialogs.ShowQueues(dialog))
+            return;
+        foreach (var deleted in dialog.Deleted)
+            _service.DeleteQueue(deleted.Id);
+        foreach (var queue in dialog.Result)
+            _service.SaveQueue(queue);
+        OnPropertyChanged(nameof(ShowStartupWarning));
+    }
+
+    private void DeleteQueue(long? id)
+    {
+        if (_queues.FirstOrDefault(q => q.Id == id) is not { IsMain: false } queue)
+            return;
+        if (_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmDeleteQueue, queue.Name), Strings.QueuesTitle))
+            _service.DeleteQueue(queue.Id);
     }
 
     private void ShowSettings()
     {
-        var dialog = new SettingsViewModel(_dialogs, _service.Settings);
+        var dialog = new SettingsViewModel(_dialogs, _service.Settings, _startup.IsEnabled);
         if (!_dialogs.ShowSettings(dialog) || dialog.Result is null)
             return;
         _service.UpdateSettings(dialog.Result);
+        if (dialog.RunAtStartup != _startup.IsEnabled)
+            _startup.Set(dialog.RunAtStartup);
         SettingsSaved?.Invoke(dialog.Result);
         Refresh();
     }

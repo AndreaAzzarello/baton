@@ -22,6 +22,14 @@ public interface IDialogService
 
     bool ShowCategories(CategoriesViewModel viewModel);
 
+    bool ShowQueues(QueuesViewModel viewModel);
+
+    /// <summary>The countdown before a queue's end action; true when it ran out or the user chose to go ahead.</summary>
+    bool ShowCountdown(Core.EndAction action, string queueName, TimeSpan length);
+
+    /// <summary>Asks for a speed limit in KB/s; null when cancelled.</summary>
+    long? AskSpeedLimit(long current);
+
     void ShowProperties(PropertiesViewModel viewModel);
 
     /// <summary>Opens (or brings forward) the progress window of a download.</summary>
@@ -36,6 +44,21 @@ public interface IDialogService
     void ShowError(string message, string title);
 
     string? PickFolder(string title, string? initialFolder);
+}
+
+/// <summary>Whether the app starts with Windows (in the notification area).</summary>
+public interface IStartupService
+{
+    bool IsEnabled { get; }
+
+    void Set(bool enabled);
+}
+
+public sealed class StartupService : IStartupService
+{
+    public bool IsEnabled => StartupRegistration.IsEnabled;
+
+    public void Set(bool enabled) => StartupRegistration.Set(enabled);
 }
 
 /// <summary>Explorer, default programs and the clipboard.</summary>

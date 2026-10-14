@@ -1,0 +1,17 @@
+<Window x:Class="DownloadManager.App.Views.SpeedLimitWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:r="clr-namespace:DownloadManager.Core.Resources;assembly=DownloadManager.Core"
+        Title="{x:Static r:Strings.SpeedCustomTitle}" Width="380" SizeToContent="Height" ResizeMode="NoResize" Topmost="True"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterScreen" Icon="/app.ico">
+    <StackPanel Margin="20">
+        <Label Content="{x:Static r:Strings.SpeedCustomLabel}" Target="{Binding ElementName=ValueBox}" Padding="0" Margin="0,0,0,4"
+               Foreground="{DynamicResource MutedBrush}" />
+        <TextBox x:Name="ValueBox" AutomationProperties.Name="{x:Static r:Strings.SpeedCustomName}" />
+        <TextBlock x:Name="ErrorText" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Assertive" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="{x:Static r:Strings.Ok}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnOk" />
+            <Button Content="{x:Static r:Strings.Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
+        </StackPanel>
+    </StackPanel>
+</Window>

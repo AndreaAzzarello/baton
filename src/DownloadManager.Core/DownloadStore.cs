@@ -7,7 +7,7 @@ namespace DownloadManager.Core;
 public sealed class DownloadStore : IDisposable
 {
     /// <summary>Version written by this build. Every older version is upgraded by <see cref="Migrate"/>.</summary>
-    public const int SchemaVersion = 2;
+    public const int SchemaVersion = 3;
 
     private const string PreferencePrefix = "ui.";
 
@@ -58,6 +58,8 @@ public sealed class DownloadStore : IDisposable
             MigrateTo1(tx);
         if (version < 2)
             MigrateTo2(tx);
+        if (version < 3)
+            MigrateTo3(tx);
         Execute($"PRAGMA user_version = {SchemaVersion};", tx);
         tx.Commit();
     }
@@ -133,6 +135,153 @@ public sealed class DownloadStore : IDisposable
         }
     }
 
+    /// <summary>
+    /// Named queues: the main queue takes over the limit and the started/stopped state of the single queue of
+    /// earlier versions, and every existing download joins it.
+    /// </summary>
+    private void MigrateTo3(SqliteTransaction tx)
+    {
+        Execute("""
+            CREATE TABLE queues (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT UNIQUE,
+                name TEXT NOT NULL,
+                max_concurrent INTEGER NOT NULL,
+                running INTEGER NOT NULL,
+                schedule TEXT NOT NULL,
+                retry_count INTEGER NOT NULL,
+                retry_delay_s INTEGER NOT NULL,
+                quota_mb INTEGER NOT NULL,
+                end_action TEXT NOT NULL,
+                sort_order INTEGER NOT NULL);
+            """, tx);
+        AddColumnIfMissing("downloads", "queue_id", "INTEGER", tx);
+        AddColumnIfMissing("downloads", "failures", "INTEGER NOT NULL DEFAULT 0", tx);
+        AddColumnIfMissing("downloads", "retry_at", "TEXT", tx);
+
+        string? Setting(string key)
+        {
+            using var cmd = Command("SELECT value FROM settings WHERE key = $k;", tx);
+            cmd.Parameters.AddWithValue("$k", key);
+            return cmd.ExecuteScalar() as string;
+        }
+        var main = new DownloadQueue
+        {
+            Key = DownloadQueue.MainKey,
+            Name = Resources.Strings.QueueMainName,
+            MaxConcurrent = int.TryParse(Setting(nameof(AppSettings.MaxConcurrentDownloads)), out var limit) ? Math.Clamp(limit, 1, 20) : 3,
+            Running = Setting(nameof(AppSettings.QueueRunning)) != "0",
+        };
+        InsertQueue(main, tx);
+        // The old limit now belongs to the main queue; the overall limit across all queues starts higher.
+        using (var total = Command("UPDATE settings SET value = '10' WHERE key = $k AND CAST(value AS INTEGER) < 10;", tx))
+        {
+            total.Parameters.AddWithValue("$k", nameof(AppSettings.MaxConcurrentDownloads));
+            total.ExecuteNonQuery();
+        }
+        using var update = Command("UPDATE downloads SET queue_id = $q;", tx);
+        update.Parameters.AddWithValue("$q", main.Id);
+        update.ExecuteNonQuery();
+    }
+
+    public List<DownloadQueue> LoadQueues()
+    {
+        lock (_lock)
+        {
+            var result = new List<DownloadQueue>();
+            using var cmd = Command("""
+                SELECT id, key, name, max_concurrent, running, schedule, retry_count, retry_delay_s, quota_mb, end_action, sort_order
+                FROM queues ORDER BY sort_order, id;
+                """);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                result.Add(new DownloadQueue
+                {
+                    Id = reader.GetInt64(0),
+                    Key = reader.IsDBNull(1) ? null : reader.GetString(1),
+                    Name = reader.GetString(2),
+                    MaxConcurrent = reader.GetInt32(3),
+                    Running = reader.GetInt64(4) != 0,
+                    Schedule = DownloadQueue.DeserializeSchedule(reader.GetString(5)),
+                    RetryCount = reader.GetInt32(6),
+                    RetryDelaySeconds = reader.GetInt32(7),
+                    QuotaMBPerHour = reader.GetInt64(8),
+                    EndAction = Enum.TryParse<EndAction>(reader.GetString(9), out var action) ? action : EndAction.None,
+                    SortOrder = reader.GetInt32(10),
+                });
+            }
+            return result;
+        }
+    }
+
+    /// <summary>Inserts a new queue (Id 0) or updates an existing one.</summary>
+    public void SaveQueue(DownloadQueue queue)
+    {
+        lock (_lock)
+        {
+            if (queue.Id == 0)
+            {
+                InsertQueue(queue, null);
+                return;
+            }
+            using var cmd = Command("""
+                UPDATE queues SET name = $name, max_concurrent = $max, running = $running, schedule = $schedule, retry_count = $retries,
+                    retry_delay_s = $delay, quota_mb = $quota, end_action = $action, sort_order = $order
+                WHERE id = $id;
+                """);
+            BindQueue(cmd, queue);
+            cmd.Parameters.AddWithValue("$id", queue.Id);
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    /// <summary>Deletes a queue; its downloads move to <paramref name="moveTo"/>.</summary>
+    public void DeleteQueue(long id, long moveTo)
+    {
+        lock (_lock)
+        {
+            using var tx = _db.BeginTransaction();
+            using (var move = Command("UPDATE downloads SET queue_id = $to WHERE queue_id = $id;", tx))
+            {
+                move.Parameters.AddWithValue("$to", moveTo);
+                move.Parameters.AddWithValue("$id", id);
+                move.ExecuteNonQuery();
+            }
+            using (var delete = Command("DELETE FROM queues WHERE id = $id;", tx))
+            {
+                delete.Parameters.AddWithValue("$id", id);
+                delete.ExecuteNonQuery();
+            }
+            tx.Commit();
+        }
+    }
+
+    private void InsertQueue(DownloadQueue queue, SqliteTransaction? tx)
+    {
+        using var cmd = Command("""
+            INSERT INTO queues (key, name, max_concurrent, running, schedule, retry_count, retry_delay_s, quota_mb, end_action, sort_order)
+            VALUES ($key, $name, $max, $running, $schedule, $retries, $delay, $quota, $action, $order);
+            SELECT last_insert_rowid();
+            """, tx);
+        BindQueue(cmd, queue);
+        cmd.Parameters.AddWithValue("$key", (object?)queue.Key ?? DBNull.Value);
+        queue.Id = (long)cmd.ExecuteScalar()!;
+    }
+
+    private static void BindQueue(SqliteCommand cmd, DownloadQueue q)
+    {
+        cmd.Parameters.AddWithValue("$name", q.Name);
+        cmd.Parameters.AddWithValue("$max", q.MaxConcurrent);
+        cmd.Parameters.AddWithValue("$running", q.Running ? 1 : 0);
+        cmd.Parameters.AddWithValue("$schedule", DownloadQueue.SerializeSchedule(q.Schedule));
+        cmd.Parameters.AddWithValue("$retries", q.RetryCount);
+        cmd.Parameters.AddWithValue("$delay", q.RetryDelaySeconds);
+        cmd.Parameters.AddWithValue("$quota", q.QuotaMBPerHour);
+        cmd.Parameters.AddWithValue("$action", q.EndAction.ToString());
+        cmd.Parameters.AddWithValue("$order", q.SortOrder);
+    }
+
     public long Insert(DownloadRecord record)
     {
         lock (_lock)
@@ -140,9 +289,10 @@ public sealed class DownloadStore : IDisposable
             using var tx = _db.BeginTransaction();
             using var cmd = Command("""
                 INSERT INTO downloads (url, directory, file_name, total_size, etag, last_modified, supports_ranges, status, error,
-                                       sort_order, added_utc, completed_utc, request_context, category_id, auto_category, content_type)
+                                       sort_order, added_utc, completed_utc, request_context, category_id, auto_category, content_type,
+                                       queue_id, failures, retry_at)
                 VALUES ($url, $dir, $name, $size, $etag, $lm, $ranges, $status, $error,
-                        $order, $added, $completed, $context, $category, $auto, $ctype);
+                        $order, $added, $completed, $context, $category, $auto, $ctype, $queue, $failures, $retry);
                 SELECT last_insert_rowid();
                 """, tx);
             Bind(cmd, record);
@@ -162,7 +312,8 @@ public sealed class DownloadStore : IDisposable
                 UPDATE downloads SET url = $url, directory = $dir, file_name = $name, total_size = $size, etag = $etag,
                     last_modified = $lm, supports_ranges = $ranges, status = $status, error = $error,
                     sort_order = $order, added_utc = $added, completed_utc = $completed, request_context = $context,
-                    category_id = $category, auto_category = $auto, content_type = $ctype
+                    category_id = $category, auto_category = $auto, content_type = $ctype,
+                    queue_id = $queue, failures = $failures, retry_at = $retry
                 WHERE id = $id;
                 """, tx);
             Bind(cmd, record);
@@ -212,6 +363,9 @@ public sealed class DownloadStore : IDisposable
                         CategoryId = NullableLong(reader, "category_id"),
                         AutoCategory = reader.GetInt64(reader.GetOrdinal("auto_category")) != 0,
                         ContentType = NullableString(reader, "content_type"),
+                        QueueId = NullableLong(reader, "queue_id"),
+                        Failures = reader.GetInt32(reader.GetOrdinal("failures")),
+                        RetryAtUtc = NullableString(reader, "retry_at") is { } retry ? ParseDate(retry) : null,
                     };
                     records[r.Id] = r;
                 }
@@ -310,6 +464,8 @@ public sealed class DownloadStore : IDisposable
                     case nameof(AppSettings.QueueRunning): settings.QueueRunning = value == "1"; break;
                     case nameof(AppSettings.ConfirmBrowserDownloads): settings.ConfirmBrowserDownloads = value == "1"; break;
                     case nameof(AppSettings.NotifyOnCompletion): settings.NotifyOnCompletion = value == "1"; break;
+                    case nameof(AppSettings.GlobalQuotaMBPerHour): settings.GlobalQuotaMBPerHour = long.Parse(value, CultureInfo.InvariantCulture); break;
+                    case nameof(AppSettings.CloseToTray): settings.CloseToTray = value == "1"; break;
                     case nameof(AppSettings.Theme) when Enum.TryParse<AppTheme>(value, out var theme): settings.Theme = theme; break;
                 }
             }
@@ -329,6 +485,8 @@ public sealed class DownloadStore : IDisposable
             [nameof(AppSettings.ConfirmBrowserDownloads)] = settings.ConfirmBrowserDownloads ? "1" : "0",
             [nameof(AppSettings.NotifyOnCompletion)] = settings.NotifyOnCompletion ? "1" : "0",
             [nameof(AppSettings.Theme)] = settings.Theme.ToString(),
+            [nameof(AppSettings.GlobalQuotaMBPerHour)] = settings.GlobalQuotaMBPerHour.ToString(CultureInfo.InvariantCulture),
+            [nameof(AppSettings.CloseToTray)] = settings.CloseToTray ? "1" : "0",
         };
         lock (_lock)
         {
@@ -431,6 +589,9 @@ public sealed class DownloadStore : IDisposable
         cmd.Parameters.AddWithValue("$category", (object?)r.CategoryId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("$auto", r.AutoCategory ? 1 : 0);
         cmd.Parameters.AddWithValue("$ctype", (object?)r.ContentType ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$queue", (object?)r.QueueId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$failures", r.Failures);
+        cmd.Parameters.AddWithValue("$retry", r.RetryAtUtc is { } retry ? retry.ToString("O", CultureInfo.InvariantCulture) : DBNull.Value);
     }
 
     private SqliteCommand Command(string sql, SqliteTransaction? tx = null)

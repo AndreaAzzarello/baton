@@ -1,11 +1,13 @@
+using System.Globalization;
 using System.Net;
+using DownloadManager.Core.Resources;
 
 namespace DownloadManager.Core;
 
 /// <summary>
-/// Owns the download list, the categories and the queue. "Start" begins a download immediately;
-/// "Queued" downloads are started in list order while the queue is running,
-/// never exceeding the configured number of simultaneous downloads.
+/// Owns the download list, the categories and the queues. "Start" begins a download immediately, outside any
+/// limit; "Queued" downloads are started in order by their queue while it runs, within the queue's limit, the
+/// global limit and the hourly quotas. Queues are started and stopped by the user or by their schedule.
 /// </summary>
 public sealed class DownloadService : IAsyncDisposable
 {
@@ -16,6 +18,7 @@ public sealed class DownloadService : IAsyncDisposable
         public CancellationTokenSource Cts { get; } = new();
         public DownloadStatus StopStatus { get; set; } = DownloadStatus.Paused;
         public Task Task { get; set; } = Task.CompletedTask;
+        public long CountedBytes { get; set; }
     }
 
     private readonly object _lock = new();
@@ -26,28 +29,56 @@ public sealed class DownloadService : IAsyncDisposable
     private readonly RateLimiter _limiter = new();
     private readonly List<DownloadRecord> _items;
     private readonly List<Category> _categories;
+    private readonly List<DownloadQueue> _queues;
     private readonly Dictionary<long, ActiveJob> _active = [];
+    private readonly IClock _clock;
+    private readonly ScheduleTracker _tracker = new();
+    private readonly Dictionary<long, HourlyQuota> _quotas = [];
+    private readonly HourlyQuota _globalQuota = new();
+    private readonly HashSet<long> _runStarted = []; // queues that started at least one download in the current run
+    private readonly CancellationTokenSource _tickerCts = new();
+    private readonly Task _ticker;
     private AppSettings _settings;
     private bool _pumpSuspended;
 
-    public DownloadService(DownloadStore store, HttpClient? http = null, EngineOptions? engineTemplate = null)
+    /// <param name="clock">The time source; tests pass a fake one.</param>
+    /// <param name="autoTick">False in tests that drive <see cref="Tick"/> themselves.</param>
+    public DownloadService(DownloadStore store, HttpClient? http = null, EngineOptions? engineTemplate = null,
+        IClock? clock = null, bool autoTick = true)
     {
         _store = store;
         _ownsHttp = http is null;
         _http = http ?? CreateHttpClient();
         _engineTemplate = engineTemplate ?? new EngineOptions();
+        _clock = clock ?? SystemClock.Instance;
         _settings = store.LoadSettings();
         _limiter.BytesPerSecond = _settings.SpeedLimitKBps * 1024;
         _items = store.LoadAll();
         _categories = store.LoadCategories();
+        _queues = store.LoadQueues();
 
-        // Downloads interrupted by a crash or forced exit wait for the user.
-        foreach (var item in _items.Where(i => i.Status == DownloadStatus.Downloading))
+        var main = MainQueue;
+        foreach (var item in _items)
         {
-            item.Status = DownloadStatus.Paused;
-            store.Update(item);
+            var changed = false;
+            // Downloads interrupted by a crash or forced exit wait for the user.
+            if (item.Status == DownloadStatus.Downloading)
+            {
+                item.Status = DownloadStatus.Paused;
+                changed = true;
+            }
+            if (item.QueueId is not { } queueId || _queues.All(q => q.Id != queueId))
+            {
+                item.QueueId = main.Id;
+                changed = true;
+            }
+            if (changed)
+                store.Update(item);
         }
-        lock (_lock) Pump();
+
+        // The first evaluation happens now: an app started inside a scheduled window starts the queue.
+        Tick();
+        _ticker = autoTick ? TickLoopAsync(_tickerCts.Token) : Task.CompletedTask;
     }
 
     public static HttpClient CreateHttpClient(CookieContainer? cookies = null)
@@ -74,6 +105,15 @@ public sealed class DownloadService : IAsyncDisposable
     /// <summary>Raised when categories are added, changed or removed.</summary>
     public event Action? CategoriesChanged;
 
+    /// <summary>Raised when queues are added, changed, removed, started or stopped.</summary>
+    public event Action? QueuesChanged;
+
+    /// <summary>
+    /// Raised when a queue that works in runs (with an end action or a schedule) has processed all its downloads;
+    /// the app carries out the queue's end action.
+    /// </summary>
+    public event Action<DownloadQueue>? QueueFinished;
+
     public AppSettings Settings
     {
         get { lock (_lock) return _settings.Clone(); }
@@ -84,10 +124,25 @@ public sealed class DownloadService : IAsyncDisposable
         get { lock (_lock) return _categories.OrderBy(c => c.SortOrder).Select(c => c.Clone()).ToList(); }
     }
 
+    public IReadOnlyList<DownloadQueue> Queues
+    {
+        get { lock (_lock) return _queues.OrderBy(q => q.SortOrder).ThenBy(q => q.Id).Select(q => q.Clone()).ToList(); }
+    }
+
+    public long MainQueueId
+    {
+        get { lock (_lock) return MainQueue.Id; }
+    }
+
+    private DownloadQueue MainQueue => _queues.First(q => q.IsMain);
+
+    /// <summary>Whether the main queue runs (the single queue of earlier versions).</summary>
     public bool QueueRunning
     {
-        get { lock (_lock) return _settings.QueueRunning; }
+        get { lock (_lock) return MainQueue.Running; }
     }
+
+    public DateTime UtcNow => _clock.UtcNow;
 
     public IReadOnlyList<DownloadSnapshot> GetSnapshots()
     {
@@ -113,12 +168,42 @@ public sealed class DownloadService : IAsyncDisposable
         }
     }
 
+    public IReadOnlyList<QueueStatus> GetQueueStatuses()
+    {
+        lock (_lock)
+        {
+            var now = _clock.UtcNow;
+            return _queues.OrderBy(q => q.SortOrder).ThenBy(q => q.Id).Select(q =>
+            {
+                var next = ScheduleCalculator.NextStart(q.Schedule, now, _clock.Zone);
+                var state = q.Running ? QueueState.Running : next is not null ? QueueState.Scheduled : QueueState.Stopped;
+                return new QueueStatus(q.Id, state, next, _items.Count(i => i.QueueId == q.Id),
+                    _active.Values.Count(a => a.Job.Record.QueueId == q.Id));
+            }).ToList();
+        }
+    }
+
+    /// <summary>The queue the extension asked for, by name or key; the main queue when absent or unknown.</summary>
+    public long ResolveQueue(string? nameOrKey)
+    {
+        lock (_lock)
+        {
+            if (string.IsNullOrWhiteSpace(nameOrKey))
+                return MainQueue.Id;
+            var wanted = nameOrKey.Trim();
+            return (_queues.FirstOrDefault(q => string.Equals(q.Name, wanted, StringComparison.CurrentCultureIgnoreCase))
+                    ?? _queues.FirstOrDefault(q => q.Key == wanted)
+                    ?? MainQueue).Id;
+        }
+    }
+
     /// <summary>
     /// Adds a download. Without a folder it goes to its category's folder. Without a category or file name, the
     /// category is guessed from the URL now and confirmed once the server reports the real file name and type.
+    /// Without a queue it joins the main queue.
     /// </summary>
     public long Add(string url, string? directory = null, string? fileName = null, bool startNow = true, RequestContext? context = null,
-        long? categoryId = null)
+        long? categoryId = null, long? queueId = null)
     {
         if (!Urls.TryParseHttp(url, out var uri))
             throw new ArgumentException("Enter a valid http:// or https:// address.", nameof(url));
@@ -133,11 +218,12 @@ public sealed class DownloadService : IAsyncDisposable
                 Directory = string.IsNullOrWhiteSpace(directory) ? category.ResolveFolder(_settings.DownloadFolder) : directory,
                 FileName = name,
                 Status = startNow ? DownloadStatus.Paused : DownloadStatus.Queued,
-                SortOrder = _items.Count == 0 ? 0 : _items.Max(i => i.SortOrder) + 1,
-                AddedUtc = DateTime.UtcNow,
+                SortOrder = NextSortOrder(),
+                AddedUtc = _clock.UtcNow,
                 Context = context is { IsEmpty: false } ? context : null,
                 CategoryId = category.Id,
                 AutoCategory = categoryId is null && name is null,
+                QueueId = _queues.FirstOrDefault(q => q.Id == queueId)?.Id ?? MainQueue.Id,
             };
             _store.Insert(record);
             _items.Add(record);
@@ -149,17 +235,21 @@ public sealed class DownloadService : IAsyncDisposable
         }
     }
 
-    /// <summary>Starts (or resumes) a download right away, outside the queue limits.</summary>
+    /// <summary>Starts (or resumes) a download right away, outside the queue limits and quotas.</summary>
     public void Start(long id)
     {
         lock (_lock)
         {
             if (Find(id) is { Status: not DownloadStatus.Completed } record)
+            {
+                record.Failures = 0;
+                record.RetryAtUtc = null;
                 StartLocked(record, fromQueue: false);
+            }
         }
     }
 
-    /// <summary>Puts a download back in the queue to be started in list order.</summary>
+    /// <summary>Puts a download back in its queue to be started in order.</summary>
     public void Enqueue(long id)
     {
         lock (_lock)
@@ -168,6 +258,8 @@ public sealed class DownloadService : IAsyncDisposable
             {
                 record.Status = DownloadStatus.Queued;
                 record.Error = null;
+                record.Failures = 0;
+                record.RetryAtUtc = null;
                 _store.Update(record);
                 Pump();
             }
@@ -178,25 +270,36 @@ public sealed class DownloadService : IAsyncDisposable
 
     public Task PauseAllAsync() => StopAsync(_ => true, _ => DownloadStatus.Paused);
 
-    public void StartQueue()
+    /// <summary>Starts the main queue.</summary>
+    public void StartQueue() => StartQueue(MainQueueId);
+
+    /// <summary>Stops the main queue; downloads it started go back to waiting.</summary>
+    public Task StopQueueAsync() => StopQueueAsync(MainQueueId);
+
+    public void StartQueue(long queueId)
     {
         lock (_lock)
         {
-            _settings.QueueRunning = true;
-            _store.SaveSettings(_settings);
+            if (_queues.FirstOrDefault(q => q.Id == queueId) is not { } queue)
+                return;
+            SetRunning(queue, true);
             Pump();
         }
+        QueuesChanged?.Invoke();
     }
 
-    /// <summary>Stops the queue; downloads it started go back to waiting in the queue.</summary>
-    public Task StopQueueAsync()
+    /// <summary>Stops a queue; the downloads it started go back to waiting in it.</summary>
+    public async Task StopQueueAsync(long queueId)
     {
+        Task task;
         lock (_lock)
         {
-            _settings.QueueRunning = false;
-            _store.SaveSettings(_settings);
+            if (_queues.FirstOrDefault(q => q.Id == queueId) is not { } queue)
+                return;
+            task = StopQueueLocked(queue);
         }
-        return StopAsync(a => a.FromQueue, _ => DownloadStatus.Queued);
+        QueuesChanged?.Invoke();
+        await task;
     }
 
     public async Task RemoveAsync(long id, bool deleteFile)
@@ -214,26 +317,46 @@ public sealed class DownloadService : IAsyncDisposable
         }
     }
 
-    /// <summary>Moves a download up (negative) or down (positive) in the list and queue order.</summary>
+    /// <summary>Moves a download up (negative) or down (positive) among the downloads of its own queue.</summary>
     public void Move(long id, int delta)
     {
         lock (_lock)
         {
-            var ordered = _items.OrderBy(i => i.SortOrder).ToList();
-            var index = ordered.FindIndex(i => i.Id == id);
-            var target = index + Math.Sign(delta);
-            if (index < 0 || target < 0 || target >= ordered.Count)
+            if (Find(id) is not { } item)
                 return;
-            (ordered[index], ordered[target]) = (ordered[target], ordered[index]);
-            for (var i = 0; i < ordered.Count; i++)
-            {
-                if (ordered[i].SortOrder != i)
-                {
-                    ordered[i].SortOrder = i;
-                    _store.Update(ordered[i]);
-                }
-            }
+            if (_items.Select(i => i.SortOrder).Distinct().Count() != _items.Count)
+                Renumber();
+            var ordered = _items.Where(i => i.QueueId == item.QueueId).OrderBy(i => i.SortOrder).ToList();
+            var index = ordered.IndexOf(item);
+            var target = index + Math.Sign(delta);
+            if (target < 0 || target >= ordered.Count)
+                return;
+            var other = ordered[target];
+            (item.SortOrder, other.SortOrder) = (other.SortOrder, item.SortOrder);
+            _store.Update(item);
+            _store.Update(other);
+            Pump();
         }
+    }
+
+    /// <summary>Moves downloads to another queue, at its end, in their current order.</summary>
+    public void MoveToQueue(IEnumerable<long> ids, long queueId)
+    {
+        lock (_lock)
+        {
+            if (_queues.All(q => q.Id != queueId))
+                return;
+            foreach (var record in ids.Select(Find).OfType<DownloadRecord>().Where(r => r.QueueId != queueId).OrderBy(r => r.SortOrder).ToList())
+            {
+                record.QueueId = queueId;
+                record.SortOrder = NextSortOrder();
+                if (_active.TryGetValue(record.Id, out var active))
+                    active.Job.Record.QueueId = queueId;
+                _store.Update(record);
+            }
+            Pump();
+        }
+        QueuesChanged?.Invoke();
     }
 
     public void UpdateSettings(AppSettings settings)
@@ -243,13 +366,22 @@ public sealed class DownloadService : IAsyncDisposable
             var queueRunning = _settings.QueueRunning;
             _settings = settings.Clone();
             _settings.MaxConnections = Math.Clamp(settings.MaxConnections, 1, 32);
-            _settings.MaxConcurrentDownloads = Math.Clamp(settings.MaxConcurrentDownloads, 1, 20);
+            _settings.MaxConcurrentDownloads = Math.Clamp(settings.MaxConcurrentDownloads, 1, 50);
             _settings.SpeedLimitKBps = Math.Max(0, settings.SpeedLimitKBps);
+            _settings.GlobalQuotaMBPerHour = Math.Max(0, settings.GlobalQuotaMBPerHour);
             _settings.QueueRunning = queueRunning;
             _limiter.BytesPerSecond = _settings.SpeedLimitKBps * 1024;
             _store.SaveSettings(_settings);
             Pump();
         }
+    }
+
+    /// <summary>Changes only the global speed limit, for example from the notification area menu.</summary>
+    public void SetSpeedLimit(long kilobytesPerSecond)
+    {
+        var settings = Settings;
+        settings.SpeedLimitKBps = kilobytesPerSecond;
+        UpdateSettings(settings);
     }
 
     /// <summary>Adds a category at the end of the list (Id 0) or saves changes to an existing one.</summary>
@@ -321,6 +453,79 @@ public sealed class DownloadService : IAsyncDisposable
         }
     }
 
+    /// <summary>Adds a queue at the end (Id 0) or saves changes to an existing one, keeping its started/stopped state.</summary>
+    public DownloadQueue SaveQueue(DownloadQueue queue)
+    {
+        if (string.IsNullOrWhiteSpace(queue.Name))
+            throw new ArgumentException("A queue needs a name.", nameof(queue));
+        DownloadQueue result;
+        lock (_lock)
+        {
+            var saved = queue.Clone();
+            saved.Name = saved.Name.Trim();
+            saved.MaxConcurrent = Math.Clamp(saved.MaxConcurrent, 1, 20);
+            saved.RetryCount = Math.Clamp(saved.RetryCount, 0, 100);
+            saved.RetryDelaySeconds = Math.Clamp(saved.RetryDelaySeconds, 0, 24 * 3600);
+            saved.QuotaMBPerHour = Math.Max(0, saved.QuotaMBPerHour);
+            saved.Schedule.RepeatMinutes = Math.Max(0, saved.Schedule.RepeatMinutes);
+            var existing = _queues.FirstOrDefault(q => q.Id == saved.Id);
+            if (existing is null)
+            {
+                saved.Id = 0;
+                saved.Key = null;
+                saved.Running = false;
+                saved.SortOrder = _queues.Max(q => q.SortOrder) + 1;
+                _store.SaveQueue(saved);
+                _queues.Add(saved);
+            }
+            else
+            {
+                saved.Key = existing.Key;
+                saved.SortOrder = existing.SortOrder;
+                saved.Running = existing.Running;
+                _store.SaveQueue(saved);
+                _queues[_queues.IndexOf(existing)] = saved;
+                _tracker.Forget(saved.Id); // a changed schedule is evaluated afresh
+            }
+            result = saved.Clone();
+            Pump();
+        }
+        QueuesChanged?.Invoke();
+        return result;
+    }
+
+    /// <summary>Removes a queue; its downloads move to the main queue, which cannot be removed.</summary>
+    public void DeleteQueue(long id)
+    {
+        lock (_lock)
+        {
+            if (_queues.FirstOrDefault(q => q.Id == id) is not { IsMain: false } queue)
+                return;
+            var main = MainQueue;
+            _store.DeleteQueue(id, main.Id);
+            _queues.Remove(queue);
+            _tracker.Forget(id);
+            _runStarted.Remove(id);
+            _quotas.Remove(id);
+            foreach (var record in _items.Where(r => r.QueueId == id))
+                record.QueueId = main.Id;
+            foreach (var active in _active.Values.Where(a => a.Job.Record.QueueId == id))
+                active.Job.Record.QueueId = main.Id;
+            Pump();
+        }
+        QueuesChanged?.Invoke();
+    }
+
+    /// <summary>Bytes transferred in the last hour by a queue (or by all downloads when null).</summary>
+    public long QuotaUsed(long? queueId)
+    {
+        lock (_lock)
+        {
+            var now = _clock.UtcNow;
+            return queueId is { } id ? (_quotas.TryGetValue(id, out var quota) ? quota.Used(now) : 0) : _globalQuota.Used(now);
+        }
+    }
+
     /// <summary>
     /// Asks the server at <paramref name="newUrl"/> about the file and compares it with what was already
     /// downloaded, typically because the old link expired.
@@ -386,15 +591,182 @@ public sealed class DownloadService : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// One step of the scheduler, run every second (or by tests with a fake clock): counts transferred bytes for
+    /// the quotas, starts and stops queues by their schedule, enforces quotas, restarts downloads whose retry time
+    /// came, and reports queues that finished.
+    /// </summary>
+    public void Tick()
+    {
+        var finished = new List<DownloadQueue>();
+        var queuesChanged = false;
+        lock (_lock)
+        {
+            if (_pumpSuspended)
+                return;
+            var now = _clock.UtcNow;
+            foreach (var active in _active.Values)
+                CountBytes(active, now);
+
+            foreach (var queue in _queues.ToList())
+            {
+                switch (_tracker.Evaluate(queue, now, _clock.Zone))
+                {
+                    case ScheduleTracker.Change.Start:
+                        // Each scheduled start also gives the downloads that failed another chance.
+                        foreach (var failed in _items.Where(i => i.QueueId == queue.Id && i.Status == DownloadStatus.Failed))
+                        {
+                            failed.Status = DownloadStatus.Queued;
+                            failed.Failures = 0;
+                            failed.RetryAtUtc = null;
+                            _store.Update(failed);
+                        }
+                        if (!queue.Running)
+                            SetRunning(queue, true);
+                        queuesChanged = true;
+                        break;
+                    case ScheduleTracker.Change.Resume:
+                        if (!queue.Running)
+                        {
+                            SetRunning(queue, true);
+                            queuesChanged = true;
+                        }
+                        break;
+                    case ScheduleTracker.Change.Stop:
+                        if (queue.Running)
+                        {
+                            _ = StopQueueLocked(queue);
+                            queuesChanged = true;
+                        }
+                        break;
+                }
+            }
+
+            // Queues over their hourly quota hand their downloads back until the past hour frees up.
+            foreach (var active in _active.Values.Where(a => a.FromQueue && QuotaBlocked(a.Job.Record.QueueId, now)).ToList())
+            {
+                active.StopStatus = DownloadStatus.Queued;
+                active.Cts.Cancel();
+            }
+
+            Pump();
+            finished.AddRange(CollectFinished());
+            queuesChanged |= finished.Count > 0;
+        }
+        if (queuesChanged)
+            QueuesChanged?.Invoke();
+        foreach (var queue in finished)
+            QueueFinished?.Invoke(queue);
+    }
+
+    /// <summary>
+    /// Undoes <see cref="ShutdownAsync"/> when the app keeps running after all, for example when Windows or another
+    /// program cancelled the shutdown: queues start downloads again.
+    /// </summary>
+    public void ResumeAfterShutdown()
+    {
+        lock (_lock)
+        {
+            _pumpSuspended = false;
+            Pump();
+        }
+    }
+
     /// <summary>Checkpoints and stops every running download so it can resume on the next launch.</summary>
     public Task ShutdownAsync() =>
         StopAsync(_ => true, a => a.FromQueue ? DownloadStatus.Queued : DownloadStatus.Paused, pumpAfter: false);
 
     public async ValueTask DisposeAsync()
     {
+        _tickerCts.Cancel();
+        await _ticker.ContinueWith(_ => { }, TaskScheduler.Default);
         await ShutdownAsync();
         if (_ownsHttp)
             _http.Dispose();
+    }
+
+    private async Task TickLoopAsync(CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        while (await timer.WaitForNextTickAsync(ct))
+        {
+            try
+            {
+                Tick();
+            }
+            catch (Exception ex) when (ex is IOException or Microsoft.Data.Sqlite.SqliteException or InvalidOperationException)
+            {
+                // A failed step is retried on the next tick.
+            }
+        }
+    }
+
+    private void SetRunning(DownloadQueue queue, bool running)
+    {
+        queue.Running = running;
+        if (!running)
+            _runStarted.Remove(queue.Id);
+        _store.SaveQueue(queue);
+    }
+
+    private Task StopQueueLocked(DownloadQueue queue)
+    {
+        SetRunning(queue, false);
+        var targets = _active.Values.Where(a => a.FromQueue && a.Job.Record.QueueId == queue.Id).ToList();
+        foreach (var a in targets)
+        {
+            a.StopStatus = DownloadStatus.Queued;
+            a.Cts.Cancel();
+        }
+        return Task.WhenAll(targets.Select(a => a.Task));
+    }
+
+    private bool QuotaBlocked(long? queueId, DateTime now)
+    {
+        if (HourlyQuota.IsExceeded(_globalQuota.Used(now), _settings.GlobalQuotaMBPerHour))
+            return true;
+        var queue = _queues.FirstOrDefault(q => q.Id == queueId);
+        return queue is not null && _quotas.TryGetValue(queue.Id, out var quota) && HourlyQuota.IsExceeded(quota.Used(now), queue.QuotaMBPerHour);
+    }
+
+    private DateTime? QuotaFreeAt(long? queueId, DateTime now)
+    {
+        var global = _globalQuota.FreeAt(_settings.GlobalQuotaMBPerHour, now);
+        var queue = _queues.FirstOrDefault(q => q.Id == queueId);
+        var own = queue is not null && _quotas.TryGetValue(queue.Id, out var quota) ? quota.FreeAt(queue.QuotaMBPerHour, now) : null;
+        return global is null ? own : own is null ? global : global > own ? global : own;
+    }
+
+    private void CountBytes(ActiveJob active, DateTime now)
+    {
+        var total = active.Job.BytesDownloaded;
+        var delta = total - active.CountedBytes;
+        active.CountedBytes = total;
+        if (delta <= 0)
+            return; // nothing new, or the transfer restarted from zero
+        _globalQuota.Add(delta, now);
+        if (active.Job.Record.QueueId is { } queueId)
+        {
+            if (!_quotas.TryGetValue(queueId, out var quota))
+                _quotas[queueId] = quota = new HourlyQuota();
+            quota.Add(delta, now);
+        }
+    }
+
+    /// <summary>Queues working in runs that have nothing left: they stop, and the caller raises <see cref="QueueFinished"/>.</summary>
+    private List<DownloadQueue> CollectFinished()
+    {
+        var finished = new List<DownloadQueue>();
+        foreach (var queue in _queues.Where(q => q.Running && q.StopsWhenDone && _runStarted.Contains(q.Id)).ToList())
+        {
+            var busy = _active.Values.Any(a => a.FromQueue && a.Job.Record.QueueId == queue.Id)
+                       || _items.Any(i => i.QueueId == queue.Id && i.Status == DownloadStatus.Queued);
+            if (busy)
+                continue;
+            SetRunning(queue, false);
+            finished.Add(queue.Clone());
+        }
+        return finished;
     }
 
     private DownloadSnapshot SnapshotLocked(DownloadRecord r)
@@ -402,12 +774,22 @@ public sealed class DownloadService : IAsyncDisposable
         _active.TryGetValue(r.Id, out var active);
         var live = active?.Job.Record;
         var name = live?.FileName ?? r.FileName ?? DisplayNameFromUrl(r.Url);
+        var error = r.Error;
+        // A waiting download says why it does not start.
+        if (r.Status == DownloadStatus.Queued && active is null)
+        {
+            var now = _clock.UtcNow;
+            if (r.RetryAtUtc is { } retry && retry > now)
+                error = string.Format(CultureInfo.CurrentCulture, Strings.WaitingRetry, r.Failures, LocalTime(retry), r.Error);
+            else if (QuotaBlocked(r.QueueId, now) && QuotaFreeAt(r.QueueId, now) is { } free)
+                error = string.Format(CultureInfo.CurrentCulture, Strings.WaitingQuota, LocalTime(free));
+        }
         return new DownloadSnapshot(
             r.Id, r.Url, name, live?.Directory ?? r.Directory,
             r.Status == DownloadStatus.Completed ? r.FinalPath : null,
             live?.TotalSize ?? r.TotalSize,
             active?.Job.BytesDownloaded ?? r.DownloadedBytes,
-            r.Status, r.Error,
+            r.Status, error,
             active?.Job.ActiveConnections ?? 0,
             r.SortOrder,
             live?.SupportsRanges ?? r.SupportsRanges,
@@ -416,8 +798,13 @@ public sealed class DownloadService : IAsyncDisposable
             r.CompletedUtc,
             live?.ETag ?? r.ETag,
             live?.LastModified ?? r.LastModified,
-            live?.ContentType ?? r.ContentType);
+            live?.ContentType ?? r.ContentType,
+            r.QueueId,
+            r.RetryAtUtc);
     }
+
+    private string LocalTime(DateTime utc) =>
+        TimeZoneInfo.ConvertTimeFromUtc(utc, _clock.Zone).ToString("t", CultureInfo.CurrentCulture);
 
     private async Task StopAsync(Func<ActiveJob, bool> which, Func<ActiveJob, DownloadStatus> statusAfter, long? alsoUnqueue = null, bool pumpAfter = true)
     {
@@ -437,6 +824,7 @@ public sealed class DownloadService : IAsyncDisposable
             if (alsoUnqueue is { } id && !_active.ContainsKey(id) && Find(id) is { Status: DownloadStatus.Queued } waiting)
             {
                 waiting.Status = DownloadStatus.Paused;
+                waiting.RetryAtUtc = null;
                 _store.Update(waiting);
             }
         }
@@ -450,7 +838,10 @@ public sealed class DownloadService : IAsyncDisposable
 
         record.Status = DownloadStatus.Downloading;
         record.Error = null;
+        record.RetryAtUtc = null;
         _store.Update(record);
+        if (fromQueue && record.QueueId is { } queueId)
+            _runStarted.Add(queueId);
 
         var options = new EngineOptions
         {
@@ -463,7 +854,7 @@ public sealed class DownloadService : IAsyncDisposable
             CheckpointInterval = _engineTemplate.CheckpointInterval,
         };
         var job = new DownloadJob(record.Clone(), _http, _limiter, options, OnCheckpoint, OnProbed);
-        var active = new ActiveJob(job, fromQueue);
+        var active = new ActiveJob(job, fromQueue) { CountedBytes = job.BytesDownloaded };
         _active[record.Id] = active;
         active.Task = Task.Run(() => RunJobAsync(active));
     }
@@ -488,26 +879,43 @@ public sealed class DownloadService : IAsyncDisposable
         }
 
         DownloadSnapshot? completed = null;
+        List<DownloadQueue> finished;
         lock (_lock)
         {
+            var now = _clock.UtcNow;
+            CountBytes(active, now);
             _active.Remove(active.Job.Record.Id);
             if (Find(active.Job.Record.Id) is { } record)
             {
                 CopyProgress(active.Job.Record, record);
                 record.Status = final;
                 record.Error = error;
+                var queue = _queues.FirstOrDefault(q => q.Id == record.QueueId);
                 if (final == DownloadStatus.Completed)
                 {
                     record.Context = null; // session cookies are not kept longer than needed
+                    record.Failures = 0;
                     completed = SnapshotLocked(record);
+                }
+                else if (final == DownloadStatus.Failed && active.FromQueue && queue is not null && record.Failures < queue.RetryCount)
+                {
+                    // The queue tries again later instead of giving up.
+                    record.Failures++;
+                    record.Status = DownloadStatus.Queued;
+                    record.RetryAtUtc = now.AddSeconds(queue.RetryDelaySeconds);
                 }
                 _store.Update(record);
             }
             Pump();
+            finished = CollectFinished();
         }
         active.Cts.Dispose();
         if (completed is not null)
             DownloadCompleted?.Invoke(completed);
+        if (finished.Count > 0)
+            QueuesChanged?.Invoke();
+        foreach (var queue in finished)
+            QueueFinished?.Invoke(queue);
     }
 
     /// <summary>The server revealed the file name and type: confirm a guessed category before any data is written.</summary>
@@ -560,19 +968,44 @@ public sealed class DownloadService : IAsyncDisposable
         to.CompletedUtc = from.CompletedUtc;
     }
 
+    /// <summary>Starts waiting downloads, queue by queue in list order, within every limit and quota.</summary>
     private void Pump()
     {
-        if (!_settings.QueueRunning || _pumpSuspended)
+        if (_pumpSuspended)
             return;
-        while (_active.Count < _settings.MaxConcurrentDownloads)
+        var now = _clock.UtcNow;
+        foreach (var queue in _queues.OrderBy(q => q.SortOrder).ThenBy(q => q.Id))
         {
-            var next = _items
-                .Where(i => i.Status == DownloadStatus.Queued && !_active.ContainsKey(i.Id))
-                .OrderBy(i => i.SortOrder)
-                .FirstOrDefault();
-            if (next is null)
-                return;
-            StartLocked(next, fromQueue: true);
+            if (!queue.Running || QuotaBlocked(queue.Id, now))
+                continue;
+            while (_active.Values.Count(a => a.FromQueue) < _settings.MaxConcurrentDownloads
+                   && _active.Values.Count(a => a.FromQueue && a.Job.Record.QueueId == queue.Id) < queue.MaxConcurrent)
+            {
+                var next = _items
+                    .Where(i => i.QueueId == queue.Id && i.Status == DownloadStatus.Queued && !_active.ContainsKey(i.Id)
+                                && (i.RetryAtUtc is not { } retry || retry <= now))
+                    .OrderBy(i => i.SortOrder)
+                    .FirstOrDefault();
+                if (next is null)
+                    break;
+                StartLocked(next, fromQueue: true);
+            }
+        }
+    }
+
+    private int NextSortOrder() => _items.Count == 0 ? 0 : _items.Max(i => i.SortOrder) + 1;
+
+    /// <summary>Gives every download a distinct position, keeping the current order.</summary>
+    private void Renumber()
+    {
+        var ordered = _items.OrderBy(i => i.SortOrder).ThenBy(i => i.Id).ToList();
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            if (ordered[i].SortOrder != i)
+            {
+                ordered[i].SortOrder = i;
+                _store.Update(ordered[i]);
+            }
         }
     }
 
