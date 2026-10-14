@@ -1,0 +1,14 @@
+<Window x:Class="DownloadManager.App.Views.MessageWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="460" SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="20">
+        <DockPanel>
+            <TextBlock x:Name="IconGlyph" DockPanel.Dock="Left" FontFamily="{StaticResource IconFont}" FontSize="28" Margin="0,0,16,0"
+                       VerticalAlignment="Top" Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock x:Name="MessageText" TextWrapping="Wrap" VerticalAlignment="Center" LineHeight="20" />
+        </DockPanel>
+        <StackPanel x:Name="Buttons" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0" />
+    </StackPanel>
+</Window>

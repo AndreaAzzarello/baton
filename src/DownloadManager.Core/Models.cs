@@ -50,6 +50,17 @@ public sealed class DownloadRecord
     public DateTime? CompletedUtc { get; set; }
     public List<SegmentState> Segments { get; set; } = [];
 
+    public long? CategoryId { get; set; }
+
+    /// <summary>
+    /// The category was guessed from the URL when the download was added: once the server reveals the real
+    /// file name and type it is chosen again, and so is the folder if it was the category's folder.
+    /// </summary>
+    public bool AutoCategory { get; set; }
+
+    /// <summary>Media type reported by the server, without parameters.</summary>
+    public string? ContentType { get; set; }
+
     /// <summary>Browser session details needed to fetch the file; null for downloads added by hand.</summary>
     public RequestContext? Context { get; set; }
 
@@ -91,7 +102,15 @@ public sealed record DownloadSnapshot(
     int Connections,
     int SortOrder,
     bool SupportsRanges,
-    DateTime AddedUtc);
+    DateTime AddedUtc,
+    long? CategoryId = null,
+    DateTime? CompletedUtc = null,
+    string? ETag = null,
+    string? LastModified = null,
+    string? ContentType = null);
+
+/// <summary>A byte range for the progress view; <see cref="Active"/> when a connection is downloading it right now.</summary>
+public sealed record SegmentView(long Start, long End, long Written, bool Active);
 
 public sealed class EngineOptions
 {
@@ -114,6 +133,20 @@ public sealed class AppSettings
 
     /// <summary>Show the add dialog for downloads sent by the browser extension instead of starting them directly.</summary>
     public bool ConfirmBrowserDownloads { get; set; } = true;
+
+    public AppTheme Theme { get; set; } = AppTheme.System;
+
+    /// <summary>Windows notification when a download completes.</summary>
+    public bool NotifyOnCompletion { get; set; } = true;
+
+    public AppSettings Clone() => (AppSettings)MemberwiseClone();
+}
+
+public enum AppTheme
+{
+    System,
+    Light,
+    Dark,
 }
 
 public sealed class DownloadFailedException(string message, Exception? inner = null) : Exception(message, inner);

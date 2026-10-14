@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ActionAdd" xml:space="preserve"><value>Aggiungi</value></data>
+  <data name="ActionAddToolTip" xml:space="preserve"><value>Aggiungi un download (Ctrl+N). Se negli appunti c'è un link, viene già inserito.</value></data>
+  <data name="ActionCategories" xml:space="preserve"><value>Categorie</value></data>
+  <data name="ActionCategoriesToolTip" xml:space="preserve"><value>Gestisci categorie, estensioni e cartelle</value></data>
+  <data name="ActionDown" xml:space="preserve"><value>Giù</value></data>
+  <data name="ActionDownToolTip" xml:space="preserve"><value>Sposta giù nella coda (solo con l'ordine della coda)</value></data>
+  <data name="ActionEnqueue" xml:space="preserve"><value>In coda</value></data>
+  <data name="ActionEnqueueToolTip" xml:space="preserve"><value>Metti in coda i download selezionati</value></data>
+  <data name="ActionFolder" xml:space="preserve"><value>Cartella</value></data>
+  <data name="ActionFolderToolTip" xml:space="preserve"><value>Apri la cartella predefinita dei download</value></data>
+  <data name="ActionPause" xml:space="preserve"><value>Pausa</value></data>
+  <data name="ActionPauseToolTip" xml:space="preserve"><value>Metti in pausa i download selezionati</value></data>
+  <data name="ActionProgress" xml:space="preserve"><value>Avanzamento</value></data>
+  <data name="ActionProgressToolTip" xml:space="preserve"><value>Mostra segmenti, connessioni e velocità del download selezionato (Invio)</value></data>
+  <data name="ActionProperties" xml:space="preserve"><value>Proprietà</value></data>
+  <data name="ActionPropertiesToolTip" xml:space="preserve"><value>Dettagli, categoria e aggiornamento dell'indirizzo del download selezionato (Alt+Invio)</value></data>
+  <data name="ActionRemove" xml:space="preserve"><value>Rimuovi</value></data>
+  <data name="ActionRemoveToolTip" xml:space="preserve"><value>Rimuovi dall'elenco (Canc)</value></data>
+  <data name="ActionResume" xml:space="preserve"><value>Riprendi</value></data>
+  <data name="ActionSettings" xml:space="preserve"><value>Impostazioni</value></data>
+  <data name="ActionStart" xml:space="preserve"><value>Avvia</value></data>
+  <data name="ActionStartToolTip" xml:space="preserve"><value>Avvia o riprendi subito i download selezionati</value></data>
+  <data name="ActionUp" xml:space="preserve"><value>Su</value></data>
+  <data name="ActionUpToolTip" xml:space="preserve"><value>Sposta su nella coda (solo con l'ordine della coda)</value></data>
+  <data name="AddCategoryLabel" xml:space="preserve"><value>C_ategoria</value></data>
+  <data name="AddCategoryName" xml:space="preserve"><value>Categoria</value></data>
+  <data name="AddFolderLabel" xml:space="preserve"><value>_Salva nella cartella</value></data>
+  <data name="AddFolderName" xml:space="preserve"><value>Cartella di destinazione</value></data>
+  <data name="AddNameLabel" xml:space="preserve"><value>_Nome file (facoltativo)</value></data>
+  <data name="AddNameName" xml:space="preserve"><value>Nome file</value></data>
+  <data name="AddNameToolTip" xml:space="preserve"><value>Lascia vuoto per usare il nome indicato dal server</value></data>
+  <data name="AddStartNow" xml:space="preserve"><value>Scarica ora</value></data>
+  <data name="AddTitle" xml:space="preserve"><value>Aggiungi download</value></data>
+  <data name="AddToQueue" xml:space="preserve"><value>Aggiungi alla coda</value></data>
+  <data name="AddUrlLabel" xml:space="preserve"><value>_Indirizzo (URL)</value></data>
+  <data name="AddUrlName" xml:space="preserve"><value>Indirizzo</value></data>
+  <data name="AppName" xml:space="preserve"><value>DownloadManager</value></data>
+  <data name="AskKeepUnverified" xml:space="preserve"><value>Non è possibile verificare che sia lo stesso file: {0}.
+
+Sì: usa il nuovo indirizzo e mantieni i dati già scaricati
+No: usa il nuovo indirizzo e ricomincia da zero</value></data>
+  <data name="AskRestartDifferent" xml:space="preserve"><value>Il file al nuovo indirizzo è diverso: {0}.
+
+Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></data>
+  <data name="Browse" xml:space="preserve"><value>Sfoglia…</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annulla</value></data>
+  <data name="CategoriesListName" xml:space="preserve"><value>Elenco delle categorie</value></data>
+  <data name="CategoriesTitle" xml:space="preserve"><value>Categorie</value></data>
+  <data name="CategoryAdd" xml:space="preserve"><value>Aggiungi</value></data>
+  <data name="CategoryCompressed" xml:space="preserve"><value>Compressi</value></data>
+  <data name="CategoryDelete" xml:space="preserve"><value>Elimina</value></data>
+  <data name="CategoryDocuments" xml:space="preserve"><value>Documenti</value></data>
+  <data name="CategoryExtensionsHint" xml:space="preserve"><value>Separate da spazi o virgole, per esempio: zip rar 7z</value></data>
+  <data name="CategoryExtensionsLabel" xml:space="preserve"><value>_Estensioni</value></data>
+  <data name="CategoryExtensionsName" xml:space="preserve"><value>Estensioni dei file</value></data>
+  <data name="CategoryFolderLabel" xml:space="preserve"><value>_Cartella di destinazione</value></data>
+  <data name="CategoryFolderName" xml:space="preserve"><value>Cartella di destinazione della categoria</value></data>
+  <data name="CategoryGeneral" xml:space="preserve"><value>Generale</value></data>
+  <data name="CategoryGeneralHint" xml:space="preserve"><value>Categoria predefinita per i file che non corrispondono a nessun'altra: non può essere eliminata.</value></data>
+  <data name="CategoryMusic" xml:space="preserve"><value>Musica</value></data>
+  <data name="CategoryNameLabel" xml:space="preserve"><value>_Nome</value></data>
+  <data name="CategoryNameName" xml:space="preserve"><value>Nome della categoria</value></data>
+  <data name="CategoryNewName" xml:space="preserve"><value>Nuova categoria</value></data>
+  <data name="CategoryPrograms" xml:space="preserve"><value>Programmi</value></data>
+  <data name="CategoryVideo" xml:space="preserve"><value>Video</value></data>
+  <data name="Close" xml:space="preserve"><value>Chiudi</value></data>
+  <data name="ClosingTitle" xml:space="preserve"><value>DownloadManager — salvataggio in corso…</value></data>
+  <data name="ColumnAdded" xml:space="preserve"><value>Aggiunto</value></data>
+  <data name="ColumnCategory" xml:space="preserve"><value>Categoria</value></data>
+  <data name="ColumnCompleted" xml:space="preserve"><value>Completato</value></data>
+  <data name="ColumnConnections" xml:space="preserve"><value>Conn.</value></data>
+  <data name="ColumnFolder" xml:space="preserve"><value>Cartella</value></data>
+  <data name="ColumnName" xml:space="preserve"><value>Nome file</value></data>
+  <data name="ColumnProgress" xml:space="preserve"><value>Avanzamento</value></data>
+  <data name="ColumnRemaining" xml:space="preserve"><value>Tempo rimasto</value></data>
+  <data name="ColumnSize" xml:space="preserve"><value>Dimensione</value></data>
+  <data name="ColumnSpeed" xml:space="preserve"><value>Velocità</value></data>
+  <data name="ColumnStatus" xml:space="preserve"><value>Stato</value></data>
+  <data name="ConfirmAddLinks" xml:space="preserve"><value>Aggiungere {0} download alla coda?</value></data>
+  <data name="ConfirmDeleteCategory" xml:space="preserve"><value>Eliminare la categoria "{0}"? I suoi download passeranno alla categoria Generale; i file restano dove sono.</value></data>
+  <data name="ConfirmRemove" xml:space="preserve"><value>Rimuovere {0} download dall'elenco? I dati parziali verranno eliminati.</value></data>
+  <data name="ConfirmRemoveCompleted" xml:space="preserve"><value>Eliminare dal disco anche i file già scaricati?
+
+Sì: elimina file ed elemento
+No: rimuovi solo dall'elenco</value></data>
+  <data name="EmptyFilteredHint" xml:space="preserve"><value>Scegli un altro filtro nel pannello a sinistra o cambia la ricerca</value></data>
+  <data name="EmptyFilteredTitle" xml:space="preserve"><value>Nessun download corrisponde</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>Premi Aggiungi (Ctrl+N), incolla un link con Ctrl+V oppure trascinalo qui</value></data>
+  <data name="EmptyTitle" xml:space="preserve"><value>Nessun download</value></data>
+  <data name="ErrorCategoryDuplicate" xml:space="preserve"><value>Esiste già una categoria chiamata "{0}".</value></data>
+  <data name="ErrorCategoryFolder" xml:space="preserve"><value>La cartella della categoria "{0}" deve essere un percorso completo.</value></data>
+  <data name="ErrorCategoryName" xml:space="preserve"><value>Ogni categoria deve avere un nome.</value></data>
+  <data name="ErrorConcurrentRange" xml:space="preserve"><value>I download simultanei devono essere un numero tra 1 e 20.</value></data>
+  <data name="ErrorConnectionsRange" xml:space="preserve"><value>Le connessioni per download devono essere un numero tra 1 e 32.</value></data>
+  <data name="ErrorFileMissing" xml:space="preserve"><value>Il file non esiste più: potrebbe essere stato spostato o eliminato.</value></data>
+  <data name="ErrorFolderNotAbsolute" xml:space="preserve"><value>Indica una cartella completa (es. C:\Users\…\Downloads).</value></data>
+  <data name="ErrorInvalidUrl" xml:space="preserve"><value>Inserisci un indirizzo http:// o https:// valido.</value></data>
+  <data name="ErrorOnlyHttp" xml:space="preserve"><value>Sono supportati solo indirizzi http e https.</value></data>
+  <data name="ErrorSpeedLimit" xml:space="preserve"><value>Il limite di velocità deve essere 0 o un numero positivo.</value></data>
+  <data name="ErrorUnexpected" xml:space="preserve"><value>Errore imprevisto</value></data>
+  <data name="ErrorUnknownMessage" xml:space="preserve"><value>Messaggio sconosciuto: {0}</value></data>
+  <data name="FromBrowser" xml:space="preserve"><value>Inviato dal browser.</value></data>
+  <data name="FromBrowserWithCookies" xml:space="preserve"><value>Inviato dal browser: verranno usati i cookie della sessione e la pagina di provenienza.</value></data>
+  <data name="GestureAltEnter" xml:space="preserve"><value>Alt+Invio</value></data>
+  <data name="GestureDelete" xml:space="preserve"><value>Canc</value></data>
+  <data name="GestureEnter" xml:space="preserve"><value>Invio</value></data>
+  <data name="LegendActive" xml:space="preserve"><value>Connessione attiva</value></data>
+  <data name="LegendDone" xml:space="preserve"><value>Scaricato</value></data>
+  <data name="LegendMissing" xml:space="preserve"><value>Da scaricare</value></data>
+  <data name="ListName" xml:space="preserve"><value>Elenco dei download</value></data>
+  <data name="MenuCopyUrl" xml:space="preserve"><value>Copia indirizzo</value></data>
+  <data name="MenuDeleteCategory" xml:space="preserve"><value>Elimina categoria</value></data>
+  <data name="MenuEditCategory" xml:space="preserve"><value>Modifica categoria…</value></data>
+  <data name="MenuEnqueue" xml:space="preserve"><value>Metti in coda</value></data>
+  <data name="MenuNewCategory" xml:space="preserve"><value>Nuova categoria…</value></data>
+  <data name="MenuOpen" xml:space="preserve"><value>Apri</value></data>
+  <data name="MenuOpenFolder" xml:space="preserve"><value>Apri cartella</value></data>
+  <data name="MenuPause" xml:space="preserve"><value>Pausa</value></data>
+  <data name="MenuProgress" xml:space="preserve"><value>Mostra avanzamento</value></data>
+  <data name="MenuProperties" xml:space="preserve"><value>Proprietà</value></data>
+  <data name="MenuQueueOrder" xml:space="preserve"><value>Ordine della coda</value></data>
+  <data name="MenuRemove" xml:space="preserve"><value>Rimuovi</value></data>
+  <data name="MenuResetColumns" xml:space="preserve"><value>Ripristina colonne</value></data>
+  <data name="MenuStart" xml:space="preserve"><value>Avvia / riprendi</value></data>
+  <data name="NavAll" xml:space="preserve"><value>Tutti i download</value></data>
+  <data name="NavFinished" xml:space="preserve"><value>Completati</value></data>
+  <data name="NavUnfinished" xml:space="preserve"><value>Non completati</value></data>
+  <data name="NavigationAccessibleName" xml:space="preserve"><value>{0}, {1} download</value></data>
+  <data name="NavigationName" xml:space="preserve"><value>Filtri e categorie</value></data>
+  <data name="No" xml:space="preserve"><value>No</value></data>
+  <data name="Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="PickDestinationFolder" xml:space="preserve"><value>Scegli la cartella di destinazione</value></data>
+  <data name="ProgressConnections" xml:space="preserve"><value>{0} attive su {1} segmenti</value></data>
+  <data name="ProgressConnectionsLabel" xml:space="preserve"><value>Connessioni</value></data>
+  <data name="ProgressConnectionsList" xml:space="preserve"><value>Segmenti e connessioni</value></data>
+  <data name="ProgressDownloaded" xml:space="preserve"><value>Scaricati</value></data>
+  <data name="ProgressDownloadedOf" xml:space="preserve"><value>{0} di {1} ({2})</value></data>
+  <data name="ProgressMap" xml:space="preserve"><value>Mappa del file</value></data>
+  <data name="ProgressOverall" xml:space="preserve"><value>Avanzamento complessivo</value></data>
+  <data name="ProgressRemaining" xml:space="preserve"><value>Tempo rimasto</value></data>
+  <data name="ProgressResumable" xml:space="preserve"><value>Ripresa</value></data>
+  <data name="ProgressSpeed" xml:space="preserve"><value>Velocità</value></data>
+  <data name="ProgressStatus" xml:space="preserve"><value>Stato</value></data>
+  <data name="ProgressTitle" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="PropertiesAdded" xml:space="preserve"><value>Aggiunto il</value></data>
+  <data name="PropertiesCategory" xml:space="preserve"><value>_Categoria</value></data>
+  <data name="PropertiesCompleted" xml:space="preserve"><value>Completato il</value></data>
+  <data name="PropertiesDownloaded" xml:space="preserve"><value>Scaricati</value></data>
+  <data name="PropertiesETag" xml:space="preserve"><value>ETag</value></data>
+  <data name="PropertiesFolder" xml:space="preserve"><value>Cartella</value></data>
+  <data name="PropertiesLastModified" xml:space="preserve"><value>Ultima modifica</value></data>
+  <data name="PropertiesResumable" xml:space="preserve"><value>Ripresa</value></data>
+  <data name="PropertiesSize" xml:space="preserve"><value>Dimensione</value></data>
+  <data name="PropertiesStatus" xml:space="preserve"><value>Stato</value></data>
+  <data name="PropertiesTitle" xml:space="preserve"><value>Proprietà del download</value></data>
+  <data name="PropertiesType" xml:space="preserve"><value>Tipo</value></data>
+  <data name="PropertiesUrlLabel" xml:space="preserve"><value>_Indirizzo</value></data>
+  <data name="PropertiesUrlName" xml:space="preserve"><value>Indirizzo del download</value></data>
+  <data name="QueueRunning" xml:space="preserve"><value>attiva</value></data>
+  <data name="QueueStart" xml:space="preserve"><value>Avvia coda</value></data>
+  <data name="QueueStartToolTip" xml:space="preserve"><value>Avvia la coda dei download</value></data>
+  <data name="QueueStop" xml:space="preserve"><value>Ferma coda</value></data>
+  <data name="QueueStopToolTip" xml:space="preserve"><value>Ferma la coda: i download avviati dalla coda tornano in attesa</value></data>
+  <data name="QueueStopped" xml:space="preserve"><value>ferma</value></data>
+  <data name="RemoveTitle" xml:space="preserve"><value>Rimuovi download</value></data>
+  <data name="ResumeNotSupported" xml:space="preserve"><value>No: il server non permette di riprendere</value></data>
+  <data name="Save" xml:space="preserve"><value>Salva</value></data>
+  <data name="SearchName" xml:space="preserve"><value>Cerca nei download</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>Cerca per nome o indirizzo (Ctrl+F)</value></data>
+  <data name="SearchToolTip" xml:space="preserve"><value>Filtra l'elenco per nome del file o indirizzo. Esc per cancellare.</value></data>
+  <data name="SegmentActive" xml:space="preserve"><value>Attiva</value></data>
+  <data name="SegmentDone" xml:space="preserve"><value>Completato</value></data>
+  <data name="SegmentDownloaded" xml:space="preserve"><value>Scaricati</value></data>
+  <data name="SegmentProgress" xml:space="preserve"><value>Avanzamento</value></data>
+  <data name="SegmentRange" xml:space="preserve"><value>Intervallo</value></data>
+  <data name="SegmentState" xml:space="preserve"><value>Stato</value></data>
+  <data name="SegmentWaiting" xml:space="preserve"><value>In attesa</value></data>
+  <data name="SettingsAppearance" xml:space="preserve"><value>Aspetto</value></data>
+  <data name="SettingsConcurrent" xml:space="preserve"><value>Download _simultanei avviati dalla coda (1–20)</value></data>
+  <data name="SettingsConfirmBrowser" xml:space="preserve"><value>Chiedi conferma per i download inviati dall'estensione del browser</value></data>
+  <data name="SettingsConnections" xml:space="preserve"><value>_Connessioni per download (1–32)</value></data>
+  <data name="SettingsConnectionsHint" xml:space="preserve"><value>Il numero di connessioni vale per i download avviati dopo il salvataggio.</value></data>
+  <data name="SettingsDownloads" xml:space="preserve"><value>Download</value></data>
+  <data name="SettingsFolder" xml:space="preserve"><value>Cartella _predefinita dei download</value></data>
+  <data name="SettingsFolderHint" xml:space="preserve"><value>Le categorie con una cartella relativa (per esempio "Video") creano una sottocartella qui.</value></data>
+  <data name="SettingsIntegration" xml:space="preserve"><value>Browser e notifiche</value></data>
+  <data name="SettingsNotify" xml:space="preserve"><value>Mostra una notifica di Windows quando un download è completato</value></data>
+  <data name="SettingsSpeedLimit" xml:space="preserve"><value>_Limite di velocità globale in KB/s (0 = nessuno)</value></data>
+  <data name="SettingsTheme" xml:space="preserve"><value>Tema</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>Impostazioni</value></data>
+  <data name="SpeedLimitStatus" xml:space="preserve"><value>(limite {0} KB/s)</value></data>
+  <data name="StatusBar" xml:space="preserve"><value>Coda {0}  ·  {1} in download  ·  {2} in attesa  ·  {3} totali</value></data>
+  <data name="StatusCompleted" xml:space="preserve"><value>Completato</value></data>
+  <data name="StatusConnecting" xml:space="preserve"><value>Connessione…</value></data>
+  <data name="StatusDownloading" xml:space="preserve"><value>In download</value></data>
+  <data name="StatusFailed" xml:space="preserve"><value>Errore</value></data>
+  <data name="StatusPaused" xml:space="preserve"><value>In pausa</value></data>
+  <data name="StatusQueued" xml:space="preserve"><value>In coda</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>Scuro</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>Chiaro</value></data>
+  <data name="ThemeSystem" xml:space="preserve"><value>Segui il sistema</value></data>
+  <data name="ToastCompletedDetails" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="ToastCompletedTitle" xml:space="preserve"><value>Download completato</value></data>
+  <data name="ToastOpen" xml:space="preserve"><value>Apri</value></data>
+  <data name="ToastOpenFolder" xml:space="preserve"><value>Apri cartella</value></data>
+  <data name="Unknown" xml:space="preserve"><value>Sconosciuto</value></data>
+  <data name="UpdateUrl" xml:space="preserve"><value>Aggiorna indirizzo</value></data>
+  <data name="UpdateUrlTitle" xml:space="preserve"><value>Aggiorna indirizzo</value></data>
+  <data name="UpdateUrlToolTip" xml:space="preserve"><value>Usa un nuovo link per lo stesso file (per esempio se quello vecchio è scaduto) mantenendo i dati già scaricati</value></data>
+  <data name="UrlCheckDateDiffers" xml:space="preserve"><value>la data di ultima modifica è diversa</value></data>
+  <data name="UrlCheckETagDiffers" xml:space="preserve"><value>l'ETag del file è diverso</value></data>
+  <data name="UrlCheckFailed" xml:space="preserve"><value>Il nuovo indirizzo non risponde: {0}</value></data>
+  <data name="UrlCheckInProgress" xml:space="preserve"><value>Verifica del nuovo indirizzo in corso…</value></data>
+  <data name="UrlCheckNoRanges" xml:space="preserve"><value>il nuovo server non permette di riprendere il download</value></data>
+  <data name="UrlCheckNothingToKeep" xml:space="preserve"><value>Non ci sono ancora dati scaricati.</value></data>
+  <data name="UrlCheckSameDate" xml:space="preserve"><value>Stessa dimensione e stessa data di ultima modifica.</value></data>
+  <data name="UrlCheckSameETag" xml:space="preserve"><value>Stessa dimensione e stesso ETag.</value></data>
+  <data name="UrlCheckSizeDiffers" xml:space="preserve"><value>la dimensione del file è diversa</value></data>
+  <data name="UrlCheckUnverifiable" xml:space="preserve"><value>il server indica la stessa dimensione ma non fornisce ETag né data di ultima modifica</value></data>
+  <data name="UrlUpdatedKept" xml:space="preserve"><value>Indirizzo aggiornato: i dati già scaricati ({0}) sono stati mantenuti.</value></data>
+  <data name="UrlUpdatedRestart" xml:space="preserve"><value>Indirizzo aggiornato: il download ripartirà da zero.</value></data>
+  <data name="Yes" xml:space="preserve"><value>Sì</value></data>
+</root>

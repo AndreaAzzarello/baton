@@ -15,6 +15,7 @@ public sealed class DownloadJob
     private readonly RateLimiter _limiter;
     private readonly EngineOptions _options;
     private readonly Func<DownloadRecord, Task> _onCheckpoint;
+    private readonly Action<DownloadRecord, ProbeResult>? _onProbed;
     private readonly SemaphoreSlim _checkpointGate = new(1, 1);
     private long _downloaded;
     private int _connections;
@@ -26,13 +27,15 @@ public sealed class DownloadJob
         HttpClient http,
         RateLimiter limiter,
         EngineOptions options,
-        Func<DownloadRecord, Task>? onCheckpoint = null)
+        Func<DownloadRecord, Task>? onCheckpoint = null,
+        Action<DownloadRecord, ProbeResult>? onProbed = null)
     {
         Record = record;
         _sharedHttp = _http = http;
         _limiter = limiter;
         _options = options;
         _onCheckpoint = onCheckpoint ?? (_ => Task.CompletedTask);
+        _onProbed = onProbed;
         _downloaded = record.Segments.Sum(s => s.Written);
     }
 
@@ -42,6 +45,9 @@ public sealed class DownloadJob
     public long BytesDownloaded => Interlocked.Read(ref _downloaded);
 
     public int ActiveConnections => Volatile.Read(ref _connections);
+
+    /// <summary>Live ranges while the transfer runs; null before the first response.</summary>
+    public List<SegmentView>? SegmentsView() => _scheduler?.View();
 
     public async Task RunAsync(CancellationToken ct)
     {
@@ -68,7 +74,7 @@ public sealed class DownloadJob
 
     private async Task RunOnceAsync(CancellationToken ct)
     {
-        var probe = await WithRetriesAsync(() => HttpProbe.ProbeAsync(_http, Record.Url, ct, Record.Context), ct);
+        var probe = await WithRetriesAsync(() => HttpProbe.ProbeAsync(_http, Record.Url, ct, Record.Context, _options.ReadTimeout), ct);
         if (!CanResume(probe))
             DiscardPartialData();
 
@@ -77,6 +83,10 @@ public sealed class DownloadJob
         Record.ETag = probe.ETag;
         Record.LastModified = probe.LastModified;
         Record.FileName ??= probe.FileName;
+        Record.ContentType = probe.ContentType;
+        // Nothing is on disk yet, so the folder may still change (e.g. the category is known only now).
+        if (Record.Segments.All(s => s.Written == 0))
+            _onProbed?.Invoke(Record, probe);
         if (Record.Segments.Count == 0)
             Record.Segments = SegmentScheduler.Plan(probe.TotalSize, probe.SupportsRanges, _options.MaxConnections, _options.MinSegmentSize);
 
@@ -144,6 +154,7 @@ public sealed class DownloadJob
 
         var finalPath = FileNames.MakeUnique(Record.FinalPath!);
         File.Move(Record.PartPath!, finalPath);
+        ZoneIdentifier.TryMark(finalPath, Record.Url, Record.Context?.Referrer);
         Record.FileName = Path.GetFileName(finalPath);
         Record.Status = DownloadStatus.Completed;
         Record.CompletedUtc = DateTime.UtcNow;
@@ -279,7 +290,7 @@ public sealed class DownloadJob
                 request.Headers.IfRange = new RangeConditionHeaderValue(date);
         }
 
-        using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+        using var response = await HttpErrors.SendAsync(_http, request, _options.ReadTimeout, ct);
         ValidateResponse(response, offset);
 
         await using var body = await response.Content.ReadAsStreamAsync(ct);

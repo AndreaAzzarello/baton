@@ -1,0 +1,44 @@
+<Window x:Class="DownloadManager.App.Views.AddDownloadWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:r="clr-namespace:DownloadManager.Core.Resources;assembly=DownloadManager.Core"
+        Title="{x:Static r:Strings.AddTitle}" Width="580" SizeToContent="Height" ResizeMode="NoResize"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="/app.ico">
+    <StackPanel Margin="20">
+        <Label Content="{x:Static r:Strings.AddUrlLabel}" Target="{Binding ElementName=UrlBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+        <TextBox x:Name="UrlBox" Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.AddUrlName}" />
+
+        <Grid Margin="0,0,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <Label Content="{x:Static r:Strings.AddCategoryLabel}" Target="{Binding ElementName=CategoryBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <ComboBox x:Name="CategoryBox" ItemsSource="{Binding Categories}" SelectedItem="{Binding Category}" DisplayMemberPath="Name"
+                          AutomationProperties.Name="{x:Static r:Strings.AddCategoryName}" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+                <Label Content="{x:Static r:Strings.AddNameLabel}" Target="{Binding ElementName=NameBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <TextBox x:Name="NameBox" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.AddNameName}"
+                         ToolTip="{x:Static r:Strings.AddNameToolTip}" />
+            </StackPanel>
+        </Grid>
+
+        <Label Content="{x:Static r:Strings.AddFolderLabel}" Target="{Binding ElementName=FolderBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseCommand}" />
+            <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.AddFolderName}" />
+        </DockPanel>
+
+        <TextBlock Text="{Binding Note}" Style="{StaticResource NoteText}" />
+        <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Assertive" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="{x:Static r:Strings.AddToQueue}" Style="{StaticResource DialogButton}" Click="OnQueue" IsEnabled="{Binding CanSubmit}" />
+            <Button Content="{x:Static r:Strings.AddStartNow}" Style="{StaticResource PrimaryButton}" Click="OnStartNow" IsDefault="True" IsEnabled="{Binding CanSubmit}" />
+            <Button Content="{x:Static r:Strings.Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
+        </StackPanel>
+    </StackPanel>
+</Window>

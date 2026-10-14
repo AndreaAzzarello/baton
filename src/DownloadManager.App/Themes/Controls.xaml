@@ -1,0 +1,142 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shared styles. Colours come from the palette (Light.xaml / Dark.xaml) as dynamic resources,
+         so switching theme restyles open windows too. Standard controls use the Fluent theme. -->
+
+    <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+    <Style x:Key="AppWindow" TargetType="Window">
+        <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="Background" Value="{DynamicResource WindowBrush}" />
+        <Setter Property="UseLayoutRounding" Value="True" />
+    </Style>
+
+    <Style x:Key="Glyph" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="FieldLabel" TargetType="TextBlock">
+        <Setter Property="Margin" Value="0,12,0,4" />
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+
+    <Style x:Key="ValueText" TargetType="TextBlock">
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Margin" Value="0,3" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="SectionTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Keyboard focus ring drawn inside the custom button shapes -->
+    <Style x:Key="FocusRing">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Rectangle Margin="-1" RadiusX="7" RadiusY="7" Stroke="{DynamicResource FocusBrush}" StrokeThickness="2" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Flat toolbar button: icon glyph on top of a short label -->
+    <Style x:Key="ToolButton" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="MinWidth" Value="64" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+        <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PressedBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="DialogButton" TargetType="Button">
+        <Setter Property="Padding" Value="16,6" />
+        <Setter Property="Margin" Value="8,0,0,0" />
+        <Setter Property="MinWidth" Value="96" />
+        <Setter Property="MinHeight" Value="32" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource DialogButton}">
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+
+    <Style x:Key="Separator" TargetType="Rectangle">
+        <Setter Property="Width" Value="1" />
+        <Setter Property="Margin" Value="6,6" />
+        <Setter Property="Fill" Value="{DynamicResource BorderBrush}" />
+    </Style>
+
+    <Style x:Key="ErrorText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="Margin" Value="0,10,0,0" />
+        <Style.Triggers>
+            <Trigger Property="Text" Value="">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </Trigger>
+            <Trigger Property="Text" Value="{x:Null}">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="NoteText" TargetType="TextBlock" BasedOn="{StaticResource ErrorText}">
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+
+    <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+</ResourceDictionary>

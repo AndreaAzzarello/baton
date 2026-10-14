@@ -131,4 +131,10 @@ public sealed class SegmentScheduler
     {
         lock (_lock) return _segments.Select(s => s.Clone()).ToList();
     }
+
+    /// <summary>Every range with whether a connection is working on it, for the progress view.</summary>
+    public List<SegmentView> View()
+    {
+        lock (_lock) return _segments.Select(s => new SegmentView(s.Start, s.End, s.Written, _active.Contains(s))).ToList();
+    }
 }

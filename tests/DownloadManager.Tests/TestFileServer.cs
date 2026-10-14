@@ -18,6 +18,8 @@ public sealed class ServedFile
     public string? ETag { get; set; } = "\"v1\"";
     public bool SendContentLength { get; set; } = true;
     public string? ContentDisposition { get; set; }
+    public string ContentType { get; set; } = "application/octet-stream";
+    public DateTimeOffset? LastModified { get; set; }
 
     /// <summary>Bytes per second for a request starting at the given offset; 0 = unthrottled.</summary>
     public Func<long, int> Throttle { get; set; } = _ => 0;
@@ -128,7 +130,8 @@ public sealed class TestFileServer : IAsyncDisposable
         long from = 0, to = length - 1;
         var partial = false;
         var ifRange = ctx.Request.Headers.IfRange.ToString();
-        var ifRangeOk = string.IsNullOrEmpty(ifRange) || ifRange == file.ETag;
+        var ifRangeOk = string.IsNullOrEmpty(ifRange) || ifRange == file.ETag
+                        || (file.LastModified is { } lm && ifRange == lm.ToString("R"));
         RangeItemHeaderValue? requested = null;
         if (RangeHeaderValue.TryParse(ctx.Request.Headers.Range.ToString(), out var range) && range.Ranges.Count == 1)
             requested = range.Ranges.First();
@@ -152,7 +155,9 @@ public sealed class TestFileServer : IAsyncDisposable
             ctx.Response.Headers.AcceptRanges = "bytes";
         if (file.ContentDisposition is not null)
             ctx.Response.Headers.ContentDisposition = file.ContentDisposition;
-        ctx.Response.ContentType = "application/octet-stream";
+        ctx.Response.ContentType = file.ContentType;
+        if (file.LastModified is { } modified)
+            ctx.Response.Headers.LastModified = modified.ToString("R");
         ctx.Response.StatusCode = partial ? 206 : 200;
         if (partial)
             ctx.Response.Headers.ContentRange = $"bytes {from}-{to}/{length}";
