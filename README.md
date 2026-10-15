@@ -16,6 +16,9 @@ Opera, Brave e Firefox. Versione 0.6.0.
 | `extension` | Sorgente unico dell'estensione (Manifest V3); è anche la build per Chromium, caricabile così com'è |
 | `tools/build-extension.mjs` | Build per Chromium e Firefox in `dist/` (cartelle e pacchetti .zip / .xpi) |
 | `tests/extension` | Test dell'estensione con `node --test` (regole, moduli, media, ripiego), eseguiti anche da `dotnet test` |
+| `tools/trials` | Prove reali nei browser (Edge, Opera, Firefox headless) con l'app isolata: `prepare.ps1`, `chromium-trial.mjs`, `firefox-trial.mjs`, `finish.ps1`; sito di prova locale |
+| `tools/make_resx.py`, `tools/make_locales.py` | Generatori dei testi: `Strings.resx` dell'app e `_locales` dell'estensione (la tabella è nello script) |
+| `CLAUDE.md`, `.claude/` | Regole del progetto per Claude Code, hook (guardia su registro e Desktop, controlli dell'estensione, build incrementale) e skill `prova-reale`, `fine-fase`, `stringhe` |
 | `publish/DownloadManager.exe` | Build Release self-contained win-x64 (non richiede il runtime .NET) |
 
 ## Come funziona il download
@@ -201,6 +204,8 @@ Come avviene l'intercettazione:
   viene ripreso (`resume`), e se il server non consente la ripresa il browser lo riscarica da capo. In Firefox la dimensione e il
   tipo possono non essere ancora noti alla creazione: in quel caso decidono il tipo di file e i siti.
 - Firefox non scarica con Alt+clic come Chromium: lì l'estensione segna il link e lo apre lei, così il download resta al browser.
+- In Firefox l'evento del download può arrivare prima di quello del modulo che lo ha avviato: se il modulo non è ancora noto,
+  l'estensione lo attende fino a mezzo secondo (con il download in pausa) prima di decidere tra GET e POST.
 
 ### Moduli (POST)
 

@@ -1,0 +1,76 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-Process*)",
+      "PowerShell(Get-ChildItem*)",
+      "PowerShell(Get-CimInstance*)",
+      "PowerShell(Get-Content*)",
+      "PowerShell(Get-ItemProperty*)",
+      "PowerShell(Select-String*)",
+      "PowerShell(Test-Path*)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" build *)",
+      "Bash(\"/c/Program Files/dotnet/dotnet.exe\" test *)",
+      "PowerShell(& \"C:\\Program Files\\dotnet\\dotnet.exe\" build *)",
+      "PowerShell(& \"C:\\Program Files\\dotnet\\dotnet.exe\" test *)",
+      "Bash(node --test \"tests/extension/*.test.mjs\")",
+      "Bash(node tools/build-extension.mjs)"
+    ],
+    "ask": [
+      "Bash(*dotnet* publish*)",
+      "PowerShell(*dotnet* publish*)",
+      "Bash(reg *)",
+      "Bash(reg.exe *)",
+      "Bash(*reg.exe *)",
+      "PowerShell(reg *)",
+      "PowerShell(*reg.exe *)",
+      "Bash(*Stop-Process*)",
+      "PowerShell(*Stop-Process*)",
+      "Bash(*Remove-Item*)",
+      "PowerShell(*Remove-Item*)",
+      "Bash(git push*)",
+      "Bash(*git push*)",
+      "PowerShell(git push*)",
+      "PowerShell(*git push*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.ps1\"",
+            "timeout": 10,
+            "onFailure": "continue"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/extension-check.ps1\"",
+            "timeout": 30,
+            "statusMessage": "Controllo dell'estensione…"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop.ps1\"",
+            "timeout": 300,
+            "statusMessage": "Build incrementale…"
+          }
+        ]
+      }
+    ]
+  }
+}

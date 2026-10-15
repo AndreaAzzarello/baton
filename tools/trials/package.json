@@ -1,0 +1,10 @@
+{
+  "name": "downloadmanager-trials",
+  "private": true,
+  "description": "Real-browser trials of the DownloadManager extension (headless, temporary profiles). See .claude/skills/prova-reale.",
+  "type": "module",
+  "dependencies": {
+    "@puppeteer/browsers": "2.13.2",
+    "puppeteer-core": "24.43.1"
+  }
+}

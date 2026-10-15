@@ -483,3 +483,7 @@ $RECYCLE.BIN/
 
 # Extension builds (node tools/build-extension.mjs)
 dist/
+
+# Claude Code: local state of the hooks and personal settings
+.claude/state/
+.claude/settings.local.json
