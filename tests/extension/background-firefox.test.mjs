@@ -7,6 +7,7 @@ import { createFakeChrome, settle } from "./fake-chrome.mjs";
 let reply = async () => ({ ok: true });
 const fake = createFakeChrome({ firefox: true, nativeReply: (message) => reply(message) });
 globalThis.chrome = fake.chrome;
+globalThis.DM_LATE_FORM_STEP_MS = 5; // the real 100 ms steps would only slow the tests
 await import("../../extension/background.js");
 
 test("onDeterminingFilename is not used in Firefox", () => {
@@ -53,4 +54,21 @@ test("not resumable: Firefox downloads it again itself, and that copy is not int
   await created({ ...download, id: 10, byExtensionId: "test-extension" });
   await settle();
   assert.deepEqual(names(), []);
+});
+
+test("a form whose request event arrives after the download is still sent as POST", async () => {
+  fake.calls.length = 0;
+  reply = async () => ({ ok: true });
+  fake.chrome.downloads.resume = async () => {};
+  const form = { id: 11, url: "https://files.test/export", filename: "C:\dl\report.zip", mime: "application/zip",
+    totalBytes: -1, startTime: new Date().toISOString(), incognito: false };
+  const pending = created(form); // the download first...
+  await new Promise((resolve) => setTimeout(resolve, 12)); // within the 5 × 5 ms the extension waits here
+  fake.listeners["webRequest.onBeforeRequest"][0]({ requestId: "late", method: "POST", tabId: 2, url: form.url,
+    documentUrl: "https://files.test/form", requestBody: { formData: { year: ["2026"] } } }); // ...then the form
+  await pending;
+  await settle();
+  const sent = fake.calls.find((c) => c[0] === "native")[1].download;
+  assert.equal(sent.method, "POST");
+  assert.equal(sent.body, "year=2026");
 });

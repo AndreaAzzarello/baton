@@ -9,6 +9,9 @@ const MENU_ALL = "dm-all";
 /** A form submission is matched to the download it starts within this time. */
 const POST_TTL_MS = 60_000;
 
+/** Firefox: how long to wait, at each of 5 tries, for a form event that arrives after its download (tests shorten it). */
+const LATE_FORM_STEP_MS = globalThis.DM_LATE_FORM_STEP_MS ?? 100;
+
 /** Alt+click: the next download of that link stays in the browser for this long. */
 const SKIP_TTL_MS = 15_000;
 
@@ -147,7 +150,13 @@ async function interceptionTarget(item) {
   if (!decision.intercept) return null;
 
   // A download started by submitting a form: the app repeats the POST, unless the browser was redirected to a GET.
-  const post = await findPost(item.url);
+  let post = await findPost(item.url);
+  // Firefox may report the download before the form's request event reaches the extension (the two APIs are not
+  // ordered): wait a little for it, while the download is paused, rather than sending a GET the server would refuse.
+  for (let i = 0; IS_FIREFOX && !post && i < 5; i++) {
+    await new Promise((resolve) => setTimeout(resolve, LATE_FORM_STEP_MS));
+    post = await findPost(item.url);
+  }
   if (post?.unsupported) return null; // a file upload or an encoding that cannot be repeated: left to the browser
   const redirected = item.finalUrl && item.finalUrl !== item.url;
   return {
