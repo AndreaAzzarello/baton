@@ -30,6 +30,9 @@ public sealed record BrowserDownload(
 /// <param name="Url">The stream: an HLS (.m3u8) or DASH (.mpd) manifest, or a media file.</param>
 /// <param name="VariantId">For "addMedia": the quality chosen from the list "probeMedia" returned.</param>
 /// <param name="Label">For "addMedia": that quality as the list showed it (e.g. "720p").</param>
+/// <param name="AudioId">For "addMedia" (protocol 3): the audio language chosen from "audioTracks"; null = the default one.</param>
+/// <param name="SubtitleIds">For "addMedia" (protocol 3): the subtitles chosen from "subtitles".</param>
+/// <param name="SubtitleMode">"vtt" or "srt" (a file next to the video) or "embed" (inside the video, with ffmpeg).</param>
 public sealed record MediaRequest(
     string Url,
     string? PageUrl = null,
@@ -39,7 +42,10 @@ public sealed record MediaRequest(
     List<BrowserCookie>? Cookies = null,
     string? VariantId = null,
     string? Queue = null,
-    string? Label = null)
+    string? Label = null,
+    string? AudioId = null,
+    List<string>? SubtitleIds = null,
+    string? SubtitleMode = null)
 {
     public RequestContext ToContext() => new(Referrer ?? PageUrl, UserAgent, Cookies ?? []);
 }
@@ -57,12 +63,21 @@ public sealed record BatchRequest(
     List<BrowserCookie>? Cookies = null,
     string? Queue = null);
 
+/// <summary>"Capture this site": the page the extension's menu was used on, with its cookies (protocol 3).</summary>
+public sealed record GrabRequest(string Url, string? Title = null, string? UserAgent = null, List<BrowserCookie>? Cookies = null);
+
 /// <summary>One quality of a video, as offered in the extension's list.</summary>
 public sealed record MediaVariantInfo(string Id, string Label, long? EstimatedBytes, int? Height, string Kind);
 
+/// <summary>An audio language or a subtitle track of a video (protocol 3).</summary>
+public sealed record MediaTrackInfo(string Id, string Label, string? Language, bool IsDefault);
+
 /// <summary>What the app found at a media address.</summary>
 /// <param name="Blocked">Not offered: "drm" (protected content), "terms" (site that forbids it), "live" (a live stream).</param>
-public sealed record MediaInfoReply(string Kind, List<MediaVariantInfo> Variants, double? DurationSeconds, string? Blocked = null, string? Message = null);
+/// <param name="AudioTracks">The audio languages to choose from (protocol 3); absent or one when there is no choice.</param>
+/// <param name="Subtitles">WebVTT subtitles the stream offers (protocol 3).</param>
+public sealed record MediaInfoReply(string Kind, List<MediaVariantInfo> Variants, double? DurationSeconds, string? Blocked = null, string? Message = null,
+    List<MediaTrackInfo>? AudioTracks = null, List<MediaTrackInfo>? Subtitles = null);
 
 /// <summary>
 /// Message from the extension (through the native host) to the app. <see cref="Version"/> is the protocol version
@@ -73,7 +88,8 @@ public sealed record ChannelMessage(
     BrowserDownload? Download = null,
     int? Version = null,
     MediaRequest? Media = null,
-    BatchRequest? Batch = null);
+    BatchRequest? Batch = null,
+    GrabRequest? Grab = null);
 
 /// <param name="Queues">For "queues": the names of the app's queues, the main one first (added in 0.5).</param>
 /// <param name="Protocol">The protocol version the app speaks (2 from 0.6; absent from older apps, which speak 1).</param>
@@ -91,9 +107,9 @@ public static class Messages
 {
     /// <summary>
     /// Version 1: ping, add, queues (extension 0.2–0.5). Version 2: hello, POST downloads, probeMedia, addMedia, batch.
-    /// A newer app keeps answering version 1 messages unchanged.
+    /// Version 3: grab, audio languages and subtitles of videos. A newer app keeps answering older messages unchanged.
     /// </summary>
-    public const int ProtocolVersion = 2;
+    public const int ProtocolVersion = 3;
 
     public const string Ping = "ping";
     public const string Add = "add";
@@ -113,6 +129,9 @@ public static class Messages
 
     /// <summary>Open "download all" with the links and images of a page (protocol 2).</summary>
     public const string Batch = "batch";
+
+    /// <summary>Open a new grabber project for the page (protocol 3).</summary>
+    public const string Grab = "grab";
 
     /// <summary>Messages that never start the app: the answer without it is enough.</summary>
     public static readonly string[] Questions = [Ping, Queues, Hello];

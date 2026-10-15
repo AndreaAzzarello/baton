@@ -10,7 +10,7 @@ namespace DownloadManager.Tests;
 /// restricted sites), and whole downloads through the service: segments in parallel, joined, kept on pause, muxed
 /// by ffmpeg when there is one.
 /// </summary>
-public sealed class MediaTests : IAsyncLifetime
+public sealed partial class MediaTests : IAsyncLifetime
 {
     private TestFileServer _server = null!;
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "dm-tests", Guid.NewGuid().ToString("N"));
@@ -168,7 +168,8 @@ public sealed class MediaTests : IAsyncLifetime
         Assert.False(mpd.IsProtected);
         Assert.False(mpd.IsLive);
         Assert.Equal(9, mpd.Duration);
-        Assert.Equal(4, mpd.Representations.Count); // subtitles are not media to download
+        Assert.Equal(4, mpd.Representations.Count(r => r.ContentType != "text")); // the WebVTT subtitles are offered apart
+        Assert.Equal("subs", mpd.Representations.Single(r => r.ContentType == "text").Id);
         var hd = mpd.Representations.Single(r => r.Id == "v720");
         Assert.Equal(new Uri(Base, "v720_init.mp4"), hd.Init!.Url);
         Assert.Equal(["v720_001.m4s", "v720_002.m4s", "v720_003.m4s", "v720_004.m4s", "v720_005.m4s"],

@@ -100,6 +100,8 @@
     pill.setAttribute("aria-expanded", "false");
 
     const probes = new Map(); // stream address -> reply (or a pending promise)
+    const choices = new Map(); // stream address -> { audioId, subtitleIds, subtitleMode } chosen in the panel
+    let uid = 0;
 
     // Dragging: the button follows the pointer; a short move is still a click.
     let drag = null;
@@ -237,6 +239,12 @@
         list.replaceWith(notice(text, "blocked"));
         return;
       }
+      if (!choices.has(item.url)) {
+        const audio = media.audioTracks?.find((a) => a.isDefault) ?? media.audioTracks?.[0];
+        choices.set(item.url, { audioId: audio?.id ?? null, subtitleIds: [], subtitleMode: "vtt" });
+      }
+      const choice = choices.get(item.url);
+      if (media.audioTracks?.length > 1 || media.subtitles?.length) list.before(renderTracks(media, choice));
       for (const variant of media.variants) {
         const li = document.createElement("li");
         const label = document.createElement("span");
@@ -254,7 +262,8 @@
         button.addEventListener("click", async () => {
           button.disabled = true;
           button.textContent = t("mediaSending");
-          const result = await send({ type: "addMedia", url: item.url, variantId: variant.id, label: variant.label });
+          const result = await send({ type: "addMedia", url: item.url, variantId: variant.id, label: variant.label,
+            audioId: choice.audioId, subtitleIds: choice.subtitleIds, subtitleMode: choice.subtitleMode });
           if (result?.ok) {
             button.textContent = t("mediaSent");
             button.classList.add("done");
@@ -274,6 +283,60 @@
         hint.textContent = t("mediaEstimateHint");
         list.append(hint);
       }
+    }
+
+    /** Audio language and subtitles of a stream, chosen before its quality. */
+    function renderTracks(media, choice) {
+      const box = document.createElement("div");
+      box.className = "tracks";
+      const id = `dm-${++uid}`;
+      if (media.audioTracks?.length > 1) {
+        const row = document.createElement("div");
+        row.className = "row";
+        const label = document.createElement("label");
+        label.htmlFor = `${id}-audio`;
+        label.textContent = t("mediaAudioLabel");
+        const select = document.createElement("select");
+        select.id = `${id}-audio`;
+        for (const track of media.audioTracks) select.add(new Option(track.label, track.id, false, track.id === choice.audioId));
+        select.addEventListener("change", () => { choice.audioId = select.value; });
+        row.append(label, select);
+        box.append(row);
+      }
+      if (media.subtitles?.length) {
+        const group = document.createElement("fieldset");
+        const legend = document.createElement("legend");
+        legend.textContent = t("mediaSubtitles");
+        group.append(legend);
+        const format = document.createElement("select");
+        format.id = `${id}-format`;
+        for (const mode of Rules.SUBTITLE_MODES) format.add(new Option(t(`mediaSubtitle_${mode}`), mode, false, mode === choice.subtitleMode));
+        format.disabled = choice.subtitleIds.length === 0;
+        format.addEventListener("change", () => { choice.subtitleMode = format.value; });
+        for (const track of media.subtitles) {
+          const line = document.createElement("label");
+          line.className = "check";
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.checked = choice.subtitleIds.includes(track.id);
+          input.addEventListener("change", () => {
+            choice.subtitleIds = input.checked ? [...choice.subtitleIds, track.id] : choice.subtitleIds.filter((s) => s !== track.id);
+            format.disabled = choice.subtitleIds.length === 0;
+          });
+          line.append(input, document.createTextNode(track.label));
+          line.title = track.language || "";
+          group.append(line);
+        }
+        const row = document.createElement("div");
+        row.className = "row";
+        const label = document.createElement("label");
+        label.htmlFor = format.id;
+        label.textContent = t("mediaSubtitleFormat");
+        row.append(label, format);
+        group.append(row);
+        box.append(group);
+      }
+      return box;
     }
 
     function kindLabel(kind) {
@@ -352,6 +415,17 @@
     footer { padding: 6px 14px 10px; border-top: 1px solid var(--line); margin-top: 6px; }
     .link { border: 0; background: none; padding: 0; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; text-decoration: underline; }
     .link:hover { color: var(--fg); }
+    .tracks { margin: 2px 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--soft); display: grid; gap: 6px; }
+    .tracks .row { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px; }
+    .tracks label { color: var(--muted); }
+    .tracks select { min-width: 0; height: 26px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px;
+                     background: var(--bg); color: var(--fg); font: inherit; }
+    .tracks select:disabled { opacity: .6; }
+    .tracks fieldset { margin: 0; padding: 0; border: 0; display: grid; gap: 4px; }
+    .tracks legend { padding: 0; margin-bottom: 2px; color: var(--muted); }
+    .tracks .check { display: flex; align-items: center; gap: 6px; color: var(--fg); cursor: pointer; }
+    .tracks input { margin: 0; accent-color: var(--accent); }
+    select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     @media (prefers-reduced-motion: reduce) { .pill { transition: none; } }
   `;
 })();

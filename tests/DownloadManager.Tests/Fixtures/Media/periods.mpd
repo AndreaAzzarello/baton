@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static" mediaPresentationDuration="PT6S">
+  <Period id="p1" start="PT0S" duration="PT4S">
+    <AdaptationSet contentType="video" mimeType="video/mp4">
+      <SegmentTemplate timescale="1" duration="2" startNumber="1" media="p1_$RepresentationID$_$Number$.m4s" initialization="p1_$RepresentationID$_init.mp4" />
+      <Representation id="v1" bandwidth="500000" width="640" height="360" />
+    </AdaptationSet>
+    <AdaptationSet contentType="audio" mimeType="audio/mp4" lang="en">
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main" />
+      <SegmentTemplate timescale="1" duration="2" startNumber="1" media="p1_$RepresentationID$_$Number$.m4s" initialization="p1_$RepresentationID$_init.mp4" />
+      <Representation id="a-en" bandwidth="64000" />
+    </AdaptationSet>
+    <AdaptationSet contentType="audio" mimeType="audio/mp4" lang="it">
+      <Label>Italiano (doppiaggio)</Label>
+      <SegmentTemplate timescale="1" duration="2" startNumber="1" media="p1_$RepresentationID$_$Number$.m4s" initialization="p1_$RepresentationID$_init.mp4" />
+      <Representation id="a-it" bandwidth="64000" />
+    </AdaptationSet>
+    <AdaptationSet contentType="text" mimeType="text/vtt" lang="en">
+      <Representation id="t-en" bandwidth="1000"><BaseURL>periods-en.vtt</BaseURL></Representation>
+    </AdaptationSet>
+  </Period>
+  <Period id="p2" duration="PT2S">
+    <AdaptationSet contentType="video" mimeType="video/mp4">
+      <SegmentTemplate timescale="1" duration="2" startNumber="1" media="p2_$RepresentationID$_$Number$.m4s" initialization="p2_$RepresentationID$_init.mp4" />
+      <Representation id="v1" bandwidth="500000" width="640" height="360" />
+    </AdaptationSet>
+    <AdaptationSet contentType="audio" mimeType="audio/mp4" lang="en">
+      <SegmentTemplate timescale="1" duration="2" startNumber="1" media="p2_$RepresentationID$_$Number$.m4s" initialization="p1_$RepresentationID$_init.mp4" />
+      <Representation id="a-en" bandwidth="64000" />
+    </AdaptationSet>
+    <AdaptationSet contentType="audio" mimeType="audio/mp4" lang="it">
+      <SegmentTemplate timescale="1" duration="2" startNumber="1" media="p2_$RepresentationID$_$Number$.m4s" initialization="p1_a-it_init.mp4" />
+      <Representation id="a-it-2" bandwidth="64000" />
+    </AdaptationSet>
+    <AdaptationSet contentType="text" mimeType="text/vtt" lang="en">
+      <Representation id="t-en-2" bandwidth="1000"><BaseURL>periods-en-2.vtt</BaseURL></Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>

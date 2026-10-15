@@ -1,0 +1,8 @@
+#EXTM3U
+#EXT-X-TARGETDURATION:4
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXTINF:4.0,
+lang-subs-en-0.vtt
+#EXTINF:4.0,
+lang-subs-en-1.vtt
+#EXT-X-ENDLIST

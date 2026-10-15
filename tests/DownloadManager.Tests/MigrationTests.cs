@@ -108,6 +108,58 @@ public sealed class MigrationTests : IDisposable
     }
 
     [Fact]
+    public void Version5_IsUpgradedTo6_WithEveryDownloadKept_AndTheGrabberTables()
+    {
+        // A version 5 database: the current schema without the grabber tables.
+        using (var store = new DownloadStore(DbPath))
+        {
+            store.Insert(new DownloadRecord
+            {
+                Url = "https://example.com/a.zip", Directory = @"D:\dl", FileName = "a.zip", Status = DownloadStatus.Paused, TotalSize = 1000,
+                AddedUtc = new DateTime(2026, 10, 1, 10, 0, 0, DateTimeKind.Utc), Segments = [new SegmentState { Start = 0, End = 999, Written = 400 }],
+                Context = new RequestContext("https://example.com/", null, [new BrowserCookie("k", "v", "example.com", "/", true, false)]),
+            });
+            store.Insert(new DownloadRecord
+            {
+                Url = "https://media.example.com/master.m3u8", Directory = @"D:\dl", FileName = "clip.mp4", Status = DownloadStatus.Completed,
+                AddedUtc = new DateTime(2026, 10, 2, 10, 0, 0, DateTimeKind.Utc), Media = new MediaSource { Kind = "hls", VariantId = "hls:1", Label = "720p" },
+            });
+            store.SaveSettings(new AppSettings { MaxConnections = 5, DownloadFolder = @"D:\dl" });
+        }
+        Run("DROP TABLE grabber_files; DROP TABLE grabber_projects; PRAGMA user_version = 5;");
+
+        using (var store = new DownloadStore(DbPath))
+        {
+            Assert.Equal(6, store.Version);
+            Assert.EndsWith(".v5.bak", store.BackupPath);
+            Assert.True(File.Exists(store.BackupPath));
+            var downloads = store.LoadAll().OrderBy(d => d.Id).ToList();
+            Assert.Equal(2, downloads.Count);
+            Assert.Equal(400, downloads[0].DownloadedBytes);
+            Assert.Equal("v", downloads[0].Context!.Cookies.Single().Value);
+            Assert.Equal("720p", downloads[1].Media!.Label);
+            Assert.Equal(5, store.LoadSettings().MaxConnections);
+            Assert.Empty(store.LoadGrabberProjects());
+
+            var project = new Core.Grabber.GrabberProject { Name = "Libri", StartUrl = "https://books.example/", AddedUtc = DateTime.UtcNow };
+            store.SaveGrabberProject(project);
+            store.SaveGrabberFiles(project.Id, [new Core.Grabber.GrabberFileState { Url = "https://books.example/a.pdf", Size = 7, FirstSeenUtc = DateTime.UtcNow, LastSeenUtc = DateTime.UtcNow }]);
+            Assert.Equal(7, store.LoadGrabberFiles(project.Id)["https://books.example/a.pdf"].Size);
+        }
+
+        // The backup is the version 5 database, untouched.
+        using var old = new SqliteConnection($"Data Source={DbPath}.v5.bak;Pooling=False");
+        old.Open();
+        using var cmd = old.CreateCommand();
+        cmd.CommandText = "SELECT COUNT(*) FROM downloads;";
+        Assert.Equal(2L, cmd.ExecuteScalar());
+        cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE name LIKE 'grabber%';";
+        Assert.Equal(0L, cmd.ExecuteScalar());
+        cmd.CommandText = "PRAGMA user_version;";
+        Assert.Equal(5L, cmd.ExecuteScalar());
+    }
+
+    [Fact]
     public void NewDatabase_StartsAtCurrentVersion_WithoutBackup()
     {
         using var store = new DownloadStore(DbPath);

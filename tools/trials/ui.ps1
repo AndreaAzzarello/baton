@@ -10,7 +10,8 @@ for ($i = 0; $i -lt 20 -and -not $win; $i++) {
     # Owned dialogs are children of their owner window.
     $wcond = New-Object System.Windows.Automation.AndCondition($cond, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window)))
     foreach ($top in $root.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
-      if ($top.Current.ProcessId -ne 0 -and (Get-Process -Id $top.Current.ProcessId -ErrorAction SilentlyContinue).ProcessName -eq "DownloadManager") {
+      $owner = $top.Current.ProcessId
+      if ($owner -and (Get-Process -Id $owner -ErrorAction SilentlyContinue).ProcessName -eq "DownloadManager") {
         $win = $top.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $wcond)
         if ($win) { break }
       }
@@ -30,10 +31,17 @@ if (-not $win) {
 }
 if (-not $win) { Write-Output "window '$Window' not found"; exit 1 }
 
-function Find($n, [switch]$Item, [switch]$Button) {
+function Find($n, [switch]$Item, [switch]$Button, [switch]$Value, [switch]$Toggle) {
   $c = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $n)
   if ($Button) {
     $c = New-Object System.Windows.Automation.AndCondition($c, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::IsInvokePatternAvailableProperty, $true)))
+  }
+  # A label and its text box often share the name: only the element that can take the action.
+  if ($Value) {
+    $c = New-Object System.Windows.Automation.AndCondition($c, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::IsValuePatternAvailableProperty, $true)))
+  }
+  if ($Toggle) {
+    $c = New-Object System.Windows.Automation.AndCondition($c, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::IsTogglePatternAvailableProperty, $true)))
   }
   if ($Item) {
     $types = [System.Windows.Automation.ControlType]::DataItem, [System.Windows.Automation.ControlType]::TreeItem, [System.Windows.Automation.ControlType]::ListItem, [System.Windows.Automation.ControlType]::RadioButton, [System.Windows.Automation.ControlType]::ComboBox, [System.Windows.Automation.ControlType]::TabItem
@@ -47,11 +55,11 @@ function Find($n, [switch]$Item, [switch]$Button) {
 
 switch ($Action) {
   "invoke" { (Find $Name -Button).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); "invoked $Name" }
-  "set"    { (Find $Name).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($Value); "set $Name" }
-  "get"    { (Find $Name).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value }
+  "set"    { (Find $Name -Value).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($Value); "set $Name" }
+  "get"    { (Find $Name -Value).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value }
   "select" { (Find $Name -Item).GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); "selected $Name" }
   "expand" { (Find $Name -Item).GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand(); "expanded $Name" }
-  "toggle" { (Find $Name).GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle(); "toggled $Name" }
+  "toggle" { (Find $Name -Toggle).GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern).Toggle(); "toggled $Name" }
   "focus"  { (Find $Name -Item).SetFocus(); "focused $Name" }
   "dump"   {
     $all = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)

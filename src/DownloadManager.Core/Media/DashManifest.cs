@@ -5,21 +5,33 @@ using System.Xml.Linq;
 
 namespace DownloadManager.Core.Media;
 
-/// <summary>One representation (quality) of a DASH adaptation set, with its segments already listed.</summary>
+/// <summary>
+/// One representation (quality) of a DASH adaptation set, with its segments already listed. When the presentation has
+/// several periods, the matching representation of every period is joined: <see cref="Segments"/> then runs through
+/// all of them (with a period's initialization segment in between when it differs from the first one).
+/// </summary>
+/// <param name="ContentType">"video", "audio" or "text" (WebVTT subtitles).</param>
+/// <param name="SetIndex">The adaptation set (in the first period) the representation belongs to: one audio language or subtitle track each.</param>
+/// <param name="Label">The adaptation set's Label, if any (e.g. "English (audio description)").</param>
+/// <param name="IsDefault">The adaptation set has the role "main".</param>
 public sealed record DashRepresentation(
     string Id,
-    string ContentType, // "video", "audio" or "text"
+    string ContentType,
     long Bandwidth,
     int? Width,
     int? Height,
     string? Codecs,
     string? Language,
     MediaSegment? Init,
-    List<MediaSegment> Segments);
+    List<MediaSegment> Segments,
+    int SetIndex = 0,
+    string? Label = null,
+    bool IsDefault = false);
 
 /// <summary>
 /// A DASH manifest (MPD, ISO/IEC 23009-1), static (on demand) presentations with SegmentTemplate (with $Number$ or
-/// $Time$ and SegmentTimeline), SegmentList or a single file per representation (SegmentBase / BaseURL).
+/// $Time$ and SegmentTimeline), SegmentList or a single file per representation (SegmentBase / BaseURL). Every period
+/// is read and joined, so a presentation split in parts (chapters, inserted clips) is downloaded whole.
 /// </summary>
 public sealed class DashManifest
 {
@@ -35,7 +47,6 @@ public sealed class DashManifest
 
     public double? Duration { get; private set; }
 
-    /// <summary>More than one period: only the first is downloaded (often the others are adverts).</summary>
     public int PeriodCount { get; private set; }
 
     public static bool LooksLikeDash(string text) => text.Contains("<MPD", StringComparison.Ordinal);
@@ -69,32 +80,113 @@ public sealed class DashManifest
         // A live presentation has no fixed list of segments: it is reported, not listed.
         if (periods.Count == 0 || manifest.IsLive)
             return manifest;
-        var period = periods[0];
-        var periodDuration = ParseDuration((string?)period.Attribute("duration")) ?? manifest.Duration;
-        var periodBase = BaseOf(BaseOf(manifestUrl, mpd), period);
 
+        // Period@start, or the end of the previous period (its start plus its duration).
+        var mpdBase = BaseOf(manifestUrl, mpd);
+        var starts = new double?[periods.Count];
+        double? running = 0;
+        for (var i = 0; i < periods.Count; i++)
+        {
+            starts[i] = ParseDuration((string?)periods[i].Attribute("start")) ?? running;
+            running = ParseDuration((string?)periods[i].Attribute("duration")) is { } d && starts[i] is { } s ? s + d : (double?)null;
+        }
+
+        var perPeriod = new List<List<DashRepresentation>>();
+        double total = 0;
+        var totalKnown = true;
+        for (var i = 0; i < periods.Count; i++)
+        {
+            var period = periods[i];
+            // A period lasts its duration, else until the next one starts, else until the end of the presentation.
+            var duration = ParseDuration((string?)period.Attribute("duration"))
+                           ?? (i + 1 < periods.Count && starts[i + 1] is { } next && starts[i] is { } start ? next - start : (double?)null)
+                           ?? (manifest.Duration is { } all && starts[i] is { } begin ? all - begin : (double?)null);
+            if (duration is { } known)
+                total += known;
+            else
+                totalKnown = false;
+            perPeriod.Add(ReadPeriod(period, BaseOf(mpdBase, period), duration));
+        }
+        if (totalKnown && manifest.Duration is null)
+            manifest.Duration = total;
+
+        manifest.Representations.AddRange(Join(perPeriod, starts));
+        return manifest;
+    }
+
+    private static List<DashRepresentation> ReadPeriod(XElement period, Uri periodBase, double? duration)
+    {
+        var result = new List<DashRepresentation>();
+        var setIndex = 0;
         foreach (var set in Children(period, "AdaptationSet"))
         {
             var setBase = BaseOf(periodBase, set);
+            var label = Child(set, "Label")?.Value.Trim() is { Length: > 0 } text ? text : (string?)set.Attribute("label");
+            var isDefault = Children(set, "Role").Any(r => (string?)r.Attribute("value") == "main");
+            var added = false;
             foreach (var rep in Children(set, "Representation"))
             {
                 var type = ContentTypeOf(set, rep);
                 if (type is null)
                     continue;
                 var repBase = BaseOf(setBase, rep);
-                var id = (string?)rep.Attribute("id") ?? manifest.Representations.Count.ToString(CultureInfo.InvariantCulture);
+                var id = (string?)rep.Attribute("id") ?? $"{setIndex}.{result.Count}";
                 var bandwidth = (long?)ParseLong((string?)rep.Attribute("bandwidth")) ?? 0;
-                var (init, segments) = SegmentsOf(period, set, rep, repBase, id, bandwidth, periodDuration);
-                manifest.Representations.Add(new DashRepresentation(
+                var (init, segments) = SegmentsOf(period, set, rep, repBase, id, bandwidth, duration);
+                result.Add(new DashRepresentation(
                     id, type, bandwidth,
                     ParseInt((string?)rep.Attribute("width") ?? (string?)set.Attribute("width")),
                     ParseInt((string?)rep.Attribute("height") ?? (string?)set.Attribute("height")),
                     (string?)rep.Attribute("codecs") ?? (string?)set.Attribute("codecs"),
-                    (string?)set.Attribute("lang"),
-                    init, segments));
+                    (string?)set.Attribute("lang") ?? (string?)rep.Attribute("lang"),
+                    init, segments, setIndex, label, isDefault));
+                added = true;
             }
+            if (added)
+                setIndex++;
         }
-        return manifest;
+        return result;
+    }
+
+    /// <summary>
+    /// Joins each representation of the first period with its match in the later ones: the same id, otherwise the
+    /// same kind and language with the closest picture size and bit rate.
+    /// </summary>
+    /// <remarks>
+    /// Subtitle cues are timed from the start of their own period: their segments carry the period's start, added when
+    /// the cues are joined. Video and audio are joined as they are (most packagers keep their timestamps running across
+    /// periods).
+    /// </remarks>
+    private static IEnumerable<DashRepresentation> Join(List<List<DashRepresentation>> periods, double?[] starts)
+    {
+        foreach (var first in periods[0])
+        {
+            var segments = new List<MediaSegment>(first.Segments);
+            var currentInit = first.Init;
+            for (var p = 1; p < periods.Count; p++)
+            {
+                var later = periods[p];
+                var match = later.FirstOrDefault(r => r.Id == first.Id && r.ContentType == first.ContentType)
+                            ?? later.Where(r => r.ContentType == first.ContentType && r.Language == first.Language)
+                                .OrderBy(r => Math.Abs((r.Height ?? 0) - (first.Height ?? 0)))
+                                .ThenBy(r => Math.Abs(r.Bandwidth - first.Bandwidth))
+                                .FirstOrDefault();
+                if (match is null)
+                    continue; // e.g. a language only some periods have
+                // A period with another initialization segment starts with it, so its samples are decoded with it.
+                if (match.Init is { } own && own.Url != currentInit?.Url)
+                {
+                    segments.Add(own);
+                    currentInit = own;
+                }
+                segments.AddRange(first.ContentType == "text" && starts[p] is { } start
+                    ? match.Segments.Select(s => s with { TimeShift = start })
+                    : match.Segments);
+            }
+            if (segments.Count > MaxSegments)
+                throw new FormatException("Too many segments.");
+            yield return first with { Segments = segments };
+        }
     }
 
     private static string? ContentTypeOf(XElement set, XElement rep)
@@ -107,7 +199,9 @@ public sealed class DashManifest
             return "video";
         if (value.StartsWith("audio", StringComparison.OrdinalIgnoreCase))
             return "audio";
-        return null; // subtitles and images are not downloaded
+        // Subtitles as WebVTT files; TTML and subtitles packed in MP4 are not offered.
+        var mime = (string?)rep.Attribute("mimeType") ?? (string?)set.Attribute("mimeType") ?? "";
+        return mime.Equals("text/vtt", StringComparison.OrdinalIgnoreCase) ? "text" : null;
     }
 
     private static (MediaSegment? Init, List<MediaSegment> Segments) SegmentsOf(XElement period, XElement set, XElement rep, Uri baseUrl,

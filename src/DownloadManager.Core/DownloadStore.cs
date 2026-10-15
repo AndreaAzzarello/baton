@@ -5,10 +5,10 @@ using Microsoft.Data.Sqlite;
 namespace DownloadManager.Core;
 
 /// <summary>SQLite persistence for downloads, their segments, categories and app settings.</summary>
-public sealed class DownloadStore : IDisposable
+public sealed partial class DownloadStore : IDisposable
 {
     /// <summary>Version written by this build. Every older version is upgraded by <see cref="Migrate"/>.</summary>
-    public const int SchemaVersion = 5;
+    public const int SchemaVersion = 6;
 
     private const string PreferencePrefix = "ui.";
 
@@ -65,6 +65,8 @@ public sealed class DownloadStore : IDisposable
             MigrateTo4(tx);
         if (version < 5)
             MigrateTo5(tx);
+        if (version < 6)
+            MigrateTo6(tx);
         Execute($"PRAGMA user_version = {SchemaVersion};", tx);
         tx.Commit();
     }
@@ -215,6 +217,40 @@ public sealed class DownloadStore : IDisposable
     private void MigrateTo5(SqliteTransaction tx)
     {
         AddColumnIfMissing("downloads", "media", "TEXT", tx);
+    }
+
+    /// <summary>
+    /// Grabber projects (settings as JSON, browser cookies encrypted with DPAPI, schedule) and what each run saw of
+    /// every file, for synchronization.
+    /// </summary>
+    private void MigrateTo6(SqliteTransaction tx)
+    {
+        Execute("""
+            CREATE TABLE IF NOT EXISTS grabber_projects (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                start_url TEXT NOT NULL,
+                settings TEXT NOT NULL,
+                schedule TEXT NOT NULL,
+                secrets TEXT,
+                added_utc TEXT NOT NULL,
+                last_run_utc TEXT,
+                last_result TEXT);
+            CREATE TABLE IF NOT EXISTS grabber_files (
+                project_id INTEGER NOT NULL REFERENCES grabber_projects(id) ON DELETE CASCADE,
+                url TEXT NOT NULL,
+                local_path TEXT,
+                etag TEXT,
+                last_modified TEXT,
+                size INTEGER,
+                content_type TEXT,
+                source_page TEXT,
+                content_hash TEXT,
+                first_seen_utc TEXT NOT NULL,
+                last_seen_utc TEXT NOT NULL,
+                removed_utc TEXT,
+                PRIMARY KEY (project_id, url));
+            """, tx);
     }
 
     public List<SiteCredential> LoadCredentials()

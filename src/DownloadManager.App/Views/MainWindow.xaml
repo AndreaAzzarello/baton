@@ -8,6 +8,7 @@
         AllowDrop="True" DragEnter="OnDragOver" DragOver="OnDragOver" Drop="OnDrop">
     <Window.InputBindings>
         <KeyBinding Key="N" Modifiers="Control" Command="{Binding AddCommand}" />
+        <KeyBinding Key="G" Modifiers="Control" Command="{Binding GrabberCommand}" />
         <KeyBinding Key="F" Modifiers="Control" Command="{x:Static ApplicationCommands.Find}" />
     </Window.InputBindings>
     <Window.CommandBindings>
@@ -61,6 +62,9 @@
 
                 <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Command="{Binding SettingsCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionSettings}" ToolTip="{x:Static r:Strings.ActionSettings}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE713;" /><TextBlock Text="{x:Static r:Strings.ActionSettings}" Margin="0,3,0,0" /></StackPanel>
+                </Button>
+                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Command="{Binding GrabberCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionGrabber}" ToolTip="{x:Static r:Strings.ActionGrabberToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE774;" /><TextBlock Text="{x:Static r:Strings.ActionGrabber}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
                 <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Command="{Binding QueuesCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionQueues}" ToolTip="{x:Static r:Strings.ActionQueuesToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE823;" /><TextBlock Text="{x:Static r:Strings.ActionQueues}" Margin="0,3,0,0" /></StackPanel>

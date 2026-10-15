@@ -28,8 +28,12 @@ $mui = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\M
 $muiValues = (Get-Item $mui).GetValueNames() | Where-Object { $_ -match $needle }
 $audio = "HKCU:\Software\Microsoft\Internet Explorer\LowRegistry\Audio\PolicyConfig\PropertyStore"
 $audioKeys = @(Get-ChildItem $audio -ErrorAction SilentlyContinue | Where-Object { "$($_.GetValue(''))" -match $needle })
+# Explorer remembers every program that showed a tray icon: entries of debug builds or trial copies are trial traces.
+$trayIcons = "HKCU:\Control Panel\NotifyIconSettings"
+$trayKeys = @(Get-ChildItem $trayIcons -ErrorAction SilentlyContinue | Where-Object {
+  $path = "$($_.GetValue('ExecutablePath'))"; $path -like "*\bin\Debug\*DownloadManager.exe" -or $path -match $needle })
 
-"trial apps: $(@($apps).Count) | test site: $(@($site).Count) | Firefox autostart: $(@($autostart).Count) | Firefox registry values: $($mozValues.Count) | shell cache: $(@($muiValues).Count) | audio: $($audioKeys.Count)"
+"trial apps: $(@($apps).Count) | test site: $(@($site).Count) | Firefox autostart: $(@($autostart).Count) | Firefox registry values: $($mozValues.Count) | shell cache: $(@($muiValues).Count) | audio: $($audioKeys.Count) | tray icon cache: $($trayKeys.Count)"
 if (-not $Apply) { "(report only; run with -Apply to clean up)"; return }
 
 $apps | ForEach-Object { Stop-Process -Id $_.ProcessId -Force; "stopped app $($_.ProcessId)" }
@@ -38,6 +42,7 @@ $autostart | ForEach-Object { Remove-ItemProperty $run -Name $_.Name; "removed a
 foreach ($v in $mozValues) { Remove-ItemProperty -LiteralPath $v.Key -Name $v.Name }
 foreach ($n in $muiValues) { Remove-ItemProperty -LiteralPath $mui -Name $n }
 foreach ($k in $audioKeys) { Remove-Item -LiteralPath $k.PSPath -Recurse }
+foreach ($k in $trayKeys) { Remove-Item -LiteralPath $k.PSPath -Recurse }
 # Keys the portable Firefox created and that are now empty (the user has no installed Firefox of their own).
 if (Test-Path $mozilla) {
   Get-ChildItem $mozilla -Recurse | Sort-Object { $_.Name.Length } -Descending |

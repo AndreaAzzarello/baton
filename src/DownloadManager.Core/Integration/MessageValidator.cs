@@ -14,9 +14,10 @@ public static class MessageValidator
     public const int MaxBodyLength = 1024 * 1024;
     public const int MaxBatchItems = 10_000;
     public const int MaxCookieSitesInBatch = 50;
+    public const int MaxSubtitles = 20;
 
     private static readonly string[] KnownTypes =
-        [Messages.Ping, Messages.Add, Messages.Activate, Messages.Queues, Messages.Hello, Messages.ProbeMedia, Messages.AddMedia, Messages.Batch];
+        [Messages.Ping, Messages.Add, Messages.Activate, Messages.Queues, Messages.Hello, Messages.ProbeMedia, Messages.AddMedia, Messages.Batch, Messages.Grab];
 
     private static readonly string[] BodyTypes = [Net.FormBody.UrlEncoded, Net.FormBody.Multipart];
 
@@ -41,6 +42,8 @@ public static class MessageValidator
                 return ValidateMedia(media, needsVariant: message.Type == Messages.AddMedia);
             case Messages.Batch:
                 return message.Batch is { } batch ? ValidateBatch(batch) : "Missing page.";
+            case Messages.Grab:
+                return message.Grab is { } grab ? ValidateGrab(grab) : "Missing page.";
             default:
                 return null;
         }
@@ -84,7 +87,22 @@ public static class MessageValidator
             return textError;
         if (needsVariant && string.IsNullOrEmpty(m.VariantId))
             return "Missing quality.";
+        if (Text(m.AudioId, 200) is { } audioError)
+            return audioError;
+        if (m.SubtitleIds is { } subtitles && (subtitles.Count > MaxSubtitles || subtitles.Any(s => s is null || Text(s, 200) is not null)))
+            return "Invalid subtitles.";
+        if (m.SubtitleMode is { } mode && mode is not ("vtt" or "srt" or "embed"))
+            return "Invalid subtitle format.";
         return Cookies(m.Cookies);
+    }
+
+    private static string? ValidateGrab(GrabRequest g)
+    {
+        if (string.IsNullOrEmpty(g.Url) || !IsWeb(g.Url) || g.Url.Length > MaxUrlLength || HasControl(g.Url))
+            return "Only http and https pages can be captured.";
+        if ((Text(g.Title, 512) ?? Text(g.UserAgent, 1024)) is { } textError)
+            return textError;
+        return Cookies(g.Cookies);
     }
 
     private static string? ValidateBatch(BatchRequest b)

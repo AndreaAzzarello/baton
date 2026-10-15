@@ -1,6 +1,6 @@
 // Real trial in Firefox (portable copy, temporary profile, headless), driven over WebDriver BiDi.
 import puppeteer from "puppeteer-core";
-import { WORK, DATA, DB, SITE_LOG, SHOTS, BROWSER_DL, CHROMIUM_EXT, FIREFOX_EXE, FIREFOX_TRIAL_EXT } from "./config.mjs";
+import { WORK, DATA, DB, SITE_LOG, SHOTS, BROWSER_DL, CHROMIUM_EXT, FIREFOX_EXE, FIREFOX_TRIAL_EXT, closeBatchWindow } from "./config.mjs";
 if (!FIREFOX_EXE) {
   console.error("Portable Firefox missing: run tools\trials\prepare.ps1 first.");
   process.exit(2);
@@ -119,7 +119,7 @@ await sleep(1500);
 await page.mouse.click(1280 - 24 - 40, 900 - 24 - 17);
 await sleep(6000); // qualities are read by the app
 await page.screenshot({ path: join(shots, "3-video-panel.png") });
-await page.mouse.click(1199, 734); // the 270p row's button (headless Firefox has no window focus for Tab)
+await page.mouse.click(1199, 750); // the 270p row's button, below the subtitles box (headless Firefox has no window focus for Tab)
 const media = await waitFor(() => db(`select file_name, media from downloads where id > ${before} and media is not null`)[0], 20000);
 await page.screenshot({ path: join(shots, "4-video-sent.png") });
 report("video: lowest quality chosen with the keyboard and sent", !!media && media[1].includes("270p"), JSON.stringify(media));
@@ -145,5 +145,6 @@ const sent = await extPage.evaluate(async (url) => {
   return true;
 }, `${SITE}/links.html`).catch((e) => "error: " + e.message);
 report("download all sent", sent === true, String(sent));
+console.log(`     "Scarica tutto" window closed: ${closeBatchWindow()}`);
 await sleep(1500);
 await browser.close();

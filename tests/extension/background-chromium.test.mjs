@@ -36,7 +36,7 @@ test("accepted by the app: the browser's copy is cancelled and erased, never rel
   assert.equal(r.keepsListening, true);
   await settle();
   assert.equal(named("native")[0][1].type, "add");
-  assert.equal(named("native")[0][1].version, 2);
+  assert.equal(named("native")[0][1].version, 3);
   assert.equal(named("native")[0][1].download.url, "https://files.test/archive.zip");
   assert.equal(named("cancel").length, 1);
   assert.equal(named("erase").length, 1);
@@ -141,4 +141,53 @@ test("the content script can only ask about streams the tab really loaded", asyn
   assert.equal(allowed.ok, true);
   assert.equal(allowed.media.echo.type, "probeMedia");
   assert.equal(allowed.media.echo.media.pageUrl, "https://videos.test/watch");
+});
+
+test("capture this site: the page, its title and cookies go to the app", async () => {
+  fake.calls.length = 0;
+  reply = async () => ({ ok: true, protocol: 3 });
+  fake.chrome.cookies.getAll = async () => [{ name: "s", value: "1", domain: "books.test", path: "/", secure: true, hostOnly: true }];
+  const click = fake.listeners["contextMenus.onClicked"][0];
+  await click({ menuItemId: "dm-grab", pageUrl: "https://books.test/index.html#top" }, { id: 5, url: "https://books.test/index.html", title: "Books", incognito: false });
+  await settle();
+  const sent = named("native")[0][1];
+  assert.equal(sent.type, "grab");
+  assert.equal(sent.version, 3);
+  assert.equal(sent.grab.url, "https://books.test/index.html");
+  assert.equal(sent.grab.title, "Books");
+  assert.equal(sent.grab.cookies[0].value, "1");
+  fake.chrome.cookies.getAll = async () => [];
+});
+
+test("capture this site: never from a private window, and an old app is named", async () => {
+  fake.calls.length = 0;
+  const click = fake.listeners["contextMenus.onClicked"][0];
+  await click({ menuItemId: "dm-grab", pageUrl: "https://secret.test/" }, { id: 6, url: "https://secret.test/", incognito: true });
+  await settle();
+  assert.equal(named("native").length, 0);
+  assert.ok(named("notify")[0][1].startsWith("errorGrabIncognito"));
+
+  fake.calls.length = 0;
+  reply = async () => ({ ok: false, error: "Unknown message type: grab", protocol: 2 });
+  await click({ menuItemId: "dm-grab", pageUrl: "https://books.test/" }, { id: 5, url: "https://books.test/", incognito: false });
+  await settle();
+  assert.ok(named("notify")[0][1].startsWith("errorGrabOutdated"));
+});
+
+test("the chosen audio language and subtitles reach the app with the video", async () => {
+  const onMessage = fake.listeners["runtime.onMessage"][0];
+  fake.listeners["webRequest.onHeadersReceived"][0]({ tabId: 8, statusCode: 200, type: "xmlhttprequest", url: "https://cdn.videos.test/lang.m3u8",
+    responseHeaders: [{ name: "Content-Type", value: "application/vnd.apple.mpegurl" }] });
+  await settle();
+  fake.calls.length = 0;
+  reply = async () => ({ ok: true, protocol: 3 });
+  const answer = await new Promise((resolve) => onMessage({ type: "addMedia", url: "https://cdn.videos.test/lang.m3u8", variantId: "hls:0", label: "720p",
+    audioId: "it|Italiano", subtitleIds: ["en|English"], subtitleMode: "srt", extra: "ignored" },
+    { id: "test-extension", tab: { id: 8, url: "https://videos.test/watch", title: "Clip" } }, resolve));
+  assert.equal(answer.ok, true);
+  const media = named("native")[0][1].media;
+  assert.equal(media.audioId, "it|Italiano");
+  assert.deepEqual(media.subtitleIds, ["en|English"]);
+  assert.equal(media.subtitleMode, "srt");
+  assert.equal(media.extra, undefined);
 });

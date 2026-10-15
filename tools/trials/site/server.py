@@ -40,40 +40,92 @@ navigator.requestMediaKeySystemAccess("org.w3.clearkey", [{{initDataTypes: ["key
 </script>""",
 }
 
-TYPES = {".zip": "application/zip", ".pdf": "application/pdf", ".jpg": "image/jpeg", ".exe": "application/vnd.microsoft.portable-executable"}
+TYPES = {".zip": "application/zip", ".pdf": "application/pdf", ".jpg": "image/jpeg", ".exe": "application/vnd.microsoft.portable-executable",
+         ".png": "image/png", ".css": "text/css", ".js": "text/javascript"}
+
+# Grabber trial: a small site under /grab/ with folders, a style sheet, robots.txt, an endless calendar, a busy file (429)
+# and a page with 3000 files for the preview table.
+GRAB = {
+    "/grab/": """<!doctype html><html><head><meta charset="utf-8"><title>Sito di prova del grabber</title>
+<link rel="stylesheet" href="style.css"></head><body><h1>Grabber</h1><img src="img/logo.png" alt="logo">
+<ul><li><a href="a.html">Pagina A</a></li><li><a href="b.html">Pagina B</a></li><li><a href="many.html">Molti file</a></li>
+<li><a href="private/secret.html">Riservata (robots.txt)</a></li><li><a href="busy.zip">Occupato (429)</a></li>
+<li><a href="https://example.org/">Esterno</a></li><li><a href="a.html?PHPSESSID=123">A con sessione</a></li></ul></body></html>""",
+    "/grab/a.html": """<!doctype html><title>Pagina A</title><a href="./">home</a> <a href="docs/manuale.pdf">Manuale</a>
+<img src="img/foto.png" srcset="img/foto.png 1x, img/foto-2x.png 2x" alt="foto"> <div style="background:url(img/sfondo.png)">x</div>""",
+    "/grab/b.html": """<!doctype html><title>Pagina B</title><a href="./">home</a> <a href="cal?m=1">Calendario</a> <a href="docs/listino.pdf">Listino</a>""",
+    "/grab/many.html": "<!doctype html><title>Molti file</title><ul>"
+        + "".join(f'<li><a href="f/file-{i:04}.pdf">File {i}</a></li>' for i in range(3000)) + "</ul>",
+    "/grab/private/secret.html": """<!doctype html><title>Riservata</title><a href="../docs/segreto.pdf">segreto</a>""",
+}
+GRAB_CSS = b"body { background: #fff url(img/bg.png) } h1 { background-image: url('img/titolo.png') }"
+ROBOTS = b"User-agent: *\nDisallow: /grab/private/\n"
+busy_seen = set()
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
-    def send_bytes(self, body, ctype, extra=None):
+    def do_HEAD(self):
+        self.respond(head=True)
+
+    def do_GET(self):
+        self.respond(head=False)
+
+    def send_bytes(self, body, ctype, extra=None, head=False):
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         for k, v in (extra or {}).items():
             self.send_header(k, v)
         self.end_headers()
-        self.wfile.write(body)
+        if not head:
+            self.wfile.write(body)
 
-    def do_GET(self):
-        path = urllib.parse.urlsplit(self.path).path
-        log({"method": "GET", "path": path, "cookie": self.headers.get("Cookie", ""), "referer": self.headers.get("Referer", ""),
-             "ua": self.headers.get("User-Agent", "")})
+    def respond(self, head):
+        parts = urllib.parse.urlsplit(self.path)
+        path = parts.path
+        log({"method": "HEAD" if head else "GET", "path": path + (("?" + parts.query) if parts.query else ""),
+             "cookie": self.headers.get("Cookie", ""), "referer": self.headers.get("Referer", ""), "ua": self.headers.get("User-Agent", "")})
         if path in PAGES:
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Set-Cookie", "sessione=abc123; Path=/")
             self.end_headers()
-            self.wfile.write(PAGES[path].encode())
+            if not head:
+                self.wfile.write(PAGES[path].encode())
+        elif path == "/robots.txt":
+            self.send_bytes(ROBOTS, "text/plain", head=head)
+        elif path in GRAB:
+            self.send_bytes(GRAB[path].encode(), "text/html; charset=utf-8", head=head)
+        elif path == "/grab/cal":
+            month = int(urllib.parse.parse_qs(parts.query).get("m", ["1"])[0])
+            body = f'<!doctype html><title>Mese {month}</title><a href="cal?m={month + 1}">mese dopo</a>'.encode()
+            self.send_bytes(body, "text/html; charset=utf-8", head=head)
+        elif path == "/grab/style.css":
+            self.send_bytes(GRAB_CSS, "text/css", head=head)
+        elif path == "/grab/busy.zip" and path not in busy_seen:
+            busy_seen.add(path)  # the first request is refused, the next one waits the second it asks for
+            self.send_response(429)
+            self.send_header("Retry-After", "1")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+        elif path.startswith("/grab/"):
+            name = path[path.rfind("/") + 1:]
+            ext = name[name.rfind("."):]
+            self.send_bytes(payload(name, 2048 if "/f/" in path else 16 * 1024), TYPES.get(ext, "application/octet-stream"),
+                            {"ETag": f'"{name}"'}, head=head)
         elif path.startswith("/files/"):
             name = path[7:]
             ext = name[name.rfind("."):]
-            self.send_bytes(payload(name, 2 * 1024 * 1024 if ext in (".zip", ".exe") else 64 * 1024), TYPES.get(ext, "application/octet-stream"))
+            self.send_bytes(payload(name, 2 * 1024 * 1024 if ext in (".zip", ".exe") else 64 * 1024), TYPES.get(ext, "application/octet-stream"),
+                            head=head)
         elif path.startswith("/page-"):
-            self.send_bytes(b"<!doctype html><title>pagina</title>", "text/html")
+            self.send_bytes(b"<!doctype html><title>pagina</title>", "text/html", head=head)
         else:
             self.send_response(404)
+            self.send_header("Content-Length", "0")
             self.end_headers()
 
     def do_POST(self):

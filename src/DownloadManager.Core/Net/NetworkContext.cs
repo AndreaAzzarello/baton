@@ -40,13 +40,15 @@ public sealed class NetworkContext
 
     /// <summary>
     /// A client with this network's proxy and logins. Browser cookies and a login given for one download get a client
-    /// of their own, so they reach only their own site (also after a redirect to another host).
+    /// of their own, so they reach only their own site (also after a redirect to another host). Without
+    /// <paramref name="followRedirects"/> each redirect comes back to the caller, which checks where it leads (the grabber).
     /// </summary>
-    public HttpClient CreateHttpClient(CookieContainer? cookies = null, NetworkCredential? ownLogin = null, Uri? ownLoginFor = null)
+    public HttpClient CreateHttpClient(CookieContainer? cookies = null, NetworkCredential? ownLogin = null, Uri? ownLoginFor = null,
+        bool followRedirects = true)
     {
         var handler = new SocketsHttpHandler
         {
-            AllowAutoRedirect = true,
+            AllowAutoRedirect = followRedirects,
             MaxAutomaticRedirections = 10,
             AutomaticDecompression = DecompressionMethods.None, // byte ranges refer to the raw entity
             ConnectTimeout = Timeout < TimeSpan.FromSeconds(20) ? Timeout : TimeSpan.FromSeconds(20),

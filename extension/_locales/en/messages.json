@@ -3,13 +3,43 @@
     "message": "DownloadManager"
   },
   "extDescription": {
-    "message": "Sends browser downloads, page links and videos to the DownloadManager app for Windows."
+    "message": "Sends browser downloads, page links, videos and whole sites to the DownloadManager app for Windows."
   },
   "menuLink": {
     "message": "Download with DownloadManager"
   },
   "menuAll": {
     "message": "Download all with DownloadManager…"
+  },
+  "menuGrab": {
+    "message": "Capture this site with DownloadManager…"
+  },
+  "errorGrabIncognito": {
+    "message": "Sites are not captured from private windows: nothing was sent to DownloadManager."
+  },
+  "errorGrabNotWeb": {
+    "message": "Only http and https pages can be captured."
+  },
+  "errorGrabOutdated": {
+    "message": "Capturing a site needs DownloadManager 0.7 or later: update the app."
+  },
+  "mediaAudioLabel": {
+    "message": "Audio"
+  },
+  "mediaSubtitles": {
+    "message": "Subtitles"
+  },
+  "mediaSubtitleFormat": {
+    "message": "Save as"
+  },
+  "mediaSubtitle_vtt": {
+    "message": ".vtt file next to the video"
+  },
+  "mediaSubtitle_srt": {
+    "message": ".srt file next to the video"
+  },
+  "mediaSubtitle_embed": {
+    "message": "inside the video (needs ffmpeg)"
   },
   "titleAuto": {
     "message": "DownloadManager — intercepting downloads"
@@ -270,7 +300,7 @@
     "message": "Everything works. The app is not running now: it starts by itself when the browser sends it something."
   },
   "checkText_outdated": {
-    "message": "The app answers but is an older version: plain downloads work, videos and “Download all” need DownloadManager 0.6 or later."
+    "message": "The app answers but is an older version: plain downloads work; videos, “Download all” and “Capture this site” need the latest DownloadManager."
   },
   "checkText_missing": {
     "message": "This browser cannot find the app's native host. It is registered by the app itself, for the current Windows user."

@@ -21,6 +21,15 @@ public interface IDialogService
     /// <summary>"Download all": the links and images of a page sent by the browser; true when the user chose some.</summary>
     bool ShowBatch(BatchViewModel viewModel);
 
+    /// <summary>The grabber's project wizard; true when the project was completed (its <see cref="GrabberWizardViewModel.Result"/>).</summary>
+    bool ShowGrabberWizard(GrabberWizardViewModel viewModel, bool standalone);
+
+    /// <summary>The grabber's project list, one window at a time (brought forward if open).</summary>
+    void ShowGrabberProjects(Func<GrabberProjectsViewModel> create);
+
+    /// <summary>The preview of a project's run, one window per project (brought forward if open).</summary>
+    void ShowGrabberRun(Core.Grabber.GrabberRun run, Func<GrabberRunViewModel> create);
+
     bool ShowSettings(SettingsViewModel viewModel);
 
     bool ShowCategories(CategoriesViewModel viewModel);

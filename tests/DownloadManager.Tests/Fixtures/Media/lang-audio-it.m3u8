@@ -1,0 +1,9 @@
+#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-TARGETDURATION:4
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXTINF:4.0,
+lang-audio-it-0.aac
+#EXTINF:4.0,
+lang-audio-it-1.aac
+#EXT-X-ENDLIST

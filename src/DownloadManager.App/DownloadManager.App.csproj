@@ -15,7 +15,7 @@
     <AssemblyName>DownloadManager</AssemblyName>
     <RootNamespace>DownloadManager.App</RootNamespace>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>0.6.0</Version>
+    <Version>0.7.0</Version>
     <Product>DownloadManager</Product>
     <Description>Segmented download manager with pause/resume and queue</Description>
     <!-- Program.Main decides between the app and the browser's native messaging host -->

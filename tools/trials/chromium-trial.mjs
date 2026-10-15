@@ -1,7 +1,7 @@
 // Real trial in a Chromium browser (Edge, Opera): node chromium-trial.mjs <name> <browser exe> [--batch]
 // A temporary profile, headless: the user's own browser windows are not touched and nothing takes the focus.
 import puppeteer from "puppeteer-core";
-import { WORK, DATA, DB, SITE_LOG, SHOTS, BROWSER_DL, CHROMIUM_EXT, FIREFOX_EXE, FIREFOX_TRIAL_EXT } from "./config.mjs";
+import { WORK, DATA, DB, SITE_LOG, SHOTS, BROWSER_DL, CHROMIUM_EXT, FIREFOX_EXE, FIREFOX_TRIAL_EXT, closeBatchWindow } from "./config.mjs";
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -150,6 +150,7 @@ if (process.argv.includes("--batch")) {
     return !!tab;
   }, `${SITE}/links.html`);
   report("download all sent", ok);
+  console.log(`     "Scarica tutto" window closed: ${closeBatchWindow()}`);
 }
 
 console.log(JSON.stringify(results));

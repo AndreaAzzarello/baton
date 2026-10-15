@@ -1,8 +1,9 @@
 # DownloadManager
 
 Download manager per Windows (C# / .NET 10 LTS / WPF) con download segmentato, pausa/ripresa persistente,
-code con nome e pianificazione, categorie, FTP/FTPS, proxy, autenticazione, video HLS/DASH e integrazione con Chrome, Edge,
-Opera, Brave e Firefox. Versione 0.6.0.
+code con nome e pianificazione, categorie, FTP/FTPS, proxy, autenticazione, video HLS/DASH (con lingue e sottotitoli), grabber
+di siti (file filtrati o copia offline, sincronizzabile e pianificabile) e integrazione con Chrome, Edge, Opera, Brave e Firefox.
+Versione 0.7.0.
 
 ## Struttura
 
@@ -11,12 +12,14 @@ Opera, Brave e Firefox. Versione 0.6.0.
 | `src/DownloadManager.Core` | Motore: segmenti, connessioni, checkpoint, code e scheduler, categorie, SQLite; `Net` (trasporti HTTP e FTP, proxy, PAC), `Security` (credenziali, certificati, segreti DPAPI), `Platform` (registro iniettabile e registrazioni di sistema); testi in `Resources/Strings.resx` |
 | `src/DownloadManager.App` | Interfaccia WPF in MVVM: `ViewModels`, `Views`, `Services` (finestre, tema, notifiche, area di notifica, avvio con Windows, risparmio energia), `Themes`, `Controls` |
 | `src/DownloadManager.Core/Media` | Video: parser HLS (`HlsPlaylist`) e DASH (`DashManifest`), scelta delle qualità e controlli (`MediaCatalog`), download dei segmenti (`MediaJob`), ffmpeg facoltativo |
-| `src/DownloadManager.Core/Integration` | Protocollo con l'estensione (`Messages`, versione 2), validazione (`MessageValidator`), host nativo, pipe, "Scarica tutto" (`BatchLinks`) |
-| `tests/DownloadManager.Tests` | Test xUnit con server locali avviati dai test: HTTP (Range, ETag, 429, cookie, Basic/Digest, moduli POST), FTP/FTPS, proxy HTTP e SOCKS5; fixture HLS/DASH in `Fixtures/Media` |
+| `src/DownloadManager.Core/Grabber` | Grabber: `GrabberEngine` (visita per livelli, HTML/CSS statici con AngleSharp), `RobotsTxt`, `HostThrottle` (richieste per host, 429/Retry-After), `TrapGuard` e `CrawlUrls` (normalizzazione, trappole), `LocalPaths` (percorsi locali sicuri), `PageLinks` (link di HTML, CSS e srcset, anche per la riscrittura), `GrabberService` (progetti, sincronizzazione, pianificazione) |
+| `src/DownloadManager.Core/Integration` | Protocollo con l'estensione (`Messages`, versione 3), validazione (`MessageValidator`), host nativo, pipe, "Scarica tutto" (`BatchLinks`) |
+| `tests/DownloadManager.Tests` | Test xUnit con server locali avviati dai test: HTTP (Range, ETag, 429, cookie, Basic/Digest, moduli POST), FTP/FTPS, proxy HTTP e SOCKS5; fixture HLS/DASH in `Fixtures/Media`; sito multi-host per il grabber (`GrabberTestSite`) |
 | `extension` | Sorgente unico dell'estensione (Manifest V3); è anche la build per Chromium, caricabile così com'è |
 | `tools/build-extension.mjs` | Build per Chromium e Firefox in `dist/` (cartelle e pacchetti .zip / .xpi) |
 | `tests/extension` | Test dell'estensione con `node --test` (regole, moduli, media, ripiego), eseguiti anche da `dotnet test` |
-| `tools/trials` | Prove reali nei browser (Edge, Opera, Firefox headless) con l'app isolata: `prepare.ps1`, `chromium-trial.mjs`, `firefox-trial.mjs`, `finish.ps1`; sito di prova locale |
+| `tools/trials` | Prove reali nei browser (Edge, Opera, Firefox headless) con l'app isolata: `prepare.ps1`, `chromium-trial.mjs`, `firefox-trial.mjs`, `grab-trial.ps1`, `finish.ps1`; sito di prova locale (anche `/grab/` per il grabber) |
+| `tools/sign-firefox.ps1` | Firma "non elencata" dell'estensione per Firefox su addons.mozilla.org (chiavi solo da variabili d'ambiente) |
 | `tools/make_resx.py`, `tools/make_locales.py` | Generatori dei testi: `Strings.resx` dell'app e `_locales` dell'estensione (la tabella è nello script) |
 | `CLAUDE.md`, `.claude/` | Regole del progetto per Claude Code, hook (guardia su registro e Desktop, controlli dell'estensione, build incrementale) e skill `prova-reale`, `fine-fase`, `stringhe` |
 | `publish/DownloadManager.exe` | Build Release self-contained win-x64 (non richiede il runtime .NET) |
@@ -120,6 +123,58 @@ Compressi, Documenti, Musica, Video, Programmi e Generale, ognuna con estensioni
 - **Avvio con Windows** (Impostazioni, facoltativo): l'app parte ridotta nell'area di notifica (`--tray`). Se una coda è
   pianificata e l'avvio con Windows è spento, la finestra principale e la finestra Code lo segnalano con un pulsante per attivarlo.
 
+## Grabber
+
+Pulsante **Grabber** (Ctrl+G) nella barra, oppure dal browser: tasto destro sulla pagina › **Cattura questo sito con
+DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; mai dalle finestre private).
+
+- **Procedura guidata** in cinque passi: indirizzo e modalità; ambito (profondità, solo questo sito o anche domini elencati,
+  robots.txt, richieste al secondo per sito, user-agent); filtri (tipi con gruppi pronti — immagini, documenti, audio, video,
+  archivi — e altre estensioni, dimensione minima e massima, espressioni regolari di inclusione ed esclusione); accesso
+  (cookie del browser, credenziali salvate, proxy dell'app) e limiti; destinazione (cartella, categoria, coda) e pianificazione.
+  Il passo corrente è indicato a sinistra; Alt+← / Alt+→ cambiano passo; ogni campo ha un nome per gli screen reader.
+- **Modalità "file filtrati"**: le pagine vengono visitate livello per livello; dei file trovati si chiede solo l'intestazione
+  (HEAD, o il primo byte se il server rifiuta HEAD) per tipo, dimensione, ETag e data. L'anteprima li elenca con tipo, dimensione,
+  stato e pagina di origine; filtri per testo, tipo e stato; selezione con le caselle o la Barra spaziatrice; invio a una coda e
+  a una categoria (o automatica per tipo). I file inviati diventano download normali (la pagina di origine come referrer, i
+  cookie del progetto).
+- **Modalità "copia offline"**: pagine, fogli di stile (anche `@import` e `url()`), script, immagini (anche `srcset`, `data-src`,
+  stili in linea) e i file collegati che passano il filtro dei tipi vengono salvati in `<cartella>\<sito>\<percorso>`,
+  mantenendo le cartelle del sito. Alla fine ogni pagina e ogni CSS vengono riscritti per puntare ai file locali (percorsi
+  relativi, frammenti `#…` mantenuti); ciò che non è stato salvato resta un link assoluto, che funziona online. `<base>`,
+  `integrity` e `crossorigin` vengono tolti (non servono e impedirebbero di aprire la copia da file), la codifica diventa UTF-8.
+  Le pagine `.php`/`.asp` diventano `.php.html` ecc., così si aprono nel browser.
+- **Rispetto dei siti**: robots.txt (RFC 9309: gruppo del proprio user-agent o `*`, Allow/Disallow con `*` e `$`, la regola
+  più lunga vince; `Crawl-delay` rallenta il ritmo) è attivo per impostazione; disattivarlo richiede una conferma esplicita.
+  Ogni host riceve al massimo il numero di richieste al secondo scelto; 429 e 503 fanno attendere **tutto l'host** per il
+  `Retry-After` indicato (o una pausa crescente), poi la richiesta viene ripetuta; un'attesa oltre 2 minuti fa rinunciare.
+  I redirect sono seguiti un passo alla volta: verso un sito fuori dal progetto, un indirizzo escluso o vietato da robots.txt
+  non vengono seguiti.
+- **Limiti e trappole**: numero massimo di pagine, di file e dimensione totale; indirizzi normalizzati (schema e host in
+  minuscolo, porta predefinita, frammento, parametri di sessione e tracciamento come `PHPSESSID`, `jsessionid`, `utm_*`, `fbclid`
+  tolti, parametri ordinati) e visitati una volta sola; scartati indirizzi oltre 2000 caratteri, con più di 30 cartelle o una
+  cartella ripetuta tre volte (`/a/b/a/b/a/…`); al massimo N pagine "della stessa forma" (numeri sostituiti, valori dei parametri
+  ignorati), così un calendario infinito si ferma.
+- **Solo HTML statico**: le pagine sono lette con **AngleSharp**, un parser che segue l'algoritmo HTML5 dei browser (pagine
+  malformate comprese), senza mai eseguire script; scelto rispetto a HtmlAgilityPack (non conforme a HTML5) e alle espressioni
+  regolari (fragili). È gestito, MIT, senza dipendenze native. I contenuti creati da JavaScript non vengono trovati.
+- **Percorsi sicuri**: ogni nome è reso valido per Windows (caratteri riservati, `CON`/`NUL`/`COM1`…, punti e spazi finali),
+  `..` e `%2e%2e` non escono mai dalla cartella, nomi e percorsi troppo lunghi vengono accorciati con un hash (percorso completo
+  sotto i 240 caratteri), due indirizzi non condividono mai un file (anche se differiscono solo per maiuscole). Le espressioni
+  regolari dell'utente usano il motore senza backtracking di .NET (nessun blocco con espressioni patologiche; riferimenti
+  all'indietro e lookaround non ammessi).
+- **Progetti salvati** (Grabber › elenco): modifica, avvio, apertura della cartella, eliminazione (i file restano). Ultima
+  esecuzione, risultato e prossima esecuzione pianificata per ciascuno.
+- **Sincronizzazione**: ogni esecuzione confronta con la precedente. Nei "file filtrati" un file è *nuovo*, *modificato*
+  (ETag diverso; altrimenti data o dimensione diverse) o *invariato*; vengono preselezionati solo nuovi e modificati. Nella copia
+  offline immagini e script vengono richiesti con `If-None-Match`/`If-Modified-Since` (304 = non riscaricati); pagine e CSS sono
+  sempre riletti per seguirne i link. I file scomparsi dal sito sono segnalati come **rimossi dal sito** (solo se la visita è
+  stata completa, oppure con 404/410) e **mai cancellati**.
+- **Pianificazione** con lo stesso modello e le stesse regole sull'ora legale delle code: una volta in una data oppure ogni
+  settimana nei giorni scelti, con ripetizione facoltativa ogni N ore. Un'esecuzione per finestra, anche se l'app viene riavviata
+  dentro la finestra. Nei "file filtrati" un'esecuzione automatica manda alla coda del progetto i file nuovi e modificati e la
+  avvia; a fine esecuzione l'area di notifica mostra il risultato.
+
 ## Interfaccia
 
 - **Pannello laterale**: Tutti / Non completati / Completati, ciascuno suddiviso per categoria, con il numero di download.
@@ -137,17 +192,20 @@ Compressi, Documenti, Musica, Video, Programmi e Generale, ognuna con estensioni
 - **Notifiche di Windows** a fine download con i pulsanti **Apri** e **Apri cartella** (disattivabili in Impostazioni).
   I pulsanti usano link `downloadmanager:` firmati con una chiave dell'utente, quindi una pagina web non può usarli per aprire file.
 - **Aggiungi / conferma dal browser**: scelta di categoria e coda; *Scarica ora* avvia subito, *Aggiungi alla coda* aspetta il turno.
-- **Tastiera**: Ctrl+N aggiungi, Ctrl+V incolla link, Ctrl+F cerca, Canc rimuovi, Invio avanzamento, Alt+Invio proprietà.
+- **Tastiera**: Ctrl+G grabber, Ctrl+N aggiungi, Ctrl+V incolla link, Ctrl+F cerca, Canc rimuovi, Invio avanzamento, Alt+Invio proprietà.
   Tutti i controlli hanno un nome leggibile dagli screen reader.
 
 ## Dati
 
-`%LOCALAPPDATA%\DownloadManager\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 5):
+`%LOCALAPPDATA%\DownloadManager\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 6):
 all'avvio i database delle versioni precedenti vengono aggiornati un passo alla volta in un'unica transazione, dopo averne
 salvato una copia accanto (`downloads.db.v<versione>.bak`). Un database creato da una versione più recente non viene modificato.
 Passando alla 3, tutti i download entrano nella Coda principale, che eredita il vecchio limite e lo stato avviata/fermata;
 il nuovo limite totale parte da 10. La 4 aggiunge le tabelle delle credenziali (password cifrate) e dei certificati accettati.
 La 5 aggiunge ai download la colonna `media` (tipo di stream e qualità scelta) per i video HLS/DASH.
+La 6 aggiunge `grabber_projects` (impostazioni in JSON, pianificazione, cookie cifrati con DPAPI, ultima esecuzione) e
+`grabber_files` (per progetto e indirizzo: percorso locale, ETag, data, dimensione, hash delle pagine, prima e ultima volta visto,
+rimozione dal sito). Nella colonna `media` compaiono anche lingua audio e sottotitoli scelti.
 
 Pubblicazione: eseguibile singolo self-contained non compresso (circa 164 MB). Il trimming non è possibile con WPF (l'SDK lo
 rifiuta, NETSDK1168); ReadyToRun è stato misurato (finestra in 604 ms invece di 675, ma +66 MB su disco e +10 MB di RAM) e
@@ -169,9 +227,33 @@ per Chrome, Edge, Chromium, Brave (Opera usa la registrazione di Chrome) e Firef
   Se l'estensione era già caricata, premi **Aggiorna** sulla sua scheda.
 - **Firefox** (128 o successivo) — esegui `node tools/build-extension.mjs`, poi `about:debugging#/runtime/this-firefox` →
   **Carica componente aggiuntivo temporaneo** → `dist\firefox\manifest.json`. Firefox in versione normale rimuove i componenti
-  temporanei alla chiusura; per un'installazione permanente il pacchetto `dist\downloadmanager-firefox-0.6.0.xpi` va firmato
-  (su addons.mozilla.org, anche come "non elencato") oppure si usa Firefox Developer Edition/Nightly con
-  `xpinstall.signatures.required = false`.
+  temporanei alla chiusura; per un'installazione permanente il pacchetto va firmato (vedi sotto) oppure si usa Firefox
+  Developer Edition/Nightly con `xpinstall.signatures.required = false`.
+
+### Firefox permanente: firma "non elencata" su addons.mozilla.org
+
+La firma "unlisted" (distribuzione autonoma) rende l'estensione installabile in modo permanente in qualsiasi Firefox, senza
+pubblicarla nel catalogo. Si fa una volta per ogni nuova versione:
+
+1. Crea (o usa) un account Firefox su <https://addons.mozilla.org> e accedi.
+2. Apri <https://addons.mozilla.org/developers/addon/api/key/> (Developer Hub › *Strumenti* › *Gestisci le chiavi API*),
+   accetta l'accordo per gli sviluppatori se richiesto e premi **Genera nuove credenziali**.
+3. Copia **JWT issuer** (`user:…`) e **JWT secret**. Non salvarli nel progetto: valgono come una password.
+4. In PowerShell, nella cartella del progetto:
+   ```powershell
+   $env:AMO_JWT_ISSUER = "user:12345:67"
+   $env:AMO_JWT_SECRET = "<il segreto>"
+   .\tools\sign-firefox.ps1 -Check   # verifica senza caricare nulla
+   .\tools\sign-firefox.ps1          # costruisce dist\firefox, lo carica come "unlisted" e attende la firma
+   ```
+   Lo script usa `web-ext` 10.7.0 tramite `npx` (nulla viene installato nel progetto) e passa le chiavi solo come variabili
+   d'ambiente del processo, mai sulla riga di comando. Il pacchetto firmato arriva in `dist\signed\*.xpi`.
+5. Firefox › `about:addons` › ingranaggio › **Installa componente aggiuntivo da file…** › il file `.xpi` firmato.
+6. Alla versione successiva aumenta `version` in `extension\manifest.json` (AMO non firma due volte la stessa versione) e
+   ripeti il passo 4. Le chiavi si possono revocare dalla stessa pagina di AMO.
+
+L'ID (`downloadmanager@extension.local`) resta lo stesso, quindi l'host nativo già registrato funziona anche con l'estensione
+firmata.
 
 L'ID dell'estensione è fisso (chiave nel manifest per Chromium, `downloadmanager@extension.local` per Firefox): l'host accetta
 solo quello.
@@ -240,6 +322,17 @@ Non vengono scaricati, e il pannello lo spiega:
 I manifest DASH sono letti con DTD disattivate (nessuna entità esterna). L'app interroga solo indirizzi che la scheda ha
 davvero caricato.
 
+### Lingue audio e sottotitoli
+
+Se uno stream offre più lingue audio (HLS `EXT-X-MEDIA TYPE=AUDIO`, DASH un insieme di adattamento per lingua, con la sua
+etichetta) o sottotitoli WebVTT (HLS `TYPE=SUBTITLES`, DASH `text/vtt`), il pannello del video mostra un elenco **Audio** e le
+caselle **Sottotitoli** con il formato: file `.vtt` o `.srt` accanto al video (`Nome.it.vtt`), oppure **dentro il video** con
+ffmpeg (MP4: `mov_text`, MKV: SubRip; lingua in ISO 639-2). I segmenti WebVTT vengono uniti in un solo file (i sottotitoli
+ripetuti a cavallo di due segmenti restano uno); senza ffmpeg i sottotitoli richiesti "dentro" vengono salvati accanto e il
+download lo dice. I DASH con **più periodi** vengono scaricati per intero: per ogni rappresentazione del primo periodo si
+prende quella corrispondente dei successivi (stesso id, altrimenti stessa lingua e qualità più vicina), con il segmento di
+inizializzazione del periodo quando cambia.
+
 ### Scarica tutto
 
 Tasto destro sulla pagina → **Scarica tutto con DownloadManager…**: l'app apre una finestra con tutti i link e le immagini della
@@ -268,8 +361,10 @@ Firefox) non resta attivo: si sveglia solo per gli eventi del browser, non fa po
 
 ### Protocollo
 
-Versione esplicita: la 0.6 parla il **protocollo 2** (`version: 2` in ogni messaggio; `hello` risponde con `protocol` e
-`appVersion` senza avviare l'app). Restano validi, invariati, i messaggi del protocollo 1 dell'estensione 0.5 (`ping`, `queues`,
+Versione esplicita: la 0.7 parla il **protocollo 3** (`version: 3` in ogni messaggio; `hello` risponde con `protocol` e
+`appVersion` senza avviare l'app). Il 3 aggiunge `grab` (indirizzo, titolo, user-agent e cookie della pagina) e, in `probeMedia`
+/ `addMedia`, `audioTracks`/`subtitles` e `audioId`/`subtitleIds`/`subtitleMode`; un'estensione 0.6 (protocollo 2) continua a
+funzionare invariata, e con un'app 0.6 l'estensione 0.7 dice che per "Cattura questo sito" serve aggiornare l'app. Restano validi, invariati, i messaggi del protocollo 1 dell'estensione 0.5 (`ping`, `queues`,
 `add` senza versione); un'app 0.5 risponde a `hello` con un errore e la pagina di verifica la indica come "da aggiornare".
 Nuovi messaggi: `hello`, `probeMedia`, `addMedia`, `batch`, e `add` con `method`/`body`/`bodyType`.
 Ogni messaggio viene validato due volte (nell'host, prima di avviare l'app, e nella pipe dell'app, raggiungibile da qualsiasi
@@ -290,6 +385,8 @@ node --test "tests/extension/*.test.mjs"      # solo i test dell'estensione
 node tools/build-extension.mjs                # estensione per Chromium e Firefox in dist\
 & $dn run --project src\DownloadManager.App   # avvio in debug
 & $dn publish src\DownloadManager.App -c Release -r win-x64 -o publish   # exe self-contained
+.\tools\sign-firefox.ps1 -Check                                          # firma dell'estensione per Firefox (vedi sopra)
+powershell -File tools\trials\grab-trial.ps1 -Mode Mirror                 # prova reale del grabber (dopo prepare.ps1)
 ```
 
 `DOWNLOADMANAGER_DATA=<cartella>` avvia l'app su un'altra cartella dati (utile per le prove).
@@ -304,5 +401,14 @@ un file `Strings.<lingua>.resx`.
 
 ## Non ancora presente
 
-Sincronizzazione dei siti, SFTP (SSH), FTP tramite proxy HTTPS, sottotitoli e tracce audio alternative dei video (viene
-scaricata la traccia audio predefinita), DASH con più periodi (solo il primo), estensione firmata per Firefox.
+SFTP (SSH), FTP tramite proxy HTTPS. Grabber: niente JavaScript (i contenuti generati da script non vengono trovati), un link
+che sembra una pagina (`download.php?id=7`) viene riconosciuto come file solo se rientra nella profondità; le opzioni "proxy" e
+"credenziali" del progetto valgono per la scansione, mentre i file mandati a una coda usano la rete dell'app; un file inviato
+alla coda viene ricordato al momento dell'invio (se il download poi fallisce, la sincronizzazione successiva non lo ripropone:
+va ripreso dall'elenco); la copia offline non rispetta il limite di velocità globale (lo rispettano i file in coda); i cookie
+catturati restano nel progetto (cifrati) finché il progetto esiste. Sottotitoli: solo WebVTT (non TTML né sottotitoli dentro i
+segmenti MP4); nell'unione dei segmenti HLS si assume l'allineamento standard di `X-TIMESTAMP-MAP`. DASH multi-periodo: i sottotitoli dei periodi successivi vengono
+spostati all'inizio del loro periodo; video e audio vengono uniti così come sono (la maggior parte dei packager mantiene i tempi
+continui tra i periodi; se un periodo riparte da zero, il file unito può avere un salto). I sottotitoli che non si riescono a
+scaricare non fanno fallire il video: il download lo segnala nella nota. L'estensione per Firefox
+va firmata dall'utente con le proprie chiavi AMO (`tools\sign-firefox.ps1`).

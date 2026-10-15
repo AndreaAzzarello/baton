@@ -3,8 +3,11 @@
 (function (root) {
   "use strict";
 
-  /** Version of the messages exchanged with the app (1 = extension 0.2-0.5, 2 = 0.6). */
-  const PROTOCOL = 2;
+  /** Version of the messages exchanged with the app (1 = extension 0.2-0.5, 2 = 0.6, 3 = 0.7). */
+  const PROTOCOL = 3;
+
+  /** How subtitles are saved: a file next to the video (WebVTT or SubRip), or inside it (the app needs ffmpeg). */
+  const SUBTITLE_MODES = ["vtt", "srt", "embed"];
 
   /** How long the app may take to accept a download before the browser keeps it (the host waits 12 s for a cold start). */
   const APP_TIMEOUT_MS = 15000;
@@ -221,6 +224,35 @@
     return reply.running === false ? "ready" : "running";
   }
 
+  /** "Capture this site": the page address the app may crawl (http or https only, without the fragment), else null. */
+  function grabTarget(url) {
+    try {
+      const parsed = new URL(String(url || ""));
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+      parsed.hash = "";
+      return parsed.href.length <= 8000 ? parsed.href : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * The audio language and subtitles chosen in the video panel, as the app accepts them: strings only, at most 20
+   * subtitles, a known format; nothing at all when the choice is empty.
+   */
+  function mediaChoice(message) {
+    const choice = {};
+    if (typeof message?.audioId === "string" && message.audioId && message.audioId.length <= 200) choice.audioId = message.audioId;
+    const subtitles = Array.isArray(message?.subtitleIds)
+      ? [...new Set(message.subtitleIds.filter((id) => typeof id === "string" && id && id.length <= 200))].slice(0, 20)
+      : [];
+    if (subtitles.length) {
+      choice.subtitleIds = subtitles;
+      choice.subtitleMode = SUBTITLE_MODES.includes(message.subtitleMode) ? message.subtitleMode : "vtt";
+    }
+    return choice;
+  }
+
   /** A size for people: "12,3 MB". */
   function formatSize(bytes, locale) {
     if (!(bytes > 0)) return "";
@@ -253,6 +285,9 @@
     classifyMedia,
     connectionState,
     formatSize,
+    grabTarget,
+    mediaChoice,
+    SUBTITLE_MODES,
   };
   root.DMRules = api;
   if (typeof module === "object" && module.exports) module.exports = api;

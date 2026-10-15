@@ -14,6 +14,7 @@
     <SolidColorBrush x:Key="PressedBrush" Color="#D3E0FA" />
     <SolidColorBrush x:Key="SuccessBrush" Color="#167A4B" />
     <SolidColorBrush x:Key="DangerBrush" Color="#BF2A2A" />
+    <SolidColorBrush x:Key="DangerSoftBrush" Color="#FCEBEA" />
     <SolidColorBrush x:Key="TrackBrush" Color="#E9ECF2" />
     <SolidColorBrush x:Key="ProgressFillBrush" Color="#BFD3FA" />
     <SolidColorBrush x:Key="SegmentDoneBrush" Color="#2457D1" />

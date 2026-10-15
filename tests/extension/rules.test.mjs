@@ -108,8 +108,9 @@ test("sites whose terms forbid downloads are recognized, subdomains included", (
 });
 
 test("connection states for the check page", () => {
-  assert.equal(R.connectionState({ ok: true, running: true, protocol: 2 }), "running");
-  assert.equal(R.connectionState({ ok: true, running: false, protocol: 2 }), "ready");
+  assert.equal(R.connectionState({ ok: true, running: true, protocol: 3 }), "running");
+  assert.equal(R.connectionState({ ok: true, running: false, protocol: 3 }), "ready");
+  assert.equal(R.connectionState({ ok: true, running: true, protocol: 2 }), "outdated"); // app 0.6: no site capture
   assert.equal(R.connectionState({ ok: false, error: "Tipo di messaggio sconosciuto: hello" }), "outdated"); // app 0.5
   assert.equal(R.connectionState({ ok: true, running: true }), "outdated");
   assert.equal(R.connectionState(null, new Error("Specified native messaging host not found.")), "missing");
@@ -122,4 +123,22 @@ test("sizes are formatted for people", () => {
   assert.equal(R.formatSize(0, "en"), "");
   assert.equal(R.formatSize(1536, "en"), "1.5 KB");
   assert.equal(R.formatSize(734003200, "it"), "700 MB");
+});
+
+test("site capture: only http(s) pages, without the fragment", () => {
+  assert.equal(R.grabTarget("https://books.test/catalogue/page-1.html#top"), "https://books.test/catalogue/page-1.html");
+  assert.equal(R.grabTarget("file:///C:/Users/"), null);
+  assert.equal(R.grabTarget("chrome://settings"), null);
+  assert.equal(R.grabTarget("not a url"), null);
+  assert.equal(R.grabTarget("https://x.test/" + "a".repeat(9000)), null);
+});
+
+test("video panel choices: strings only, at most 20 subtitles, a known format", () => {
+  assert.deepEqual(R.mediaChoice({}), {});
+  assert.deepEqual(R.mediaChoice({ audioId: "it|Italiano", subtitleIds: [] }), { audioId: "it|Italiano" });
+  assert.deepEqual(R.mediaChoice({ subtitleIds: ["en", "en", 7, "", "it"], subtitleMode: "exe" }),
+    { subtitleIds: ["en", "it"], subtitleMode: "vtt" });
+  assert.equal(R.mediaChoice({ subtitleIds: Array.from({ length: 30 }, (_, i) => `s${i}`), subtitleMode: "srt" }).subtitleIds.length, 20);
+  assert.equal(R.mediaChoice({ subtitleIds: ["en"], subtitleMode: "embed" }).subtitleMode, "embed");
+  assert.equal(R.mediaChoice({ audioId: { toString: () => "x" } }).audioId, undefined);
 });

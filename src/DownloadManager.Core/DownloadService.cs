@@ -324,7 +324,15 @@ public sealed class DownloadService : IAsyncDisposable
                 CategoryId = category.Id,
                 QueueId = _queues.FirstOrDefault(q => q.Id == queueId)?.Id ?? MainQueue.Id,
                 ContentType = kind == "dash" ? "application/dash+xml" : "application/vnd.apple.mpegurl",
-                Media = new MediaSource { Kind = kind, VariantId = request.VariantId, Label = label },
+                Media = new MediaSource
+                {
+                    Kind = kind,
+                    VariantId = request.VariantId,
+                    Label = label,
+                    AudioId = string.IsNullOrEmpty(request.AudioId) ? null : request.AudioId,
+                    SubtitleIds = request.SubtitleIds is { Count: > 0 } subtitles ? [.. subtitles.Distinct()] : null,
+                    SubtitleMode = request.SubtitleIds is { Count: > 0 } ? request.SubtitleMode ?? "vtt" : null,
+                },
             };
             _store.Insert(record);
             _items.Add(record);

@@ -43,7 +43,7 @@ export function createFakeChrome({ firefox = false, nativeReply } = {}) {
         calls.push(["native", message]);
         return nativeReply(message);
       },
-      getManifest: () => ({ version: "0.6.0" }),
+      getManifest: () => ({ version: "0.7.0" }),
     },
     storage: { local: area(local), session: area(session), onChanged: event("storage.onChanged") },
     downloads,

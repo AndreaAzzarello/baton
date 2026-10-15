@@ -3,13 +3,43 @@
     "message": "DownloadManager"
   },
   "extDescription": {
-    "message": "Invia i download del browser, i link delle pagine e i video all'app DownloadManager per Windows."
+    "message": "Invia i download del browser, i link delle pagine, i video e interi siti all'app DownloadManager per Windows."
   },
   "menuLink": {
     "message": "Scarica con DownloadManager"
   },
   "menuAll": {
     "message": "Scarica tutto con DownloadManager…"
+  },
+  "menuGrab": {
+    "message": "Cattura questo sito con DownloadManager…"
+  },
+  "errorGrabIncognito": {
+    "message": "I siti non vengono catturati dalle finestre private: a DownloadManager non è stato inviato nulla."
+  },
+  "errorGrabNotWeb": {
+    "message": "Si possono catturare solo pagine http e https."
+  },
+  "errorGrabOutdated": {
+    "message": "Per catturare un sito serve DownloadManager 0.7 o successiva: aggiorna l'app."
+  },
+  "mediaAudioLabel": {
+    "message": "Audio"
+  },
+  "mediaSubtitles": {
+    "message": "Sottotitoli"
+  },
+  "mediaSubtitleFormat": {
+    "message": "Salva come"
+  },
+  "mediaSubtitle_vtt": {
+    "message": "file .vtt accanto al video"
+  },
+  "mediaSubtitle_srt": {
+    "message": "file .srt accanto al video"
+  },
+  "mediaSubtitle_embed": {
+    "message": "dentro il video (serve ffmpeg)"
   },
   "titleAuto": {
     "message": "DownloadManager — intercetta i download"
@@ -270,7 +300,7 @@
     "message": "Tutto funziona. L'app ora non è aperta: si avvia da sola quando il browser le invia qualcosa."
   },
   "checkText_outdated": {
-    "message": "L'app risponde ma è una versione precedente: i download semplici funzionano, i video e «Scarica tutto» richiedono DownloadManager 0.6 o successiva."
+    "message": "L'app risponde ma è una versione precedente: i download semplici funzionano; video, «Scarica tutto» e «Cattura questo sito» richiedono l'ultima versione di DownloadManager."
   },
   "checkText_missing": {
     "message": "Questo browser non trova l'host nativo dell'app. Lo registra l'app stessa, per l'utente Windows corrente."

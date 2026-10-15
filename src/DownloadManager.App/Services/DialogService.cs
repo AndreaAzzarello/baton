@@ -41,6 +41,77 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
         return window.ShowDialog() == true;
     }
 
+    public bool ShowGrabberWizard(GrabberWizardViewModel viewModel, bool standalone)
+    {
+        var window = new GrabberWizardWindow(viewModel);
+        if (standalone)
+        {
+            // Opened from the browser: it comes forward by itself, like the add dialog.
+            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            window.ShowInTaskbar = true;
+            window.Topmost = true;
+            window.Activated += (_, _) => window.Topmost = false;
+        }
+        else
+        {
+            window.Owner = Owner;
+        }
+        return window.ShowDialog() == true;
+    }
+
+    private GrabberProjectsWindow? _projects;
+    private readonly Dictionary<long, GrabberRunWindow> _runs = [];
+
+    public void ShowGrabberProjects(Func<GrabberProjectsViewModel> create)
+    {
+        if (_projects is not null)
+        {
+            Bring(_projects);
+            return;
+        }
+        var viewModel = create();
+        _projects = new GrabberProjectsWindow(viewModel) { Owner = Application.Current.MainWindow is { IsVisible: true } main ? main : null };
+        _projects.Closed += (_, _) =>
+        {
+            viewModel.Detach();
+            _projects = null;
+        };
+        _projects.Show();
+    }
+
+    public void ShowGrabberRun(Core.Grabber.GrabberRun run, Func<GrabberRunViewModel> create)
+    {
+        var projectId = run.Project.Id;
+        if (_runs.TryGetValue(projectId, out var open))
+        {
+            // A new run of the same project replaces the finished one shown.
+            if (open.ViewModel.Run == run)
+            {
+                Bring(open);
+                return;
+            }
+            open.Close();
+        }
+        var viewModel = create();
+        var window = new GrabberRunWindow(viewModel);
+        window.Closed += (_, _) =>
+        {
+            viewModel.Stop();
+            if (_runs.TryGetValue(projectId, out var current) && current == window)
+                _runs.Remove(projectId);
+        };
+        _runs[projectId] = window;
+        window.Show();
+        window.Activate();
+    }
+
+    private static void Bring(Window window)
+    {
+        if (window.WindowState == WindowState.Minimized)
+            window.WindowState = WindowState.Normal;
+        window.Activate();
+    }
+
     public bool ShowSettings(SettingsViewModel viewModel) => new SettingsWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
 
     public bool ShowCategories(CategoriesViewModel viewModel) => new CategoriesWindow(viewModel) { Owner = Owner }.ShowDialog() == true;

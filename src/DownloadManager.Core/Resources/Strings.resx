@@ -14,6 +14,8 @@
   <data name="ActionEnqueueToolTip" xml:space="preserve"><value>Metti in coda i download selezionati</value></data>
   <data name="ActionFolder" xml:space="preserve"><value>Cartella</value></data>
   <data name="ActionFolderToolTip" xml:space="preserve"><value>Apri la cartella predefinita dei download</value></data>
+  <data name="ActionGrabber" xml:space="preserve"><value>Grabber</value></data>
+  <data name="ActionGrabberToolTip" xml:space="preserve"><value>Progetti grabber: trova i file di un sito o salvane una copia da consultare offline (Ctrl+G)</value></data>
   <data name="ActionPause" xml:space="preserve"><value>Pausa</value></data>
   <data name="ActionPauseToolTip" xml:space="preserve"><value>Metti in pausa i download selezionati</value></data>
   <data name="ActionProgress" xml:space="preserve"><value>Avanzamento</value></data>
@@ -197,12 +199,185 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="FromBrowser" xml:space="preserve"><value>Inviato dal browser.</value></data>
   <data name="FromBrowserForm" xml:space="preserve"><value>Inviato dal browser compilando un modulo: verranno rinviati i dati del modulo (POST), i cookie e la pagina di provenienza. Un modulo non si può riprendere: se si interrompe, riparte da capo.</value></data>
   <data name="FromBrowserMedia" xml:space="preserve"><value>Video {0} dalla pagina, qualità {1}: i segmenti vengono scaricati in parallelo e poi uniti.</value></data>
+  <data name="FromBrowserMediaAudio" xml:space="preserve"><value>Audio: {0}.</value></data>
+  <data name="FromBrowserMediaEmbedded" xml:space="preserve"><value>dentro il video</value></data>
+  <data name="FromBrowserMediaSubtitles" xml:space="preserve"><value>Sottotitoli: {0} ({1}).</value></data>
   <data name="FromBrowserWithCookies" xml:space="preserve"><value>Inviato dal browser: verranno usati i cookie della sessione e la pagina di provenienza.</value></data>
   <data name="FtpActiveMode" xml:space="preserve"><value>FTP in modalità _attiva (il server apre la connessione dati)</value></data>
   <data name="FtpActiveModeToolTip" xml:space="preserve"><value>La modalità passiva, predefinita, funziona quasi sempre; quella attiva serve solo con alcuni server e spesso è bloccata dal firewall.</value></data>
   <data name="GestureAltEnter" xml:space="preserve"><value>Alt+Invio</value></data>
   <data name="GestureDelete" xml:space="preserve"><value>Canc</value></data>
   <data name="GestureEnter" xml:space="preserve"><value>Invio</value></data>
+  <data name="GrabberAccessHeading" xml:space="preserve"><value>Accesso al sito</value></data>
+  <data name="GrabberAccessHint" xml:space="preserve"><value>Valgono per la scansione. I file mandati a una coda usano poi le impostazioni di rete dell'app, come ogni download.</value></data>
+  <data name="GrabberAutoFinished" xml:space="preserve"><value>Grabber «{0}»: {1}</value></data>
+  <data name="GrabberBack" xml:space="preserve"><value>_Indietro</value></data>
+  <data name="GrabberColumnLastRun" xml:space="preserve"><value>Ultima esecuzione</value></data>
+  <data name="GrabberColumnLocal" xml:space="preserve"><value>Percorso locale</value></data>
+  <data name="GrabberColumnMode" xml:space="preserve"><value>Modalità</value></data>
+  <data name="GrabberColumnNextRun" xml:space="preserve"><value>Prossima</value></data>
+  <data name="GrabberColumnProject" xml:space="preserve"><value>Progetto</value></data>
+  <data name="GrabberColumnResult" xml:space="preserve"><value>Risultato</value></data>
+  <data name="GrabberColumnSource" xml:space="preserve"><value>Pagina di origine</value></data>
+  <data name="GrabberConfirmDelete" xml:space="preserve"><value>Eliminare il progetto «{0}»? I file già scaricati o salvati non vengono cancellati.</value></data>
+  <data name="GrabberCookiesFromBrowser" xml:space="preserve"><value>{0} cookie ricevuti dal browser: permettono di vedere le pagine riservate agli utenti collegati. Sono conservati cifrati.</value></data>
+  <data name="GrabberCountMirror" xml:space="preserve"><value>{0} file · {1} visibili</value></data>
+  <data name="GrabberCurrent" xml:space="preserve"><value>Ora: {0}</value></data>
+  <data name="GrabberDelete" xml:space="preserve"><value>Elimina</value></data>
+  <data name="GrabberDeleteToolTip" xml:space="preserve"><value>Elimina il progetto (i file già salvati restano dove sono)</value></data>
+  <data name="GrabberDepthHint" xml:space="preserve"><value>Quanti passaggi di link seguire a partire dalla prima pagina: 0 = solo la pagina di partenza.</value></data>
+  <data name="GrabberDepthLabel" xml:space="preserve"><value>_Profondità</value></data>
+  <data name="GrabberDepthName" xml:space="preserve"><value>Profondità</value></data>
+  <data name="GrabberDomainsHeading" xml:space="preserve"><value>Siti da visitare</value></data>
+  <data name="GrabberDomainsHint" xml:space="preserve"><value>Uno per riga o separati da spazi, per esempio cdn.esempio.it: valgono anche i loro sottodomini.</value></data>
+  <data name="GrabberDomainsName" xml:space="preserve"><value>Domini consentiti</value></data>
+  <data name="GrabberDoneFiles" xml:space="preserve"><value>Scansione terminata:</value></data>
+  <data name="GrabberDoneMirror" xml:space="preserve"><value>Copia terminata:</value></data>
+  <data name="GrabberEdit" xml:space="preserve"><value>Modifica</value></data>
+  <data name="GrabberEditToolTip" xml:space="preserve"><value>Modifica il progetto selezionato (F2)</value></data>
+  <data name="GrabberEmptyHint" xml:space="preserve"><value>Crea un progetto con «Nuovo», oppure dal browser: tasto destro sulla pagina › «Cattura questo sito con DownloadManager…».</value></data>
+  <data name="GrabberEmptyTitle" xml:space="preserve"><value>Nessun progetto</value></data>
+  <data name="GrabberErrorDepth" xml:space="preserve"><value>La profondità va da 0 a 20.</value></data>
+  <data name="GrabberErrorDomains" xml:space="preserve"><value>Uno dei domini consentiti non è un nome valido.</value></data>
+  <data name="GrabberErrorFolderMissing" xml:space="preserve"><value>Scegli la cartella in cui salvare la copia offline.</value></data>
+  <data name="GrabberErrorMaxFiles" xml:space="preserve"><value>Il numero massimo di file va da 1 a 200.000.</value></data>
+  <data name="GrabberErrorMaxPages" xml:space="preserve"><value>Il numero massimo di pagine va da 1 a 100.000.</value></data>
+  <data name="GrabberErrorMaxPattern" xml:space="preserve"><value>Le pagine dalla stessa forma vanno da 1 a 100.000.</value></data>
+  <data name="GrabberErrorMaxTotal" xml:space="preserve"><value>La dimensione totale massima deve essere almeno 1 MB.</value></data>
+  <data name="GrabberErrorName" xml:space="preserve"><value>Dai un nome al progetto.</value></data>
+  <data name="GrabberErrorRate" xml:space="preserve"><value>Le richieste al secondo vanno da 0,1 a 20.</value></data>
+  <data name="GrabberErrorRepeat" xml:space="preserve"><value>La ripetizione va da 0 a 24 ore.</value></data>
+  <data name="GrabberErrorSize" xml:space="preserve"><value>Le dimensioni devono essere numeri interi positivi.</value></data>
+  <data name="GrabberErrorSizeOrder" xml:space="preserve"><value>La dimensione minima supera la massima.</value></data>
+  <data name="GrabberErrorUrl" xml:space="preserve"><value>Scrivi un indirizzo http o https completo, per esempio https://www.esempio.it/.</value></data>
+  <data name="GrabberErrorUserAgent" xml:space="preserve"><value>Lo user-agent non può contenere caratteri di controllo né superare 300 caratteri.</value></data>
+  <data name="GrabberExcludeLabel" xml:space="preserve"><value>_Escludi gli indirizzi che corrispondono a (espressione regolare)</value></data>
+  <data name="GrabberExcludeName" xml:space="preserve"><value>Espressione di esclusione</value></data>
+  <data name="GrabberExtensionsLabel" xml:space="preserve"><value>Altre estensioni (separate da spa_zi)</value></data>
+  <data name="GrabberExtensionsName" xml:space="preserve"><value>Altre estensioni</value></data>
+  <data name="GrabberFilterAllStatuses" xml:space="preserve"><value>Tutti gli stati</value></data>
+  <data name="GrabberFilterLabel" xml:space="preserve"><value>C_erca nel nome, nell'indirizzo o nella pagina di origine</value></data>
+  <data name="GrabberFolderFilesHint" xml:space="preserve"><value>I file scelti nell'anteprima vengono aggiunti alla coda come download normali.</value></data>
+  <data name="GrabberFolderFilesLabel" xml:space="preserve"><value>_Cartella (vuoto = quella della categoria di ogni file)</value></data>
+  <data name="GrabberFolderMirrorHint" xml:space="preserve"><value>Dentro la cartella ogni sito ha la sua sottocartella; i nomi vengono resi validi per Windows e nessun file può finire fuori da qui.</value></data>
+  <data name="GrabberFolderMirrorLabel" xml:space="preserve"><value>_Cartella della copia offline</value></data>
+  <data name="GrabberIncludeLabel" xml:space="preserve"><value>Includi solo gli indirizzi che corrispondono a (espressione _regolare)</value></data>
+  <data name="GrabberIncludeName" xml:space="preserve"><value>Espressione di inclusione</value></data>
+  <data name="GrabberLimitFiles" xml:space="preserve"><value>file</value></data>
+  <data name="GrabberLimitPages" xml:space="preserve"><value>pagine</value></data>
+  <data name="GrabberLimitSize" xml:space="preserve"><value>dimensione totale</value></data>
+  <data name="GrabberLimitsHeading" xml:space="preserve"><value>Limiti di sicurezza</value></data>
+  <data name="GrabberListName" xml:space="preserve"><value>File trovati</value></data>
+  <data name="GrabberMaxFilesLabel" xml:space="preserve"><value>Numero massimo di _file</value></data>
+  <data name="GrabberMaxFilesName" xml:space="preserve"><value>Numero massimo di file</value></data>
+  <data name="GrabberMaxPagesLabel" xml:space="preserve"><value>Numero massimo di pa_gine</value></data>
+  <data name="GrabberMaxPagesName" xml:space="preserve"><value>Numero massimo di pagine</value></data>
+  <data name="GrabberMaxPatternHint" xml:space="preserve"><value>Pagine che differiscono solo per un numero (calendario?mese=N, pagina-7.html…): oltre questo numero non vengono seguite, così un calendario infinito non blocca la scansione.</value></data>
+  <data name="GrabberMaxPatternLabel" xml:space="preserve"><value>Pagine dalla _stessa forma</value></data>
+  <data name="GrabberMaxPatternName" xml:space="preserve"><value>Pagine dalla stessa forma</value></data>
+  <data name="GrabberMaxSizeLabel" xml:space="preserve"><value>Dimensione ma_ssima (MB)</value></data>
+  <data name="GrabberMaxSizeName" xml:space="preserve"><value>Dimensione massima in MB</value></data>
+  <data name="GrabberMaxTotalLabel" xml:space="preserve"><value>Dimensione _totale massima (MB)</value></data>
+  <data name="GrabberMaxTotalName" xml:space="preserve"><value>Dimensione totale massima in MB</value></data>
+  <data name="GrabberMinSizeLabel" xml:space="preserve"><value>Dimensione mi_nima (KB)</value></data>
+  <data name="GrabberMinSizeName" xml:space="preserve"><value>Dimensione minima in KB</value></data>
+  <data name="GrabberModeFiles" xml:space="preserve"><value>Solo i file che ti servono</value></data>
+  <data name="GrabberModeFilesHint" xml:space="preserve"><value>Elenca i file che passano i filtri (per esempio tutte le immagini o tutti i PDF) con tipo, dimensione e pagina di origine; scegli quali mandare a una coda.</value></data>
+  <data name="GrabberModeFilesShort" xml:space="preserve"><value>File filtrati</value></data>
+  <data name="GrabberModeHeading" xml:space="preserve"><value>Cosa vuoi ottenere</value></data>
+  <data name="GrabberModeMirror" xml:space="preserve"><value>Copia del sito da consultare offline</value></data>
+  <data name="GrabberModeMirrorHint" xml:space="preserve"><value>Salva pagine, fogli di stile, script e immagini mantenendo le cartelle del sito; i link puntano ai file locali.</value></data>
+  <data name="GrabberModeMirrorShort" xml:space="preserve"><value>Copia offline</value></data>
+  <data name="GrabberNameLabel" xml:space="preserve"><value>_Nome del progetto</value></data>
+  <data name="GrabberNameName" xml:space="preserve"><value>Nome del progetto</value></data>
+  <data name="GrabberNeverRun" xml:space="preserve"><value>Mai</value></data>
+  <data name="GrabberNew" xml:space="preserve"><value>Nuovo</value></data>
+  <data name="GrabberNewToolTip" xml:space="preserve"><value>Nuovo progetto grabber (Ctrl+N)</value></data>
+  <data name="GrabberNext" xml:space="preserve"><value>_Avanti</value></data>
+  <data name="GrabberNextRun" xml:space="preserve"><value>Prossima esecuzione: {0:dddd d MMMM, HH:mm}.</value></data>
+  <data name="GrabberNoCookies" xml:space="preserve"><value>Nessun cookie: il sito viene visitato come da un utente non collegato. Per le pagine riservate crea il progetto dal browser («Cattura questo sito»).</value></data>
+  <data name="GrabberNotScheduled" xml:space="preserve"><value>Il progetto parte solo quando lo avvii tu.</value></data>
+  <data name="GrabberOnce" xml:space="preserve"><value>Una sola volta, il giorno:</value></data>
+  <data name="GrabberOpenCopy" xml:space="preserve"><value>Apri la copia _offline</value></data>
+  <data name="GrabberOpenFolder" xml:space="preserve"><value>Apri cartella</value></data>
+  <data name="GrabberOpenFolderToolTip" xml:space="preserve"><value>Apri la cartella della copia offline</value></data>
+  <data name="GrabberOtherDomains" xml:space="preserve"><value>Anche questi domini:</value></data>
+  <data name="GrabberPatternHint" xml:space="preserve"><value>Le espressioni valgono sull'indirizzo completo, senza distinguere maiuscole e minuscole. L'inclusione vale per i file, l'esclusione anche per le pagine. Esempio: \.pdf$ oppure /archivio/</value></data>
+  <data name="GrabberPatternInvalid" xml:space="preserve"><value>Espressione non valida: {0}</value></data>
+  <data name="GrabberPatternTooLong" xml:space="preserve"><value>Espressione troppo lunga (al massimo 1000 caratteri).</value></data>
+  <data name="GrabberPatternUnsupported" xml:space="preserve"><value>Espressione non ammessa: riferimenti all'indietro (come \1), lookahead e lookbehind non sono supportati, perché le espressioni non devono poter rallentare la scansione.</value></data>
+  <data name="GrabberPresetArchives" xml:space="preserve"><value>Archivi</value></data>
+  <data name="GrabberPresetAudio" xml:space="preserve"><value>Audio</value></data>
+  <data name="GrabberPresetDocuments" xml:space="preserve"><value>Documenti</value></data>
+  <data name="GrabberPresetImages" xml:space="preserve"><value>Immagini</value></data>
+  <data name="GrabberPresetVideo" xml:space="preserve"><value>Video</value></data>
+  <data name="GrabberProgressFiles" xml:space="preserve"><value>{0} pagine visitate · {1} file trovati · {2} · {3} errori · {4} esclusi da robots.txt</value></data>
+  <data name="GrabberProgressMirror" xml:space="preserve"><value>{0} pagine · {1} file salvati · {2} · {3} errori · {4} esclusi da robots.txt</value></data>
+  <data name="GrabberProgressName" xml:space="preserve"><value>Avanzamento della scansione</value></data>
+  <data name="GrabberProjectsHint" xml:space="preserve"><value>Invio avvia la scansione, F2 modifica, Canc elimina. I file già scaricati non vengono mai cancellati.</value></data>
+  <data name="GrabberProjectsName" xml:space="preserve"><value>Progetti grabber</value></data>
+  <data name="GrabberProjectsTitle" xml:space="preserve"><value>Grabber — progetti</value></data>
+  <data name="GrabberRateHint" xml:space="preserve"><value>Una cadenza bassa non affatica il sito. Se il sito risponde 429 o 503 si aspetta il tempo che indica (Retry-After); il Crawl-delay di robots.txt può rallentare ancora.</value></data>
+  <data name="GrabberRateLabel" xml:space="preserve"><value>Ric_hieste al secondo per sito</value></data>
+  <data name="GrabberRateName" xml:space="preserve"><value>Richieste al secondo per sito</value></data>
+  <data name="GrabberRepeatLabel" xml:space="preserve"><value>Ripe_ti ogni (ore)</value></data>
+  <data name="GrabberRepeatName" xml:space="preserve"><value>Ripeti ogni quante ore</value></data>
+  <data name="GrabberRepeatToolTip" xml:space="preserve"><value>Vuoto o 0 = una volta al giorno all'ora indicata</value></data>
+  <data name="GrabberRespectRobots" xml:space="preserve"><value>_Rispetta robots.txt (consigliato)</value></data>
+  <data name="GrabberRobotsConfirm" xml:space="preserve"><value>Hai scelto di ignorare robots.txt: verranno visitate anche le pagine che il sito chiede ai programmi automatici di non visitare. Continuare solo se il sito è tuo o hai il permesso del proprietario. Continuare?</value></data>
+  <data name="GrabberRobotsWarning" xml:space="preserve"><value>Le pagine che il sito chiede di non visitare verranno visitate lo stesso. Fallo solo per siti tuoi o con il permesso del proprietario: può violare le regole del sito.</value></data>
+  <data name="GrabberRun" xml:space="preserve"><value>Avvia</value></data>
+  <data name="GrabberRunHeadingFiles" xml:space="preserve"><value>File trovati</value></data>
+  <data name="GrabberRunHeadingMirror" xml:space="preserve"><value>Copia offline</value></data>
+  <data name="GrabberRunTitle" xml:space="preserve"><value>Grabber — {0}</value></data>
+  <data name="GrabberRunToolTip" xml:space="preserve"><value>Avvia la scansione del progetto selezionato e mostra l'anteprima dei file (Invio)</value></data>
+  <data name="GrabberSameDomain" xml:space="preserve"><value>Solo questo sito (con i suoi sottodomini)</value></data>
+  <data name="GrabberSaveAndRun" xml:space="preserve"><value>Salva e a_vvia</value></data>
+  <data name="GrabberSaveOnly" xml:space="preserve"><value>_Salva</value></data>
+  <data name="GrabberScheduleFilesHint" xml:space="preserve"><value>Ogni esecuzione automatica manda alla coda solo i file nuovi o modificati e segnala quelli rimossi dal sito.</value></data>
+  <data name="GrabberScheduled" xml:space="preserve"><value>_Esegui automaticamente</value></data>
+  <data name="GrabberSent" xml:space="preserve"><value>{0} file aggiunti alla coda «{1}».</value></data>
+  <data name="GrabberSitesFolder" xml:space="preserve"><value>Siti</value></data>
+  <data name="GrabberStartLabel" xml:space="preserve"><value>Ora di avvio (hh:_mm)</value></data>
+  <data name="GrabberStateManual" xml:space="preserve"><value>Manuale</value></data>
+  <data name="GrabberStateRunning" xml:space="preserve"><value>In corso</value></data>
+  <data name="GrabberStateScheduled" xml:space="preserve"><value>Pianificato</value></data>
+  <data name="GrabberStaticOnly" xml:space="preserve"><value>Viene letto solo l'HTML statico: gli script delle pagine non vengono mai eseguiti, quindi i contenuti caricati da JavaScript non vengono trovati.</value></data>
+  <data name="GrabberStatusChanged" xml:space="preserve"><value>Modificato</value></data>
+  <data name="GrabberStatusFailed" xml:space="preserve"><value>Errore</value></data>
+  <data name="GrabberStatusLabel" xml:space="preserve"><value>_Stato</value></data>
+  <data name="GrabberStatusName" xml:space="preserve"><value>Stato</value></data>
+  <data name="GrabberStatusNew" xml:space="preserve"><value>Nuovo</value></data>
+  <data name="GrabberStatusRemoved" xml:space="preserve"><value>Rimosso dal sito</value></data>
+  <data name="GrabberStatusUnchanged" xml:space="preserve"><value>Invariato</value></data>
+  <data name="GrabberStepAccess" xml:space="preserve"><value>Accesso e limiti</value></data>
+  <data name="GrabberStepAddress" xml:space="preserve"><value>Indirizzo e modalità</value></data>
+  <data name="GrabberStepCounter" xml:space="preserve"><value>Passo {0} di {1}</value></data>
+  <data name="GrabberStepDestination" xml:space="preserve"><value>Destinazione e pianificazione</value></data>
+  <data name="GrabberStepFilters" xml:space="preserve"><value>Filtri</value></data>
+  <data name="GrabberStepName" xml:space="preserve"><value>Passo {0}: {1}</value></data>
+  <data name="GrabberStepScope" xml:space="preserve"><value>Ambito</value></data>
+  <data name="GrabberStepsName" xml:space="preserve"><value>Passi della procedura</value></data>
+  <data name="GrabberStop" xml:space="preserve"><value>Ferma</value></data>
+  <data name="GrabberSummary" xml:space="preserve"><value>{0} pagine, {1} file ({2} nuovi, {3} modificati, {4} rimossi dal sito)</value></data>
+  <data name="GrabberSummaryLimit" xml:space="preserve"><value>fermato dal limite di {0}</value></data>
+  <data name="GrabberSummaryStopped" xml:space="preserve"><value>interrotto</value></data>
+  <data name="GrabberTitle" xml:space="preserve"><value>Grabber</value></data>
+  <data name="GrabberTypesAll" xml:space="preserve"><value>Verranno elencati tutti i file che non sono pagine.</value></data>
+  <data name="GrabberTypesHeading" xml:space="preserve"><value>Tipi di file</value></data>
+  <data name="GrabberTypesMirrorAll" xml:space="preserve"><value>La copia include pagine, stili, script, immagini e tutti i file collegati.</value></data>
+  <data name="GrabberTypesMirrorSome" xml:space="preserve"><value>La copia include pagine, stili, script e immagini; dei file collegati solo: {0}</value></data>
+  <data name="GrabberTypesSome" xml:space="preserve"><value>Verranno elencati: {0}</value></data>
+  <data name="GrabberUrlLabel" xml:space="preserve"><value>In_dirizzo di partenza</value></data>
+  <data name="GrabberUrlName" xml:space="preserve"><value>Indirizzo di partenza</value></data>
+  <data name="GrabberUseCookies" xml:space="preserve"><value>Usa i _cookie del browser</value></data>
+  <data name="GrabberUseCredentials" xml:space="preserve"><value>Usa le cre_denziali salvate (Impostazioni › Credenziali)</value></data>
+  <data name="GrabberUseProxy" xml:space="preserve"><value>Usa il _proxy dell'app (Impostazioni › Rete)</value></data>
+  <data name="GrabberUserAgentLabel" xml:space="preserve"><value>_User-agent (vuoto = quello dell'app)</value></data>
+  <data name="GrabberUserAgentName" xml:space="preserve"><value>User-agent</value></data>
+  <data name="GrabberWeekly" xml:space="preserve"><value>Ogni settimana nei giorni:</value></data>
+  <data name="GrabberWizardEditTitle" xml:space="preserve"><value>Progetto grabber «{0}»</value></data>
+  <data name="GrabberWizardTitle" xml:space="preserve"><value>Nuovo progetto grabber</value></data>
   <data name="LegendActive" xml:space="preserve"><value>Connessione attiva</value></data>
   <data name="LegendDone" xml:space="preserve"><value>Scaricato</value></data>
   <data name="LegendMissing" xml:space="preserve"><value>Da scaricare</value></data>
@@ -240,6 +415,8 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="MediaNoFfmpegTs" xml:space="preserve"><value>ffmpeg non trovato: il video è stato salvato in formato .ts (MPEG-TS), riproducibile da VLC e dai lettori più diffusi. Indica ffmpeg in Impostazioni › Generale per ottenere un MP4.</value></data>
   <data name="MediaProbeFailed" xml:space="preserve"><value>Impossibile leggere il video: {0}</value></data>
   <data name="MediaSingleQuality" xml:space="preserve"><value>Unica qualità</value></data>
+  <data name="MediaSubtitlesFailed" xml:space="preserve"><value>Sottotitoli non scaricati: {0}.</value></data>
+  <data name="MediaSubtitlesNoFfmpeg" xml:space="preserve"><value>ffmpeg non trovato: i sottotitoli sono stati salvati come file .vtt accanto al video invece che al suo interno.</value></data>
   <data name="MediaUnsupported" xml:space="preserve"><value>Formato non riconosciuto ({0}).</value></data>
   <data name="MenuCopyUrl" xml:space="preserve"><value>Copia indirizzo</value></data>
   <data name="MenuDeleteCategory" xml:space="preserve"><value>Elimina categoria</value></data>

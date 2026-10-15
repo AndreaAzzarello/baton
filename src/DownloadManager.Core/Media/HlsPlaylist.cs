@@ -3,13 +3,23 @@ using System.Globalization;
 namespace DownloadManager.Core.Media;
 
 /// <summary>A piece of a stream: a whole resource, or a byte range of one (HLS EXT-X-BYTERANGE, DASH mediaRange).</summary>
-public sealed record MediaSegment(Uri Url, long? Offset = null, long? Length = null, double Duration = 0);
+/// <param name="TimeShift">Seconds added to the times inside the segment: a later DASH period's subtitles count from the
+/// period's start.</param>
+public sealed record MediaSegment(Uri Url, long? Offset = null, long? Length = null, double Duration = 0, double TimeShift = 0);
 
 /// <summary>One quality of an HLS master playlist (EXT-X-STREAM-INF).</summary>
-public sealed record HlsVariant(Uri Url, long Bandwidth, long? AverageBandwidth, int? Width, int? Height, string? Codecs, string? AudioGroup);
+public sealed record HlsVariant(Uri Url, long Bandwidth, long? AverageBandwidth, int? Width, int? Height, string? Codecs, string? AudioGroup,
+    string? SubtitlesGroup = null);
 
-/// <summary>An alternative rendition (EXT-X-MEDIA), here only audio is used. Without a URI it is inside the variant.</summary>
-public sealed record HlsRendition(string Type, string GroupId, string? Name, string? Language, bool IsDefault, Uri? Url);
+/// <summary>
+/// An alternative rendition (EXT-X-MEDIA): another audio language, or subtitles (WebVTT). Without a URI it is inside
+/// the variant.
+/// </summary>
+public sealed record HlsRendition(string Type, string GroupId, string? Name, string? Language, bool IsDefault, Uri? Url)
+{
+    /// <summary>How the rendition is chosen across qualities (each quality has its own group): its language and name.</summary>
+    public string Key => $"{Language}|{Name}";
+}
 
 /// <summary>
 /// An HLS playlist (RFC 8216): either a master playlist that lists qualities, or a media playlist that lists
@@ -123,7 +133,8 @@ public sealed class HlsPlaylist
                     ParseLong(Get(pendingVariant, "AVERAGE-BANDWIDTH")),
                     width, height,
                     Get(pendingVariant, "CODECS"),
-                    Get(pendingVariant, "AUDIO")));
+                    Get(pendingVariant, "AUDIO"),
+                    Get(pendingVariant, "SUBTITLES")));
                 pendingVariant = null;
                 continue;
             }

@@ -9,8 +9,14 @@ namespace DownloadManager.Core.Media;
 /// <param name="Kind">"video", "audio" or "muxed" (video and audio in the same segments).</param>
 public sealed record MediaTrack(string Kind, MediaSegment? Init, List<MediaSegment> Segments, string Extension);
 
-/// <summary>What to download for the chosen quality: one track (muxed, or audio only) or a video and an audio track.</summary>
-public sealed record MediaPlan(string Kind, List<MediaTrack> Tracks, double? Duration, long? EstimatedBytes);
+/// <summary>A WebVTT subtitle track: its segments are joined into one file.</summary>
+public sealed record SubtitlePlan(string? Language, string Label, List<MediaSegment> Segments);
+
+/// <summary>
+/// What to download for the chosen quality: one track (muxed, or audio only) or a video and an audio track, and the
+/// subtitles chosen.
+/// </summary>
+public sealed record MediaPlan(string Kind, List<MediaTrack> Tracks, double? Duration, long? EstimatedBytes, List<SubtitlePlan>? Subtitles = null);
 
 /// <summary>Why a stream is not offered for download.</summary>
 public static class MediaBlock
@@ -100,7 +106,42 @@ public static class MediaCatalog
                 Estimate(x.v.AverageBandwidth ?? x.v.Bandwidth, duration), x.v.Height, "video"))
             .GroupBy(v => v.Label).Select(g => g.First()) // the same quality listed twice (e.g. for two CDNs)
             .ToList();
-        return new MediaInfoReply("hls", variants, duration);
+        var (audio, subtitles) = HlsTracks(playlist, first);
+        return new MediaInfoReply("hls", variants, duration, AudioTracks: audio, Subtitles: subtitles);
+    }
+
+    /// <summary>The audio languages and subtitles a quality offers (each quality points at its own groups).</summary>
+    private static (List<MediaTrackInfo>? Audio, List<MediaTrackInfo>? Subtitles) HlsTracks(HlsPlaylist master, HlsVariant variant)
+    {
+        List<MediaTrackInfo>? List(IEnumerable<HlsRendition> renditions)
+        {
+            var list = renditions.DistinctBy(r => r.Key)
+                .Select(r => new MediaTrackInfo(r.Key, TrackLabel(r.Name, r.Language), r.Language, r.IsDefault)).ToList();
+            return list.Count > 0 ? list : null;
+        }
+        // An audio rendition without its own playlist is the audio inside the video: a choice too ("the video's own").
+        var audio = variant.AudioGroup is { } group ? List(master.Renditions.Where(r => r.Type == "AUDIO" && r.GroupId == group)) : null;
+        var subtitles = List(master.Renditions.Where(r => r.Type == "SUBTITLES" && r.Url is not null
+                                                        && (variant.SubtitlesGroup is null || r.GroupId == variant.SubtitlesGroup)));
+        return (audio, subtitles);
+    }
+
+    /// <summary>The name the stream gives a track, else the language in its own words ("italiano" → "Italiano").</summary>
+    public static string TrackLabel(string? name, string? language)
+    {
+        if (!string.IsNullOrWhiteSpace(name))
+            return name.Trim();
+        if (string.IsNullOrWhiteSpace(language))
+            return "?";
+        try
+        {
+            var native = CultureInfo.GetCultureInfo(language.Trim(), predefinedOnly: true).NativeName;
+            return char.ToUpper(native[0], CultureInfo.CurrentCulture) + native[1..];
+        }
+        catch (CultureNotFoundException)
+        {
+            return language.Trim();
+        }
     }
 
     private static MediaInfoReply? CheckMedia(HlsPlaylist media)
@@ -140,11 +181,24 @@ public static class MediaCatalog
         }
         if (variants.Count == 0)
             return Blocked("dash", MediaBlock.Unsupported, string.Format(CultureInfo.CurrentCulture, Strings.MediaUnsupported, "DASH"));
-        return new MediaInfoReply("dash", variants, duration);
+
+        // One choice per adaptation set: an audio language (its best bit rate) or a subtitle track.
+        var languages = manifest.Representations.Where(r => r.ContentType == "audio").GroupBy(r => r.SetIndex)
+            .Select(g => g.OrderByDescending(r => r.Bandwidth).First())
+            .Select(a => new MediaTrackInfo(a.Id, TrackLabel(a.Label, a.Language), a.Language, a.Id == audio?.Id)).ToList();
+        var subtitles = manifest.Representations.Where(r => r.ContentType == "text").GroupBy(r => r.SetIndex).Select(g => g.First())
+            .Select(t => new MediaTrackInfo(t.Id, TrackLabel(t.Label, t.Language), t.Language, false)).ToList();
+        return new MediaInfoReply("dash", variants, duration, AudioTracks: languages.Count > 0 ? languages : null,
+            Subtitles: subtitles.Count > 0 ? subtitles : null);
     }
 
-    /// <summary>The segments to download for <paramref name="variantId"/>; throws when the stream may not be downloaded.</summary>
-    public static async Task<MediaPlan> ResolveAsync(HttpClient http, string url, string variantId, RequestContext? context, CancellationToken ct)
+    /// <summary>
+    /// The segments to download for <paramref name="variantId"/>, in the audio language <paramref name="audioId"/>
+    /// (default: the stream's own), with the subtitles <paramref name="subtitleIds"/>; throws when the stream may not be
+    /// downloaded.
+    /// </summary>
+    public static async Task<MediaPlan> ResolveAsync(HttpClient http, string url, string variantId, RequestContext? context, CancellationToken ct,
+        string? audioId = null, IReadOnlyList<string>? subtitleIds = null)
     {
         if (MediaPolicy.IsRestricted(url) || MediaPolicy.IsRestricted(context?.Referrer))
             throw new DownloadFailedException(Strings.MediaBlockedTerms);
@@ -165,9 +219,26 @@ public static class MediaCatalog
             var variant = playlist.Variants[index];
             var video = await FetchPlaylistAsync(http, variant.Url, context, ct);
             HlsPlaylist? audio = null;
-            if (ChooseAudio(playlist, variant) is { Url: { } audioUrl })
+            if (ChooseAudio(playlist, variant, audioId) is { Url: { } audioUrl })
                 audio = await FetchPlaylistAsync(http, audioUrl, context, ct);
-            return HlsPlan(video, audio, variant.AverageBandwidth ?? variant.Bandwidth);
+            var subtitles = new List<SubtitlePlan>();
+            foreach (var id in subtitleIds ?? [])
+            {
+                var candidates = playlist.Renditions.Where(r => r.Type == "SUBTITLES" && r.Key == id && r.Url is not null).ToList();
+                if ((candidates.FirstOrDefault(r => r.GroupId == variant.SubtitlesGroup) ?? candidates.FirstOrDefault()) is not { Url: { } subtitleUrl } rendition)
+                    continue; // no longer offered: the video is still downloaded
+                try
+                {
+                    var track = await FetchPlaylistAsync(http, subtitleUrl, context, ct);
+                    subtitles.Add(new SubtitlePlan(rendition.Language, TrackLabel(rendition.Name, rendition.Language), track.Segments));
+                }
+                catch (Exception ex) when (ex is HttpRequestException or DownloadFailedException or IOException or TimeoutException
+                                               or FormatException or Net.AuthenticationRequiredException)
+                {
+                    // Subtitles that cannot be read do not cost the video.
+                }
+            }
+            return HlsPlan(video, audio, variant.AverageBandwidth ?? variant.Bandwidth) with { Subtitles = subtitles };
         }
 
         if (variantId.StartsWith("dash:", StringComparison.Ordinal) && DashManifest.LooksLikeDash(text))
@@ -180,15 +251,24 @@ public static class MediaCatalog
             var ids = variantId[5..].Split('|');
             var video = manifest.Representations.FirstOrDefault(r => r.ContentType == "video" && r.Id == ids[0]);
             var audio = ids.Length > 1 ? manifest.Representations.FirstOrDefault(r => r.ContentType == "audio" && r.Id == ids[1]) : null;
+            // Another language chosen for a video: its own representation replaces the default audio. Audio-only
+            // qualities are languages and bit rates already, so the quality chosen is kept.
+            if (video is not null && audio is not null && audioId is not null && manifest.Representations.FirstOrDefault(r => r.ContentType == "audio" && r.Id == audioId) is { } chosen)
+                audio = chosen;
             if (video is null && audio is null)
                 throw new DownloadFailedException("The chosen quality is no longer offered.");
+            var subtitles = (subtitleIds ?? [])
+                .Select(id => manifest.Representations.FirstOrDefault(r => r.ContentType == "text" && r.Id == id))
+                .OfType<DashRepresentation>()
+                .Select(t => new SubtitlePlan(t.Language, TrackLabel(t.Label, t.Language), t.Init is null ? t.Segments : [t.Init, .. t.Segments]))
+                .ToList();
             var tracks = new List<MediaTrack>();
             if (video is not null)
                 tracks.Add(new MediaTrack("video", video.Init, video.Segments, ExtensionOf(video, ".mp4")));
             if (audio is not null)
                 tracks.Add(new MediaTrack("audio", audio.Init, audio.Segments, ExtensionOf(audio, ".m4a")));
             return new MediaPlan("dash", tracks, manifest.Duration,
-                Estimate((video?.Bandwidth ?? 0) + (audio?.Bandwidth ?? 0), manifest.Duration));
+                Estimate((video?.Bandwidth ?? 0) + (audio?.Bandwidth ?? 0), manifest.Duration), subtitles);
         }
         throw new DownloadFailedException("The stream changed since it was added.");
     }
@@ -219,23 +299,33 @@ public static class MediaCatalog
         return new MediaPlan("hls", tracks, video.Duration, size);
     }
 
-    /// <summary>The audio rendition of the variant's group: the default one, else the first with its own playlist.</summary>
-    public static HlsRendition? ChooseAudio(HlsPlaylist master, HlsVariant variant)
+    /// <summary>
+    /// The audio rendition of the variant's group: the one chosen (by language and name, else by language), else the
+    /// default one, else the first with its own playlist. A rendition without a playlist is the variant's own audio.
+    /// </summary>
+    public static HlsRendition? ChooseAudio(HlsPlaylist master, HlsVariant variant, string? audioId = null)
     {
         if (variant.AudioGroup is not { } group)
             return null;
-        var candidates = master.Renditions.Where(r => r.Type == "AUDIO" && r.GroupId == group && r.Url is not null).ToList();
-        return candidates.FirstOrDefault(r => r.IsDefault) ?? candidates.FirstOrDefault();
+        // A rendition without a URI is in the variant itself: choosing it (or it being the default) means no separate audio.
+        var candidates = master.Renditions.Where(r => r.Type == "AUDIO" && r.GroupId == group).ToList();
+        if (audioId is not null)
+        {
+            var language = audioId.Split('|')[0];
+            if ((candidates.FirstOrDefault(r => r.Key == audioId) ?? candidates.FirstOrDefault(r => language.Length > 0 && r.Language == language)) is { } chosen)
+                return chosen;
+        }
+        return candidates.FirstOrDefault(r => r.IsDefault) ?? candidates.FirstOrDefault(r => r.Url is not null);
     }
 
-    /// <summary>The audio to pair with every video quality: the highest bandwidth of the first language listed.</summary>
+    /// <summary>The audio to pair with every video quality: the highest bandwidth of the main (else the first) language listed.</summary>
     public static DashRepresentation? BestAudio(DashManifest manifest)
     {
         var audio = manifest.Representations.Where(r => r.ContentType == "audio").ToList();
         if (audio.Count == 0)
             return null;
-        var language = audio[0].Language;
-        return audio.Where(a => a.Language == language).OrderByDescending(a => a.Bandwidth).First();
+        var set = (audio.FirstOrDefault(a => a.IsDefault) ?? audio[0]).SetIndex;
+        return audio.Where(a => a.SetIndex == set).OrderByDescending(a => a.Bandwidth).First();
     }
 
     private static string HlsExtension(HlsPlaylist playlist, string fallback)

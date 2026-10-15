@@ -20,6 +20,7 @@ public partial class App : Application
     private readonly WakeTimer _wakeTimer = new();
     private DownloadStore? _store;
     private DownloadService? _service;
+    private Core.Grabber.GrabberService? _grabber;
     private MainViewModel? _viewModel;
     private ToastService? _toasts;
     private TrayIcon? _tray;
@@ -50,7 +51,8 @@ public partial class App : Application
 
         var shell = new ShellService();
         var dialogs = new DialogService(() => service, shell);
-        _viewModel = new MainViewModel(service, _store, dialogs, shell, new StartupService());
+        _grabber = new Core.Grabber.GrabberService(service, _store);
+        _viewModel = new MainViewModel(service, _store, dialogs, shell, new StartupService(), new GrabberUi(_grabber, service, dialogs, shell));
         _viewModel.SettingsSaved += settings => themes.Apply(settings.Theme);
 
         var window = new MainWindow(_viewModel, service.ShutdownAsync, () => service.Settings.CloseToTray && _tray is not null);
@@ -74,6 +76,14 @@ public partial class App : Application
         // A server or proxy wants a login, or an FTPS server shows a certificate Windows does not trust: ask the user.
         service.LoginRequired += request => Dispatcher.InvokeAsync(() => AskLogin(request, dialogs));
         service.Certificates.Ask = question => Dispatcher.InvokeAsync(() => dialogs.AskCertificate(question)).Task;
+
+        // A project run by its schedule says how it went, from the notification area.
+        _grabber.RunFinished += run =>
+        {
+            if (run.Automatic && run.Result is { } result)
+                Dispatcher.InvokeAsync(() => _tray?.ShowHint(string.Format(CultureInfo.CurrentCulture, Strings.GrabberAutoFinished, run.Project.Name,
+                    Core.Grabber.GrabberService.Summary(result))));
+        };
 
         _systemTimer.Tick += (_, _) => UpdateSystemState();
         _systemTimer.Start();
@@ -141,6 +151,8 @@ public partial class App : Application
     {
         _channelCts.Cancel();
         _systemTimer.Stop();
+        // Running grabber projects stop; what they found so far is saved.
+        _grabber?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
         _tray?.Dispose();
         _wakeTimer.Dispose();
         _store?.Dispose();
@@ -240,6 +252,10 @@ public partial class App : Application
                 OnUi(closing => _viewModel?.ReceiveBatch(batch, closing));
                 return new ChannelReply(true);
 
+            case Messages.Grab when message.Grab is { } grab:
+                OnUi(closing => _viewModel?.ReceiveGrab(grab, closing));
+                return new ChannelReply(true, Protocol: Messages.ProtocolVersion);
+
             default:
                 return new ChannelReply(false, Error: string.Format(Strings.ErrorUnknownMessage, message.Type));
         }
@@ -249,7 +265,7 @@ public partial class App : Application
     private void OnUi(Action<bool> action) =>
         Dispatcher.InvokeAsync(() => action((MainWindow as MainWindow)?.IsClosing == true));
 
-    /// <summary>The app's version, e.g. "0.6.0", reported to the extension's connection check.</summary>
+    /// <summary>The app's version, e.g. "0.7.0", reported to the extension's connection check.</summary>
     public static string AppVersion => typeof(App).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "?";
 
     private static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

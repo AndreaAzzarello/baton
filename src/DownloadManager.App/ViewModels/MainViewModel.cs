@@ -23,6 +23,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly IShellService _shell;
     private readonly IStartupService _startup;
+    private readonly GrabberUi _grabber;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(500) };
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private readonly Queue<object> _fromBrowser = new(); // downloads, streams and "download all" requests, in arrival order
@@ -39,9 +40,11 @@ public sealed class MainViewModel : ObservableObject
     private bool _sortDescending;
     private bool _showingBrowserDialogs;
 
-    public MainViewModel(DownloadService service, DownloadStore store, IDialogService dialogs, IShellService shell, IStartupService startup)
+    public MainViewModel(DownloadService service, DownloadStore store, IDialogService dialogs, IShellService shell, IStartupService startup,
+        GrabberUi grabber)
     {
         _service = service;
+        _grabber = grabber;
         _store = store;
         _dialogs = dialogs;
         _shell = shell;
@@ -86,6 +89,7 @@ public sealed class MainViewModel : ObservableObject
         PropertiesCommand = new RelayCommand(ShowProperties, () => _selected.Count == 1);
         DefaultActionCommand = new RelayCommand(DefaultAction, () => _selected.Count == 1);
         ClearSearchCommand = new RelayCommand(() => SearchText = "");
+        GrabberCommand = new RelayCommand(() => _grabber.ShowProjects());
 
         BuildNavigation();
         _service.CategoriesChanged += () => _timer.Dispatcher.InvokeAsync(BuildNavigation);
@@ -129,6 +133,7 @@ public sealed class MainViewModel : ObservableObject
     public ICommand PropertiesCommand { get; }
     public ICommand DefaultActionCommand { get; }
     public ICommand ClearSearchCommand { get; }
+    public ICommand GrabberCommand { get; }
 
     public string SearchText
     {
@@ -282,6 +287,9 @@ public sealed class MainViewModel : ObservableObject
     /// <summary>"Download all": the links and images of a page, to choose from.</summary>
     public void ReceiveBatch(BatchRequest batch, bool closing) => ReceiveRequest(batch, closing);
 
+    /// <summary>"Capture this site": a new grabber project for the page, with its cookies.</summary>
+    public void ReceiveGrab(GrabRequest grab, bool closing) => ReceiveRequest(grab, closing);
+
     private void ReceiveRequest(object request, bool closing)
     {
         _fromBrowser.Enqueue(request);
@@ -303,6 +311,9 @@ public sealed class MainViewModel : ObservableObject
                         break;
                     case BatchRequest batch:
                         HandleBatch(batch);
+                        break;
+                    case GrabRequest grab:
+                        _grabber.CreateFromBrowser(grab);
                         break;
                 }
             }
@@ -357,6 +368,17 @@ public sealed class MainViewModel : ObservableObject
         }
 
         var note = string.Format(CultureInfo.CurrentCulture, Strings.FromBrowserMedia, kind.ToUpperInvariant(), media.Label ?? "");
+        if (media.AudioId is { Length: > 0 } || media.SubtitleIds is { Count: > 0 })
+        {
+            // HLS ids are "language|name", DASH ids are representation ids: the readable part is shown.
+            static string Readable(string id) => id.Split('|') is [var language, var name] ? (name.Length > 0 ? name : language) : id;
+            var subtitles = media.SubtitleIds is { Count: > 0 } list
+                ? string.Format(CultureInfo.CurrentCulture, Strings.FromBrowserMediaSubtitles, string.Join(", ", list.Select(Readable)),
+                    media.SubtitleMode switch { "srt" => ".srt", "embed" => Strings.FromBrowserMediaEmbedded, _ => ".vtt" })
+                : "";
+            var audio = media.AudioId is { Length: > 0 } id ? string.Format(CultureInfo.CurrentCulture, Strings.FromBrowserMediaAudio, Readable(id)) : "";
+            note += " " + string.Join(" ", new[] { audio, subtitles }.Where(s => s.Length > 0));
+        }
         var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, media.Url, fileName, note,
             _service.Queues, queueId)
         {

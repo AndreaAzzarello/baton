@@ -6,7 +6,7 @@ env = dict(os.environ, DOWNLOADMANAGER_DATA=data)
 p = subprocess.Popen([exe, "chrome-extension://fngmjmgaglmoebphcjohnhlaceogneno/"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env)
 for raw in sys.argv[3:]:
     if raw.startswith("@"):
-        raw = open(raw[1:], encoding="utf-8").read()
+        raw = open(raw[1:], encoding="utf-8-sig").read()  # PowerShell 5.1 writes a BOM
     body = json.dumps(json.loads(raw)).encode()
     p.stdin.write(struct.pack("<I", len(body)) + body)
     p.stdin.flush()

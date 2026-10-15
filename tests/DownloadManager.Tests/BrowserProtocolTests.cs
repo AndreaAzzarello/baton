@@ -161,7 +161,7 @@ public sealed class BrowserProtocolTests : IAsyncLifetime
         var hello = await AppChannel.SendAsync(_pipe, new ChannelMessage(Messages.Hello, Version: 2), TimeSpan.FromSeconds(5));
 
         Assert.False(refused!.Ok);
-        Assert.Equal(2, hello!.Protocol);
+        Assert.Equal(Messages.ProtocolVersion, hello!.Protocol); // an extension speaking 2 learns the app speaks 3
         Assert.Equal([Messages.Hello], handled);
         cts.Cancel();
         await server;
@@ -197,7 +197,10 @@ public sealed class BrowserProtocolTests : IAsyncLifetime
         var script = File.ReadAllText(Path.Combine(RepoRoot(), "tools", "build-extension.mjs"));
         Assert.Contains($"FIREFOX_ID = \"{NativeHost.FirefoxExtensionId}\"", script);
         using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(RepoRoot(), "extension", "manifest.json")));
-        Assert.Equal("0.6.0", manifest.RootElement.GetProperty("version").GetString());
+        // The extension and the app are released together, with the same version.
+        var project = File.ReadAllText(Path.Combine(RepoRoot(), "src", "DownloadManager.App", "DownloadManager.App.csproj"));
+        var appVersion = System.Text.RegularExpressions.Regex.Match(project, "<Version>([^<]+)</Version>").Groups[1].Value;
+        Assert.Equal(appVersion, manifest.RootElement.GetProperty("version").GetString());
     }
 
     private async Task<List<ChannelReply>> RunHostAsync(IEnumerable<ChannelMessage> messages, Func<bool> launchApp)
@@ -337,7 +340,7 @@ public sealed class BrowserProtocolTests : IAsyncLifetime
         }
 
         using var upgraded = new DownloadStore(DbPath);
-        Assert.Equal(5, upgraded.Version);
+        Assert.Equal(DownloadStore.SchemaVersion, upgraded.Version);
         Assert.EndsWith(".v4.bak", upgraded.BackupPath);
         Assert.Equal(2, upgraded.LoadAll().Count);
         Assert.All(upgraded.LoadAll(), r => Assert.Null(r.Media));

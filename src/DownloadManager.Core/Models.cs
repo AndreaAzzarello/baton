@@ -136,7 +136,21 @@ public sealed class MediaSource
     /// </summary>
     public string? Note { get; set; }
 
-    public MediaSource Clone() => (MediaSource)MemberwiseClone();
+    /// <summary>The audio language chosen (as listed by the probe); null = the stream's default.</summary>
+    public string? AudioId { get; set; }
+
+    /// <summary>The subtitle tracks chosen (WebVTT), saved next to the video or put inside it.</summary>
+    public List<string>? SubtitleIds { get; set; }
+
+    /// <summary>"vtt" or "srt" (files next to the video) or "embed" (inside the video, with ffmpeg).</summary>
+    public string? SubtitleMode { get; set; }
+
+    public MediaSource Clone()
+    {
+        var copy = (MediaSource)MemberwiseClone();
+        copy.SubtitleIds = SubtitleIds is null ? null : [.. SubtitleIds];
+        return copy;
+    }
 }
 
 /// <summary>Immutable view of a download for the UI.</summary>
@@ -222,7 +236,7 @@ public sealed class AppSettings
     public int MaxConnectionsPerServer { get; set; } = 16;
     public string UserAgent { get; set; } = DefaultUserAgent;
 
-    public const string DefaultUserAgent = "DownloadManager/0.6";
+    public const string DefaultUserAgent = "DownloadManager/0.7";
 
     /// <summary>ffmpeg.exe used to put the video and audio of a stream into one MP4; empty = look for it in PATH.</summary>
     public string FfmpegPath { get; set; } = "";

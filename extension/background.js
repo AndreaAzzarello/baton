@@ -5,6 +5,7 @@ import { Rules, HOST, IS_FIREFOX, loadSettings, sendNative, cookiesFor, toAppCoo
 const MENU_LINK = "dm-link";
 const MENU_MEDIA = "dm-media";
 const MENU_ALL = "dm-all";
+const MENU_GRAB = "dm-grab";
 
 /** A form submission is matched to the download it starts within this time. */
 const POST_TTL_MS = 60_000;
@@ -30,6 +31,7 @@ function setup() {
     chrome.contextMenus.create({ id: MENU_LINK, title: t("menuLink"), contexts: ["link"] });
     chrome.contextMenus.create({ id: MENU_MEDIA, title: t("menuLink"), contexts: ["image", "video", "audio"] });
     chrome.contextMenus.create({ id: MENU_ALL, title: t("menuAll"), contexts: ["page", "frame", "selection"] });
+    chrome.contextMenus.create({ id: MENU_GRAB, title: t("menuGrab"), contexts: ["page", "frame"] });
   });
   updateIcon();
 }
@@ -246,6 +248,7 @@ globalThis.dmMenuClicked = (info, tab) => onMenuClicked(info, tab);
 
 async function onMenuClicked(info, tab) {
   if (info.menuItemId === MENU_ALL) return downloadAll(info, tab);
+  if (info.menuItemId === MENU_GRAB) return grabSite(info, tab);
   const url = info.menuItemId === MENU_MEDIA ? info.srcUrl : info.linkUrl;
   if (url?.startsWith("blob:")) return notify(t("errorBlobMedia"));
   if (!url || !/^(https?|ftps?|ftpes):/i.test(url)) return notify(t("errorNotDownloadable"));
@@ -294,6 +297,31 @@ async function downloadAll(info, tab) {
       batch: { pageUrl: page.url, pageTitle: page.title, items: page.items, userAgent: navigator.userAgent, cookies, queue: queue || null },
     });
     if (!reply?.ok) throw new Error(reply?.error || t("errorBadReply"));
+    await setProblem(false);
+  } catch (error) {
+    await setProblem(true);
+    notify(t("errorNotReceived", error.message));
+  }
+}
+
+/**
+ * "Capture this site": the app opens a new grabber project for the page, with the cookies of the site so pages behind
+ * a login can be read. Never from a private window: nothing of it is sent to the app.
+ */
+async function grabSite(info, tab) {
+  if (tab?.incognito) return notify(t("errorGrabIncognito"));
+  const url = Rules.grabTarget(info.pageUrl || tab?.url);
+  if (!url) return notify(t("errorGrabNotWeb"));
+  try {
+    const reply = await sendNative({
+      type: "grab",
+      grab: { url, title: tab?.title || null, userAgent: navigator.userAgent, cookies: await cookiesFor(url, false) },
+    });
+    if (!reply?.ok) {
+      // An app before 0.7 does not know "grab": it says so with its older protocol number.
+      if (reply?.protocol && reply.protocol < Rules.PROTOCOL) return notify(t("errorGrabOutdated"));
+      throw new Error(reply?.error || t("errorBadReply"));
+    }
     await setProblem(false);
   } catch (error) {
     await setProblem(true);
@@ -425,7 +453,10 @@ async function handleContentMessage(message, tab, sender) {
         userAgent: navigator.userAgent,
         cookies: await cookiesFor(message.url, tab.incognito),
       };
-      if (message.type === "addMedia") Object.assign(media, { variantId: String(message.variantId || ""), label: message.label || null, queue: queue || null });
+      if (message.type === "addMedia") {
+        Object.assign(media, { variantId: String(message.variantId || ""), label: message.label || null, queue: queue || null },
+          Rules.mediaChoice(message));
+      }
       const reply = await sendNative({ type: message.type === "probe" ? "probeMedia" : "addMedia", media }, 30_000);
       if (!reply?.ok) return { ok: false, error: reply?.error || t("errorBadReply"), outdated: !reply?.protocol };
       return { ok: true, media: reply.media };

@@ -65,9 +65,10 @@ public sealed class MediaJob : IDownloadJob
         var http = own ?? _sharedHttp;
         try
         {
-            var plan = await WithRetriesAsync(() => MediaCatalog.ResolveAsync(http, Record.Url, Record.Media!.VariantId, context, ct), ct);
+            var media = Record.Media!;
+            var plan = await WithRetriesAsync(() => MediaCatalog.ResolveAsync(http, Record.Url, media.VariantId, context, ct, media.AudioId, media.SubtitleIds), ct);
             await DownloadAsync(http, plan, ct);
-            await FinishAsync(plan, ct);
+            await FinishAsync(http, plan, ct);
         }
         finally
         {
@@ -284,7 +285,7 @@ public sealed class MediaJob : IDownloadJob
     }
 
     /// <summary>Joins the segments of each track, then makes the final file (or files).</summary>
-    private async Task FinishAsync(MediaPlan plan, CancellationToken ct)
+    private async Task FinishAsync(HttpClient http, MediaPlan plan, CancellationToken ct)
     {
         var folder = PartsFolderOf(Record);
         var joined = new List<string>();
@@ -300,25 +301,70 @@ public sealed class MediaJob : IDownloadJob
             joined.Add(target);
         }
 
+        // Subtitles, after the video: a track that cannot be downloaded is left out and named, the video completes.
+        var subtitles = new List<(string Path, string? Language, string Label, List<SubtitleCue> Cues)>();
+        var missing = new List<string>();
+        var plans = plan.Subtitles ?? [];
+        for (var s = 0; s < plans.Count; s++)
+        {
+            var texts = new List<(string, TimeSpan)>();
+            try
+            {
+                for (var i = 0; i < plans[s].Segments.Count; i++)
+                {
+                    var segment = plans[s].Segments[i];
+                    var part = SubtitlePart(folder, s, i);
+                    if (!File.Exists(part))
+                        await DownloadSegmentAsync(http, segment, part, ct);
+                    texts.Add((await File.ReadAllTextAsync(part, ct), TimeSpan.FromSeconds(segment.TimeShift)));
+                }
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested && (IsTransient(ex) || ex is DownloadFailedException or AuthenticationRequiredException))
+            {
+                missing.Add(plans[s].Label);
+                continue;
+            }
+            var cues = WebVtt.Cues(texts);
+            if (cues.Count == 0)
+                continue;
+            var path = Path.Combine(folder, $"sub{s}.vtt");
+            await File.WriteAllTextAsync(path, WebVtt.ToVtt(cues), ct);
+            subtitles.Add((path, plans[s].Language, plans[s].Label, cues));
+        }
+
         var baseName = Path.GetFileNameWithoutExtension(Record.FileName ?? "video");
         var ffmpeg = _ffmpeg();
         var needsMux = plan.Tracks.Count > 1 || plan.Tracks[0].Extension == ".ts";
+        var embed = Record.Media!.SubtitleMode == "embed" && subtitles.Count > 0;
+        var embedded = false;
         string? note = null;
         var outputs = new List<string>();
 
-        if (needsMux && ffmpeg is not null)
+        if ((needsMux || embed) && ffmpeg is not null)
         {
             var container = plan.Tracks.Any(t => t.Extension == ".webm") ? ".mkv" : ".mp4";
             var muxed = Path.Combine(folder, "output" + container);
-            var error = await Ffmpeg.MuxAsync(ffmpeg, joined, muxed, ct);
+            var error = await Ffmpeg.MuxAsync(ffmpeg, joined, muxed, ct, embed ? subtitles.Select(s => (s.Path, s.Language, s.Label)).ToList() : null);
             if (error is null)
+            {
                 outputs.Add(Place(muxed, baseName + container));
+                embedded = embed;
+            }
             else
+            {
                 note = string.Format(CultureInfo.CurrentCulture, Strings.MediaMuxFailed, error);
+            }
         }
         else if (needsMux)
         {
             note = plan.Tracks.Count > 1 ? Strings.MediaNoFfmpegTracks : Strings.MediaNoFfmpegTs;
+        }
+        if (embed && ffmpeg is null)
+            note = note is null ? Strings.MediaSubtitlesNoFfmpeg : $"{note} {Strings.MediaSubtitlesNoFfmpeg}";
+        if (missing.Count > 0)
+        {
+            var failed = string.Format(CultureInfo.CurrentCulture, Strings.MediaSubtitlesFailed, string.Join(", ", missing));
+            note = note is null ? failed : $"{note} {failed}";
         }
 
         if (outputs.Count == 0)
@@ -332,6 +378,23 @@ public sealed class MediaJob : IDownloadJob
             {
                 for (var t = 0; t < joined.Count; t++)
                     outputs.Add(Place(joined[t], $"{baseName}.{plan.Tracks[t].Kind}{plan.Tracks[t].Extension}"));
+            }
+        }
+
+        // Not inside the video: next to it, "Name.it.vtt" or "Name.it.srt", as players look for them.
+        if (!embedded)
+        {
+            var srt = Record.Media.SubtitleMode == "srt";
+            for (var s = 0; s < subtitles.Count; s++)
+            {
+                var (path, language, _, cues) = subtitles[s];
+                var tag = LanguageTag(language) ?? $"sub{s + 1}";
+                if (srt)
+                    await File.WriteAllTextAsync(path, WebVtt.ToSrt(cues), ct);
+                // Named after the video as saved ("Name (1).mp4" → "Name (1).it.vtt"), as players look for them.
+                var videoName = outputs.Count == 1 ? Path.GetFileNameWithoutExtension(outputs[0]) : baseName;
+                var file = Place(path, $"{videoName}.{tag}{(srt ? ".srt" : ".vtt")}");
+                ZoneIdentifier.TryMark(file, Record.Url, Record.Context?.Referrer);
             }
         }
 
@@ -355,6 +418,15 @@ public sealed class MediaJob : IDownloadJob
         Record.Status = DownloadStatus.Completed;
         Record.CompletedUtc = DateTime.UtcNow;
         await _onCheckpoint(Record.Clone());
+    }
+
+    private static string SubtitlePart(string folder, int track, int index) => Path.Combine(folder, $"s{track}_{index:D6}.seg");
+
+    /// <summary>A language code safe in a file name ("pt-BR"), or null.</summary>
+    private static string? LanguageTag(string? language)
+    {
+        var tag = new string((language ?? "").Trim().Where(c => char.IsAsciiLetterOrDigit(c) || c == '-').Take(16).ToArray());
+        return tag.Length > 0 ? tag : null;
     }
 
     /// <summary>Moves a finished file to the download folder under a name not taken yet.</summary>
