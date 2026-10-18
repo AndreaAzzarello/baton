@@ -73,7 +73,12 @@ public sealed class DownloadItemViewModel : ObservableObject
         // No connection open yet (first request, or retrying after a network error).
         DownloadStatus.Downloading => _snapshot.Connections == 0 ? Strings.StatusConnecting : Strings.StatusDownloading,
         DownloadStatus.Paused => Strings.StatusPaused,
-        DownloadStatus.Completed => _snapshot.Error is not null ? Strings.StatusCompletedWithNote : Strings.StatusCompleted, // e.g. a stream saved without ffmpeg
+        DownloadStatus.Completed => _snapshot.Check switch
+        {
+            { Pending: true } => Strings.StatusCompletedChecking,
+            { HasProblem: true } => Strings.StatusCompletedProblem, // a hash that differs, or a threat: see the tooltip
+            _ => _snapshot.Error is not null ? Strings.StatusCompletedWithNote : Strings.StatusCompleted, // e.g. a stream saved without ffmpeg
+        },
         DownloadStatus.Failed => Strings.StatusFailed,
         _ => "",
     };
@@ -93,12 +98,12 @@ public sealed class DownloadItemViewModel : ObservableObject
         DownloadStatus.Queued => "",
         DownloadStatus.Downloading => "",
         DownloadStatus.Paused => "",
-        DownloadStatus.Completed => "",
+        DownloadStatus.Completed => _snapshot.Check?.HasProblem == true ? "" : "",
         DownloadStatus.Failed => "",
         _ => "",
     };
 
-    public string ToolTip => _snapshot.Error is { } error ? $"{Url}\n\n{error}" : Url;
+    public string ToolTip => string.Join("\n\n", new[] { Url, _snapshot.Error, Core.PostDownload.PostCheck.Describe(_snapshot.Check) }.Where(t => !string.IsNullOrEmpty(t)));
 
     public string AddedText => _snapshot.AddedUtc.ToLocalTime().ToString("g");
 

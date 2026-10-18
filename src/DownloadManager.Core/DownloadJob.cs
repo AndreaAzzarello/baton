@@ -302,7 +302,8 @@ public sealed class DownloadJob : IDownloadJob
 
     private static bool IsTransient(Exception ex) =>
         // Cancellation not requested by the caller means an internal timeout (e.g. connect timeout).
-        ex is HttpRequestException or IOException or TimeoutException or OperationCanceledException or ServerBusyException;
+        (ex is HttpRequestException or IOException or TimeoutException or OperationCanceledException or ServerBusyException)
+        && !StorageErrors.IsPermanent(ex); // a full disk or a folder that cannot be written is not fixed by retrying
 
     private async Task TransferAsync(SegmentState segment, CancellationToken ct)
     {

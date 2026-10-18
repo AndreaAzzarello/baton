@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text.Json;
 using DownloadManager.Core.Grabber;
 using DownloadManager.Core.Security;
-using Microsoft.Data.Sqlite;
 
 namespace DownloadManager.Core;
 
@@ -91,7 +90,8 @@ public sealed partial class DownloadStore
         {
             var result = new Dictionary<string, GrabberFileState>(StringComparer.Ordinal);
             using var cmd = Command("""
-                SELECT url, local_path, etag, last_modified, size, content_type, source_page, content_hash, first_seen_utc, last_seen_utc, removed_utc
+                SELECT url, local_path, etag, last_modified, size, content_type, source_page, content_hash, first_seen_utc, last_seen_utc, removed_utc,
+                       download_id, obtained
                 FROM grabber_files WHERE project_id = $id;
                 """);
             cmd.Parameters.AddWithValue("$id", projectId);
@@ -112,6 +112,8 @@ public sealed partial class DownloadStore
                     FirstSeenUtc = ParseDate(reader.GetString(8)),
                     LastSeenUtc = ParseDate(reader.GetString(9)),
                     RemovedUtc = Text(10) is { } removed ? ParseDate(removed) : null,
+                    DownloadId = reader.IsDBNull(11) ? null : reader.GetInt64(11),
+                    Obtained = reader.GetInt64(12) != 0,
                 };
                 result[state.Url] = state;
             }
@@ -127,13 +129,13 @@ public sealed partial class DownloadStore
             using var tx = _db.BeginTransaction();
             using var cmd = Command("""
                 INSERT INTO grabber_files (project_id, url, local_path, etag, last_modified, size, content_type, source_page, content_hash,
-                                           first_seen_utc, last_seen_utc, removed_utc)
-                VALUES ($p, $url, $local, $etag, $lm, $size, $type, $source, $hash, $first, $last, $removed)
+                                           first_seen_utc, last_seen_utc, removed_utc, download_id, obtained)
+                VALUES ($p, $url, $local, $etag, $lm, $size, $type, $source, $hash, $first, $last, $removed, $download, $obtained)
                 ON CONFLICT(project_id, url) DO UPDATE SET local_path = $local, etag = $etag, last_modified = $lm, size = $size,
                     content_type = $type, source_page = $source, content_hash = $hash, first_seen_utc = $first, last_seen_utc = $last,
-                    removed_utc = $removed;
+                    removed_utc = $removed, download_id = $download, obtained = $obtained;
                 """, tx);
-            var parameters = new[] { "$p", "$url", "$local", "$etag", "$lm", "$size", "$type", "$source", "$hash", "$first", "$last", "$removed" }
+            var parameters = new[] { "$p", "$url", "$local", "$etag", "$lm", "$size", "$type", "$source", "$hash", "$first", "$last", "$removed", "$download", "$obtained" }
                 .ToDictionary(n => n, n =>
                 {
                     var parameter = cmd.CreateParameter(); // the type follows each value
@@ -155,9 +157,22 @@ public sealed partial class DownloadStore
                 parameters["$first"].Value = f.FirstSeenUtc.ToString("O", CultureInfo.InvariantCulture);
                 parameters["$last"].Value = f.LastSeenUtc.ToString("O", CultureInfo.InvariantCulture);
                 parameters["$removed"].Value = f.RemovedUtc is { } removed ? removed.ToString("O", CultureInfo.InvariantCulture) : DBNull.Value;
+                parameters["$download"].Value = (object?)f.DownloadId ?? DBNull.Value;
+                parameters["$obtained"].Value = f.Obtained ? 1 : 0;
                 cmd.ExecuteNonQuery();
             }
             tx.Commit();
+        }
+    }
+
+    /// <summary>A download sent by the grabber completed: its file is obtained.</summary>
+    public void MarkGrabberDownloadObtained(long downloadId)
+    {
+        lock (_lock)
+        {
+            using var cmd = Command("UPDATE grabber_files SET obtained = 1 WHERE download_id = $id;");
+            cmd.Parameters.AddWithValue("$id", downloadId);
+            cmd.ExecuteNonQuery();
         }
     }
 

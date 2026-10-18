@@ -3,6 +3,7 @@ using System.Net;
 using DownloadManager.Core.Integration;
 using DownloadManager.Core.Media;
 using DownloadManager.Core.Net;
+using DownloadManager.Core.PostDownload;
 using DownloadManager.Core.Resources;
 using DownloadManager.Core.Security;
 
@@ -45,6 +46,8 @@ public sealed class DownloadService : IAsyncDisposable
     private readonly HourlyQuota _globalQuota = new();
     private readonly HashSet<long> _runStarted = []; // queues that started at least one download in the current run
     private readonly CancellationTokenSource _tickerCts = new();
+    private readonly CancellationTokenSource _lifetime = new(); // stops the checks after a download when the app closes
+    private readonly SemaphoreSlim _checkGate = new(1, 1); // one hash or scan at a time: they read whole files
     private readonly Task _ticker;
     private AppSettings _settings;
     private bool _pumpSuspended;
@@ -95,6 +98,19 @@ public sealed class DownloadService : IAsyncDisposable
         _ticker = autoTick ? TickLoopAsync(_tickerCts.Token) : Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Runs again the checks the app closed before they finished. Called once the app has subscribed to
+    /// <see cref="DownloadCompleted"/>, so their outcome is announced (notification, grabber) like any other.
+    /// </summary>
+    public void ResumePendingChecks()
+    {
+        List<long> unfinished;
+        lock (_lock)
+            unfinished = _items.Where(i => i.Status == DownloadStatus.Completed && i.Check is { Pending: true }).Select(i => i.Id).ToList();
+        foreach (var id in unfinished)
+            _ = RunChecksAsync(id, announce: true);
+    }
+
     public static HttpClient CreateHttpClient(CookieContainer? cookies = null)
     {
         var handler = new SocketsHttpHandler
@@ -131,8 +147,36 @@ public sealed class DownloadService : IAsyncDisposable
     /// </summary>
     public event Action<LoginRequest>? LoginRequired;
 
-    /// <summary>Raised on a worker thread when a download finishes successfully.</summary>
+    /// <summary>
+    /// Raised on a worker thread when a download finishes successfully, after its checks (hash, antivirus) if any:
+    /// the snapshot carries their outcome.
+    /// </summary>
     public event Action<DownloadSnapshot>? DownloadCompleted;
+
+    /// <summary>The checks of a finished download changed (also when run again from Properties).</summary>
+    public event Action<DownloadSnapshot>? CheckCompleted;
+
+    /// <summary>The global speed limit and hourly quota, for transfers outside the queues (the grabber's offline copies).</summary>
+    public async Task ConsumeBandwidthAsync(int bytes, CancellationToken ct)
+    {
+        await _limiter.WaitAsync(bytes, ct);
+        while (true)
+        {
+            DateTime? freeAt;
+            lock (_lock)
+            {
+                var now = _clock.UtcNow;
+                _globalQuota.Add(bytes, now);
+                bytes = 0;
+                freeAt = _globalQuota.FreeAt(_settings.GlobalQuotaMBPerHour, now);
+                if (freeAt is null)
+                    return;
+            }
+            // Over the hourly quota: wait (checking every few seconds, the quota may be raised meanwhile).
+            var wait = freeAt.Value - _clock.UtcNow;
+            await Task.Delay(wait < TimeSpan.FromSeconds(5) && wait > TimeSpan.Zero ? wait : TimeSpan.FromSeconds(5), ct);
+        }
+    }
 
     /// <summary>Raised when categories are added, changed or removed.</summary>
     public event Action? CategoriesChanged;
@@ -234,9 +278,17 @@ public sealed class DownloadService : IAsyncDisposable
     /// category is guessed from the URL now and confirmed once the server reports the real file name and type.
     /// Without a queue it joins the main queue.
     /// </summary>
+    /// <param name="expectedHash">A hash to verify once the file is downloaded (see <see cref="FileHash.TryParse"/>).</param>
     public long Add(string url, string? directory = null, string? fileName = null, bool startNow = true, RequestContext? context = null,
-        long? categoryId = null, long? queueId = null)
+        long? categoryId = null, long? queueId = null, string? expectedHash = null)
     {
+        PostCheck? check = null;
+        if (!string.IsNullOrWhiteSpace(expectedHash))
+        {
+            if (!FileHash.TryParse(expectedHash, out var algorithm, out var hex))
+                throw new ArgumentException(Strings.ErrorHashFormat, nameof(expectedHash));
+            check = new PostCheck { HashAlgorithm = algorithm, ExpectedHash = hex };
+        }
         if (!Urls.TryParseDownload(url, out var parsed))
             throw new ArgumentException("Enter a valid http, https, ftp, ftps or ftpes address.", nameof(url));
         // A login written in the address is kept encrypted with the download, never in the address shown.
@@ -260,6 +312,7 @@ public sealed class DownloadService : IAsyncDisposable
                 CategoryId = category.Id,
                 AutoCategory = categoryId is null && name is null,
                 QueueId = _queues.FirstOrDefault(q => q.Id == queueId)?.Id ?? MainQueue.Id,
+                Check = check,
             };
             _store.Insert(record);
             _items.Add(record);
@@ -342,6 +395,122 @@ public sealed class DownloadService : IAsyncDisposable
                 Pump();
             return record.Id;
         }
+    }
+
+    /// <summary>Copies of the downloads for an export: without their request context (cookies, form data, login).</summary>
+    public IReadOnlyList<DownloadRecord> ExportRecords()
+    {
+        lock (_lock)
+        {
+            return _items.OrderBy(i => i.SortOrder).Select(i =>
+            {
+                var copy = i.Clone();
+                copy.Context = null;
+                return copy;
+            }).ToList();
+        }
+    }
+
+    /// <summary>
+    /// A download from an imported list: an unfinished one waits paused (nothing starts by itself), a completed one
+    /// is kept as history. Its category and queue are found by name; the file name is sanitized.
+    /// </summary>
+    public long AddImported(Portable.ExportedDownload d)
+    {
+        if (!Urls.TryParseDownload(d.Url, out var parsed))
+            throw new ArgumentException("Invalid address.", nameof(d));
+        var uri = Urls.SplitLogin(parsed).Address;
+        var name = string.IsNullOrWhiteSpace(d.FileName) ? null : FileNames.Sanitize(d.FileName);
+        PostCheck? check = null;
+        if (d.ExpectedHash is { } expected && FileHash.TryParse(expected, out var algorithm, out var hex))
+            check = new PostCheck { HashAlgorithm = algorithm, ExpectedHash = hex };
+        lock (_lock)
+        {
+            var category = _categories.FirstOrDefault(c => string.Equals(c.Name, d.Category, StringComparison.CurrentCultureIgnoreCase))
+                           ?? Core.Categories.MatchUrl(_categories, uri.AbsoluteUri, name);
+            // An imported file is untrusted: its entry never points at a file on this PC ("remove with the file" or the move
+            // off the Desktop would then act on a file the app never downloaded). It is paused, in the category's folder.
+            var record = new DownloadRecord
+            {
+                Url = uri.AbsoluteUri,
+                Directory = category.ResolveFolder(_settings.DownloadFolder),
+                FileName = name,
+                Status = DownloadStatus.Paused,
+                SortOrder = NextSortOrder(),
+                AddedUtc = d.AddedUtc == default ? _clock.UtcNow : DateTime.SpecifyKind(d.AddedUtc, DateTimeKind.Utc),
+                CategoryId = category.Id,
+                QueueId = _queues.FirstOrDefault(q => string.Equals(q.Name, d.Queue, StringComparison.CurrentCultureIgnoreCase))?.Id ?? MainQueue.Id,
+                Check = check,
+                Media = d.Media is { } m ? new MediaSource
+                {
+                    Kind = m.Kind, VariantId = m.VariantId, Label = m.Label, AudioId = m.AudioId,
+                    SubtitleIds = m.SubtitleIds?.Take(Integration.MessageValidator.MaxSubtitles).ToList(), SubtitleMode = m.SubtitleMode,
+                } : null,
+            };
+            _store.Insert(record);
+            _items.Add(record);
+            return record.Id;
+        }
+    }
+
+    /// <summary>
+    /// Moves the folders of a <see cref="Setup.RelocationPlan"/> (settings and categories), and with
+    /// <paramref name="moveFiles"/> the finished files listed in it. Files that cannot be moved stay where they are and
+    /// are listed; a name already taken gets " (n)". Unfinished downloads keep their folder until they finish.
+    /// </summary>
+    public Setup.RelocationResult ApplyRelocation(Setup.RelocationPlan plan, bool moveFiles)
+    {
+        if (plan.DownloadFolder is { } folder)
+        {
+            var settings = Settings;
+            settings.DownloadFolder = folder;
+            UpdateSettings(settings);
+        }
+        foreach (var move in plan.Folders.Where(f => f.CategoryId is not null))
+        {
+            if (Categories.FirstOrDefault(c => c.Id == move.CategoryId) is { } category)
+            {
+                category.Folder = move.To;
+                SaveCategory(category);
+            }
+        }
+        var moved = 0;
+        var problems = new List<string>();
+        if (!moveFiles)
+            return new Setup.RelocationResult(0, problems);
+        foreach (var file in plan.Files)
+        {
+            lock (_lock)
+            {
+                if (Find(file.DownloadId) is not { Status: DownloadStatus.Completed } || _active.ContainsKey(file.DownloadId))
+                    continue;
+            }
+            // Outside the lock: across drives a move is a copy, which must not hold up the running downloads.
+            string target;
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(file.To)!);
+                target = FileNames.MakeUnique(file.To);
+                File.Move(file.From, target);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                problems.Add($"{Path.GetFileName(file.From)}: {StorageErrors.Describe(ex)}");
+                continue;
+            }
+            lock (_lock)
+            {
+                if (Find(file.DownloadId) is { } record)
+                {
+                    record.Directory = Path.GetDirectoryName(target)!;
+                    record.FileName = Path.GetFileName(target);
+                    _store.Update(record);
+                }
+            }
+            moved++;
+        }
+        Log.Info("relocation", $"moved {moved} files away from the Desktop, {problems.Count} left");
+        return new Setup.RelocationResult(moved, problems);
     }
 
     /// <summary>A client with the request's cookies (owned by the caller), or the shared one.</summary>
@@ -860,6 +1029,7 @@ public sealed class DownloadService : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _lifetime.Cancel();
         _tickerCts.Cancel();
         await _ticker.ContinueWith(_ => { }, TaskScheduler.Default);
         await ShutdownAsync();
@@ -941,8 +1111,9 @@ public sealed class DownloadService : IAsyncDisposable
         var finished = new List<DownloadQueue>();
         foreach (var queue in _queues.Where(q => q.Running && q.StopsWhenDone && _runStarted.Contains(q.Id)).ToList())
         {
+            // Checks still running count too: the end action (e.g. shut down) must not cut a scan short.
             var busy = _active.Values.Any(a => a.FromQueue && a.Job.Record.QueueId == queue.Id)
-                       || _items.Any(i => i.QueueId == queue.Id && i.Status == DownloadStatus.Queued);
+                       || _items.Any(i => i.QueueId == queue.Id && (i.Status == DownloadStatus.Queued || i.Check is { Pending: true }));
             if (busy)
                 continue;
             SetRunning(queue, false);
@@ -983,7 +1154,8 @@ public sealed class DownloadService : IAsyncDisposable
             live?.LastModified ?? r.LastModified,
             live?.ContentType ?? r.ContentType,
             r.QueueId,
-            r.RetryAtUtc);
+            r.RetryAtUtc,
+            r.Check?.Clone());
     }
 
     private string LocalTime(DateTime utc) =>
@@ -1074,10 +1246,13 @@ public sealed class DownloadService : IAsyncDisposable
         catch (Exception ex)
         {
             final = DownloadStatus.Failed;
-            error = ex.Message;
+            // A full disk, a folder that cannot be written or a path too long is said in words; the data on disk is kept.
+            error = StorageErrors.Describe(ex, StorageErrors.IsPermanent(ex) ? active.Job.Record.Directory : null);
         }
+        Log.Info("download", $"{active.Job.Record.Id} {final} {Log.Url(active.Job.Record.Url)}{(error is null ? "" : " - " + error)}");
 
         DownloadSnapshot? completed = null;
+        long? checks = null;
         List<DownloadQueue> finished;
         lock (_lock)
         {
@@ -1094,7 +1269,17 @@ public sealed class DownloadService : IAsyncDisposable
                 {
                     record.Context = null; // session cookies are not kept longer than needed
                     record.Failures = 0;
-                    completed = SnapshotLocked(record);
+                    if (NeedsChecks(record))
+                    {
+                        // Announced as completed once the checks have an outcome.
+                        record.Check ??= new PostCheck();
+                        record.Check.Pending = true;
+                        checks = record.Id;
+                    }
+                    else
+                    {
+                        completed = SnapshotLocked(record);
+                    }
                 }
                 else if (final == DownloadStatus.Failed && active.FromQueue && queue is not null && record.Failures < queue.RetryCount)
                 {
@@ -1109,6 +1294,8 @@ public sealed class DownloadService : IAsyncDisposable
             finished = CollectFinished();
         }
         active.Cts.Dispose();
+        if (checks is { } id)
+            _ = RunChecksAsync(id, announce: true);
         if (login is not null)
             LoginRequired?.Invoke(login);
         if (completed is not null)
@@ -1117,6 +1304,193 @@ public sealed class DownloadService : IAsyncDisposable
             QueuesChanged?.Invoke();
         foreach (var queue in finished)
             QueueFinished?.Invoke(queue);
+    }
+
+    private bool NeedsChecks(DownloadRecord record) =>
+        record.Check?.ExpectedHash is not null || _settings.ComputeHashOnCompletion || _settings.ScanOnCompletion;
+
+    /// <summary>
+    /// Hash and antivirus scan of a finished file, on a worker thread, one file at a time. Nothing here runs the file:
+    /// it is read for the hash and handed as an argument to the scanner.
+    /// </summary>
+    /// <param name="announce">Raise <see cref="DownloadCompleted"/> (the completion of a download), not only <see cref="CheckCompleted"/>.</param>
+    private async Task RunChecksAsync(long id, bool announce)
+    {
+        try
+        {
+            await _checkGate.WaitAsync(_lifetime.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        try
+        {
+            string? path;
+            PostCheck check;
+            PostCheck? started;
+            AppSettings settings;
+            lock (_lock)
+            {
+                if (Find(id) is not { Status: DownloadStatus.Completed } record)
+                    return;
+                path = record.FinalPath;
+                started = record.Check;
+                check = record.Check?.Clone() ?? new PostCheck();
+                settings = _settings.Clone();
+            }
+
+            try
+            {
+                await RunChecksOnFileAsync(id, path, check, settings);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Never left "checking" forever: the outcome says the check could not be completed.
+                Log.Error("checks", $"download {id}", ex);
+                if (settings.ScanOnCompletion)
+                {
+                    check.Scan ??= ScanOutcome.Failed;
+                    check.ScanDetail ??= ex.Message;
+                }
+            }
+
+            DownloadSnapshot snapshot;
+            List<DownloadQueue> finished;
+            lock (_lock)
+            {
+                if (Find(id) is not { } record)
+                    return;
+                // What changed while the checks ran is kept: an expected hash set in Properties (its own run is queued
+                // and the download stays pending until then), or a hash computed for "Copy hash".
+                var current = record.Check;
+                var merged = current?.Clone() ?? new PostCheck();
+                if (merged.ComputedHash is null && (merged.HashAlgorithm is null || merged.HashAlgorithm == check.HashAlgorithm))
+                {
+                    merged.HashAlgorithm ??= check.HashAlgorithm;
+                    merged.ComputedHash = check.ComputedHash;
+                }
+                merged.Scan ??= check.Scan;
+                merged.ScanDetail ??= check.ScanDetail;
+                merged.Pending = !ReferenceEquals(current, started) && merged.Pending;
+                record.Check = merged;
+                _store.Update(record);
+                snapshot = SnapshotLocked(record);
+                finished = CollectFinished();
+            }
+            CheckCompleted?.Invoke(snapshot);
+            if (announce)
+                DownloadCompleted?.Invoke(snapshot);
+            if (finished.Count > 0)
+                QueuesChanged?.Invoke();
+            foreach (var queue in finished)
+                QueueFinished?.Invoke(queue);
+        }
+        catch (OperationCanceledException)
+        {
+            // The app is closing: the checks run again on the next start.
+        }
+        catch (Exception ex) when (ex is Microsoft.Data.Sqlite.SqliteException or IOException)
+        {
+            // The outcome is in memory (and shown) but could not be saved: the checks run again on the next start.
+            Log.Error("checks", $"download {id}: not saved", ex);
+        }
+        finally
+        {
+            _checkGate.Release();
+        }
+    }
+
+    /// <summary>Fills <paramref name="check"/> with the hash and the scan of the file, as configured.</summary>
+    private async Task RunChecksOnFileAsync(long id, string? path, PostCheck check, AppSettings settings)
+    {
+        if (path is null || !File.Exists(path))
+            return;
+        var algorithm = check.HashAlgorithm ?? (settings.ComputeHashOnCompletion ? settings.HashAlgorithm : null);
+        if (algorithm is not null && check.ComputedHash is null)
+        {
+            try
+            {
+                check.HashAlgorithm = algorithm;
+                check.ComputedHash = await FileHash.ComputeAsync(path, algorithm, _lifetime.Token);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.Warning("hash", $"download {id}: {StorageErrors.Describe(ex)}");
+            }
+        }
+        if (settings.ScanOnCompletion && check.Scan is null)
+        {
+            var (outcome, detail) = await VirusScanner.ScanAsync(VirusScanner.ResolveScanner(settings.ScannerPath), settings.ScannerArguments,
+                settings.ScanThreatCodes, path, TimeSpan.FromSeconds(Math.Clamp(settings.ScanTimeoutSeconds, 10, 3600)), _lifetime.Token);
+            check.Scan = outcome;
+            check.ScanDetail = detail;
+            Log.Info("scan", $"download {id}: {outcome}");
+        }
+    }
+
+    /// <summary>
+    /// Sets (or clears) the hash a finished or future download must have; a finished file is checked right away.
+    /// </summary>
+    public void SetExpectedHash(long id, string? text)
+    {
+        PostCheck? check = null;
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            if (!FileHash.TryParse(text, out var algorithm, out var hex))
+                throw new ArgumentException(Strings.ErrorHashFormat, nameof(text));
+            check = new PostCheck { HashAlgorithm = algorithm, ExpectedHash = hex };
+        }
+        bool run;
+        lock (_lock)
+        {
+            if (Find(id) is not { } record)
+                return;
+            var previous = record.Check;
+            check ??= new PostCheck();
+            check.Scan = previous?.Scan;
+            check.ScanDetail = previous?.ScanDetail;
+            // A hash computed with the same algorithm stays valid.
+            if (previous?.ComputedHash is { } computed && previous.HashAlgorithm == check.HashAlgorithm)
+                check.ComputedHash = computed;
+            run = record.Status == DownloadStatus.Completed && check.ExpectedHash is not null && check.ComputedHash is null;
+            check.Pending = run;
+            record.Check = check.ExpectedHash is null && check.ComputedHash is null && check.Scan is null ? null : check;
+            if (_active.TryGetValue(id, out var active))
+                active.Job.Record.Check = record.Check?.Clone();
+            _store.Update(record);
+        }
+        if (run)
+            _ = RunChecksAsync(id, announce: false); // an old download: no new "completed" notification
+    }
+
+    /// <summary>Computes the hash of a finished file now (for "Copy hash" in Properties) and keeps it with the download.</summary>
+    public async Task<string?> ComputeHashAsync(long id, string algorithm, CancellationToken ct = default)
+    {
+        string? path;
+        lock (_lock)
+            path = Find(id) is { Status: DownloadStatus.Completed } record ? record.FinalPath : null;
+        if (path is null || !File.Exists(path))
+            return null;
+        var hex = await Task.Run(() => FileHash.ComputeAsync(path, algorithm, ct), ct);
+        DownloadSnapshot? snapshot = null;
+        lock (_lock)
+        {
+            if (Find(id) is { } record)
+            {
+                record.Check ??= new PostCheck();
+                if (record.Check.ExpectedHash is null || record.Check.HashAlgorithm == algorithm)
+                {
+                    record.Check.HashAlgorithm = algorithm;
+                    record.Check.ComputedHash = hex;
+                }
+                _store.Update(record);
+                snapshot = SnapshotLocked(record);
+            }
+        }
+        if (snapshot is not null)
+            CheckCompleted?.Invoke(snapshot);
+        return hex;
     }
 
     /// <summary>The server revealed the file name and type: confirm a guessed category before any data is written.</summary>

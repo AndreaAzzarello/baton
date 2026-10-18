@@ -114,6 +114,22 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
 
     public bool ShowSettings(SettingsViewModel viewModel) => new SettingsWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
 
+    private UpdateWindow? _update;
+
+    public void ShowUpdate(UpdateViewModel viewModel)
+    {
+        if (_update is not null)
+        {
+            Bring(_update);
+            return;
+        }
+        // Also found at startup with the main window hidden: it comes forward on its own.
+        _update = new UpdateWindow(viewModel) { Topmost = true };
+        _update.Activated += (_, _) => _update.Topmost = false;
+        _update.Closed += (_, _) => _update = null;
+        _update.Show();
+    }
+
     public bool ShowCategories(CategoriesViewModel viewModel) => new CategoriesWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
 
     public bool ShowQueues(QueuesViewModel viewModel) => new QueuesWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
@@ -145,7 +161,11 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
         return window.Decision;
     }
 
-    public void ShowProperties(PropertiesViewModel viewModel) => new PropertiesWindow(viewModel) { Owner = Owner }.ShowDialog();
+    public void ShowProperties(PropertiesViewModel viewModel)
+    {
+        new PropertiesWindow(viewModel) { Owner = Owner }.ShowDialog();
+        viewModel.Detach();
+    }
 
     public void ShowProgress(DownloadItemViewModel item)
     {
@@ -189,6 +209,22 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
             dialog.FileName = System.IO.Path.GetFileName(initialFile);
         }
         return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
+    }
+
+    public string? PickSaveFile(string title, string filter, string fileName)
+    {
+        var dialog = new SaveFileDialog { Title = title, Filter = filter, FileName = fileName, OverwritePrompt = true, AddExtension = true };
+        return dialog.ShowDialog(Owner) == true ? dialog.FileName : null;
+    }
+
+    public bool ShowImport(ImportViewModel viewModel) => new ImportWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
+
+    public bool ShowToolbar(ToolbarViewModel viewModel) => new ToolbarWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
+
+    public Core.Setup.FirstRunChoices? ShowFirstRun(FirstRunViewModel viewModel)
+    {
+        var window = new FirstRunWindow(viewModel);
+        return window.ShowDialog() == true ? window.Choices : null;
     }
 
     private static Answer Show(string message, string title, MessageKind kind, IReadOnlyList<(string, Answer)> buttons, Answer defaultAnswer)

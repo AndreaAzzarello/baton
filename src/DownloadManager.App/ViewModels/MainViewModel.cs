@@ -10,6 +10,7 @@ using DownloadManager.App.Mvvm;
 using DownloadManager.App.Services;
 using DownloadManager.Core;
 using DownloadManager.Core.Integration;
+using DownloadManager.Core.Portable;
 using DownloadManager.Core.Resources;
 
 namespace DownloadManager.App.ViewModels;
@@ -82,6 +83,13 @@ public sealed class MainViewModel : ObservableObject
         NewCategoryCommand = new RelayCommand(() => ShowCategories(null, addNew: true));
         DeleteCategoryCommand = new RelayCommand(p => DeleteCategory(p as long?), p => p is long id && _categories.Any(c => c.Id == id && !c.IsGeneral));
         OpenDownloadFolderCommand = new RelayCommand(() => _shell.OpenFolder(_service.Settings.DownloadFolder));
+        ExportListCommand = new RelayCommand(() => Export(Strings.ExportListFilter, "downloads.json",
+            () => PortableData.Serialize(PortableData.ExportDownloads(_service.ExportRecords(), _service.Categories, _service.Queues, _service.UtcNow))));
+        ExportUrlsCommand = new RelayCommand(() => Export(Strings.ExportUrlsFilter, "downloads.txt", () => PortableData.ExportUrls(_service.ExportRecords())));
+        ExportSettingsCommand = new RelayCommand(() => Export(Strings.ExportListFilter, "downloadmanager-settings.json",
+            () => PortableData.Serialize(PortableData.ExportSettings(_service.Settings, _service.Categories, _service.Queues, _grabber.Service.Projects, _service.UtcNow))));
+        ImportCommand = new RelayCommand(Import);
+        CustomizeToolbarCommand = new RelayCommand(CustomizeToolbar);
         OpenFileCommand = new RelayCommand(OpenFile, () => _selected.FirstOrDefault() is { IsCompleted: true });
         OpenFolderCommand = new RelayCommand(() => _shell.Reveal(_selected[0].Snapshot.FinalPath, _selected[0].Directory), () => _selected.Count > 0);
         CopyUrlCommand = new RelayCommand(() => _shell.SetClipboardText(string.Join(Environment.NewLine, _selected.Select(i => i.Url))), () => _selected.Count > 0);
@@ -126,6 +134,70 @@ public sealed class MainViewModel : ObservableObject
     public ICommand NewCategoryCommand { get; }
     public ICommand DeleteCategoryCommand { get; }
     public ICommand OpenDownloadFolderCommand { get; }
+    public ICommand ExportListCommand { get; }
+    public ICommand ExportUrlsCommand { get; }
+    public ICommand ExportSettingsCommand { get; }
+    public ICommand ImportCommand { get; }
+    public ICommand CustomizeToolbarCommand { get; }
+
+    /// <summary>The settings the toolbar is laid out from.</summary>
+    public AppSettings ToolbarSettings => _service.Settings;
+
+    /// <summary>Raised after the toolbar layout was changed and saved.</summary>
+    public event Action? ToolbarChanged;
+
+    private void CustomizeToolbar()
+    {
+        var settings = _service.Settings;
+        var dialog = new ToolbarViewModel(settings.ToolbarItems, settings.ToolbarSmallIcons, settings.ToolbarShowText);
+        if (!_dialogs.ShowToolbar(dialog))
+            return;
+        settings = _service.Settings;
+        settings.ToolbarItems = dialog.Layout == ToolbarLayout.Default ? "" : dialog.Layout;
+        settings.ToolbarSmallIcons = dialog.SmallIcons;
+        settings.ToolbarShowText = dialog.ShowText;
+        _service.UpdateSettings(settings);
+        ToolbarChanged?.Invoke();
+    }
+
+    /// <summary>Never logins, cookies or other secrets: the export carries only what <see cref="PortableData"/> puts in it.</summary>
+    private void Export(string filter, string fileName, Func<string> content)
+    {
+        if (_dialogs.PickSaveFile(Strings.ExportTitle, filter, fileName) is not { } path)
+            return;
+        try
+        {
+            File.WriteAllText(path, content(), new System.Text.UTF8Encoding(false));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError(StorageErrors.Describe(ex, path), Strings.ExportTitle);
+        }
+    }
+
+    private void Import()
+    {
+        if (_dialogs.PickFile(Strings.ImportTitle, Strings.ImportFilter, null) is not { } path)
+            return;
+        List<ImportItem> items;
+        try
+        {
+            items = PortableImport.Plan(PortableData.Read(path), _service.GetSnapshots(), _service.Categories, _service.Queues, _grabber.Service.Projects);
+        }
+        catch (Exception ex) when (ex is FormatException or IOException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError(ex.Message, Strings.ImportTitle);
+            return;
+        }
+        var preview = new ImportViewModel(Path.GetFileName(path), items);
+        if (!_dialogs.ShowImport(preview))
+            return;
+        var result = PortableImport.Apply(items, preview.Mode, _service, _grabber.Service);
+        if (items.Any(i => i.Kind == ImportKind.Settings && i.Include && i.Problem is null))
+            SettingsSaved?.Invoke(_service.Settings);
+        Refresh();
+        _dialogs.Inform(string.Format(CultureInfo.CurrentCulture, Strings.ImportDone, result.Added, result.Replaced, result.Skipped), Strings.ImportTitle);
+    }
     public ICommand OpenFileCommand { get; }
     public ICommand OpenFolderCommand { get; }
     public ICommand CopyUrlCommand { get; }
@@ -607,7 +679,7 @@ public sealed class MainViewModel : ObservableObject
     private void Submit(AddDownloadViewModel dialog, RequestContext? context)
     {
         var (url, folder, fileName, categoryId, queueId) = dialog.ToRequest();
-        _service.Add(url, folder, fileName, dialog.StartNow, context, categoryId, queueId);
+        _service.Add(url, folder, fileName, dialog.StartNow, context, categoryId, queueId, dialog.ExpectedHashOrNull);
         Refresh();
     }
 
@@ -692,7 +764,9 @@ public sealed class MainViewModel : ObservableObject
 
     private void ShowSettings()
     {
-        var dialog = new SettingsViewModel(_dialogs, _service.Settings, _startup.IsEnabled, _service.Credentials, _service.Certificates);
+        var dialog = new SettingsViewModel(_dialogs, _service.Settings, _startup.IsEnabled, _service.Credentials, _service.Certificates,
+            Updates is { } updates ? url => updates.CheckAsync(url, interactive: true) : null,
+            Updates is { } restore && UpdateService.CanRestore ? restore.RestorePrevious : null);
         if (!_dialogs.ShowSettings(dialog) || dialog.Result is null)
             return;
         _service.UpdateSettings(dialog.Result);
@@ -701,6 +775,9 @@ public sealed class MainViewModel : ObservableObject
         SettingsSaved?.Invoke(dialog.Result);
         Refresh();
     }
+
+    /// <summary>Set by the app: update checks and "restore previous version".</summary>
+    public UpdateService? Updates { get; set; }
 
     /// <summary>Lets the app apply settings that concern the UI, such as the theme.</summary>
     public event Action<AppSettings>? SettingsSaved;

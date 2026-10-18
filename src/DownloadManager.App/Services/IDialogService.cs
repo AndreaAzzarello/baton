@@ -32,6 +32,9 @@ public interface IDialogService
 
     bool ShowSettings(SettingsViewModel viewModel);
 
+    /// <summary>A newer version: notes and confirmation, one window at a time.</summary>
+    void ShowUpdate(UpdateViewModel viewModel);
+
     bool ShowCategories(CategoriesViewModel viewModel);
 
     bool ShowQueues(QueuesViewModel viewModel);
@@ -65,6 +68,18 @@ public interface IDialogService
 
     /// <summary>Asks for an existing file, e.g. ffmpeg.exe; <paramref name="filter"/> uses the "Name|*.ext" format.</summary>
     string? PickFile(string title, string filter, string? initialFile);
+
+    /// <summary>Where to save a file; null when cancelled.</summary>
+    string? PickSaveFile(string title, string filter, string fileName);
+
+    /// <summary>The preview of an import; true when the user chose to import.</summary>
+    bool ShowImport(ImportViewModel viewModel);
+
+    /// <summary>"Customize toolbar"; true when the user saved.</summary>
+    bool ShowToolbar(ToolbarViewModel viewModel);
+
+    /// <summary>The first-run wizard; null when the user skipped it.</summary>
+    Core.Setup.FirstRunChoices? ShowFirstRun(FirstRunViewModel viewModel);
 }
 
 /// <summary>Whether the app starts with Windows (in the notification area).</summary>

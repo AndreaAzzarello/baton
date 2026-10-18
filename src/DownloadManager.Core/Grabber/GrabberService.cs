@@ -94,6 +94,8 @@ public sealed class GrabberService : IAsyncDisposable
         _clientFactory = clientFactory;
         _engineOptions = engineOptions;
         _projects = store.LoadGrabberProjects();
+        // A file sent to a queue counts as obtained once its download completes.
+        _downloads.DownloadCompleted += snapshot => _store.MarkGrabberDownloadObtained(snapshot.Id);
         _ticker = autoTick ? TickLoopAsync(_tickerCts.Token) : Task.CompletedTask;
     }
 
@@ -187,11 +189,12 @@ public sealed class GrabberService : IAsyncDisposable
                           ?? throw new ArgumentException("The project no longer exists.", nameof(projectId));
             if (_runs.TryGetValue(projectId, out var active) && active.Result is null)
                 return active;
-            var previous = _store.LoadGrabberFiles(projectId);
+            var previous = Obtainable(projectId, _store.LoadGrabberFiles(projectId));
             var settings = _downloads.Settings;
             var client = CreateClient(project, settings);
             var engine = new GrabberEngine(project, client, previous,
-                string.IsNullOrWhiteSpace(settings.UserAgent) ? AppSettings.DefaultUserAgent : settings.UserAgent, _engineOptions);
+                string.IsNullOrWhiteSpace(settings.UserAgent) ? AppSettings.DefaultUserAgent : settings.UserAgent, _engineOptions,
+                _downloads.ConsumeBandwidthAsync);
             run = new GrabberRun(project, engine, client, previous, automatic);
             _runs[projectId] = run;
             run.Completion = Task.Run(() => RunAsync(run));
@@ -199,6 +202,35 @@ public sealed class GrabberService : IAsyncDisposable
         RunStarted?.Invoke(run);
         ProjectsChanged?.Invoke();
         return run;
+    }
+
+    /// <summary>
+    /// What a run compares with: files sent to a queue count only once their download completed. One whose download
+    /// failed or was removed is left out, so the run lists it as new again; one still waiting in its queue is kept,
+    /// so it is not sent twice.
+    /// </summary>
+    private Dictionary<string, GrabberFileState> Obtainable(long projectId, Dictionary<string, GrabberFileState> files)
+    {
+        var result = new Dictionary<string, GrabberFileState>(StringComparer.Ordinal);
+        var fixedUp = new List<GrabberFileState>();
+        foreach (var (url, state) in files)
+        {
+            if (!state.Obtained)
+            {
+                var download = state.DownloadId is { } id ? _downloads.GetSnapshot(id) : null;
+                if (download is null || download.Status == DownloadStatus.Failed)
+                    continue;
+                if (download.Status == DownloadStatus.Completed)
+                {
+                    state.Obtained = true; // completed while its state was being written
+                    fixedUp.Add(state);
+                }
+            }
+            result[url] = state;
+        }
+        if (fixedUp.Count > 0)
+            _store.SaveGrabberFiles(projectId, fixedUp);
+        return result;
     }
 
     private HttpClient CreateClient(GrabberProject project, AppSettings settings)
@@ -237,7 +269,7 @@ public sealed class GrabberService : IAsyncDisposable
             {
                 var wanted = run.Items.Where(i => !i.IsPage && i.Status is GrabberItemStatus.New or GrabberItemStatus.Changed).ToList();
                 if (wanted.Count > 0)
-                    Send(run.Project.Id, wanted, run.Project.QueueId, run.Project.CategoryId, run.Project.Folder, startQueue: true);
+                    Send(run, wanted, run.Project.QueueId, run.Project.CategoryId, run.Project.Folder, startQueue: true);
             }
         }
         catch (Exception ex) when (ex is IOException or Microsoft.Data.Sqlite.SqliteException or InvalidOperationException or ArgumentException)
@@ -291,8 +323,24 @@ public sealed class GrabberService : IAsyncDisposable
                 return;
             project.LastRunUtc = now;
             project.LastResult = Summary(result);
+            // The run (and the preview, which sends with the run's own copy) no longer needs the session.
+            if (project.ForgetCookiesAfterRun)
+                project.Cookies = [];
             _store.SaveGrabberProject(project);
         }
+    }
+
+    /// <summary>Deletes the browser cookies captured with a project.</summary>
+    public void ClearCookies(long projectId)
+    {
+        lock (_lock)
+        {
+            if (_projects.FirstOrDefault(p => p.Id == projectId) is not { } project)
+                return;
+            project.Cookies = [];
+            _store.SaveGrabberProject(project);
+        }
+        ProjectsChanged?.Invoke();
     }
 
     public static string Summary(GrabberRunResult result)
@@ -317,9 +365,20 @@ public sealed class GrabberService : IAsyncDisposable
     /// Sends files found by a run to a queue. Each one is fetched like the page would (its page as referrer, the
     /// project's cookies) and remembered, so the next synchronization sends it again only if it changes.
     /// </summary>
-    public int Send(long projectId, IReadOnlyList<GrabberItem> items, long? queueId, long? categoryId, string? folder, bool startQueue)
+    public int Send(long projectId, IReadOnlyList<GrabberItem> items, long? queueId, long? categoryId, string? folder, bool startQueue) =>
+        Send(Find(projectId) ?? throw new ArgumentException("The project no longer exists.", nameof(projectId)), items, queueId, categoryId, folder, startQueue);
+
+    /// <summary>Sends files of a run, with the cookies the run had (they may have been forgotten since).</summary>
+    public int Send(GrabberRun run, IReadOnlyList<GrabberItem> items, long? queueId, long? categoryId, string? folder, bool startQueue)
     {
-        var project = Find(projectId) ?? throw new ArgumentException("The project no longer exists.", nameof(projectId));
+        if (Find(run.Project.Id) is null)
+            throw new ArgumentException("The project no longer exists.", nameof(run));
+        return Send(run.Project, items, queueId, categoryId, folder, startQueue);
+    }
+
+    private int Send(GrabberProject project, IReadOnlyList<GrabberItem> items, long? queueId, long? categoryId, string? folder, bool startQueue)
+    {
+        var projectId = project.Id;
         var known = _store.LoadGrabberFiles(projectId);
         var now = _clock.UtcNow;
         var states = new List<GrabberFileState>();
@@ -331,12 +390,13 @@ public sealed class GrabberService : IAsyncDisposable
         foreach (var item in items.Where(i => !i.IsPage && i.Status is not (GrabberItemStatus.Removed or GrabberItemStatus.Failed)))
         {
             var referrer = Uri.TryCreate(item.SourcePage, UriKind.Absolute, out var page) ? page.AbsoluteUri : null;
-            _downloads.Add(item.Url, target, null, startNow: false, new RequestContext(referrer, userAgent, cookies), categoryId, queue);
+            var downloadId = _downloads.Add(item.Url, target, null, startNow: false, new RequestContext(referrer, userAgent, cookies), categoryId, queue);
             known.TryGetValue(item.Url, out var old);
             states.Add(new GrabberFileState
             {
                 Url = item.Url, ETag = item.ETag, LastModified = item.LastModified, Size = item.Size, ContentType = item.ContentType,
                 SourcePage = item.SourcePage, FirstSeenUtc = old?.FirstSeenUtc ?? now, LastSeenUtc = now,
+                DownloadId = downloadId, Obtained = false,
             });
             sent++;
         }

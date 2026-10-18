@@ -68,6 +68,65 @@
             <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding CompletedText}" Style="{StaticResource ValueText}" />
         </Grid>
 
+        <!-- Checks after the download: hash and antivirus -->
+        <TextBlock Text="{x:Static r:Strings.CheckHeading}" Style="{StaticResource SectionTitle}" Margin="0,18,0,0" AutomationProperties.HeadingLevel="Level2" />
+        <Grid Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Label Content="{x:Static r:Strings.CheckExpectedLabel}" Target="{Binding ElementName=ExpectedBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+            <DockPanel Grid.Column="1" Margin="0,2">
+                <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.CheckVerify}" Style="{StaticResource DialogButton}" Command="{Binding VerifyCommand}" />
+                <TextBox x:Name="ExpectedBox" Text="{Binding ExpectedHash, UpdateSourceTrigger=PropertyChanged}" FontFamily="Cascadia Mono, Consolas"
+                         AutomationProperties.Name="{x:Static r:Strings.AddHashName}" />
+            </DockPanel>
+
+            <TextBlock Grid.Row="1" Text="{x:Static r:Strings.CheckResultLabel}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,3" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding HashResultText}" Margin="0,6,0,3" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HashProblem}" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <Label Grid.Row="2" Content="{x:Static r:Strings.CheckHashLabel}" Target="{Binding ElementName=AlgorithmBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+            <DockPanel Grid.Row="2" Grid.Column="1" Margin="0,2">
+                <ComboBox x:Name="AlgorithmBox" DockPanel.Dock="Left" Width="110" ItemsSource="{Binding Algorithms}" SelectedItem="{Binding Algorithm}"
+                          IsEnabled="{Binding CanChooseAlgorithm}" AutomationProperties.Name="{x:Static r:Strings.CheckAlgorithmName}" />
+                <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.CheckCopyHash}" Style="{StaticResource DialogButton}" Command="{Binding CopyHashCommand}" />
+                <TextBox Text="{Binding ComputedHashText, Mode=OneWay}" IsReadOnly="True" Margin="8,0,0,0" FontFamily="Cascadia Mono, Consolas" FontSize="11"
+                         VerticalContentAlignment="Center" AutomationProperties.Name="{x:Static r:Strings.CheckComputedName}" />
+            </DockPanel>
+
+            <TextBlock Grid.Row="3" Text="{x:Static r:Strings.ScanLabel}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,3" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ScanText}" Margin="0,6,0,3" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ScanProblem}" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+        <TextBlock Text="{Binding HashMessage}" Style="{StaticResource NoteText}" Margin="0,6,0,0" AutomationProperties.LiveSetting="Polite" />
+
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button Content="{x:Static r:Strings.Close}" Style="{StaticResource PrimaryButton}" IsCancel="True" IsDefault="True" />
         </StackPanel>

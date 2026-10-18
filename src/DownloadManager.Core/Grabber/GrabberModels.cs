@@ -47,6 +47,12 @@ public sealed class GrabberProject
     /// <summary>Send the browser's cookies captured with the project (stored encrypted).</summary>
     public bool UseCookies { get; set; } = true;
 
+    /// <summary>
+    /// The captured cookies are deleted after each run (the downloads it sent keep their own copy until they finish):
+    /// a session is not kept longer than needed. On by default.
+    /// </summary>
+    public bool ForgetCookiesAfterRun { get; set; } = true;
+
     /// <summary>Offer the app's saved logins to sites that ask (HTTP authentication).</summary>
     public bool UseSavedCredentials { get; set; } = true;
 
@@ -177,6 +183,15 @@ public sealed class GrabberFileState
 
     /// <summary>Set when the site no longer has the file; the local copy is never deleted.</summary>
     public DateTime? RemovedUtc { get; set; }
+
+    /// <summary>Files mode: the download the file was sent as.</summary>
+    public long? DownloadId { get; set; }
+
+    /// <summary>
+    /// The file is on disk: saved by an offline copy, or its download completed. A file sent to a queue whose download
+    /// then failed or was removed is not obtained, and the next synchronization offers it again.
+    /// </summary>
+    public bool Obtained { get; set; } = true;
 
     public GrabberFileState Clone() => (GrabberFileState)MemberwiseClone();
 }

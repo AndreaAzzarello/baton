@@ -17,9 +17,18 @@ public partial class MessageWindow : Window
 {
     private Answer _answer = Answer.Cancel;
 
-    public MessageWindow(string message, string title, MessageKind kind, IReadOnlyList<(string Text, Answer Answer)> buttons, Answer defaultAnswer)
+    /// <param name="details">Technical details (an unexpected error): shown folded, with a "Copy details" button.</param>
+    public MessageWindow(string message, string title, MessageKind kind, IReadOnlyList<(string Text, Answer Answer)> buttons, Answer defaultAnswer,
+        string? details = null)
     {
         InitializeComponent();
+        if (details is not null)
+        {
+            DetailsText.Text = details;
+            DetailsPanel.Visibility = Visibility.Visible;
+            CopyDetails.Visibility = Visibility.Visible;
+            Width = 560;
+        }
         Title = title;
         MessageText.Text = message;
         AutomationProperties.SetName(this, title);
@@ -51,6 +60,20 @@ public partial class MessageWindow : Window
             Buttons.Children.Add(button);
             if (isDefault)
                 Loaded += (_, _) => button.Focus();
+        }
+    }
+
+    private void OnCopyDetails(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Clipboard.SetText(DetailsText.Text);
+            CopiedText.Text = Core.Resources.Strings.ErrorDetailsCopied;
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+            // The clipboard is busy (another program holds it): the details stay visible to copy by hand.
+            DetailsPanel.IsExpanded = true;
         }
     }
 

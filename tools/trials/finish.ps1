@@ -13,8 +13,9 @@ $since = if (Test-Path "$work\started.txt") { [datetime](Get-Content "$work\star
 $needle = [regex]::Escape((Split-Path $work -NoQualifier))
 
 $apps = Get-CimInstance Win32_Process -Filter "Name='DownloadManager.exe'" |
-  Where-Object { ($_.CommandLine -like "*--background*" -and $_.CreationDate -gt $since) -or $_.CommandLine -like "*\bin\Debug\*" }
-$site = Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -like "*trials*site*server.py*" }
+  Where-Object { ($_.CommandLine -like "*--background*" -and $_.CreationDate -gt $since) -or $_.CommandLine -like "*\bin\Debug\*" -or "$($_.ExecutablePath)" -like "$work\*" }
+# The trial site, and any other local server serving files from the trial folder (e.g. the update trial).
+$site = Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -like "*trials*site*server.py*" -or $_.CommandLine -like "*dm-trials*" }
 $run = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
 $autostart = (Get-ItemProperty $run).PSObject.Properties | Where-Object { $_.Name -like "Mozilla-Firefox-*" -and "$($_.Value)" -match $needle }
 $mozilla = "HKCU:\Software\Mozilla\Firefox"

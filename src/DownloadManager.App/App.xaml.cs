@@ -25,6 +25,31 @@ public partial class App : Application
     private ToastService? _toasts;
     private TrayIcon? _tray;
     private bool _runningEndAction;
+    private DispatcherTimer? _trimTimer;
+
+    /// <summary>
+    /// In the notification area the app mostly waits: a few seconds after the window hides (or after a start in the tray),
+    /// memory used by the window and the startup is given back to Windows. Nothing happens if the window came back.
+    /// </summary>
+    private void ScheduleTrim(Window window)
+    {
+        _trimTimer?.Stop();
+        _trimTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+        _trimTimer.Tick += (_, _) =>
+        {
+            _trimTimer.Stop();
+            if (window.IsVisible)
+                return;
+            GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+            using var self = System.Diagnostics.Process.GetCurrentProcess();
+            SetProcessWorkingSetSize(self.Handle, -1, -1);
+        };
+        _trimTimer.Start();
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool SetProcessWorkingSetSize(IntPtr process, nint minimum, nint maximum);
 
     /// <summary>Database and settings; DOWNLOADMANAGER_DATA points the app at another folder (and sandboxes it), for tests.</summary>
     public static string DataDirectory => AppEnvironment.DataDirectory;
@@ -32,9 +57,21 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        Log.Configure(Path.Combine(DataDirectory, "logs"));
+        Log.Info("app", $"start {AppVersion} {string.Join(' ', e.Args)}");
         DispatcherUnhandledException += OnUnhandledException;
+        // Errors on other threads cannot be shown as they happen: they are logged, and a crash leaves its details there.
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            Log.Error("task", "unobserved", args.Exception.GetBaseException());
+            args.SetObserved();
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            Log.Error("crash", "unhandled", args.ExceptionObject as Exception);
 
-        _store = new DownloadStore(Path.Combine(DataDirectory, "downloads.db"));
+        var databasePath = Path.Combine(DataDirectory, "downloads.db");
+        var firstRun = Core.Setup.FirstRun.IsNeeded(databasePath);
+        _store = new DownloadStore(databasePath);
         _service = new DownloadService(_store);
         var service = _service;
 
@@ -52,6 +89,7 @@ public partial class App : Application
         var shell = new ShellService();
         var dialogs = new DialogService(() => service, shell);
         _grabber = new Core.Grabber.GrabberService(service, _store);
+        service.ResumePendingChecks(); // now that the notifications and the grabber listen
         _viewModel = new MainViewModel(service, _store, dialogs, shell, new StartupService(), new GrabberUi(_grabber, service, dialogs, shell));
         _viewModel.SettingsSaved += settings => themes.Apply(settings.Theme);
 
@@ -61,6 +99,7 @@ public partial class App : Application
         var hintShown = false;
         window.HiddenToTray += () =>
         {
+            ScheduleTrim(window);
             if (hintShown)
                 return;
             hintShown = true;
@@ -89,6 +128,11 @@ public partial class App : Application
         _systemTimer.Start();
         UpdateSystemState();
 
+        if (firstRun)
+            RunFirstRun(service, dialogs, shell, themes);
+        else
+            _ = OfferDesktopRelocationAsync(service, dialogs);
+
         var startHidden = e.Args.Contains(Core.Platform.SystemRegistration.TrayArgument);
         var fromBrowser = e.Args.Contains(BrowserIntegration.BackgroundArgument);
         if (!startHidden)
@@ -100,10 +144,79 @@ public partial class App : Application
             }
             window.Show();
         }
+        else
+        {
+            ScheduleTrim(window);
+        }
+
+        var updates = new UpdateService(service, dialogs, window.ExitApp);
+        _viewModel.Updates = updates;
+        if (e.Args.Contains(Core.Updates.UpdateInstaller.UpdatedArgument))
+        {
+            // Up and running: the previous version, waiting as a watcher, may stop.
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, UpdateService.MarkStarted);
+            if (e.Args.Contains(UpdateService.RolledBackArgument))
+                Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => dialogs.ShowError(Strings.UpdateRolledBack, Strings.UpdateTitle));
+        }
+        else if (service.Settings.UpdateCheckEnabled)
+        {
+            // Not at the very start, which belongs to the downloads; silent unless a newer version exists.
+            _ = Task.Delay(TimeSpan.FromSeconds(30)).ContinueWith(_ => Dispatcher.InvokeAsync(() => updates.CheckAsync(service.Settings.UpdateUrl, interactive: false)),
+                TaskScheduler.Default);
+        }
 
         BrowserIntegration.Register(DataDirectory);
         RepairStartEntry();
         _ = AppChannel.ServeAsync(AppEnvironment.PipeName, OnChannelMessage, _channelCts.Token);
+    }
+
+    /// <summary>When the extension last said hello (its popup or its connection page), for the first-run check.</summary>
+    private static DateTime? LastExtensionContactUtc { get; set; }
+
+    private static void RunFirstRun(DownloadService service, IDialogService dialogs, IShellService shell, ThemeService themes)
+    {
+        var wizard = new FirstRunViewModel(dialogs, shell, service.Categories, Core.Setup.BrowserDetector.Detect(),
+            FirstRunViewModel.FindExtensionFolder(AppContext.BaseDirectory), () => LastExtensionContactUtc);
+        var settings = service.Settings;
+        settings.DesktopRelocationAsked = true; // a new installation never starts on the Desktop
+        service.UpdateSettings(settings);
+        if (dialogs.ShowFirstRun(wizard) is not { } choices)
+            return;
+        Core.Setup.FirstRun.Apply(service, choices);
+        themes.Apply(choices.Theme);
+        if (wizard.StartWithWindows)
+            new StartupService().Set(true);
+        Log.Info("app", "first run completed");
+    }
+
+    /// <summary>
+    /// Earlier versions could keep downloads on the Desktop: proposed once, the folders move only on "Yes", and the files
+    /// already downloaded only after a second, separate "Yes".
+    /// </summary>
+    private static async Task OfferDesktopRelocationAsync(DownloadService service, IDialogService dialogs)
+    {
+        var settings = service.Settings;
+        if (settings.DesktopRelocationAsked)
+            return;
+        var plan = Core.Setup.DesktopRelocation.Plan(settings, service.Categories, service.ExportRecords(), Core.Setup.DesktopRelocation.DesktopFolders(),
+            Core.Setup.DesktopRelocation.DefaultTarget);
+        if (plan.IsEmpty)
+            return;
+        var folders = string.Join(Environment.NewLine, plan.Folders.Select(f =>
+            $"• {(f.Name.Length > 0 ? f.Name : Strings.RelocationDownloadFolder)}: {f.From} → {f.To}"));
+        var answer = dialogs.Ask(string.Format(CultureInfo.CurrentCulture, Strings.RelocationQuestion, folders), Strings.RelocationTitle);
+        settings.DesktopRelocationAsked = true;
+        service.UpdateSettings(settings);
+        if (answer != Answer.Yes)
+            return;
+        var moveFiles = plan.Files.Count > 0
+            && dialogs.Ask(string.Format(CultureInfo.CurrentCulture, Strings.RelocationMoveFiles, plan.Files.Count), Strings.RelocationTitle) == Answer.Yes;
+        // In the background: moving many files to another drive takes a while, and the window must stay responsive.
+        var result = await Task.Run(() => service.ApplyRelocation(plan, moveFiles));
+        var message = string.Format(CultureInfo.CurrentCulture, Strings.RelocationDone, result.FilesMoved);
+        if (result.Problems.Count > 0)
+            message += Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, result.Problems.Take(10));
+        dialogs.Inform(message, Strings.RelocationTitle);
     }
 
     private readonly Dictionary<string, List<LoginRequest>> _waitingForLogin = [];
@@ -214,6 +327,7 @@ public partial class App : Application
                 return new ChannelReply(true);
 
             case Messages.Hello:
+                LastExtensionContactUtc = DateTime.UtcNow;
                 return new ChannelReply(true, Protocol: Messages.ProtocolVersion, AppVersion: AppVersion);
 
             case Messages.Activate:
@@ -265,15 +379,42 @@ public partial class App : Application
     private void OnUi(Action<bool> action) =>
         Dispatcher.InvokeAsync(() => action((MainWindow as MainWindow)?.IsClosing == true));
 
-    /// <summary>The app's version, e.g. "0.7.0", reported to the extension's connection check.</summary>
+    /// <summary>The app's version, e.g. "1.0.0", reported to the extension's connection check.</summary>
     public static string AppVersion => typeof(App).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "?";
 
+    /// <summary>
+    /// Every unexpected error on the UI thread ends here: logged, and shown with its details folded and a "Copy details"
+    /// button, so a problem can be reported. The app keeps running.
+    /// </summary>
     private static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        new MessageWindow(e.Exception.Message, Strings.ErrorUnexpected, MessageKind.Error, [(Strings.Ok, Answer.Yes)], Answer.Yes)
-        {
-            WindowStartupLocation = WindowStartupLocation.CenterScreen,
-        }.ShowDialog();
+        Log.Error("ui", "unexpected error", e.Exception);
         e.Handled = true;
+        try
+        {
+            new MessageWindow(string.Format(CultureInfo.CurrentCulture, Strings.ErrorUnexpectedText, e.Exception.Message), Strings.ErrorUnexpected,
+                MessageKind.Error, [(Strings.Ok, Answer.Yes)], Answer.Yes, ErrorDetails(e.Exception))
+            {
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            }.ShowDialog();
+        }
+        catch (InvalidOperationException)
+        {
+            // The error happened while the app was closing: the log has it.
+        }
+    }
+
+    /// <summary>What a report needs: versions and the error with its stack, with addresses and secrets masked.</summary>
+    public static string ErrorDetails(Exception exception)
+    {
+        var lines = new List<string>
+        {
+            $"DownloadManager {AppVersion}",
+            $"Windows {Environment.OSVersion.Version}, .NET {Environment.Version}",
+            DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
+            "",
+        };
+        lines.AddRange(exception.ToString().Split('\n').Select(l => l.TrimEnd('\r')));
+        return string.Join(Environment.NewLine, lines.Select(Log.Redact));
     }
 }

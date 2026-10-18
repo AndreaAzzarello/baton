@@ -5,6 +5,7 @@ using System.Windows.Input;
 using DownloadManager.App.Mvvm;
 using DownloadManager.App.Services;
 using DownloadManager.Core;
+using DownloadManager.Core.PostDownload;
 using DownloadManager.Core.Resources;
 
 namespace DownloadManager.App.ViewModels;
@@ -35,6 +36,152 @@ public sealed class PropertiesViewModel : ObservableObject
         _category = Categories.FirstOrDefault(c => c.Id == snapshot.CategoryId);
         UpdateUrlCommand = new RelayCommand(UpdateUrl, () => CanUpdateUrl);
         OpenFolderCommand = new RelayCommand(() => _shell.Reveal(_snapshot.FinalPath, _snapshot.Directory));
+        _expectedHash = snapshot.Check?.ExpectedHash is { } expected ? $"{FileHash.DisplayName(snapshot.Check.HashAlgorithm)}:{expected}" : "";
+        _algorithm = snapshot.Check?.HashAlgorithm ?? service.Settings.HashAlgorithm;
+        VerifyCommand = new RelayCommand(Verify, () => !_busy);
+        CopyHashCommand = new RelayCommand(CopyHash, () => IsCompleted && !_busy);
+        // Checks that finish while the window is open show up here.
+        var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+        _onCheck = s =>
+        {
+            if (s.Id == _snapshot.Id)
+                dispatcher.InvokeAsync(() => Refresh(s));
+        };
+        _service.CheckCompleted += _onCheck;
+    }
+
+    private readonly Action<DownloadSnapshot> _onCheck;
+    private string _expectedHash;
+    private string _algorithm;
+
+    public void Detach() => _service.CheckCompleted -= _onCheck;
+
+    public ICommand VerifyCommand { get; }
+    public ICommand CopyHashCommand { get; }
+
+    public IReadOnlyList<Choice<string>> Algorithms { get; } =
+        FileHash.Algorithms.Select(a => new Choice<string>(a, FileHash.DisplayName(a))).ToList();
+
+    public Choice<string> Algorithm
+    {
+        get => Algorithms.First(a => a.Value == _algorithm);
+        set
+        {
+            if (value is null || value.Value == _algorithm)
+                return;
+            _algorithm = value.Value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ComputedHashText));
+        }
+    }
+
+    /// <summary>The expected hash can be given (or corrected) at any time; a finished file is checked right away.</summary>
+    public string ExpectedHash
+    {
+        get => _expectedHash;
+        set => Set(ref _expectedHash, value);
+    }
+
+    /// <summary>Only when an expected hash is set, its algorithm is fixed.</summary>
+    public bool CanChooseAlgorithm => _snapshot.Check?.ExpectedHash is null;
+
+    public string HashResultText => _snapshot.Check switch
+    {
+        { Pending: true } => Strings.CheckRunning,
+        { HashMatches: true } => Strings.CheckHashMatches,
+        { HashMatches: false } => Strings.CheckHashDiffers,
+        { ExpectedHash: not null } => Strings.CheckHashNotYet,
+        _ => Strings.CheckHashNoExpected,
+    };
+
+    public bool HashProblem => _snapshot.Check?.HashMatches == false;
+
+    public string ComputedHashText => _snapshot.Check is { ComputedHash: { } hash, HashAlgorithm: { } algorithm } && algorithm == _algorithm
+        ? hash
+        : "—";
+
+    public string ScanText => _snapshot.Check?.Scan switch
+    {
+        ScanOutcome.Clean => Strings.ScanClean,
+        ScanOutcome.Threat => string.Format(CultureInfo.CurrentCulture, Strings.ScanThreat, _snapshot.Check.ScanDetail ?? ""),
+        ScanOutcome.TimedOut => Strings.ScanTimedOut,
+        ScanOutcome.Failed => string.Format(CultureInfo.CurrentCulture, Strings.ScanFailed, _snapshot.Check.ScanDetail ?? ""),
+        _ => _snapshot.Check?.Pending == true ? Strings.CheckRunning : Strings.ScanNotRun,
+    };
+
+    public bool ScanProblem => _snapshot.Check?.Scan == ScanOutcome.Threat;
+
+    private void Refresh(DownloadSnapshot snapshot)
+    {
+        _snapshot = snapshot;
+        OnPropertyChanged(nameof(HashResultText));
+        OnPropertyChanged(nameof(HashProblem));
+        OnPropertyChanged(nameof(ComputedHashText));
+        OnPropertyChanged(nameof(ScanText));
+        OnPropertyChanged(nameof(ScanProblem));
+        OnPropertyChanged(nameof(CanChooseAlgorithm));
+        OnPropertyChanged(nameof(Algorithm));
+    }
+
+    private void Verify()
+    {
+        try
+        {
+            _service.SetExpectedHash(_snapshot.Id, ExpectedHash);
+            if (_service.GetSnapshot(_snapshot.Id) is { } fresh)
+            {
+                if (fresh.Check?.HashAlgorithm is { } algorithm)
+                    _algorithm = algorithm;
+                Refresh(fresh);
+            }
+            HashMessage = null;
+        }
+        catch (ArgumentException ex)
+        {
+            HashMessage = ex.Message;
+        }
+    }
+
+    private string? _hashMessage;
+
+    public string? HashMessage
+    {
+        get => _hashMessage;
+        private set => Set(ref _hashMessage, value);
+    }
+
+    /// <summary>Computes the hash if needed (on a worker thread), then copies it.</summary>
+    private async void CopyHash()
+    {
+        var hash = ComputedHashText;
+        if (hash == "—")
+        {
+            _busy = true;
+            HashMessage = Strings.CheckRunning;
+            try
+            {
+                hash = await _service.ComputeHashAsync(_snapshot.Id, _algorithm) ?? "";
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                HashMessage = StorageErrors.Describe(ex);
+                return;
+            }
+            finally
+            {
+                _busy = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+            if (hash.Length == 0)
+            {
+                HashMessage = Strings.ErrorFileMissing;
+                return;
+            }
+            if (_service.GetSnapshot(_snapshot.Id) is { } fresh)
+                Refresh(fresh);
+        }
+        _shell.SetClipboardText(hash);
+        HashMessage = string.Format(CultureInfo.CurrentCulture, Strings.CheckHashCopied, FileHash.DisplayName(_algorithm));
     }
 
     public IReadOnlyList<Category> Categories { get; }

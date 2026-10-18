@@ -24,55 +24,59 @@
 
         <!-- Toolbar -->
         <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
-            <DockPanel LastChildFill="False">
-                <Button Style="{StaticResource ToolButton}" Command="{Binding AddCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionAdd}" ToolTip="{x:Static r:Strings.ActionAddToolTip}">
+            <DockPanel x:Name="ToolbarPanel" LastChildFill="False">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding AddCommand}" Tag="add" AutomationProperties.Name="{x:Static r:Strings.ActionAdd}" ToolTip="{x:Static r:Strings.ActionAddToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE710;" Foreground="{DynamicResource AccentBrush}" /><TextBlock Text="{x:Static r:Strings.ActionAdd}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
                 <Rectangle Style="{StaticResource Separator}" />
-                <Button Style="{StaticResource ToolButton}" Command="{Binding StartCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionStart}" ToolTip="{x:Static r:Strings.ActionStartToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding StartCommand}" Tag="start" AutomationProperties.Name="{x:Static r:Strings.ActionStart}" ToolTip="{x:Static r:Strings.ActionStartToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE768;" /><TextBlock Text="{x:Static r:Strings.ActionStart}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding PauseCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionPause}" ToolTip="{x:Static r:Strings.ActionPauseToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding PauseCommand}" Tag="pause" AutomationProperties.Name="{x:Static r:Strings.ActionPause}" ToolTip="{x:Static r:Strings.ActionPauseToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE769;" /><TextBlock Text="{x:Static r:Strings.ActionPause}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding EnqueueCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionEnqueue}" ToolTip="{x:Static r:Strings.ActionEnqueueToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding EnqueueCommand}" Tag="enqueue" AutomationProperties.Name="{x:Static r:Strings.ActionEnqueue}" ToolTip="{x:Static r:Strings.ActionEnqueueToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE823;" /><TextBlock Text="{x:Static r:Strings.ActionEnqueue}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding RemoveCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionRemove}" ToolTip="{x:Static r:Strings.ActionRemoveToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding RemoveCommand}" Tag="remove" AutomationProperties.Name="{x:Static r:Strings.ActionRemove}" ToolTip="{x:Static r:Strings.ActionRemoveToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" /><TextBlock Text="{x:Static r:Strings.ActionRemove}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding ProgressCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionProgress}" ToolTip="{x:Static r:Strings.ActionProgressToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding ProgressCommand}" Tag="progress" AutomationProperties.Name="{x:Static r:Strings.ActionProgress}" ToolTip="{x:Static r:Strings.ActionProgressToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE9D9;" /><TextBlock Text="{x:Static r:Strings.ActionProgress}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding PropertiesCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionProperties}" ToolTip="{x:Static r:Strings.ActionPropertiesToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding PropertiesCommand}" Tag="properties" AutomationProperties.Name="{x:Static r:Strings.ActionProperties}" ToolTip="{x:Static r:Strings.ActionPropertiesToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE946;" /><TextBlock Text="{x:Static r:Strings.ActionProperties}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
                 <Rectangle Style="{StaticResource Separator}" />
-                <Button Style="{StaticResource ToolButton}" Command="{Binding MoveUpCommand}" MinWidth="44" AutomationProperties.Name="{x:Static r:Strings.ActionUp}" ToolTip="{x:Static r:Strings.ActionUpToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding MoveUpCommand}" Tag="up" MinWidth="44" AutomationProperties.Name="{x:Static r:Strings.ActionUp}" ToolTip="{x:Static r:Strings.ActionUpToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74A;" /><TextBlock Text="{x:Static r:Strings.ActionUp}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding MoveDownCommand}" MinWidth="44" AutomationProperties.Name="{x:Static r:Strings.ActionDown}" ToolTip="{x:Static r:Strings.ActionDownToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding MoveDownCommand}" Tag="down" MinWidth="44" AutomationProperties.Name="{x:Static r:Strings.ActionDown}" ToolTip="{x:Static r:Strings.ActionDownToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74B;" /><TextBlock Text="{x:Static r:Strings.ActionDown}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
                 <Rectangle Style="{StaticResource Separator}" />
-                <Button Style="{StaticResource ToolButton}" Command="{Binding ToggleQueueCommand}" MinWidth="92"
+                <Button Style="{StaticResource ToolButton}" Command="{Binding ToggleQueueCommand}" Tag="queue" MinWidth="92"
                         AutomationProperties.Name="{Binding QueueText}" ToolTip="{Binding QueueToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="{Binding QueueGlyph}" /><TextBlock Text="{Binding QueueText}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
 
-                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Command="{Binding SettingsCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionSettings}" ToolTip="{x:Static r:Strings.ActionSettings}">
+                <Button x:Name="MoreButton" DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Click="OnMore" MinWidth="44"
+                        AutomationProperties.Name="{x:Static r:Strings.ActionMore}" ToolTip="{x:Static r:Strings.ActionMoreToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE712;" /><TextBlock Text="{x:Static r:Strings.ActionMore}" Margin="0,3,0,0" /></StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding SettingsCommand}" Tag="settings" AutomationProperties.Name="{x:Static r:Strings.ActionSettings}" ToolTip="{x:Static r:Strings.ActionSettings}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE713;" /><TextBlock Text="{x:Static r:Strings.ActionSettings}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Command="{Binding GrabberCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionGrabber}" ToolTip="{x:Static r:Strings.ActionGrabberToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding GrabberCommand}" Tag="grabber" AutomationProperties.Name="{x:Static r:Strings.ActionGrabber}" ToolTip="{x:Static r:Strings.ActionGrabberToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE774;" /><TextBlock Text="{x:Static r:Strings.ActionGrabber}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Command="{Binding QueuesCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionQueues}" ToolTip="{x:Static r:Strings.ActionQueuesToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding QueuesCommand}" Tag="queues" AutomationProperties.Name="{x:Static r:Strings.ActionQueues}" ToolTip="{x:Static r:Strings.ActionQueuesToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE823;" /><TextBlock Text="{x:Static r:Strings.ActionQueues}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Command="{Binding CategoriesCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionCategories}" ToolTip="{x:Static r:Strings.ActionCategoriesToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding CategoriesCommand}" Tag="categories" AutomationProperties.Name="{x:Static r:Strings.ActionCategories}" ToolTip="{x:Static r:Strings.ActionCategoriesToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE8FD;" /><TextBlock Text="{x:Static r:Strings.ActionCategories}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Command="{Binding OpenDownloadFolderCommand}" AutomationProperties.Name="{x:Static r:Strings.ActionFolder}" ToolTip="{x:Static r:Strings.ActionFolderToolTip}">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding OpenDownloadFolderCommand}" Tag="folder" AutomationProperties.Name="{x:Static r:Strings.ActionFolder}" ToolTip="{x:Static r:Strings.ActionFolderToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE838;" /><TextBlock Text="{x:Static r:Strings.ActionFolder}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
             </DockPanel>
@@ -180,6 +184,7 @@
                           GridLinesVisibility="None" CanUserResizeRows="False" CanUserSortColumns="True" CanUserReorderColumns="True" CanUserResizeColumns="True"
                           Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                           RowHeight="36" HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="{x:Static r:Strings.ListName}"
+                          EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                           SelectionChanged="OnSelectionChanged" Sorting="OnSorting" MouseDoubleClick="OnRowDoubleClick"
                           PreviewMouseLeftButtonDown="OnGridMouseDown" PreviewMouseMove="OnGridMouseMove"
                           ColumnReordered="OnColumnsChanged">

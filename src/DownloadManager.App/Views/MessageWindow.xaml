@@ -1,6 +1,7 @@
 <Window x:Class="DownloadManager.App.Views.MessageWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:r="clr-namespace:DownloadManager.Core.Resources;assembly=DownloadManager.Core"
         Width="460" SizeToContent="Height" ResizeMode="NoResize" ShowInTaskbar="False"
         Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner">
     <StackPanel Margin="20">
@@ -9,6 +10,17 @@
                        VerticalAlignment="Top" Foreground="{DynamicResource AccentBrush}" />
             <TextBlock x:Name="MessageText" TextWrapping="Wrap" VerticalAlignment="Center" LineHeight="20" />
         </DockPanel>
-        <StackPanel x:Name="Buttons" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0" />
+        <Expander x:Name="DetailsPanel" Margin="44,16,0,0" Visibility="Collapsed" Header="{x:Static r:Strings.ErrorDetails}"
+                  AutomationProperties.Name="{x:Static r:Strings.ErrorDetails}">
+            <TextBox x:Name="DetailsText" IsReadOnly="True" TextWrapping="NoWrap" MaxHeight="220" Margin="0,8,0,0" FontFamily="Cascadia Mono, Consolas"
+                     FontSize="11" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     AutomationProperties.Name="{x:Static r:Strings.ErrorDetails}" />
+        </Expander>
+        <DockPanel Margin="0,24,0,0">
+            <Button x:Name="CopyDetails" DockPanel.Dock="Left" Content="{x:Static r:Strings.ErrorCopyDetails}" Style="{StaticResource DialogButton}"
+                    Margin="0" Visibility="Collapsed" Click="OnCopyDetails" />
+            <StackPanel x:Name="Buttons" Orientation="Horizontal" HorizontalAlignment="Right" />
+        </DockPanel>
+        <TextBlock x:Name="CopiedText" Style="{StaticResource NoteText}" HorizontalAlignment="Left" AutomationProperties.LiveSetting="Polite" />
     </StackPanel>
 </Window>

@@ -260,6 +260,10 @@
                         <TextBlock Text="{x:Static r:Strings.GrabberAccessHeading}" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,6" />
                         <CheckBox Content="{x:Static r:Strings.GrabberUseCookies}" IsChecked="{Binding UseCookies}" IsEnabled="{Binding HasCookies}" Margin="0,2" />
                         <TextBlock Text="{Binding CookieText}" Style="{StaticResource Hint}" Margin="24,0,0,6" />
+                        <DockPanel Margin="24,0,0,6">
+                            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.GrabberClearCookies}" Style="{StaticResource DialogButton}" Command="{Binding ClearCookiesCommand}" />
+                            <CheckBox Content="{x:Static r:Strings.GrabberForgetCookies}" IsChecked="{Binding ForgetCookiesAfterRun}" VerticalAlignment="Center" />
+                        </DockPanel>
                         <CheckBox Content="{x:Static r:Strings.GrabberUseCredentials}" IsChecked="{Binding UseCredentials}" Margin="0,2" />
                         <CheckBox Content="{x:Static r:Strings.GrabberUseProxy}" IsChecked="{Binding UseProxy}" Margin="0,2" />
                         <TextBlock Text="{x:Static r:Strings.GrabberAccessHint}" Style="{StaticResource Hint}" />

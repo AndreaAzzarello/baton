@@ -24,8 +24,24 @@ internal static class Program
         if (args.Length == 1 && NotificationLinks.IsLink(args[0]) && HandleNotificationLink(args[0]) is { } exitCode)
             return exitCode;
 
+        // Run by the previous version after an update: start the new one and put the old one back if it fails.
+        if (args.Length == 2 && args[0] == Core.Updates.UpdateInstaller.WatchArgument && int.TryParse(args[1], out var appProcessId))
+            return UpdateService.RunWatcher(appProcessId);
+
         // One instance per user: a second launch brings the running window forward instead.
         using var instance = new Mutex(true, @"Local\" + AppEnvironment.PipeName, out var first);
+        // Started after an update or a restore: the previous instance is closing, wait for it instead of activating it.
+        if (!first && args.Contains(Core.Updates.UpdateInstaller.UpdatedArgument))
+        {
+            try
+            {
+                first = instance.WaitOne(TimeSpan.FromMinutes(2));
+            }
+            catch (AbandonedMutexException)
+            {
+                first = true;
+            }
+        }
         if (!first)
         {
             BrowserIntegration.AllowForeground();

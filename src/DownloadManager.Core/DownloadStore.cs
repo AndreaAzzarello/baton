@@ -8,7 +8,7 @@ namespace DownloadManager.Core;
 public sealed partial class DownloadStore : IDisposable
 {
     /// <summary>Version written by this build. Every older version is upgraded by <see cref="Migrate"/>.</summary>
-    public const int SchemaVersion = 6;
+    public const int SchemaVersion = 7;
 
     private const string PreferencePrefix = "ui.";
 
@@ -22,6 +22,38 @@ public sealed partial class DownloadStore : IDisposable
         _db.Open();
         Execute("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
         Migrate(databasePath);
+    }
+
+    /// <summary>
+    /// For the previous version put back after an update that did not start: if the new one already migrated the database
+    /// to a schema this version cannot open, the copy taken before that migration is put back and the migrated database is
+    /// kept beside it as ".v&lt;N&gt;.newer". True when the copy was restored.
+    /// </summary>
+    public static bool RestoreBackupForThisVersion(string databasePath)
+    {
+        if (!File.Exists(databasePath))
+            return false;
+        long version;
+        using (var db = new SqliteConnection(new SqliteConnectionStringBuilder
+                   { DataSource = databasePath, Mode = SqliteOpenMode.ReadOnly, Pooling = false }.ToString()))
+        {
+            db.Open();
+            using var command = db.CreateCommand();
+            command.CommandText = "PRAGMA user_version;";
+            version = (long)command.ExecuteScalar()!;
+        }
+        var backup = $"{databasePath}.v{SchemaVersion}.bak";
+        if (version <= SchemaVersion || !File.Exists(backup))
+            return false;
+        var newer = $"{databasePath}.v{version}.newer";
+        File.Move(databasePath, newer, overwrite: true);
+        foreach (var suffix in new[] { "-wal", "-shm" })
+        {
+            if (File.Exists(databasePath + suffix))
+                File.Move(databasePath + suffix, newer + suffix, overwrite: true);
+        }
+        File.Copy(backup, databasePath);
+        return true;
     }
 
     /// <summary>Copy of the database taken before an upgrade in this session; null when none was needed.</summary>
@@ -67,6 +99,8 @@ public sealed partial class DownloadStore : IDisposable
             MigrateTo5(tx);
         if (version < 6)
             MigrateTo6(tx);
+        if (version < 7)
+            MigrateTo7(tx);
         Execute($"PRAGMA user_version = {SchemaVersion};", tx);
         tx.Commit();
     }
@@ -250,6 +284,24 @@ public sealed partial class DownloadStore : IDisposable
                 last_seen_utc TEXT NOT NULL,
                 removed_utc TEXT,
                 PRIMARY KEY (project_id, url));
+            """, tx);
+    }
+
+    /// <summary>
+    /// Checks after the download (hash, antivirus) on downloads; on the grabber's files, the download each one was sent
+    /// as and whether it completed, so a file whose download failed or was removed is offered again. Files remembered
+    /// by version 6 were sent already and count as obtained.
+    /// </summary>
+    private void MigrateTo7(SqliteTransaction tx)
+    {
+        AddColumnIfMissing("downloads", "post_check", "TEXT", tx);
+        AddColumnIfMissing("grabber_files", "download_id", "INTEGER", tx);
+        AddColumnIfMissing("grabber_files", "obtained", "INTEGER NOT NULL DEFAULT 1", tx);
+        // Cookies are now forgotten after each run by default; a scheduled project that already used them would lose its
+        // access silently after the upgrade, so it keeps them (the option can be changed in its wizard).
+        Execute("""
+            UPDATE grabber_projects SET settings = json_set(settings, '$.forgetCookiesAfterRun', json('false'))
+            WHERE secrets IS NOT NULL AND json_valid(settings) AND json_valid(schedule) AND json_extract(schedule, '$.enabled') = 1;
             """, tx);
     }
 
@@ -454,9 +506,9 @@ public sealed partial class DownloadStore : IDisposable
             using var cmd = Command("""
                 INSERT INTO downloads (url, directory, file_name, total_size, etag, last_modified, supports_ranges, status, error,
                                        sort_order, added_utc, completed_utc, request_context, category_id, auto_category, content_type,
-                                       queue_id, failures, retry_at, media)
+                                       queue_id, failures, retry_at, media, post_check)
                 VALUES ($url, $dir, $name, $size, $etag, $lm, $ranges, $status, $error,
-                        $order, $added, $completed, $context, $category, $auto, $ctype, $queue, $failures, $retry, $media);
+                        $order, $added, $completed, $context, $category, $auto, $ctype, $queue, $failures, $retry, $media, $check);
                 SELECT last_insert_rowid();
                 """, tx);
             Bind(cmd, record);
@@ -477,7 +529,7 @@ public sealed partial class DownloadStore : IDisposable
                     last_modified = $lm, supports_ranges = $ranges, status = $status, error = $error,
                     sort_order = $order, added_utc = $added, completed_utc = $completed, request_context = $context,
                     category_id = $category, auto_category = $auto, content_type = $ctype,
-                    queue_id = $queue, failures = $failures, retry_at = $retry, media = $media
+                    queue_id = $queue, failures = $failures, retry_at = $retry, media = $media, post_check = $check
                 WHERE id = $id;
                 """, tx);
             Bind(cmd, record);
@@ -531,6 +583,7 @@ public sealed partial class DownloadStore : IDisposable
                         Failures = reader.GetInt32(reader.GetOrdinal("failures")),
                         RetryAtUtc = NullableString(reader, "retry_at") is { } retry ? ParseDate(retry) : null,
                         Media = ReadMedia(NullableString(reader, "media")),
+                        Check = ReadJson<PostDownload.PostCheck>(NullableString(reader, "post_check")),
                     };
                     records[r.Id] = r;
                 }
@@ -645,6 +698,20 @@ public sealed partial class DownloadStore : IDisposable
                     // The default of an earlier version follows the app's version instead of staying behind.
                     case nameof(AppSettings.UserAgent): settings.UserAgent = value.StartsWith("DownloadManager/0.", StringComparison.Ordinal) ? AppSettings.DefaultUserAgent : value; break;
                     case nameof(AppSettings.FfmpegPath): settings.FfmpegPath = value; break;
+                    case nameof(AppSettings.ComputeHashOnCompletion): settings.ComputeHashOnCompletion = value == "1"; break;
+                    case nameof(AppSettings.HashAlgorithm) when PostDownload.FileHash.Algorithms.Contains(value): settings.HashAlgorithm = value; break;
+                    case nameof(AppSettings.ScanOnCompletion): settings.ScanOnCompletion = value == "1"; break;
+                    case nameof(AppSettings.ScannerPath): settings.ScannerPath = value; break;
+                    case nameof(AppSettings.ScannerArguments): settings.ScannerArguments = value; break;
+                    case nameof(AppSettings.ScanThreatCodes): settings.ScanThreatCodes = value; break;
+                    case nameof(AppSettings.ScanTimeoutSeconds) when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var scanTimeout):
+                        settings.ScanTimeoutSeconds = scanTimeout; break;
+                    case nameof(AppSettings.UpdateCheckEnabled): settings.UpdateCheckEnabled = value == "1"; break;
+                    case nameof(AppSettings.UpdateUrl): settings.UpdateUrl = value; break;
+                    case nameof(AppSettings.DesktopRelocationAsked): settings.DesktopRelocationAsked = value == "1"; break;
+                    case nameof(AppSettings.ToolbarItems): settings.ToolbarItems = value; break;
+                    case nameof(AppSettings.ToolbarSmallIcons): settings.ToolbarSmallIcons = value == "1"; break;
+                    case nameof(AppSettings.ToolbarShowText): settings.ToolbarShowText = value == "1"; break;
                     case nameof(AppSettings.Theme) when Enum.TryParse<AppTheme>(value, out var theme): settings.Theme = theme; break;
                 }
             }
@@ -680,6 +747,19 @@ public sealed partial class DownloadStore : IDisposable
             [nameof(AppSettings.MaxConnectionsPerServer)] = settings.MaxConnectionsPerServer.ToString(CultureInfo.InvariantCulture),
             [nameof(AppSettings.UserAgent)] = settings.UserAgent,
             [nameof(AppSettings.FfmpegPath)] = settings.FfmpegPath,
+            [nameof(AppSettings.ComputeHashOnCompletion)] = settings.ComputeHashOnCompletion ? "1" : "0",
+            [nameof(AppSettings.HashAlgorithm)] = settings.HashAlgorithm,
+            [nameof(AppSettings.ScanOnCompletion)] = settings.ScanOnCompletion ? "1" : "0",
+            [nameof(AppSettings.ScannerPath)] = settings.ScannerPath,
+            [nameof(AppSettings.ScannerArguments)] = settings.ScannerArguments,
+            [nameof(AppSettings.ScanThreatCodes)] = settings.ScanThreatCodes,
+            [nameof(AppSettings.ScanTimeoutSeconds)] = settings.ScanTimeoutSeconds.ToString(CultureInfo.InvariantCulture),
+            [nameof(AppSettings.UpdateCheckEnabled)] = settings.UpdateCheckEnabled ? "1" : "0",
+            [nameof(AppSettings.UpdateUrl)] = settings.UpdateUrl,
+            [nameof(AppSettings.DesktopRelocationAsked)] = settings.DesktopRelocationAsked ? "1" : "0",
+            [nameof(AppSettings.ToolbarItems)] = settings.ToolbarItems,
+            [nameof(AppSettings.ToolbarSmallIcons)] = settings.ToolbarSmallIcons ? "1" : "0",
+            [nameof(AppSettings.ToolbarShowText)] = settings.ToolbarShowText ? "1" : "0",
         };
         lock (_lock)
         {
@@ -786,9 +866,22 @@ public sealed partial class DownloadStore : IDisposable
         cmd.Parameters.AddWithValue("$failures", r.Failures);
         cmd.Parameters.AddWithValue("$retry", r.RetryAtUtc is { } retry ? retry.ToString("O", CultureInfo.InvariantCulture) : DBNull.Value);
         cmd.Parameters.AddWithValue("$media", r.Media is { } media ? System.Text.Json.JsonSerializer.Serialize(media, MediaJson) : DBNull.Value);
+        cmd.Parameters.AddWithValue("$check", r.Check is { } check ? System.Text.Json.JsonSerializer.Serialize(check, MediaJson) : DBNull.Value);
     }
 
     private static readonly System.Text.Json.JsonSerializerOptions MediaJson = new(System.Text.Json.JsonSerializerDefaults.Web);
+
+    private static T? ReadJson<T>(string? json) where T : class
+    {
+        try
+        {
+            return json is null ? null : System.Text.Json.JsonSerializer.Deserialize<T>(json, MediaJson);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
 
     private static MediaSource? ReadMedia(string? json)
     {

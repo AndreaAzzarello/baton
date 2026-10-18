@@ -610,6 +610,7 @@ public sealed class GrabberTests : IAsyncLifetime
         _site.Set("site.test", "/members.zip", SiteResource.File(10));
         var project = Project();
         project.Cookies = [new BrowserCookie("session", "s3cret-value", "site.test", "/", false, true)];
+        project.ForgetCookiesAfterRun = false; // kept, to check how they are stored
         var saved = _grabber.Save(project);
         await RunAsync(saved);
         Assert.All(_site.Requests.Where(r => r.Path != "/robots.txt"), r => Assert.Contains("session=s3cret-value", r.Cookie));

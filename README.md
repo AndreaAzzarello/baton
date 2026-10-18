@@ -2,8 +2,9 @@
 
 Download manager per Windows (C# / .NET 10 LTS / WPF) con download segmentato, pausa/ripresa persistente,
 code con nome e pianificazione, categorie, FTP/FTPS, proxy, autenticazione, video HLS/DASH (con lingue e sottotitoli), grabber
-di siti (file filtrati o copia offline, sincronizzabile e pianificabile) e integrazione con Chrome, Edge, Opera, Brave e Firefox.
-Versione 0.7.0.
+di siti (file filtrati o copia offline, sincronizzabile e pianificabile), verifica dei file (hash e antivirus), esportazione e
+importazione, aggiornamenti verificati e integrazione con Chrome, Edge, Opera, Brave e Firefox.
+Versione 1.0.0.
 
 ## Struttura
 
@@ -13,12 +14,13 @@ Versione 0.7.0.
 | `src/DownloadManager.App` | Interfaccia WPF in MVVM: `ViewModels`, `Views`, `Services` (finestre, tema, notifiche, area di notifica, avvio con Windows, risparmio energia), `Themes`, `Controls` |
 | `src/DownloadManager.Core/Media` | Video: parser HLS (`HlsPlaylist`) e DASH (`DashManifest`), scelta delle qualità e controlli (`MediaCatalog`), download dei segmenti (`MediaJob`), ffmpeg facoltativo |
 | `src/DownloadManager.Core/Grabber` | Grabber: `GrabberEngine` (visita per livelli, HTML/CSS statici con AngleSharp), `RobotsTxt`, `HostThrottle` (richieste per host, 429/Retry-After), `TrapGuard` e `CrawlUrls` (normalizzazione, trappole), `LocalPaths` (percorsi locali sicuri), `PageLinks` (link di HTML, CSS e srcset, anche per la riscrittura), `GrabberService` (progetti, sincronizzazione, pianificazione) |
+| `src/DownloadManager.Core/PostDownload`, `Portable`, `Updates`, `Setup` | Dopo il download (`FileHash`, `VirusScanner`), esportazione e importazione senza segreti, aggiornamenti verificati con ripristino, primo avvio e spostamento dal Desktop; `Log` (log ruotati e mascherati) |
 | `src/DownloadManager.Core/Integration` | Protocollo con l'estensione (`Messages`, versione 3), validazione (`MessageValidator`), host nativo, pipe, "Scarica tutto" (`BatchLinks`) |
 | `tests/DownloadManager.Tests` | Test xUnit con server locali avviati dai test: HTTP (Range, ETag, 429, cookie, Basic/Digest, moduli POST), FTP/FTPS, proxy HTTP e SOCKS5; fixture HLS/DASH in `Fixtures/Media`; sito multi-host per il grabber (`GrabberTestSite`) |
 | `extension` | Sorgente unico dell'estensione (Manifest V3); è anche la build per Chromium, caricabile così com'è |
 | `tools/build-extension.mjs` | Build per Chromium e Firefox in `dist/` (cartelle e pacchetti .zip / .xpi) |
 | `tests/extension` | Test dell'estensione con `node --test` (regole, moduli, media, ripiego), eseguiti anche da `dotnet test` |
-| `tools/trials` | Prove reali nei browser (Edge, Opera, Firefox headless) con l'app isolata: `prepare.ps1`, `chromium-trial.mjs`, `firefox-trial.mjs`, `grab-trial.ps1`, `finish.ps1`; sito di prova locale (anche `/grab/` per il grabber) |
+| `tools/trials` | Prove reali nei browser (Edge, Opera, Firefox headless) con l'app isolata: `prepare.ps1`, `chromium-trial.mjs`, `firefox-trial.mjs`, `grab-trial.ps1`, `perf.ps1` con `fill_downloads.py` (elenco di migliaia di download, memoria), `finish.ps1`; sito di prova locale (anche `/grab/` per il grabber) |
 | `tools/sign-firefox.ps1` | Firma "non elencata" dell'estensione per Firefox su addons.mozilla.org (chiavi solo da variabili d'ambiente) |
 | `tools/make_resx.py`, `tools/make_locales.py` | Generatori dei testi: `Strings.resx` dell'app e `_locales` dell'estensione (la tabella è nello script) |
 | `CLAUDE.md`, `.claude/` | Regole del progetto per Claude Code, hook (guardia su registro e Desktop, controlli dell'estensione, build incrementale) e skill `prova-reale`, `fine-fase`, `stringhe` |
@@ -169,14 +171,50 @@ DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; ma
   (ETag diverso; altrimenti data o dimensione diverse) o *invariato*; vengono preselezionati solo nuovi e modificati. Nella copia
   offline immagini e script vengono richiesti con `If-None-Match`/`If-Modified-Since` (304 = non riscaricati); pagine e CSS sono
   sempre riletti per seguirne i link. I file scomparsi dal sito sono segnalati come **rimossi dal sito** (solo se la visita è
-  stata completa, oppure con 404/410) e **mai cancellati**.
+  stata completa, oppure con 404/410) e **mai cancellati**. Un file mandato alla coda conta come ottenuto solo quando il suo
+  download è **completato**: se fallisce o viene rimosso dall'elenco, la sincronizzazione successiva lo ripropone.
+- **Banda**: la copia offline rispetta il limite di velocità globale e la quota oraria globale, come i download in coda.
+- **Cookie del progetto**: quelli catturati dal browser sono un accesso al sito, quindi per impostazione vengono **dimenticati
+  dopo ogni esecuzione** (opzione nel passo "Accesso e limiti"); il pulsante **Cancella cookie** li elimina subito.
 - **Pianificazione** con lo stesso modello e le stesse regole sull'ora legale delle code: una volta in una data oppure ogni
   settimana nei giorni scelti, con ripetizione facoltativa ogni N ore. Un'esecuzione per finestra, anche se l'app viene riavviata
   dentro la finestra. Nei "file filtrati" un'esecuzione automatica manda alla coda del progetto i file nuovi e modificati e la
   avvia; a fine esecuzione l'area di notifica mostra il risultato.
 
+## Dopo il download
+
+- **Hash**: MD5, SHA-1 o SHA-256, facoltativo. Si può indicare l'hash atteso aggiungendo il download (anche incollato come
+  `sha256:ab12…`, con spazi o due punti: l'algoritmo si riconosce dalla lunghezza) o più tardi nelle **Proprietà**; a fine
+  download viene calcolato (senza caricare il file in memoria) e confrontato. Impostazioni › *Dopo il download* può calcolarlo
+  per ogni file. Le Proprietà mostrano *corrisponde* / *non corrisponde* e **Copia hash**.
+- **Antivirus**: disattivato per impostazione. Se attivo, ogni file completato viene passato a Windows Defender
+  (`MpCmdRun.exe -Scan -ScanType 3 -File "{file}"`) o al programma indicato, con parametri e codici di uscita "minaccia"
+  modificabili e un tempo massimo (poi il controllo viene interrotto con tutti i suoi processi). Il file scaricato non viene mai
+  aperto né eseguito: è solo un elemento dell'elenco degli argomenti (nessuna shell), e l'antivirus deve essere un `.exe`.
+- I controlli girano uno alla volta in background, senza bloccare l'interfaccia, e riprendono se l'app viene chiusa a metà.
+  Esito nella colonna *Stato* ("Completato · verifica…", "Completato · attenzione"), nel suggerimento della riga e nella
+  notifica, che per un file segnalato non offre **Apri**.
+
 ## Interfaccia
 
+- **Barra degli strumenti personalizzabile**: **Altro** › *Personalizza la barra degli strumenti…* (o tasto destro sulla
+  barra): pulsanti visibili, ordine (Alt+Su/Giù), separatori, spazio flessibile che divide sinistra e destra, icone piccole o
+  grandi, testo sì/no. Salvato tra una sessione e l'altra; *Ripristina* torna alla barra predefinita.
+- **Esporta e importa** (**Altro**): la lista dei download in JSON o i soli indirizzi in testo; impostazioni, categorie, code e
+  progetti del grabber in JSON. **Mai** password, cookie, campi dei moduli o altri segreti, né i percorsi dei programmi
+  (ffmpeg, antivirus) e l'indirizzo degli aggiornamenti. L'importazione (JSON di DownloadManager o un testo qualsiasi con
+  indirizzi) mostra prima un'anteprima: tipo, nome, già presente, non valido; si sceglie cosa importare e cosa fare dei
+  duplicati (salta, sostituisci, mantieni entrambi); l'anteprima mostra anche le cartelle di categorie e progetti. Il file
+  importato non è fidato: i download entrano in pausa nella cartella della loro categoria (mai in una cartella indicata dal file
+  né come già completati), code e progetti senza pianificazione né azione di fine coda, e la password del proxy resta solo se
+  il proxy è lo stesso.
+- **Primo avvio** (solo se il database non esiste): cartella dei download (predefinita **Download**, mai il Desktop), cartelle
+  delle categorie, istruzioni per ogni browser trovato con **Verifica connessione**, avvio con Windows e tema.
+- **Download sul Desktop** (installazioni precedenti): se la cartella dei download o quelle delle categorie sono sul Desktop,
+  all'avvio viene proposto **una sola volta** di spostarle in `Download\DownloadManager`. Nulla cambia senza conferma, e i file
+  già scaricati vengono spostati solo dopo una seconda domanda separata.
+- **Errori imprevisti**: una finestra con *Dettagli tecnici* e **Copia dettagli** (senza dati riservati); tutto finisce anche
+  nel log.
 - **Pannello laterale**: Tutti / Non completati / Completati, ciascuno suddiviso per categoria, con il numero di download.
 - **Elenco**: colonne mostrabili/nascondibili, riordinabili e ridimensionabili (tasto destro sull'intestazione), ordinamento
   con clic sull'intestazione, "Ordine della coda" per tornare all'ordine di coda. Tutto viene salvato tra una sessione e l'altra.
@@ -197,7 +235,7 @@ DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; ma
 
 ## Dati
 
-`%LOCALAPPDATA%\DownloadManager\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 6):
+`%LOCALAPPDATA%\DownloadManager\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 7):
 all'avvio i database delle versioni precedenti vengono aggiornati un passo alla volta in un'unica transazione, dopo averne
 salvato una copia accanto (`downloads.db.v<versione>.bak`). Un database creato da una versione più recente non viene modificato.
 Passando alla 3, tutti i download entrano nella Coda principale, che eredita il vecchio limite e lo stato avviata/fermata;
@@ -206,10 +244,41 @@ La 5 aggiunge ai download la colonna `media` (tipo di stream e qualità scelta) 
 La 6 aggiunge `grabber_projects` (impostazioni in JSON, pianificazione, cookie cifrati con DPAPI, ultima esecuzione) e
 `grabber_files` (per progetto e indirizzo: percorso locale, ETag, data, dimensione, hash delle pagine, prima e ultima volta visto,
 rimozione dal sito). Nella colonna `media` compaiono anche lingua audio e sottotitoli scelti.
+La 7 aggiunge `downloads.post_check` (hash atteso e calcolato, esito dell'antivirus) e, in `grabber_files`, il download a cui il
+file è stato mandato e se è stato davvero ottenuto (i file già presenti contano come ottenuti).
 
-Pubblicazione: eseguibile singolo self-contained non compresso (circa 164 MB). Il trimming non è possibile con WPF (l'SDK lo
+**Log**: `%LOCALAPPDATA%\DownloadManager\logs\app.log`, al massimo 1 MB per file e 5 file (`app.1.log` … `app.4.log`). Gli
+indirizzi vi compaiono senza parametri né credenziali, e password, cookie e token vengono mascherati.
+
+**Errori del disco**: disco pieno, cartella non scrivibile e percorso troppo lungo fermano il download con un messaggio
+chiaro invece di riprovare all'infinito; i nomi dei file oltre 200 caratteri vengono accorciati mantenendo l'estensione.
+
+Pubblicazione: eseguibile singolo self-contained non compresso (circa 165 MB). Il trimming non è possibile con WPF (l'SDK lo
 rifiuta, NETSDK1168); ReadyToRun è stato misurato (finestra in 604 ms invece di 675, ma +66 MB su disco e +10 MB di RAM) e
 non è usato.
+
+## Aggiornamenti
+
+Disattivati per impostazione. In Impostazioni › *Aggiornamenti* si indica l'indirizzo: le release di GitHub
+(`https://api.github.com/repos/UTENTE/REPOSITORY/releases/latest`, con l'eseguibile tra gli allegati e il suo SHA-256 in un
+allegato `DownloadManager.exe.sha256`/`SHA256SUMS` o nelle note come `SHA-256: …`) oppure un manifest JSON
+`{ "version": "1.1.0", "notes": "…", "url": "https://…/DownloadManager.exe", "sha256": "…" }`. Solo indirizzi https.
+Con il controllo all'avvio attivo, una versione più recente mostra le note; nulla viene scaricato senza **Scarica e installa**.
+Il file scaricato deve corrispondere allo SHA-256 dichiarato ed essere un programma Windows, altrimenti viene eliminato.
+Poi l'eseguibile in uso diventa `DownloadManager.exe.old`, il nuovo prende il suo posto e la versione precedente, avviata come
+"guardiano", avvia la nuova e aspetta che segnali di essere partita: se si chiude o non risponde entro 90 secondi, la nuova
+viene messa da parte come `.failed`, la precedente torna al suo posto e si riavvia con un avviso. **Ripristina la versione
+precedente** fa lo stesso scambio a mano. Funziona solo con l'eseguibile pubblicato (un file unico).
+
+## Prestazioni
+
+Misure sull'eseguibile pubblicato, con 2000 download nell'elenco: finestra pronta in circa 4 s; righe virtualizzate (13
+create per la parte visibile, riciclate scorrendo); 40 pagine di scorrimento in 0,6 s, otto salti attraverso l'elenco in
+0,15 s, due ordinamenti per dimensione in 0,2 s, ricerca filtrata subito dopo la pausa di digitazione. Memoria nell'area di
+notifica dopo 30 s: 66 MB di working set e 81 MB privati con 2000 download (163/97 MB prima della 1.0), 24/43 MB con
+l'elenco vuoto: alcuni secondi dopo che la finestra si nasconde l'app restituisce a Windows la memoria della finestra.
+Nessuna perdita di memoria: un test scarica e rimuove 100 download per volta e verifica che la memoria non cresca di giro in
+giro (misurato: circa 30 KB per 100 download).
 
 ## Integrazione con il browser
 
@@ -399,16 +468,33 @@ qualsiasi accesso fa fallire il test.
 I testi dell'interfaccia sono in `src/DownloadManager.Core/Resources/Strings.resx`; per tradurre l'app basta aggiungere
 un file `Strings.<lingua>.resx`.
 
-## Non ancora presente
+## Limiti noti
 
-SFTP (SSH), FTP tramite proxy HTTPS. Grabber: niente JavaScript (i contenuti generati da script non vengono trovati), un link
-che sembra una pagina (`download.php?id=7`) viene riconosciuto come file solo se rientra nella profondità; le opzioni "proxy" e
-"credenziali" del progetto valgono per la scansione, mentre i file mandati a una coda usano la rete dell'app; un file inviato
-alla coda viene ricordato al momento dell'invio (se il download poi fallisce, la sincronizzazione successiva non lo ripropone:
-va ripreso dall'elenco); la copia offline non rispetta il limite di velocità globale (lo rispettano i file in coda); i cookie
-catturati restano nel progetto (cifrati) finché il progetto esiste. Sottotitoli: solo WebVTT (non TTML né sottotitoli dentro i
-segmenti MP4); nell'unione dei segmenti HLS si assume l'allineamento standard di `X-TIMESTAMP-MAP`. DASH multi-periodo: i sottotitoli dei periodi successivi vengono
-spostati all'inizio del loro periodo; video e audio vengono uniti così come sono (la maggior parte dei packager mantiene i tempi
-continui tra i periodi; se un periodo riparte da zero, il file unito può avere un salto). I sottotitoli che non si riescono a
-scaricare non fanno fallire il video: il download lo segnala nella nota. L'estensione per Firefox
-va firmata dall'utente con le proprie chiavi AMO (`tools\sign-firefox.ps1`).
+- Protocolli: niente SFTP (SSH) né FTP tramite proxy HTTPS.
+- Grabber: niente JavaScript (i contenuti generati da script non vengono trovati); un link che sembra una pagina
+  (`download.php?id=7`) viene riconosciuto come file solo se rientra nella profondità; le opzioni "proxy" e "credenziali" del
+  progetto valgono per la scansione, mentre i file mandati a una coda usano la rete dell'app.
+- Video: sottotitoli solo WebVTT (non TTML né sottotitoli dentro i segmenti MP4); nell'unione dei segmenti HLS si assume
+  l'allineamento standard di `X-TIMESTAMP-MAP`. DASH multi-periodo: i sottotitoli dei periodi successivi vengono spostati
+  all'inizio del loro periodo; video e audio vengono uniti così come sono (se un periodo riparte da zero, il file unito può avere
+  un salto). I sottotitoli che non si riescono a scaricare non fanno fallire il video: il download lo segnala nella nota.
+- L'app è solo in italiano (l'estensione in italiano e inglese); per tradurla basta un `Strings.<lingua>.resx`.
+- Aggiornamenti automatici solo per l'eseguibile pubblicato in un unico file; l'aspetto della barra degli strumenti non fa
+  parte dell'esportazione delle impostazioni.
+- L'estensione per Firefox va firmata dall'utente con le proprie chiavi AMO (`tools\sign-firefox.ps1`).
+
+## Risoluzione dei problemi
+
+- **L'estensione dice che l'app non risponde / host mancante**: avvia DownloadManager una volta (registra l'host per l'utente
+  corrente), poi apri **Verifica connessione** dal popup dell'estensione; se l'eseguibile è stato spostato, il pulsante
+  *Registra* della pagina lo ripunta. In Opera l'host è quello di Chrome.
+- **I download partono ma si fermano con "disco pieno" o "cartella non scrivibile"**: libera spazio o scegli un'altra cartella
+  (Impostazioni o Proprietà), poi **Riprendi**: i dati già scaricati restano.
+- **L'antivirus segnala "non riuscito"**: controlla in Impostazioni › *Dopo il download* il programma (percorso completo, `.exe`),
+  i parametri (`{file}` è il file) e i codici di uscita; con un antivirus diverso da Defender consulta la sua documentazione
+  della riga di comando.
+- **Un aggiornamento non parte**: l'app torna da sola alla versione precedente e lo segnala; la versione scartata resta accanto
+  come `DownloadManager.exe.failed`. Il dettaglio è nel log.
+- **Qualcosa non va**: `%LOCALAPPDATA%\DownloadManager\logs\app.log`; nelle finestre d'errore **Copia dettagli** copia
+  versione, sistema ed eccezione senza dati riservati.
+- **Database**: prima di ogni aggiornamento di schema ne resta una copia `downloads.db.v<N>.bak` accanto all'originale.

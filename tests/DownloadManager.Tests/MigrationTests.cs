@@ -46,6 +46,27 @@ public sealed class MigrationTests : IDisposable
         """;
 
     [Fact]
+    public void AfterAFailedUpdate_TheBackupOfThisSchemaIsPutBack_AndTheNewerDatabaseKept()
+    {
+        using (var store = new DownloadStore(DbPath))
+            store.SaveSettings(new AppSettings { DownloadFolder = @"C:\Before" });
+        SqliteConnection.ClearAllPools();
+        File.Copy(DbPath, $"{DbPath}.v{DownloadStore.SchemaVersion}.bak");
+        // A newer version migrated it, then did not start.
+        Run($"PRAGMA user_version = {DownloadStore.SchemaVersion + 1}; INSERT OR REPLACE INTO settings(key, value) VALUES ('DownloadFolder', 'C:\\After');");
+
+        Assert.True(DownloadStore.RestoreBackupForThisVersion(DbPath));
+
+        Assert.Equal((long)DownloadStore.SchemaVersion, Scalar("PRAGMA user_version;"));
+        Assert.True(File.Exists($"{DbPath}.v{DownloadStore.SchemaVersion + 1}.newer"));
+        using (var store = new DownloadStore(DbPath))
+            Assert.Equal(@"C:\Before", store.LoadSettings().DownloadFolder);
+        // Nothing to do for a database this version can open.
+        SqliteConnection.ClearAllPools();
+        Assert.False(DownloadStore.RestoreBackupForThisVersion(DbPath));
+    }
+
+    [Fact]
     public void Version02_IsUpgraded_WithDownloadsSegmentsAndSettingsIntact()
     {
         Run(Version02Schema + """
@@ -130,7 +151,7 @@ public sealed class MigrationTests : IDisposable
 
         using (var store = new DownloadStore(DbPath))
         {
-            Assert.Equal(6, store.Version);
+            Assert.Equal(DownloadStore.SchemaVersion, store.Version);
             Assert.EndsWith(".v5.bak", store.BackupPath);
             Assert.True(File.Exists(store.BackupPath));
             var downloads = store.LoadAll().OrderBy(d => d.Id).ToList();
@@ -157,6 +178,47 @@ public sealed class MigrationTests : IDisposable
         Assert.Equal(0L, cmd.ExecuteScalar());
         cmd.CommandText = "PRAGMA user_version;";
         Assert.Equal(5L, cmd.ExecuteScalar());
+    }
+
+    [Fact]
+    public void Version6_IsUpgradedTo7_GrabberFilesCountAsObtained_AndChecksAreStored()
+    {
+        using (var store = new DownloadStore(DbPath))
+        {
+            store.Insert(new DownloadRecord { Url = "https://example.com/a.zip", Directory = @"D:\dl", FileName = "a.zip", Status = DownloadStatus.Completed,
+                AddedUtc = new DateTime(2026, 10, 1, 10, 0, 0, DateTimeKind.Utc) });
+            var project = new Core.Grabber.GrabberProject { Name = "P", StartUrl = "https://books.example/", AddedUtc = DateTime.UtcNow };
+            store.SaveGrabberProject(project);
+            store.SaveGrabberFiles(project.Id, [new Core.Grabber.GrabberFileState { Url = "https://books.example/a.pdf", FirstSeenUtc = DateTime.UtcNow, LastSeenUtc = DateTime.UtcNow }]);
+            BrowserCookie[] cookies = [new BrowserCookie("session", "s", "members.example", "/", Secure: true, HostOnly: true)];
+            store.SaveGrabberProject(new Core.Grabber.GrabberProject { Name = "Nightly", StartUrl = "https://members.example/", AddedUtc = DateTime.UtcNow,
+                Cookies = [.. cookies], Schedule = new QueueSchedule { Enabled = true } });
+            store.SaveGrabberProject(new Core.Grabber.GrabberProject { Name = "Manual", StartUrl = "https://members.example/", AddedUtc = DateTime.UtcNow,
+                Cookies = [.. cookies] });
+        }
+        // Version 6: no checks, no download link on the grabber's files, projects without the cookie option.
+        Run("ALTER TABLE downloads DROP COLUMN post_check; ALTER TABLE grabber_files DROP COLUMN download_id; " +
+            "ALTER TABLE grabber_files DROP COLUMN obtained; UPDATE grabber_projects SET settings = json_remove(settings, '$.forgetCookiesAfterRun'); " +
+            "PRAGMA user_version = 6;");
+
+        using (var store = new DownloadStore(DbPath))
+        {
+            Assert.Equal(7, store.Version);
+            Assert.EndsWith(".v6.bak", store.BackupPath);
+            var record = store.LoadAll().Single();
+            Assert.Null(record.Check);
+            var projects = store.LoadGrabberProjects();
+            var file = store.LoadGrabberFiles(projects.Single(p => p.Name == "P").Id).Values.Single();
+            Assert.True(file.Obtained); // sent by version 6: not offered again
+            Assert.Null(file.DownloadId);
+            // A scheduled project that relied on its cookies keeps them between runs; the others forget them, the new default.
+            Assert.False(projects.Single(p => p.Name == "Nightly").ForgetCookiesAfterRun);
+            Assert.True(projects.Single(p => p.Name == "Manual").ForgetCookiesAfterRun);
+
+            record.Check = new Core.PostDownload.PostCheck { HashAlgorithm = "SHA256", ExpectedHash = new string('a', 64), Scan = Core.PostDownload.ScanOutcome.Clean };
+            store.Update(record);
+            Assert.Equal(Core.PostDownload.ScanOutcome.Clean, store.LoadAll().Single().Check!.Scan);
+        }
     }
 
     [Fact]

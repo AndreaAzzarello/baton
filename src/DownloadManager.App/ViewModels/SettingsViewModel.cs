@@ -42,7 +42,8 @@ public sealed class SettingsViewModel : ObservableObject
     private CertificateEntry? _selectedCertificate;
 
     public SettingsViewModel(IDialogService dialogs, AppSettings current, bool runAtStartup,
-        CredentialStore? credentials = null, CertificateTrust? certificates = null)
+        CredentialStore? credentials = null, CertificateTrust? certificates = null,
+        Func<string, Task>? checkUpdates = null, Action? restorePreviousVersion = null)
     {
         _dialogs = dialogs;
         _original = current.Clone();
@@ -73,6 +74,16 @@ public sealed class SettingsViewModel : ObservableObject
         FtpActiveMode = current.FtpActiveMode;
         _ffmpegPath = current.FfmpegPath;
 
+        ComputeHashOnCompletion = current.ComputeHashOnCompletion;
+        HashAlgorithmChoice = HashAlgorithms.FirstOrDefault(a => a.Value == current.HashAlgorithm) ?? HashAlgorithms[^1];
+        ScanOnCompletion = current.ScanOnCompletion;
+        _scannerPath = current.ScannerPath;
+        ScannerArguments = current.ScannerArguments;
+        ScanThreatCodes = current.ScanThreatCodes;
+        ScanTimeout = current.ScanTimeoutSeconds.ToString(CultureInfo.CurrentCulture);
+        UpdateCheckEnabled = current.UpdateCheckEnabled;
+        UpdateUrl = current.UpdateUrl;
+
         BrowseCommand = new RelayCommand(() =>
         {
             if (_dialogs.PickFolder(Strings.SettingsFolder, Directory.Exists(Folder) ? Folder : null) is { } picked)
@@ -86,6 +97,35 @@ public sealed class SettingsViewModel : ObservableObject
             if (_dialogs.PickFile(Strings.SettingsFfmpegPick, "ffmpeg|ffmpeg.exe|*.exe|*.exe", FfmpegPath.Length > 0 ? FfmpegPath : null) is { } picked)
                 FfmpegPath = picked;
         });
+        BrowseScannerCommand = new RelayCommand(() =>
+        {
+            if (_dialogs.PickFile(Strings.SettingsScannerPick, Strings.SettingsScannerFilter, ScannerPath.Length > 0 ? ScannerPath : null) is { } picked)
+                ScannerPath = picked;
+        });
+        ResetScannerCommand = new RelayCommand(() =>
+        {
+            ScannerPath = "";
+            ScannerArguments = Core.PostDownload.VirusScanner.DefaultArguments;
+            ScanThreatCodes = Core.PostDownload.VirusScanner.DefaultThreatCodes;
+            OnPropertyChanged(nameof(ScannerArguments));
+            OnPropertyChanged(nameof(ScanThreatCodes));
+        });
+        // The address as typed is checked, so it can be tried before saving.
+        CheckUpdatesCommand = new RelayCommand(async () =>
+        {
+            if (checkUpdates is null || _checkingUpdates)
+                return;
+            _checkingUpdates = true;
+            try
+            {
+                await checkUpdates(UpdateUrl.Trim());
+            }
+            finally
+            {
+                _checkingUpdates = false;
+            }
+        }, () => checkUpdates is not null && !_checkingUpdates);
+        RestorePreviousCommand = new RelayCommand(() => restorePreviousVersion?.Invoke(), () => restorePreviousVersion is not null);
         TestProxyCommand = new RelayCommand(TestProxy, () => !_testing);
         NewLoginCommand = new RelayCommand(() => SelectedLogin = null);
         SaveLoginCommand = new RelayCommand(SaveLogin, () => LoginHost.Trim().Length > 0 && (LoginUser.Trim().Length > 0 || LoginWindowsAccount));
@@ -134,6 +174,54 @@ public sealed class SettingsViewModel : ObservableObject
     public bool ThemeDark { get => Theme == AppTheme.Dark; set { if (value) Theme = AppTheme.Dark; } }
 
     public ICommand BrowseCommand { get; }
+
+    // After the download
+
+    public static IReadOnlyList<Choice<string>> HashAlgorithms { get; } =
+        Core.PostDownload.FileHash.Algorithms.Select(a => new Choice<string>(a, Core.PostDownload.FileHash.DisplayName(a))).ToList();
+
+    public bool ComputeHashOnCompletion { get; set; }
+    public Choice<string> HashAlgorithmChoice { get; set; }
+    public bool ScanOnCompletion { get; set; }
+
+    private string _scannerPath;
+
+    /// <summary>The antivirus program; empty = Windows Defender.</summary>
+    public string ScannerPath
+    {
+        get => _scannerPath;
+        set
+        {
+            if (Set(ref _scannerPath, value ?? ""))
+                OnPropertyChanged(nameof(ScannerStatus));
+        }
+    }
+
+    /// <summary>Which program scans, or why it cannot.</summary>
+    public string ScannerStatus
+    {
+        get
+        {
+            var scanner = Core.PostDownload.VirusScanner.ResolveScanner(ScannerPath);
+            return Core.PostDownload.VirusScanner.Check(scanner) ?? string.Format(CultureInfo.CurrentCulture, Strings.SettingsScannerFound, scanner);
+        }
+    }
+
+    public string ScannerArguments { get; set; }
+    public string ScanThreatCodes { get; set; }
+    public string ScanTimeout { get; set; }
+    public ICommand BrowseScannerCommand { get; }
+    public ICommand ResetScannerCommand { get; }
+
+    // Updates
+
+    private bool _checkingUpdates;
+
+    public bool UpdateCheckEnabled { get; set; }
+    public string UpdateUrl { get; set; }
+    public ICommand CheckUpdatesCommand { get; }
+    public ICommand RestorePreviousCommand { get; }
+    public string CurrentVersionText => string.Format(CultureInfo.CurrentCulture, Strings.SettingsUpdateCurrent, App.AppVersion);
 
     // Network
 
@@ -246,6 +334,17 @@ public sealed class SettingsViewModel : ObservableObject
             Error = Strings.ErrorFolderNotAbsolute;
         else if (BuildNetwork(out var network) is { } networkError)
             Error = networkError;
+        else if (!int.TryParse(ScanTimeout, out var scanTimeout) || scanTimeout is < 10 or > 3600)
+            Error = Strings.ErrorScanTimeout;
+        else if (ScanThreatCodes.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries) is not { Length: > 0 } codes
+                 || !codes.All(c => int.TryParse(c, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var code) && code != 0))
+            Error = Strings.ErrorScanCodes;
+        else if (ScanOnCompletion && Core.PostDownload.VirusScanner.Check(Core.PostDownload.VirusScanner.ResolveScanner(ScannerPath)) is { } scannerError)
+            Error = scannerError;
+        else if (UpdateUrl.Trim().Length > 0 && Core.Updates.UpdateChecker.Allowed(UpdateUrl.Trim()) is null)
+            Error = Strings.UpdateErrorAddress;
+        else if (UpdateCheckEnabled && UpdateUrl.Trim().Length == 0)
+            Error = Strings.ErrorUpdateUrlMissing;
         else
         {
             var result = network;
@@ -259,6 +358,15 @@ public sealed class SettingsViewModel : ObservableObject
             result.Theme = Theme;
             result.CloseToTray = CloseToTray;
             result.GlobalQuotaMBPerHour = quota;
+            result.ComputeHashOnCompletion = ComputeHashOnCompletion;
+            result.HashAlgorithm = HashAlgorithmChoice.Value;
+            result.ScanOnCompletion = ScanOnCompletion;
+            result.ScannerPath = ScannerPath.Trim();
+            result.ScannerArguments = string.IsNullOrWhiteSpace(ScannerArguments) ? Core.PostDownload.VirusScanner.DefaultArguments : ScannerArguments.Trim();
+            result.ScanThreatCodes = string.Join(",", codes);
+            result.ScanTimeoutSeconds = scanTimeout;
+            result.UpdateCheckEnabled = UpdateCheckEnabled;
+            result.UpdateUrl = UpdateUrl.Trim();
             Result = result;
             return true;
         }

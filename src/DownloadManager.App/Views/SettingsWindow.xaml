@@ -155,6 +155,73 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- After the download: hash and antivirus -->
+            <TabItem Header="{x:Static r:Strings.SettingsTabChecks}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel Margin="4,12,22,4">
+                        <TextBlock Text="{x:Static r:Strings.SettingsHashTitle}" Style="{StaticResource SectionTitle}" />
+                        <CheckBox Content="{x:Static r:Strings.SettingsHashOnCompletion}" IsChecked="{Binding ComputeHashOnCompletion}" Margin="0,6,0,0" />
+                        <DockPanel Margin="24,8,0,0" IsEnabled="{Binding ComputeHashOnCompletion}">
+                            <Label Content="{x:Static r:Strings.SettingsHashAlgorithm}" Target="{Binding ElementName=AlgorithmBox}" VerticalAlignment="Center" Padding="0" Margin="0,0,12,0"
+                                   Foreground="{DynamicResource MutedBrush}" />
+                            <ComboBox x:Name="AlgorithmBox" Width="140" HorizontalAlignment="Left" ItemsSource="{x:Static vm:SettingsViewModel.HashAlgorithms}"
+                                      SelectedItem="{Binding HashAlgorithmChoice}" DisplayMemberPath="Text" AutomationProperties.Name="{x:Static r:Strings.SettingsHashAlgorithm}" />
+                        </DockPanel>
+                        <TextBlock Text="{x:Static r:Strings.SettingsHashHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0" TextWrapping="Wrap" />
+
+                        <TextBlock Text="{x:Static r:Strings.SettingsScanTitle}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                        <CheckBox Content="{x:Static r:Strings.SettingsScanOnCompletion}" IsChecked="{Binding ScanOnCompletion}" Margin="0,2" />
+                        <StackPanel Margin="24,8,0,0">
+                            <Label Content="{x:Static r:Strings.SettingsScannerLabel}" Target="{Binding ElementName=ScannerBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseScannerCommand}" />
+                                <TextBox x:Name="ScannerBox" Text="{Binding ScannerPath, UpdateSourceTrigger=PropertyChanged, Delay=300}"
+                                         AutomationProperties.Name="{x:Static r:Strings.SettingsScannerLabel}" AutomationProperties.HelpText="{Binding ScannerStatus}" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding ScannerStatus}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+                            <Label Content="{x:Static r:Strings.SettingsScannerArguments}" Target="{Binding ElementName=ScanArgsBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="ScanArgsBox" Text="{Binding ScannerArguments}" AutomationProperties.Name="{x:Static r:Strings.SettingsScannerArguments}" />
+                            <Grid Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="110" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Label Content="{x:Static r:Strings.SettingsScanCodes}" Target="{Binding ElementName=ScanCodesBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
+                                <TextBox x:Name="ScanCodesBox" Grid.Column="1" Margin="0,4" Text="{Binding ScanThreatCodes}" AutomationProperties.Name="{x:Static r:Strings.SettingsScanCodes}" />
+                                <Label Grid.Row="1" Content="{x:Static r:Strings.SettingsScanTimeout}" Target="{Binding ElementName=ScanTimeoutBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
+                                <TextBox x:Name="ScanTimeoutBox" Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding ScanTimeout}" AutomationProperties.Name="{x:Static r:Strings.SettingsScanTimeout}" />
+                            </Grid>
+                            <Button HorizontalAlignment="Left" Margin="0,8,0,0" Content="{x:Static r:Strings.SettingsScannerReset}" Style="{StaticResource DialogButton}" Command="{Binding ResetScannerCommand}" />
+                        </StackPanel>
+                        <TextBlock Text="{x:Static r:Strings.SettingsScanHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,12,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Updates -->
+            <TabItem Header="{x:Static r:Strings.SettingsTabUpdates}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel Margin="4,12,22,4">
+                        <TextBlock Text="{Binding CurrentVersionText}" Margin="0,0,0,12" />
+                        <CheckBox Content="{x:Static r:Strings.SettingsUpdateCheck}" IsChecked="{Binding UpdateCheckEnabled}" Margin="0,2" />
+                        <Label Content="{x:Static r:Strings.SettingsUpdateUrl}" Target="{Binding ElementName=UpdateUrlBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.SettingsUpdateCheckNow}" Style="{StaticResource DialogButton}" Command="{Binding CheckUpdatesCommand}" />
+                            <TextBox x:Name="UpdateUrlBox" Text="{Binding UpdateUrl}" AutomationProperties.Name="{x:Static r:Strings.SettingsUpdateUrl}" />
+                        </DockPanel>
+                        <TextBlock Text="{x:Static r:Strings.SettingsUpdateHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{x:Static r:Strings.SettingsRestoreTitle}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                        <TextBlock Text="{x:Static r:Strings.SettingsRestoreHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" />
+                        <Button HorizontalAlignment="Left" Margin="0,8,0,0" Content="{x:Static r:Strings.SettingsRestorePrevious}" Style="{StaticResource DialogButton}"
+                                Command="{Binding RestorePreviousCommand}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- Logins and certificates -->
             <TabItem Header="{x:Static r:Strings.SettingsTabCredentials}">
                 <Grid Margin="4,12,12,4">

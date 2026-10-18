@@ -113,25 +113,33 @@ public static class CompletionToast
     public static string Build(DownloadSnapshot download, string sizeText, NotificationLinks links)
     {
         var path = download.FinalPath ?? Path.Combine(download.Directory, download.DisplayName);
+        var problem = download.Check?.HasProblem == true;
+        var checks = PostDownload.PostCheck.Describe(download.Check);
+        var actions = new XElement("actions");
+        // A file the antivirus or the hash flagged is not offered to be opened from the notification.
+        if (!problem)
+        {
+            actions.Add(new XElement("action",
+                new XAttribute("content", Strings.ToastOpen),
+                new XAttribute("activationType", "protocol"),
+                new XAttribute("arguments", links.Create(NotificationAction.Open, path))));
+        }
+        actions.Add(new XElement("action",
+            new XAttribute("content", Strings.ToastOpenFolder),
+            new XAttribute("activationType", "protocol"),
+            new XAttribute("arguments", links.Create(NotificationAction.Reveal, path))));
         var toast = new XElement("toast",
             new XAttribute("activationType", "protocol"),
             new XAttribute("launch", links.Create(NotificationAction.Show, path)),
             new XElement("visual",
                 new XElement("binding", new XAttribute("template", "ToastGeneric"),
-                    new XElement("text", Strings.ToastCompletedTitle),
+                    new XElement("text", problem ? Strings.ToastCompletedProblemTitle : Strings.ToastCompletedTitle),
                     new XElement("text", download.DisplayName),
                     // Only the folder's name: the full path wraps badly, and "Open folder" shows it anyway.
                     new XElement("text", string.Format(CultureInfo.CurrentCulture, Strings.ToastCompletedDetails, sizeText,
-                        Path.GetFileName(Path.TrimEndingDirectorySeparator(download.Directory)) is { Length: > 0 } folder ? folder : download.Directory)))),
-            new XElement("actions",
-                new XElement("action",
-                    new XAttribute("content", Strings.ToastOpen),
-                    new XAttribute("activationType", "protocol"),
-                    new XAttribute("arguments", links.Create(NotificationAction.Open, path))),
-                new XElement("action",
-                    new XAttribute("content", Strings.ToastOpenFolder),
-                    new XAttribute("activationType", "protocol"),
-                    new XAttribute("arguments", links.Create(NotificationAction.Reveal, path)))));
+                        Path.GetFileName(Path.TrimEndingDirectorySeparator(download.Directory)) is { Length: > 0 } folder ? folder : download.Directory)
+                        + (checks is null ? "" : "\n" + checks)))),
+            actions);
         return toast.ToString(SaveOptions.DisableFormatting);
     }
 }

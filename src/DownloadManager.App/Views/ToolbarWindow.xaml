@@ -1,0 +1,36 @@
+<Window x:Class="DownloadManager.App.Views.ToolbarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:r="clr-namespace:DownloadManager.Core.Resources;assembly=DownloadManager.Core"
+        Title="{x:Static r:Strings.ToolbarTitle}" Width="460" Height="560" MinWidth="380" MinHeight="420"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <DockPanel Margin="20">
+        <TextBlock DockPanel.Dock="Top" Text="{x:Static r:Strings.ToolbarHint}" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,0,0,10" />
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <CheckBox Content="{x:Static r:Strings.ToolbarSmallIcons}" IsChecked="{Binding SmallIcons}" Margin="0,2" />
+            <CheckBox Content="{x:Static r:Strings.ToolbarShowText}" IsChecked="{Binding ShowText}" Margin="0,2" />
+            <DockPanel Margin="0,12,0,0">
+                <Button DockPanel.Dock="Left" Content="{x:Static r:Strings.ToolbarReset}" Style="{StaticResource DialogButton}" Margin="0" Command="{Binding ResetCommand}" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="{x:Static r:Strings.Save}" Style="{StaticResource PrimaryButton}" Click="OnSave" IsDefault="True" />
+                    <Button Content="{x:Static r:Strings.Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+            </DockPanel>
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Right" Margin="12,0,0,0">
+            <Button Content="{x:Static r:Strings.ActionUp}" Style="{StaticResource DialogButton}" Margin="0,0,0,6" Command="{Binding MoveUpCommand}"
+                    AutomationProperties.Name="{x:Static r:Strings.ToolbarMoveUp}" />
+            <Button Content="{x:Static r:Strings.ActionDown}" Style="{StaticResource DialogButton}" Margin="0,0,0,6" Command="{Binding MoveDownCommand}"
+                    AutomationProperties.Name="{x:Static r:Strings.ToolbarMoveDown}" />
+            <Button Content="{x:Static r:Strings.ToolbarAddSeparator}" Style="{StaticResource DialogButton}" Margin="0" Command="{Binding AddSeparatorCommand}" />
+        </StackPanel>
+        <ListBox ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" AutomationProperties.Name="{x:Static r:Strings.ToolbarTitle}" PreviewKeyDown="OnListKey"
+                 Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <CheckBox Content="{Binding Label}" IsChecked="{Binding Visible}" IsEnabled="{Binding CanHide}" Focusable="False" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</Window>

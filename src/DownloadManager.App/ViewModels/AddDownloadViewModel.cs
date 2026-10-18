@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Windows.Input;
 using DownloadManager.App.Mvvm;
@@ -111,6 +112,30 @@ public sealed class AddDownloadViewModel : ObservableObject
 
     public bool CanSubmit { get; private set; }
 
+    private string _expectedHash = "";
+
+    /// <summary>Optional: the MD5, SHA-1 or SHA-256 the file must have, checked when it is finished.</summary>
+    public string ExpectedHash
+    {
+        get => _expectedHash;
+        set
+        {
+            if (!Set(ref _expectedHash, value))
+                return;
+            OnPropertyChanged(nameof(HashHint));
+            Validate();
+        }
+    }
+
+    /// <summary>Which algorithm the pasted hash is, so the user sees it was understood.</summary>
+    public string HashHint => ExpectedHash.Trim().Length == 0 ? Strings.AddHashHint
+        : Core.PostDownload.FileHash.TryParse(ExpectedHash, out var algorithm, out _)
+            ? string.Format(CultureInfo.CurrentCulture, Strings.AddHashRecognized, Core.PostDownload.FileHash.DisplayName(algorithm))
+            : "";
+
+    /// <summary>The expected hash as the service takes it, or null.</summary>
+    public string? ExpectedHashOrNull => ExpectedHash.Trim().Length == 0 ? null : ExpectedHash.Trim();
+
     /// <summary>Set by the dialog: start right away (true) or add to the queue (false).</summary>
     public bool StartNow { get; set; }
 
@@ -154,6 +179,8 @@ public sealed class AddDownloadViewModel : ObservableObject
             error = Strings.ErrorInvalidUrl;
         else if (Folder.Trim().Length == 0 || !Path.IsPathFullyQualified(Folder.Trim()))
             error = Strings.ErrorFolderNotAbsolute;
+        else if (ExpectedHash.Trim().Length > 0 && !Core.PostDownload.FileHash.TryParse(ExpectedHash, out _, out _))
+            error = Strings.ErrorHashFormat;
         Error = error;
         CanSubmit = error is null && Url.Trim().Length > 0;
         OnPropertyChanged(nameof(CanSubmit));

@@ -464,5 +464,6 @@ public sealed class MediaJob : IDownloadJob
     }
 
     private static bool IsTransient(Exception ex) =>
-        ex is HttpRequestException or IOException or TimeoutException or OperationCanceledException or ServerBusyException;
+        (ex is HttpRequestException or IOException or TimeoutException or OperationCanceledException or ServerBusyException)
+        && !StorageErrors.IsPermanent(ex); // a full disk or a folder that cannot be written is not fixed by retrying
 }

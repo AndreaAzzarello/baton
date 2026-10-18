@@ -43,6 +43,9 @@ public sealed class GrabberUi(GrabberService grabber, DownloadService downloads,
         var wizard = new GrabberWizardViewModel(dialogs, project, downloads.Categories, downloads.Queues, downloads.Settings.DownloadFolder, () => downloads.UtcNow);
         if (!dialogs.ShowGrabberWizard(wizard, standalone) || wizard.Result is not { } result)
             return null;
+        // The cookies are the project's as they are now: a run may have forgotten them while the wizard was open.
+        if (!wizard.CookiesCleared && result.Id != 0 && grabber.Find(result.Id) is { } current)
+            result.Cookies = current.Cookies;
         GrabberProject saved;
         try
         {

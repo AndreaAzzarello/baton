@@ -36,6 +36,11 @@
             <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.AddFolderName}" />
         </DockPanel>
 
+        <Label Content="{x:Static r:Strings.AddHashLabel}" Target="{Binding ElementName=HashBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+        <TextBox x:Name="HashBox" Text="{Binding ExpectedHash, UpdateSourceTrigger=PropertyChanged}" FontFamily="Cascadia Mono, Consolas"
+                 AutomationProperties.Name="{x:Static r:Strings.AddHashName}" AutomationProperties.HelpText="{Binding HashHint}" />
+        <TextBlock Text="{Binding HashHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" FontSize="12" />
+
         <TextBlock Text="{Binding Note}" Style="{StaticResource NoteText}" />
         <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Assertive" />
 

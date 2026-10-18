@@ -36,6 +36,14 @@ public sealed class UiSupportTests : IAsyncLifetime
     }
 
     [Fact]
+    public void Toolbar_layout_drops_unknown_and_repeated_items_and_keeps_one_spacer()
+    {
+        Assert.Equal(ToolbarLayout.Default, ToolbarLayout.Format(ToolbarLayout.Parse("")));
+        Assert.Equal("settings,|,add,~", ToolbarLayout.Format(ToolbarLayout.Parse("|,settings,|,|,ghost,add,add,|")));
+        Assert.Equal("add,~,queue", ToolbarLayout.Format(ToolbarLayout.Parse("add,|,~,~,queue")));
+    }
+
+    [Fact]
     public void DroppedText_YieldsEveryDistinctWebAddress()
     {
         var text = "Scarica (https://example.com/one.zip), poi http://example.com/two.iso.\r\n" +

@@ -1,3 +1,5 @@
+using DownloadManager.Core.PostDownload;
+
 namespace DownloadManager.Core;
 
 public enum DownloadStatus
@@ -78,6 +80,9 @@ public sealed class DownloadRecord
     /// </summary>
     public MediaSource? Media { get; set; }
 
+    /// <summary>Hash and antivirus checks of the finished file; null when none were asked for.</summary>
+    public PostCheck? Check { get; set; }
+
     public long DownloadedBytes =>
         Status == DownloadStatus.Completed && TotalSize is { } size ? size : Segments.Sum(s => s.Written);
 
@@ -90,6 +95,7 @@ public sealed class DownloadRecord
         var copy = (DownloadRecord)MemberwiseClone();
         copy.Segments = Segments.Select(s => s.Clone()).ToList();
         copy.Media = Media?.Clone();
+        copy.Check = Check?.Clone();
         return copy;
     }
 }
@@ -174,7 +180,8 @@ public sealed record DownloadSnapshot(
     string? LastModified = null,
     string? ContentType = null,
     long? QueueId = null,
-    DateTime? RetryAtUtc = null);
+    DateTime? RetryAtUtc = null,
+    PostCheck? Check = null);
 
 /// <summary>A byte range for the progress view; <see cref="Active"/> when a connection is downloading it right now.</summary>
 public sealed record SegmentView(long Start, long End, long Written, bool Active);
@@ -236,7 +243,7 @@ public sealed class AppSettings
     public int MaxConnectionsPerServer { get; set; } = 16;
     public string UserAgent { get; set; } = DefaultUserAgent;
 
-    public const string DefaultUserAgent = "DownloadManager/0.7";
+    public const string DefaultUserAgent = "DownloadManager/1.0";
 
     /// <summary>ffmpeg.exe used to put the video and audio of a stream into one MP4; empty = look for it in PATH.</summary>
     public string FfmpegPath { get; set; } = "";
@@ -248,6 +255,44 @@ public sealed class AppSettings
 
     /// <summary>Windows notification when a download completes.</summary>
     public bool NotifyOnCompletion { get; set; } = true;
+
+    // After the download
+
+    /// <summary>Compute the hash of every finished file (also without an expected one), with <see cref="HashAlgorithm"/>.</summary>
+    public bool ComputeHashOnCompletion { get; set; }
+
+    public string HashAlgorithm { get; set; } = "SHA256";
+
+    /// <summary>Scan every finished file with the antivirus below. Off by default.</summary>
+    public bool ScanOnCompletion { get; set; }
+
+    /// <summary>Empty = Windows Defender (MpCmdRun.exe).</summary>
+    public string ScannerPath { get; set; } = "";
+
+    public string ScannerArguments { get; set; } = VirusScanner.DefaultArguments;
+
+    /// <summary>Exit codes that mean "threat found" (0 always means clean).</summary>
+    public string ScanThreatCodes { get; set; } = VirusScanner.DefaultThreatCodes;
+
+    public int ScanTimeoutSeconds { get; set; } = 300;
+
+    // Updates
+
+    /// <summary>Look for a newer version at <see cref="UpdateUrl"/> when the app starts. Off by default.</summary>
+    public bool UpdateCheckEnabled { get; set; }
+
+    /// <summary>A GitHub "latest release" API address, or a JSON manifest (version, notes, url, sha256).</summary>
+    public string UpdateUrl { get; set; } = "";
+
+    /// <summary>The move of folders off the Desktop was proposed once (whatever the answer): it is not proposed again.</summary>
+    public bool DesktopRelocationAsked { get; set; }
+
+    /// <summary>The toolbar's buttons in order, by id (see the app's toolbar); empty = the default set.</summary>
+    public string ToolbarItems { get; set; } = "";
+
+    public bool ToolbarSmallIcons { get; set; }
+
+    public bool ToolbarShowText { get; set; } = true;
 
     public AppSettings Clone() => (AppSettings)MemberwiseClone();
 }

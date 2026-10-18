@@ -38,6 +38,9 @@ public partial class MainWindow : Window
         NavigationMenu = BuildNavigationMenu();
         ColumnMenu = new ContextMenu();
         ColumnMenu.Opened += (_, _) => FillColumnMenu();
+        ApplyToolbar();
+        _vm.ToolbarChanged += ApplyToolbar;
+        ToolbarPanel.ContextMenu = new ContextMenu { Items = { new MenuItem { Header = Strings.MenuCustomizeToolbar, Command = _vm.CustomizeToolbarCommand } } };
 
         ApplyColumnLayout(_vm.LoadColumnLayout(DefaultColumns()));
         foreach (var column in Grid.Columns)
@@ -226,6 +229,54 @@ public partial class MainWindow : Window
     private DataGridColumn? Column(string key) => Grid.Columns.FirstOrDefault(c => c.SortMemberPath == key);
 
     private static bool IsNameColumn(DataGridColumn column) => column.SortMemberPath == nameof(DownloadItemViewModel.Name);
+
+    private Dictionary<string, Button>? _toolbarButtons;
+
+    /// <summary>
+    /// Lays the toolbar out as saved: buttons in order (left of the gap, then right of it), separators, icon size and labels.
+    /// The buttons are defined once in XAML, tagged with their id; "More" always stays at the far right.
+    /// </summary>
+    private void ApplyToolbar()
+    {
+        _toolbarButtons ??= ToolbarPanel.Children.OfType<Button>().Where(b => b.Tag is string).ToDictionary(b => (string)b.Tag);
+        var settings = _vm.ToolbarSettings;
+        ToolbarPanel.Children.Clear();
+        ToolbarPanel.Children.Add(MoreButton);
+        var layout = ToolbarLayout.Parse(settings.ToolbarItems);
+        var spacer = layout.IndexOf(ToolbarLayout.Spacer);
+        // Right-docked children fill from the right edge: the ones after the gap are added in reverse.
+        var order = layout.Take(spacer).Select(id => (id, Dock.Left)).Concat(layout.Skip(spacer + 1).Reverse().Select(id => (id, Dock.Right)));
+        foreach (var (id, dock) in order)
+        {
+            UIElement element = id == ToolbarLayout.Separator
+                ? new System.Windows.Shapes.Rectangle { Style = (Style)FindResource("Separator") }
+                : _toolbarButtons[id];
+            DockPanel.SetDock(element, dock);
+            ToolbarPanel.Children.Add(element);
+        }
+        foreach (var button in _toolbarButtons.Values.Append(MoreButton))
+        {
+            if (button.Content is not StackPanel { Children.Count: 2 } content)
+                continue;
+            ((TextBlock)content.Children[0]).FontSize = settings.ToolbarSmallIcons ? 14 : 18;
+            content.Children[1].Visibility = settings.ToolbarShowText ? Visibility.Visible : Visibility.Collapsed;
+            button.MinWidth = settings.ToolbarShowText ? 64 : 40;
+        }
+    }
+
+    /// <summary>Less frequent actions: export and import.</summary>
+    private void OnMore(object sender, RoutedEventArgs e)
+    {
+        var menu = new ContextMenu { PlacementTarget = MoreButton, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+        menu.Items.Add(new MenuItem { Header = Strings.MenuExportList, Command = _vm.ExportListCommand });
+        menu.Items.Add(new MenuItem { Header = Strings.MenuExportUrls, Command = _vm.ExportUrlsCommand });
+        menu.Items.Add(new MenuItem { Header = Strings.MenuExportSettings, Command = _vm.ExportSettingsCommand });
+        menu.Items.Add(new Separator());
+        menu.Items.Add(new MenuItem { Header = Strings.MenuImport, Command = _vm.ImportCommand });
+        menu.Items.Add(new Separator());
+        menu.Items.Add(new MenuItem { Header = Strings.MenuCustomizeToolbar, Command = _vm.CustomizeToolbarCommand });
+        menu.IsOpen = true;
+    }
 
     private ContextMenu BuildRowMenu()
     {

@@ -52,6 +52,7 @@ public sealed class GrabberEngine
     private readonly ConcurrentQueue<(string Relative, Uri Url, bool IsCss)> _saved = new();
     private readonly LocalPaths? _paths;
     private readonly string _userAgent;
+    private readonly Func<int, CancellationToken, Task> _consume;
     private int _pagesStarted, _pagesVisited, _pagesQueued, _files, _errors, _robotsBlocked, _skipped;
     private long _bytes;
     private volatile string? _limit;
@@ -61,9 +62,11 @@ public sealed class GrabberEngine
 
     /// <param name="http">A client that does not follow redirects by itself (each hop is checked here) and holds the project's cookies.</param>
     /// <param name="previous">What earlier runs recorded, by normalized address.</param>
+    /// <param name="consume">The app's speed limit and hourly quota, applied to every byte read (null: none).</param>
     public GrabberEngine(GrabberProject project, HttpClient http, IReadOnlyDictionary<string, GrabberFileState> previous, string userAgent,
-        GrabberEngineOptions? options = null)
+        GrabberEngineOptions? options = null, Func<int, CancellationToken, Task>? consume = null)
     {
+        _consume = consume ?? ((_, _) => Task.CompletedTask);
         _project = project;
         _http = http;
         _previous = previous;
@@ -547,6 +550,7 @@ public sealed class GrabberEngine
                 int read;
                 while ((read = await ReadIdleAsync(input, buffer, ct)) > 0)
                 {
+                    await _consume(read, ct);
                     written += read;
                     if (Interlocked.Add(ref _bytes, read) > limit || (_project.MaxSizeBytes > 0 && written > _project.MaxSizeBytes))
                         throw new LimitException(Interlocked.Read(ref _bytes) > limit ? "size" : null);
@@ -627,7 +631,7 @@ public sealed class GrabberEngine
             try
             {
                 var text = await File.ReadAllTextAsync(full, ct);
-                PageLinks.Visitor visit = (raw, resolved, _) => LocalTarget(relative, raw, resolved);
+                PageLinks.Visitor visit = (_, resolved, _) => LocalTarget(relative, resolved);
                 string output;
                 if (isCss)
                 {
@@ -679,7 +683,7 @@ public sealed class GrabberEngine
         }
     }
 
-    private string LocalTarget(string fromRelative, string raw, Uri resolved)
+    private string LocalTarget(string fromRelative, Uri resolved)
     {
         var key = CrawlUrls.Normalize(resolved) is { } normalized ? normalized.AbsoluteUri : null;
         var fragment = resolved.Fragment;
@@ -886,6 +890,7 @@ public sealed class GrabberEngine
         int read;
         while ((read = await ReadIdleAsync(input, chunk, ct)) > 0)
         {
+            await _consume(read, ct);
             if (buffer.Length + read > limit)
                 return null;
             buffer.Write(chunk, 0, read);

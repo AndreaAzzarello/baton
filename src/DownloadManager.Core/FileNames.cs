@@ -4,6 +4,8 @@ namespace DownloadManager.Core;
 
 public static class FileNames
 {
+    public const int MaxNameLength = 200;
+
     public static string FromResponse(ContentDispositionHeaderValue? disposition, Uri uri)
     {
         var name = disposition?.FileNameStar ?? disposition?.FileName?.Trim('"');
@@ -22,7 +24,17 @@ public static class FileNames
     {
         var invalid = Path.GetInvalidFileNameChars();
         var cleaned = new string(Path.GetFileName(name).Select(c => invalid.Contains(c) ? '_' : c).ToArray()).Trim(' ', '.');
-        return cleaned.Length == 0 ? "download" : cleaned;
+        if (cleaned.Length == 0)
+            return "download";
+        // Windows limits a name to 255 characters; a shorter limit leaves room for " (2)" and ".part".
+        if (cleaned.Length > MaxNameLength)
+        {
+            var extension = Path.GetExtension(cleaned);
+            if (extension.Length > 16)
+                extension = "";
+            cleaned = cleaned[..(MaxNameLength - extension.Length)].TrimEnd(' ', '.') + extension;
+        }
+        return cleaned;
     }
 
     /// <summary>Returns "name (n).ext" for the first n that does not exist yet.</summary>

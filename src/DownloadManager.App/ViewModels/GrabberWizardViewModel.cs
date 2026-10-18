@@ -80,6 +80,8 @@ public sealed class GrabberWizardViewModel : ObservableObject
     private string _exclude;
     // Step 4
     private bool _useCookies;
+    private bool _forgetCookies;
+    private bool _cookiesCleared;
     private bool _useCredentials;
     private bool _useProxy;
     private string _maxPages;
@@ -130,6 +132,15 @@ public sealed class GrabberWizardViewModel : ObservableObject
         _include = project.IncludePattern;
         _exclude = project.ExcludePattern;
         _useCookies = project.UseCookies && project.Cookies.Count > 0;
+        _forgetCookies = project.ForgetCookiesAfterRun;
+        ClearCookiesCommand = new RelayCommand(() =>
+        {
+            _cookiesCleared = true;
+            UseCookies = false;
+            OnPropertyChanged(nameof(CookieCount));
+            OnPropertyChanged(nameof(HasCookies));
+            OnPropertyChanged(nameof(CookieText));
+        }, () => HasCookies);
         _useCredentials = project.UseSavedCredentials;
         _useProxy = project.UseProxy;
         _maxPages = project.MaxPages.ToString(CultureInfo.CurrentCulture);
@@ -259,7 +270,7 @@ public sealed class GrabberWizardViewModel : ObservableObject
         }
     }
 
-    public int CookieCount => _original.Cookies.Count;
+    public int CookieCount => _cookiesCleared ? 0 : _original.Cookies.Count;
     public bool HasCookies => CookieCount > 0;
 
     public string CookieText => HasCookies
@@ -363,6 +374,14 @@ public sealed class GrabberWizardViewModel : ObservableObject
     // ------------------------------------------------------------ step 4: access and limits
 
     public bool UseCookies { get => _useCookies; set => Set(ref _useCookies, value); }
+
+    /// <summary>The browser's cookies are a login: by default they are dropped once a run has used them.</summary>
+    public bool ForgetCookiesAfterRun { get => _forgetCookies; set => Set(ref _forgetCookies, value); }
+
+    /// <summary>Drops the project's cookies when it is saved.</summary>
+    public ICommand ClearCookiesCommand { get; }
+
+    public bool CookiesCleared => _cookiesCleared;
     public bool UseCredentials { get => _useCredentials; set => Set(ref _useCredentials, value); }
     public bool UseProxy { get => _useProxy; set => Set(ref _useProxy, value); }
     public string MaxPages { get => _maxPages; set => Set(ref _maxPages, value); }
@@ -592,6 +611,9 @@ public sealed class GrabberWizardViewModel : ObservableObject
         p.IncludePattern = Include.Trim();
         p.ExcludePattern = Exclude.Trim();
         p.UseCookies = _useCookies;
+        p.ForgetCookiesAfterRun = _forgetCookies;
+        if (_cookiesCleared)
+            p.Cookies = [];
         p.UseSavedCredentials = _useCredentials;
         p.UseProxy = _useProxy;
         p.MaxPages = int.Parse(MaxPages, CultureInfo.CurrentCulture);
