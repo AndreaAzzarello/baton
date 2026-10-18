@@ -134,6 +134,18 @@ public sealed class Phase6Tests : IAsyncLifetime
     }
 
     [Fact]
+    public void ScanOutcome_IsDescribedTheSameWay_ShortOrWithTheScannersDetail()
+    {
+        var threat = new PostCheck { Scan = ScanOutcome.Threat, ScanDetail = "Trojan:Win32/Test" };
+        Assert.Null(PostCheck.DescribeScan(new PostCheck(), withDetail: true));
+        Assert.Contains("Trojan:Win32/Test", PostCheck.DescribeScan(threat, withDetail: true));
+        Assert.DoesNotContain("Trojan", PostCheck.DescribeScan(threat, withDetail: false));
+        Assert.Equal(PostCheck.DescribeScan(threat, withDetail: false), PostCheck.Describe(threat));
+        var failed = new PostCheck { Scan = ScanOutcome.Failed, ScanDetail = "exit 7" };
+        Assert.Equal(PostCheck.DescribeScan(failed, true), PostCheck.DescribeScan(failed, false));
+    }
+
+    [Fact]
     public async Task ExpectedHashSetOnAnOldDownload_IsChecked_WithoutANewCompletionNotice()
     {
         var content = SiteResource.File(60_000, seed: 8);

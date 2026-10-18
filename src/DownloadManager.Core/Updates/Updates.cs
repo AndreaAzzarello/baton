@@ -8,11 +8,15 @@ namespace DownloadManager.Core.Updates;
 /// <summary>A newer version found at the update address.</summary>
 public sealed record UpdateInfo(Version Version, string Notes, Uri Download, string Sha256, string Name);
 
-public sealed class UpdateException(string message, Exception? inner = null) : Exception(message, inner);
+public sealed class UpdateException(string message, Exception? inner = null, bool unverifiable = false) : Exception(message, inner)
+{
+    /// <summary>A newer version exists but cannot be verified (no SHA-256): the user is told even after an automatic check.</summary>
+    public bool Unverifiable { get; } = unverifiable;
+}
 
 /// <summary>
 /// Reads the update address: a GitHub "latest release" (api.github.com/repos/OWNER/REPO/releases/latest), whose
-/// executable asset comes with a ".sha256" asset or a "SHA-256: …" line in the notes, or a small JSON manifest
+/// executable asset comes with a "&lt;exe&gt;.sha256" asset holding its hash, or a small JSON manifest
 /// { "version": "1.1.0", "notes": "…", "url": "https://…/DownloadManager.exe", "sha256": "…" }. Without a SHA-256 an
 /// update is never offered. Only https addresses are used (http only for this computer, for tests).
 /// </summary>
@@ -33,23 +37,25 @@ public static partial class UpdateChecker
         {
             throw new UpdateException(Resources.Strings.UpdateErrorNoRelease, ex);
         }
-        var info = root.TryGetProperty("tag_name", out _) ? await FromGitHubAsync(http, root, ct) : FromManifest(root, url);
-        return info.Version > Normalize(current) ? info : null;
+        var gitHub = root.TryGetProperty("tag_name", out _);
+        // The version first: a release that is not newer is never reported, whatever it lacks.
+        var version = ParseVersion(Text(root, gitHub ? "tag_name" : "version")) ?? throw new UpdateException(Resources.Strings.UpdateErrorNoRelease);
+        if (version <= Normalize(current))
+            return null;
+        return gitHub ? await FromGitHubAsync(http, root, version, ct) : FromManifest(root, url, version);
     }
 
-    private static UpdateInfo FromManifest(JsonElement root, Uri baseUrl)
+    private static UpdateInfo FromManifest(JsonElement root, Uri baseUrl, Version version)
     {
-        var version = ParseVersion(Text(root, "version")) ?? throw new UpdateException(Resources.Strings.UpdateErrorNoRelease);
         var download = Text(root, "url") is { } link && Uri.TryCreate(baseUrl, link, out var u) ? Allowed(u.AbsoluteUri) : null;
         var sha = Text(root, "sha256")?.Trim().ToLowerInvariant();
         if (download is null || sha is null || !IsSha256(sha))
-            throw new UpdateException(Resources.Strings.UpdateErrorNoHash);
+            throw new UpdateException(Resources.Strings.UpdateErrorNoHash, unverifiable: true);
         return new UpdateInfo(version, Text(root, "notes") ?? "", download, sha, Path.GetFileName(download.AbsolutePath));
     }
 
-    private static async Task<UpdateInfo> FromGitHubAsync(HttpClient http, JsonElement root, CancellationToken ct)
+    private static async Task<UpdateInfo> FromGitHubAsync(HttpClient http, JsonElement root, Version version, CancellationToken ct)
     {
-        var version = ParseVersion(Text(root, "tag_name")) ?? throw new UpdateException(Resources.Strings.UpdateErrorNoRelease);
         var notes = Text(root, "body") ?? "";
         var assets = root.TryGetProperty("assets", out var list) && list.ValueKind == JsonValueKind.Array
             ? list.EnumerateArray().Select(a => (Name: Text(a, "name") ?? "", Url: Text(a, "browser_download_url"))).ToList()
@@ -60,21 +66,36 @@ public static partial class UpdateChecker
         if (exe.Url is null || Allowed(exe.Url) is not { } download)
             throw new UpdateException(Resources.Strings.UpdateErrorNoExe);
 
+        // The hash comes only from the "<exe>.sha256" asset.
+        var shaAsset = assets.FirstOrDefault(a => a.Name.Equals(exe.Name + ".sha256", StringComparison.OrdinalIgnoreCase));
         string? sha = null;
-        var shaAsset = assets.FirstOrDefault(a => a.Name.Equals(exe.Name + ".sha256", StringComparison.OrdinalIgnoreCase)
-                                                  || a.Name.Equals("SHA256SUMS", StringComparison.OrdinalIgnoreCase) || a.Name.Equals("SHA256SUMS.txt", StringComparison.OrdinalIgnoreCase));
         if (shaAsset.Url is not null && Allowed(shaAsset.Url) is { } shaUrl)
         {
-            var sums = await GetTextAsync(http, shaUrl, 64 * 1024, ct);
-            // "hash  name" lines, or just the hash.
-            sha = sums.Split('\n').Select(l => l.Trim()).Where(l => l.Length >= 64)
-                .Where(l => l.Length == 64 || l.EndsWith(exe.Name, StringComparison.OrdinalIgnoreCase))
-                .Select(l => l[..64].ToLowerInvariant()).FirstOrDefault(IsSha256);
+            try
+            {
+                sha = ShaFromAsset(await GetTextAsync(http, shaUrl, 4 * 1024, ct), exe.Name);
+            }
+            catch (Exception ex) when (ex is UpdateException or HttpRequestException)
+            {
+                // Listed but not readable: as unverifiable as a missing one.
+            }
         }
-        sha ??= ShaInNotes().Match(notes) is { Success: true } m ? m.Groups["h"].Value.ToLowerInvariant() : null;
         if (sha is null)
-            throw new UpdateException(Resources.Strings.UpdateErrorNoHash);
+            throw new UpdateException(string.Format(CultureInfo.CurrentCulture, Resources.Strings.UpdateErrorNoShaAsset, exe.Name + ".sha256", version.ToString(3)),
+                unverifiable: true);
         return new UpdateInfo(version, notes, download, sha, exe.Name);
+    }
+
+    /// <summary>
+    /// The hash in a ".sha256" file as the usual tools write it: "hash  name" (sha256sum), "SHA256 (name) = hash" (BSD),
+    /// certutil's output, or the bare hash from PowerShell. Null when there is none, or when the file names another program.
+    /// </summary>
+    public static string? ShaFromAsset(string text, string exeName)
+    {
+        var tokens = text.Split((char[])[' ', '\t', '\r', '\n', '(', ')', '=', '*', ':'], StringSplitOptions.RemoveEmptyEntries);
+        if (tokens.Any(t => t.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && !t.Equals(exeName, StringComparison.OrdinalIgnoreCase)))
+            return null;
+        return tokens.FirstOrDefault(IsSha256)?.ToLowerInvariant();
     }
 
     /// <summary>The address if it may be used: https, or http to this computer.</summary>
@@ -112,14 +133,13 @@ public static partial class UpdateChecker
         var bytes = await response.Content.ReadAsByteArrayAsync(ct);
         if (bytes.Length > limit)
             throw new UpdateException(Resources.Strings.UpdateErrorTooLarge);
-        return System.Text.Encoding.UTF8.GetString(bytes);
+        using var reader = new StreamReader(new MemoryStream(bytes), System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return reader.ReadToEnd();
     }
 
     [GeneratedRegex(@"\d+\.\d+(\.\d+)?")]
     private static partial Regex VersionText();
 
-    [GeneratedRegex(@"sha-?256\s*[:=]?\s*`?(?<h>[0-9a-fA-F]{64})", RegexOptions.IgnoreCase)]
-    private static partial Regex ShaInNotes();
 }
 
 /// <summary>

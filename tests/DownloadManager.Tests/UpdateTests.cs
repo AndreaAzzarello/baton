@@ -57,7 +57,7 @@ public sealed class UpdateTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GitHubRelease_WithAShaAsset_OrAShaInTheNotes()
+    public async Task GitHubRelease_IsOfferedOnlyWithItsShaAsset()
     {
         var exe = FakeExe(2);
         var exeUrl = _server.Add("DownloadManager.exe", new ServedFile { Content = exe });
@@ -67,15 +67,64 @@ public sealed class UpdateTests : IAsyncLifetime
               "assets": [ { "name": "DownloadManager.exe", "browser_download_url": "{{exeUrl}}" },
                           { "name": "DownloadManager.exe.sha256", "browser_download_url": "{{shaUrl}}" } ] }
             """);
+        // A hash in the notes or in a SHA256SUMS file is not enough any more, nor an asset that holds no hash.
         var inNotes = Serve("release2.json", $$"""
             { "tag_name": "v1.3.0", "body": "Correzioni.\n\nSHA-256: `{{Sha(exe)}}`",
               "assets": [ { "name": "DownloadManager.exe", "browser_download_url": "{{exeUrl}}" } ] }
             """);
+        var sumsUrl = Serve("SHA256SUMS", $"{Sha(exe)}  DownloadManager.exe\n", "text/plain");
+        var sums = Serve("release4.json", $$"""
+            { "tag_name": "v1.5.0", "assets": [ { "name": "DownloadManager.exe", "browser_download_url": "{{exeUrl}}" },
+                                               { "name": "SHA256SUMS", "browser_download_url": "{{sumsUrl}}" } ] }
+            """);
+        var badUrl = Serve("bad.sha256", "not a hash\n", "text/plain");
+        var bad = Serve("release5.json", $$"""
+            { "tag_name": "v1.6.0", "assets": [ { "name": "DownloadManager.exe", "browser_download_url": "{{exeUrl}}" },
+                                               { "name": "DownloadManager.exe.sha256", "browser_download_url": "{{badUrl}}" } ] }
+            """);
         var without = Serve("release3.json", $$"""{ "tag_name": "v1.4.0", "body": "", "assets": [ { "name": "DownloadManager.exe", "browser_download_url": "{{exeUrl}}" } ] }""");
 
         Assert.Equal(Sha(exe), (await UpdateChecker.CheckAsync(_http, withAsset, Current, default))!.Sha256);
-        Assert.Equal(new Version(1, 3, 0), (await UpdateChecker.CheckAsync(_http, inNotes, Current, default))!.Version);
-        await Assert.ThrowsAsync<UpdateException>(() => UpdateChecker.CheckAsync(_http, without, Current, default));
+        foreach (var refused in new[] { inNotes, without, sums, bad })
+        {
+            var ex = await Assert.ThrowsAsync<UpdateException>(() => UpdateChecker.CheckAsync(_http, refused, Current, default));
+            Assert.True(ex.Unverifiable);
+            Assert.Contains("DownloadManager.exe.sha256", ex.Message); // the message names what the release lacks
+        }
+
+        // A release that is not newer is never an error, even without its hash (no dialog at every start).
+        var same = Serve("release6.json", $$"""{ "tag_name": "v1.0.0", "assets": [ { "name": "DownloadManager.exe", "browser_download_url": "{{exeUrl}}" } ] }""");
+        var older = Serve("old.json", """{ "version": "0.9.0", "url": "http://elsewhere.example/x.exe" }""");
+        Assert.Null(await UpdateChecker.CheckAsync(_http, same, Current, default));
+        Assert.Null(await UpdateChecker.CheckAsync(_http, older, Current, default));
+    }
+
+    [Theory]
+    [InlineData("{0}  DownloadManager.exe\n", true)]                                     // sha256sum
+    [InlineData("SHA256 (DownloadManager.exe) = {0}\n", true)]                           // BSD
+    [InlineData("SHA256 hash of DownloadManager.exe:\r\n{0}\r\nCertUtil: done.\r\n", true)] // certutil
+    [InlineData("﻿{0}\r\n", true)]                                                  // PowerShell, UTF-8 with BOM
+    [InlineData("{0}  DownloadManager-arm64.exe\n", false)]                              // another program's hash
+    [InlineData("no hash here", false)]
+    public void ShaAsset_IsReadInTheUsualFormats(string template, bool accepted)
+    {
+        var sha = new string('a', 64);
+        var text = string.Format(System.Globalization.CultureInfo.InvariantCulture, template, sha).TrimStart('﻿');
+        Assert.Equal(accepted ? sha : null, UpdateChecker.ShaFromAsset(text, "DownloadManager.exe"));
+    }
+
+    [Fact]
+    public async Task ShaAsset_WrittenAsUtf16ByWindowsPowerShell_IsRead()
+    {
+        var exe = FakeExe(5);
+        var exeUrl = _server.Add("DownloadManager.exe", new ServedFile { Content = exe });
+        var shaUrl = _server.Add("DownloadManager.exe.sha256",
+            new ServedFile { Content = [.. System.Text.Encoding.Unicode.GetPreamble(), .. System.Text.Encoding.Unicode.GetBytes(Sha(exe).ToUpperInvariant() + "\r\n")] });
+        var release = Serve("utf16.json", $$"""
+            { "tag_name": "v1.7.0", "assets": [ { "name": "DownloadManager.exe", "browser_download_url": "{{exeUrl}}" },
+                                               { "name": "DownloadManager.exe.sha256", "browser_download_url": "{{shaUrl}}" } ] }
+            """);
+        Assert.Equal(Sha(exe), (await UpdateChecker.CheckAsync(_http, release, Current, default))!.Sha256);
     }
 
     [Fact]

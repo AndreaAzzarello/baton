@@ -4,7 +4,7 @@ Download manager per Windows (C# / .NET 10 LTS / WPF) con download segmentato, p
 code con nome e pianificazione, categorie, FTP/FTPS, proxy, autenticazione, video HLS/DASH (con lingue e sottotitoli), grabber
 di siti (file filtrati o copia offline, sincronizzabile e pianificabile), verifica dei file (hash e antivirus), esportazione e
 importazione, aggiornamenti verificati e integrazione con Chrome, Edge, Opera, Brave e Firefox.
-Versione 1.0.0.
+Versione 1.0.1.
 
 ## Struttura
 
@@ -261,7 +261,10 @@ non è usato.
 
 Disattivati per impostazione. In Impostazioni › *Aggiornamenti* si indica l'indirizzo: le release di GitHub
 (`https://api.github.com/repos/UTENTE/REPOSITORY/releases/latest`, con l'eseguibile tra gli allegati e il suo SHA-256 in un
-allegato `DownloadManager.exe.sha256`/`SHA256SUMS` o nelle note come `SHA-256: …`) oppure un manifest JSON
+allegato **`DownloadManager.exe.sha256`** — l'hash nei formati comuni: solo l'hash (anche scritto da PowerShell in UTF-16),
+`hash  nome` di sha256sum, `SHA256 (nome) = hash`, l'output di certutil; se nomina un altro programma viene rifiutato. Un hash
+nelle note o in un file `SHA256SUMS` non basta: senza quell'allegato una versione più recente non viene installata e l'app lo
+dice, anche dopo il controllo automatico all'avvio, una sola volta per release) oppure un manifest JSON
 `{ "version": "1.1.0", "notes": "…", "url": "https://…/DownloadManager.exe", "sha256": "…" }`. Solo indirizzi https.
 Con il controllo all'avvio attivo, una versione più recente mostra le note; nulla viene scaricato senza **Scarica e installa**.
 Il file scaricato deve corrispondere allo SHA-256 dichiarato ed essere un programma Windows, altrimenti viene eliminato.

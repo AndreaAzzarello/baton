@@ -62,23 +62,27 @@ public sealed class PostCheck
             lines.Add(matches ? Resources.Strings.CheckHashMatchesShort : Resources.Strings.CheckHashDiffersShort);
         else if (check.ComputedHash is { } hash)
             lines.Add($"{FileHash.DisplayName(check.HashAlgorithm)}: {hash}");
-        switch (check.Scan)
-        {
-            case ScanOutcome.Clean:
-                lines.Add(Resources.Strings.ScanClean);
-                break;
-            case ScanOutcome.Threat:
-                lines.Add(Resources.Strings.ScanThreatShort);
-                break;
-            case ScanOutcome.TimedOut:
-                lines.Add(Resources.Strings.ScanTimedOut);
-                break;
-            case ScanOutcome.Failed:
-                lines.Add(string.Format(CultureInfo.CurrentCulture, Resources.Strings.ScanFailed, check.ScanDetail ?? ""));
-                break;
-        }
+        if (DescribeScan(check, withDetail: false) is { } scan)
+            lines.Add(scan);
         return lines.Count == 0 ? null : string.Join(Environment.NewLine, lines);
     }
+
+    /// <summary>
+    /// The antivirus outcome in words, null when no scan ran. <paramref name="withDetail"/> adds what the scanner said
+    /// about a threat (Properties); the short form is for the list's tooltip and the notification.
+    /// </summary>
+    public static string? DescribeScan(PostCheck? check, bool withDetail) => check?.Scan switch
+    {
+        ScanOutcome.Clean => Resources.Strings.ScanClean,
+        ScanOutcome.Threat => withDetail
+            ? string.Format(CultureInfo.CurrentCulture, Resources.Strings.ScanThreat, check.ScanDetail ?? "")
+            : Resources.Strings.ScanThreatShort,
+        ScanOutcome.TimedOut => Resources.Strings.ScanTimedOut,
+        ScanOutcome.Failed => string.IsNullOrWhiteSpace(check.ScanDetail)
+            ? Resources.Strings.ScanFailedNoDetail
+            : string.Format(CultureInfo.CurrentCulture, Resources.Strings.ScanFailed, check.ScanDetail),
+        _ => null,
+    };
 }
 
 /// <summary>Hashes: parsing what the user pastes, and computing them without loading the file in memory.</summary>

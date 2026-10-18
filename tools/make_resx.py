@@ -829,6 +829,8 @@ S = {
  "ToolbarAddSeparator": "Aggiungi separatore",
  "ScanExitCode": "codice di uscita {0}",
  "UpdateRestoreSchema": "La versione precedente usa un database più vecchio di questa: ripristinarla farebbe perdere l'elenco dei download. Per tornare indietro installala a parte con una copia dei dati.",
+ "UpdateErrorNoShaAsset": "La versione {1} non viene installata: la release non contiene l'allegato {0} con lo SHA-256 del programma (o non contiene un hash valido), quindi il file scaricato non si potrebbe verificare. Va aggiunto alla release su GitHub.",
+ "ScanFailedNoDetail": "Scansione non riuscita.",
  "ErrorHashFormat": "Hash non riconosciuto: incolla un MD5 (32 caratteri), un SHA-1 (40) o uno SHA-256 (64), anche con il prefisso \"sha256:\".",
  "ErrorDiskFull": "Spazio su disco esaurito {0}: libera spazio e riprendi il download, i dati già scaricati sono conservati.",
  "ErrorFolderNotWritable": "Impossibile scrivere nella cartella {0}: scegli un'altra cartella in Proprietà o nelle Impostazioni.",

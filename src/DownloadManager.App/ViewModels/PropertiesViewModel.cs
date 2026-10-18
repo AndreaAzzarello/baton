@@ -100,14 +100,8 @@ public sealed class PropertiesViewModel : ObservableObject
         ? hash
         : "—";
 
-    public string ScanText => _snapshot.Check?.Scan switch
-    {
-        ScanOutcome.Clean => Strings.ScanClean,
-        ScanOutcome.Threat => string.Format(CultureInfo.CurrentCulture, Strings.ScanThreat, _snapshot.Check.ScanDetail ?? ""),
-        ScanOutcome.TimedOut => Strings.ScanTimedOut,
-        ScanOutcome.Failed => string.Format(CultureInfo.CurrentCulture, Strings.ScanFailed, _snapshot.Check.ScanDetail ?? ""),
-        _ => _snapshot.Check?.Pending == true ? Strings.CheckRunning : Strings.ScanNotRun,
-    };
+    public string ScanText => PostCheck.DescribeScan(_snapshot.Check, withDetail: true)
+                              ?? (_snapshot.Check?.Pending == true ? Strings.CheckRunning : Strings.ScanNotRun);
 
     public bool ScanProblem => _snapshot.Check?.Scan == ScanOutcome.Threat;
 

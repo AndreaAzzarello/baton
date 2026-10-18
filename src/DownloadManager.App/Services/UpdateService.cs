@@ -56,8 +56,17 @@ public sealed class UpdateService(DownloadService service, IDialogService dialog
         catch (Exception ex) when (ex is UpdateException or HttpRequestException or OperationCanceledException or IOException)
         {
             Log.Warning("update", $"check failed: {ex.Message}");
-            if (interactive)
+            if (ex is UpdateException { Unverifiable: true })
+            {
+                // A newer version that cannot be verified: the check worked, the release is what is wrong. The automatic
+                // check says it once per release, not at every start.
+                if (interactive || FirstReport(ex.Message))
+                    dialogs.ShowError(ex.Message, Strings.UpdateTitle);
+            }
+            else if (interactive)
+            {
                 dialogs.ShowError(string.Format(CultureInfo.CurrentCulture, Strings.UpdateCheckFailed, ex.Message), Strings.UpdateTitle);
+            }
             return;
         }
         if (update is null)
@@ -68,6 +77,24 @@ public sealed class UpdateService(DownloadService service, IDialogService dialog
         }
         Log.Info("update", $"version {update.Version} available");
         dialogs.ShowUpdate(new UpdateViewModel(update, App.AppVersion, (progress, ct) => InstallAsync(update, progress, ct)));
+    }
+
+    /// <summary>True the first time this message is reported (remembered in the update folder).</summary>
+    private static bool FirstReport(string message)
+    {
+        var file = Path.Combine(Folder, "reported");
+        try
+        {
+            if (File.Exists(file) && File.ReadAllText(file) == message)
+                return false;
+            Directory.CreateDirectory(Folder);
+            File.WriteAllText(file, message);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Not remembered: reported again next time, which is better than never.
+        }
+        return true;
     }
 
     private async Task InstallAsync(UpdateInfo update, IProgress<double> progress, CancellationToken ct)

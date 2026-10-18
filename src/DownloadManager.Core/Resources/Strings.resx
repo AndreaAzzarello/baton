@@ -657,6 +657,7 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="ScanErrorSelf" xml:space="preserve"><value>L'antivirus non può essere il file scaricato.</value></data>
   <data name="ScanExitCode" xml:space="preserve"><value>codice di uscita {0}</value></data>
   <data name="ScanFailed" xml:space="preserve"><value>Scansione non riuscita: {0}</value></data>
+  <data name="ScanFailedNoDetail" xml:space="preserve"><value>Scansione non riuscita.</value></data>
   <data name="ScanLabel" xml:space="preserve"><value>Antivirus</value></data>
   <data name="ScanNotRun" xml:space="preserve"><value>Non eseguita (si attiva in Impostazioni › Dopo il download).</value></data>
   <data name="ScanThreat" xml:space="preserve"><value>Minaccia rilevata dall'antivirus. {0}</value></data>
@@ -782,6 +783,7 @@ Limite: {2}</value></data>
   <data name="UpdateErrorNoExe" xml:space="preserve"><value>La versione non contiene il programma (.exe).</value></data>
   <data name="UpdateErrorNoHash" xml:space="preserve"><value>La versione non indica lo SHA-256 del programma (o un indirizzo https per scaricarlo): non viene proposta.</value></data>
   <data name="UpdateErrorNoRelease" xml:space="preserve"><value>L'indirizzo degli aggiornamenti non restituisce una versione valida.</value></data>
+  <data name="UpdateErrorNoShaAsset" xml:space="preserve"><value>La versione {1} non viene installata: la release non contiene l'allegato {0} con lo SHA-256 del programma (o non contiene un hash valido), quindi il file scaricato non si potrebbe verificare. Va aggiunto alla release su GitHub.</value></data>
   <data name="UpdateErrorNotProgram" xml:space="preserve"><value>Il file scaricato non è un programma Windows: è stato eliminato.</value></data>
   <data name="UpdateErrorStatus" xml:space="preserve"><value>Il server ha risposto {0}.</value></data>
   <data name="UpdateErrorTooLarge" xml:space="preserve"><value>La risposta del server è troppo grande.</value></data>
