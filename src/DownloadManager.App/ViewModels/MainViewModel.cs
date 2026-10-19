@@ -193,7 +193,7 @@ public sealed class MainViewModel : ObservableObject
         if (!_dialogs.ShowImport(preview))
             return;
         var result = PortableImport.Apply(items, preview.Mode, _service, _grabber.Service);
-        if (items.Any(i => i.Kind == ImportKind.Settings && i.Include && i.Problem is null))
+        if (items.Any(i => i.Kind is ImportKind.Settings or ImportKind.NetworkSettings && i.Include && i.Problem is null))
             SettingsSaved?.Invoke(_service.Settings);
         Refresh();
         _dialogs.Inform(string.Format(CultureInfo.CurrentCulture, Strings.ImportDone, result.Added, result.Replaced, result.Skipped), Strings.ImportTitle);
@@ -403,13 +403,16 @@ public sealed class MainViewModel : ObservableObject
         // Extensions before 0.4 send no queue: the main queue.
         var queueId = _service.ResolveQueue(next.Queue);
         var context = next.ToContext();
-        if (!_service.Settings.ConfirmBrowserDownloads)
+        // A form from another site is always confirmed, even with confirmations turned off.
+        if (!_service.Settings.ConfirmBrowserDownloads && !next.IsCrossSitePost)
         {
             _service.Add(next.Url, null, fileName, startNow: true, context, queueId: queueId);
             return;
         }
 
-        var note = context.IsPost ? Strings.FromBrowserForm
+        var note = next.IsCrossSitePost ? string.Format(CultureInfo.CurrentCulture, Strings.FromBrowserCrossSiteForm,
+                Urls.SiteOf(next.Referrer) ?? Strings.Unknown, Urls.SiteOf(next.Url) ?? next.Url)
+            : context.IsPost ? Strings.FromBrowserForm
             : next.Cookies is { Count: > 0 } ? Strings.FromBrowserWithCookies : Strings.FromBrowser;
         var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, next.Url, fileName, note,
             _service.Queues, queueId)

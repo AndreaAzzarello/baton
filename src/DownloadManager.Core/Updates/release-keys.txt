@@ -1,0 +1,3 @@
+# Public keys (ECDSA P-256, base64 X||Y) whose signatures an update must carry: one per line, "#" starts a comment.
+# Added by tools\sign-release.ps1 -NewKey. A key is retired by removing its line in a later version (see README).
+HQsa9UtD0ZxCrbaQALINR5bpEDhz8FrXREEb3oIE2F8a++2Qg+z0I6EjZPqlBX1QfmtFMgUghT6I6S/fHQr9yg==  # b80f666050fcbc7d, dpapi, created 2026-10-19

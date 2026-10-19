@@ -36,6 +36,92 @@ public static partial class PageLinks
 
     public static IHtmlDocument Parse(string html) => Parser.ParseDocument(html);
 
+    /// <summary>The policy put in every page copied without scripts: whatever the removal missed still cannot run.</summary>
+    public const string NoScriptPolicy = "script-src 'none'; object-src 'none'";
+
+    /// <summary>
+    /// Takes every way of running code out of a page: script elements (also inside SVG), event handler attributes
+    /// (onclick...), javascript: and vbscript: addresses (also in a meta refresh), inline frames given as text (srcdoc)
+    /// and script preloads; then adds a Content-Security-Policy that forbids scripts, as a second line of defense.
+    /// </summary>
+    public static void RemoveScripts(IDocument document)
+    {
+        foreach (var element in document.All.ToList())
+        {
+            if (element.LocalName == "script"
+                || element.LocalName == "link" && (element.GetAttribute("rel") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Any(r => r.Equals("modulepreload", StringComparison.OrdinalIgnoreCase)
+                              || r.Equals("preload", StringComparison.OrdinalIgnoreCase) && string.Equals(element.GetAttribute("as"), "script", StringComparison.OrdinalIgnoreCase)))
+            {
+                element.Remove();
+                continue;
+            }
+            foreach (var attribute in element.Attributes.ToList())
+            {
+                var name = attribute.LocalName;
+                // Browsers ignore tabs, line breaks and leading spaces or control characters in an address ("java&#9;script:").
+                var value = new string(attribute.Value.Where(c => c > ' ').ToArray());
+                if (name.StartsWith("on", StringComparison.OrdinalIgnoreCase) || name.Equals("srcdoc", StringComparison.OrdinalIgnoreCase)
+                    || ScriptAddress().IsMatch(value))
+                    element.RemoveAttribute(attribute.NamespaceUri, name);
+            }
+        }
+        if (document.Head is { } head
+            && !head.QuerySelectorAll("meta[http-equiv]").Any(m => m.GetAttribute("content") == NoScriptPolicy))
+        {
+            var policy = document.CreateElement("meta");
+            policy.SetAttribute("http-equiv", "Content-Security-Policy");
+            policy.SetAttribute("content", NoScriptPolicy);
+            head.Prepend(policy);
+        }
+    }
+
+    /// <summary>
+    /// An SVG (or other XML) file without its scripts: script elements (also HTML ones inside foreignObject), event handlers, inline
+    /// frames given as text, javascript: addresses, and animations that would set a handler or an address. Null when the
+    /// file cannot be read as XML (it is then not kept). The DTD is ignored: no entity is expanded, nothing is fetched.
+    /// </summary>
+    public static string? RemoveSvgScripts(string svg)
+    {
+        System.Xml.Linq.XDocument document;
+        try
+        {
+            using var reader = System.Xml.XmlReader.Create(new StringReader(svg),
+                new System.Xml.XmlReaderSettings { DtdProcessing = System.Xml.DtdProcessing.Ignore, XmlResolver = null });
+            document = System.Xml.Linq.XDocument.Load(reader);
+        }
+        catch (System.Xml.XmlException)
+        {
+            return null;
+        }
+        foreach (var element in document.Descendants().ToList())
+        {
+            var name = element.Name.LocalName;
+            var animated = element.Attribute("attributeName")?.Value.Trim() ?? "";
+            if (name.Equals("script", StringComparison.OrdinalIgnoreCase) || name.Equals("handler", StringComparison.OrdinalIgnoreCase)
+                || name is "set" or "animate" && (animated.StartsWith("on", StringComparison.OrdinalIgnoreCase) || animated.EndsWith("href", StringComparison.OrdinalIgnoreCase)))
+            {
+                element.Remove();
+                continue;
+            }
+            foreach (var attribute in element.Attributes().ToList())
+            {
+                var local = attribute.Name.LocalName;
+                var value = new string(attribute.Value.Where(c => c > ' ').ToArray());
+                if (local.StartsWith("on", StringComparison.OrdinalIgnoreCase) || local.Equals("srcdoc", StringComparison.OrdinalIgnoreCase)
+                    || ScriptAddress().IsMatch(value))
+                    attribute.Remove();
+            }
+        }
+        foreach (var instruction in document.Nodes().OfType<System.Xml.Linq.XProcessingInstruction>().ToList())
+            instruction.Remove(); // <?xml-stylesheet?> could bring in an XSLT that writes scripts
+        return document.ToString(System.Xml.Linq.SaveOptions.DisableFormatting);
+    }
+
+    // At the start of a value, or after "url=" in a meta refresh.
+    [GeneratedRegex(@"(^|url=['""]?)(javascript|vbscript):", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex ScriptAddress();
+
     /// <summary>The page's base address: its own, or the first &lt;base href&gt;.</summary>
     public static Uri BaseOf(IDocument document, Uri pageUrl) =>
         document.QuerySelector("base[href]")?.GetAttribute("href") is { } href && Uri.TryCreate(pageUrl, href.Trim(), out var b)

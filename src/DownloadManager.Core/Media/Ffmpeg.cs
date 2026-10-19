@@ -52,16 +52,15 @@ public static class Ffmpeg
         };
         foreach (var arg in new[] { "-hide_banner", "-nostdin", "-loglevel", "error", "-y" })
             info.ArgumentList.Add(arg);
-        foreach (var input in inputs)
-        {
-            info.ArgumentList.Add("-i");
-            info.ArgumentList.Add(input);
-        }
         subtitles ??= [];
-        foreach (var subtitle in subtitles)
+        try
         {
-            info.ArgumentList.Add("-i");
-            info.ArgumentList.Add(subtitle.Path);
+            foreach (var input in inputs.Concat(subtitles.Select(s => s.Path)))
+                AddInput(info, input);
+        }
+        catch (ArgumentException ex)
+        {
+            return ex.Message; // nothing is joined: the tracks are kept as they are
         }
         if (inputs.Count > 1)
         {
@@ -125,6 +124,51 @@ public static class Ffmpeg
         var text = (await errors).Trim();
         var lines = text.Split('\n').TakeLast(3);
         return string.Join(" ", lines).Trim() is { Length: > 0 } message ? message : $"ffmpeg exit code {process.ExitCode}";
+    }
+
+    /// <summary>
+    /// One input, read as the format the app wrote it in and only from a local file. The content came from a web page:
+    /// left to guess, ffmpeg could take a segment that is really a playlist (#EXTM3U) and follow it to other files or
+    /// addresses; with the format given and only the "file" protocol allowed it cannot.
+    /// </summary>
+    private static void AddInput(ProcessStartInfo info, string path)
+    {
+        if (!Path.IsPathFullyQualified(path))
+            throw new ArgumentException("ffmpeg inputs must be files prepared by the app.", nameof(path));
+        foreach (var arg in new[] { "-protocol_whitelist", "file", "-f", InputFormat(path), "-i", path })
+            info.ArgumentList.Add(arg);
+    }
+
+    /// <summary>
+    /// The demuxer for a file the app joined or wrote, by its extension; only the formats it produces. An HLS audio track
+    /// named after its segments (".aac") may really be MPEG-TS: its sync bytes decide, still among these demuxers only.
+    /// </summary>
+    public static string InputFormat(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".ts" => "mpegts",
+        ".mp4" or ".m4a" => "mp4",
+        ".aac" or ".mp3" when IsTransportStream(path) => "mpegts",
+        ".aac" => "aac",
+        ".mp3" => "mp3",
+        ".webm" => "matroska",
+        ".vtt" => "webvtt",
+        var other => throw new ArgumentException($"Unexpected track format \"{other}\".", nameof(path)),
+    };
+
+    /// <summary>MPEG-TS: a 0x47 sync byte at the start of each 188-byte packet (the first two checked).</summary>
+    private static bool IsTransportStream(string path)
+    {
+        try
+        {
+            using var file = File.OpenRead(path);
+            Span<byte> head = stackalloc byte[189];
+            var read = file.ReadAtLeast(head, head.Length, throwOnEndOfStream: false);
+            return read > 0 && head[0] == 0x47 && (read < 189 || head[188] == 0x47);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     /// <summary>The three-letter code MP4 and Matroska use for a language ("it" → "ita"); null when unknown.</summary>

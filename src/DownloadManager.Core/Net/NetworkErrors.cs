@@ -34,4 +34,13 @@ public sealed class UntrustedCertificateException(string host, Exception? inner 
 /// <summary>A paused download waiting for a login; shown to the user, answered with DownloadService.ProvideLogin.</summary>
 /// <param name="Target">The server, or for <paramref name="IsProxy"/> the proxy, that asked.</param>
 /// <param name="DisplayName">The file, so the user knows which download asks.</param>
-public sealed record LoginRequest(long DownloadId, Uri Target, bool IsProxy, string Scheme, string? Realm, string DisplayName);
+public sealed record LoginRequest(long DownloadId, Uri Target, bool IsProxy, string Scheme, string? Realm, string DisplayName)
+{
+    /// <summary>
+    /// The password would travel readable (Basic over http, FTP without TLS): the login window asks the user to accept
+    /// that explicitly, and only then is the login marked as confirmed for plain text.
+    /// </summary>
+    public bool SendsPasswordInClear =>
+        !IsProxy && Scheme.Equals("Basic", StringComparison.OrdinalIgnoreCase) && Target.Scheme == "http"
+        || Scheme == "FTP" && Target.Scheme == "ftp";
+}

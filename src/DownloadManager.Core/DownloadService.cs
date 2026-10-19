@@ -113,19 +113,24 @@ public sealed class DownloadService : IAsyncDisposable
 
     public static HttpClient CreateHttpClient(CookieContainer? cookies = null)
     {
-        var handler = new SocketsHttpHandler
+        SocketsHttpHandler Handler(bool redirects)
         {
-            AllowAutoRedirect = true,
-            MaxAutomaticRedirections = 10,
-            AutomaticDecompression = DecompressionMethods.None, // byte ranges refer to the raw entity
-            ConnectTimeout = TimeSpan.FromSeconds(20),
-            MaxConnectionsPerServer = 64,
-            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
-        };
-        if (cookies is not null)
-            handler.CookieContainer = cookies;
-        var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("DownloadManager/1.0");
+            var handler = new SocketsHttpHandler
+            {
+                AllowAutoRedirect = redirects,
+                MaxAutomaticRedirections = 10,
+                AutomaticDecompression = DecompressionMethods.None, // byte ranges refer to the raw entity
+                ConnectTimeout = TimeSpan.FromSeconds(20),
+                MaxConnectionsPerServer = 64,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+                ConnectCallback = (connection, ct) => Net.UrlGuard.ConnectAsync(connection, viaProxy: false, ct),
+            };
+            if (cookies is not null)
+                handler.CookieContainer = cookies;
+            return handler;
+        }
+        var client = new HttpClient(new Net.GuardedRedirectHandler(Handler(true), Handler(false))) { Timeout = Timeout.InfiniteTimeSpan };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(AppSettings.DefaultUserAgent);
         return client;
     }
 
@@ -708,7 +713,12 @@ public sealed class DownloadService : IAsyncDisposable
         else
         {
             var port = FtpTransport.IsFtp(request.Target) ? FtpTransport.PortOf(request.Target) : request.Target.Port;
-            Credentials.Save(new SiteCredential { Host = request.Target.Host, Port = port, Username = username, Password = password }, remember);
+            // Typed in the login window, which made the user confirm a plain-text password before accepting it.
+            Credentials.Save(new SiteCredential
+            {
+                Scheme = request.Target.Scheme, Host = request.Target.Host, Port = port, Username = username, Password = password,
+                PlainConfirmed = request.SendsPasswordInClear,
+            }, remember);
         }
         Start(request.DownloadId);
     }

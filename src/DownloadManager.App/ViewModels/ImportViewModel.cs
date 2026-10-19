@@ -27,13 +27,17 @@ public sealed class ImportRow(ImportItem item) : ObservableObject
         ImportKind.Category => Strings.ImportKindCategory,
         ImportKind.Queue => Strings.ImportKindQueue,
         ImportKind.Project => Strings.ImportKindProject,
+        ImportKind.NetworkSettings => Strings.ImportKindNetwork,
         _ => Strings.ImportKindSettings,
     };
 
-    public string Note => Item.Problem ?? (Item.IsDuplicate ? Strings.ImportDuplicate : "");
+    public string Note => Item.Problem ?? (Item.IsDuplicate && Item.Kind is not (ImportKind.Settings or ImportKind.NetworkSettings) ? Strings.ImportDuplicate : "");
+
+    /// <summary>A consequence to read before ticking the row (proxy, PAC, no confirmation of downloads), in the warning color.</summary>
+    public string Warning => Item.Problem is null ? Item.Warning ?? "" : "";
 
     /// <summary>What screen readers announce for the row.</summary>
-    public override string ToString() => string.Join(", ", new[] { KindText, Item.Name, Item.Detail, Note }.Where(t => t.Length > 0));
+    public override string ToString() => string.Join(", ", new[] { KindText, Item.Name, Item.Detail, Note, Warning }.Where(t => t.Length > 0));
 }
 
 /// <summary>The preview of an import: the user picks the items and what to do with duplicates.</summary>

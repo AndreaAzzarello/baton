@@ -58,6 +58,7 @@ export function createFakeChrome({ firefox = false, nativeReply } = {}) {
     },
     tabs: { onUpdated: event("tabs.onUpdated"), onRemoved: event("tabs.onRemoved"), get: async (id) => ({ id, url: "https://page.test/", incognito: false }), sendMessage: async () => {} },
     scripting: { executeScript: async () => [] },
+    alarms: { create: (name, info) => calls.push(["alarm", name, info]), onAlarm: event("alarms.onAlarm") },
     i18n: { getMessage: (key, subs) => `${key}${subs?.length ? ":" + subs.join("|") : ""}`, getUILanguage: () => "it" },
   };
   return { chrome, listeners, calls, local, session };

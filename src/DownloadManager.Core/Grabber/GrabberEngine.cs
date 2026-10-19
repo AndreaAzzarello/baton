@@ -218,6 +218,12 @@ public sealed class GrabberEngine
             Interlocked.Increment(ref _pagesVisited);
             var html = HtmlText.Decode(body, body.Length, response.Content.Headers.ContentType?.ToString());
             var document = PageLinks.Parse(html);
+            if (_paths is not null && _project.StripScripts)
+            {
+                // Taken out before the page is saved or its links followed: the scripts are neither kept nor downloaded.
+                PageLinks.RemoveScripts(document);
+                html = document.ToHtml();
+            }
             var pageKey = CrawlUrls.Key(url);
             _present.TryAdd(pageKey, 0);
 
@@ -438,6 +444,8 @@ public sealed class GrabberEngine
     /// <summary>Mirror: an image, script, style sheet or linked file is saved (only when it changed, for a synchronization).</summary>
     private async Task MirrorResourceAsync(Uri url, LinkKind kind, string source, CancellationToken ct)
     {
+        if (_project.StripScripts && CrawlUrls.ExtensionOf(url) is "js" or "mjs")
+            return; // a script linked some other way (a plain link) is not copied either
         var key = url.AbsoluteUri;
         var extension = CrawlUrls.ExtensionOf(url);
         // Files the page links to obey the type filter; what the page itself needs to show is always kept.
@@ -560,6 +568,15 @@ public sealed class GrabberEngine
                 }
                 cssBytes = css?.ToArray();
             }
+            if (_project.StripScripts && !await WithoutScriptsAsync(temp, Path.GetExtension(full), ct))
+            {
+                // A document that would run scripts and cannot be cleaned: not kept, its link stays online.
+                Interlocked.Add(ref _bytes, -written);
+                TryDelete(temp);
+                _present.TryAdd(key, 0);
+                Interlocked.Increment(ref _skipped);
+                return;
+            }
             File.Move(temp, full, overwrite: true);
         }
         catch (LimitException limitHit)
@@ -640,6 +657,8 @@ public sealed class GrabberEngine
                 else
                 {
                     var document = PageLinks.Parse(text);
+                    if (_project.StripScripts)
+                        PageLinks.RemoveScripts(document);
                     PageLinks.Walk(document, url, visit);
                     foreach (var element in document.QuerySelectorAll("base"))
                         element.Remove();
@@ -652,6 +671,32 @@ public sealed class GrabberEngine
             {
                 Interlocked.Increment(ref _errors);
             }
+        }
+    }
+
+    /// <summary>
+    /// Copy without scripts: a file the browser would open as a document able to run them (judged by the extension it is
+    /// saved with, which decides how it opens from disk) is cleaned in place; false when it cannot be, and is not kept.
+    /// </summary>
+    private static async Task<bool> WithoutScriptsAsync(string path, string extension, CancellationToken ct)
+    {
+        switch (extension.ToLowerInvariant())
+        {
+            case ".svg" or ".xml": // an XML file with an XHTML root opens as a page that runs its scripts
+                var svg = PageLinks.RemoveSvgScripts(await File.ReadAllTextAsync(path, ct));
+                if (svg is null)
+                    return false;
+                await File.WriteAllTextAsync(path, svg, ct);
+                return true;
+            case ".html" or ".htm" or ".xhtml" or ".xht" or ".shtml":
+                var document = PageLinks.Parse(await File.ReadAllTextAsync(path, ct));
+                PageLinks.RemoveScripts(document);
+                await File.WriteAllTextAsync(path, document.ToHtml(), ct);
+                return true;
+            case ".svgz" or ".xsl" or ".xslt" or ".hta" or ".mht" or ".mhtml":
+                return false;
+            default:
+                return true;
         }
     }
 

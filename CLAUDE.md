@@ -28,6 +28,8 @@ Fasi 1–5 completate, versione **0.7.0**. L'utente scrive in italiano: rispondi
 - Protocollo con l'estensione versionato (`Messages.ProtocolVersion`, ora 3: `grab`, lingue e sottotitoli) e retrocompatibile con le estensioni precedenti.
 - Grabber: solo HTML/CSS statici (mai script), robots.txt rispettato per impostazione, ogni percorso locale passa da `LocalPaths`
   (mai fuori dalla cartella della copia), le espressioni regolari dell'utente solo con `RegexOptions.NonBacktracking`.
+- Aggiornamenti firmati (dalla 1.1.0): chiave privata solo in `%LOCALAPPDATA%\DownloadManager-signing` (DPAPI o password),
+  mai nel repository né nell'output; le pubbliche in `Updates/release-keys.txt`. I test usano chiavi proprie, mai quella reale.
 - Firma di Firefox: `tools\sign-firefox.ps1` legge `AMO_JWT_ISSUER`/`AMO_JWT_SECRET` dall'ambiente; mai chiavi nel repository,
   mai eseguirlo senza richiesta dell'utente (pubblica su AMO).
 

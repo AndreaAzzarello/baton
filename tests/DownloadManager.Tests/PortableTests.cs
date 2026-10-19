@@ -109,6 +109,8 @@ public sealed class PortableTests : IAsyncLifetime
 
             var config = PortableImport.Plan(PortableData.Read(configFile), service.GetSnapshots(), service.Categories, service.Queues, grabber.Projects);
             config.Single(i => i.Kind == ImportKind.Settings).Include = true;
+            Assert.Equal(Core.Resources.Strings.ImportNetworkWarning, config.Single(i => i.Kind == ImportKind.NetworkSettings).Warning);
+            config.Single(i => i.Kind == ImportKind.NetworkSettings).Include = true; // the proxy needs its own, warned tick
             PortableImport.Apply(config, DuplicateMode.Replace, service, grabber);
             Assert.Contains(service.Queues, q => q.Name == "Notte" && q.MaxConcurrent == 2);
             Assert.Equal("proxy.test", service.Settings.ProxyHost);
@@ -143,15 +145,14 @@ public sealed class PortableTests : IAsyncLifetime
             """);
         var items = PortableImport.Plan(PortableData.Read(file), _service.GetSnapshots(), _service.Categories, _service.Queues, _grabber.Projects);
         Assert.NotNull(items.Single(i => i.Kind == ImportKind.Download && i.Detail.StartsWith("file:")).Problem);
-        Assert.NotNull(items.Single(i => i.Detail.EndsWith("a.zip")).Problem);
         Assert.NotNull(items.Single(i => i.Kind == ImportKind.Category).Problem);
         Assert.NotNull(items.Single(i => i.Kind == ImportKind.Project).Problem);
         foreach (var item in items)
             item.Include = true;
         PortableImport.Apply(items, DuplicateMode.KeepBoth, _service, _grabber);
+        Assert.DoesNotContain(_service.GetSnapshots(), s => s.Directory.Contains("relative")); // a folder from the file is never used
 
-        var imported = Assert.Single(_service.GetSnapshots());
-        Assert.Equal("b.zip", imported.DisplayName); // the name is only a name
+        Assert.Equal(["a.zip", "b.zip"], _service.GetSnapshots().Select(s => s.DisplayName).Order()); // the name is only a name
         Assert.Equal("", _service.Settings.ScannerPath);
         Assert.Equal("", _service.Settings.UpdateUrl);
         Assert.Equal("", _service.Settings.FfmpegPath);
@@ -169,8 +170,8 @@ public sealed class PortableTests : IAsyncLifetime
             { "format": "DownloadManager", "kind": "settings",
               "downloads": [null], "categories": [null, { "name": null }], "queues": [null, { "name": "Q", "maxConcurrent": -4, "schedule": { "days": null } }],
               "projects": [null, { "name": "P", "startUrl": "https://p.test/", "allowedDomains": null, "extensions": null, "schedule": null }],
-              "settings": { "downloadFolder": "C:\\\\Dl", "maxConnections": 100000, "timeoutSeconds": 0, "proxyPort": -1 } }
-            """);
+              "settings": { "downloadFolder": "PROFILE", "maxConnections": 100000, "timeoutSeconds": 0, "proxyPort": -1 } }
+            """.Replace("PROFILE", ProfileFolder("Dl").Replace(@"\", @"\\")));
 
         var items = PortableImport.Plan(PortableData.Read(file), _service.GetSnapshots(), _service.Categories, _service.Queues, _grabber.Projects);
 
@@ -199,7 +200,7 @@ public sealed class PortableTests : IAsyncLifetime
         {
             Kind = PortableFile.SettingsKind,
             Queues = [new ExportedQueue("Night", null, 2, new QueueSchedule { Enabled = true }, 0, 0, 0, EndAction.Shutdown)],
-            Projects = [new Core.Grabber.GrabberProject { Name = "Hourly", StartUrl = "https://p.test/", Folder = Path.Combine(_dir, "p"),
+            Projects = [new Core.Grabber.GrabberProject { Name = "Hourly", StartUrl = "https://p.test/", Folder = ProfileFolder("p"),
                 Schedule = new QueueSchedule { Enabled = true } }],
         };
         PortableImport.Apply(PortableImport.Plan(file, _service.GetSnapshots(), _service.Categories, _service.Queues, _grabber.Projects),
@@ -208,6 +209,89 @@ public sealed class PortableTests : IAsyncLifetime
         Assert.Equal(EndAction.None, queue.EndAction);
         Assert.False(queue.Schedule.Enabled);
         Assert.False(_grabber.Projects.Single(p => p.Name == "Hourly").Schedule.Enabled);
+    }
+
+    private static string ProfileFolder(string name) =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", name);
+
+    [Fact]
+    public void ImportedFolders_NeverOnTheNetwork_InSystemOrStartupFolders_OrOutsideTheProfile()
+    {
+        string Escape(string path) => path.Replace(@"\", @"\\");
+        var startup = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+        var file = Path.Combine(_dir, "folders.json");
+        File.WriteAllText(file, $$"""
+            { "format": "DownloadManager", "kind": "settings",
+              "categories": [
+                { "name": "Unc", "extensions": ["exe"], "folder": "\\\\attacker.test\\share" },
+                { "name": "LongUnc", "extensions": ["exe"], "folder": "\\\\?\\UNC\\attacker.test\\share" },
+                { "name": "Device", "extensions": ["exe"], "folder": "\\\\.\\PhysicalDrive0" },
+                { "name": "Startup", "extensions": ["exe"], "folder": "{{Escape(startup)}}" },
+                { "name": "Windows", "extensions": ["dll"], "folder": "C:\\Windows\\System32" },
+                { "name": "Root", "extensions": ["zip"], "folder": "C:\\Dl" },
+                { "name": "Fine", "extensions": ["pdf"], "folder": "{{Escape(ProfileFolder("Pdf"))}}" },
+                { "name": "Relative", "extensions": ["txt"], "folder": "Testi" } ],
+              "settings": { "downloadFolder": "{{Escape(ProfileFolder("ok"))}}", "proxyMode": "Pac", "pacUrl": "http://wpad.attacker.test/proxy.pac",
+                            "confirmBrowserDownloads": false } }
+            """);
+        var items = PortableImport.Plan(PortableData.Read(file), _service.GetSnapshots(), _service.Categories, _service.Queues, _grabber.Projects);
+        string? Problem(string name) => items.Single(i => i.Name == name).Problem;
+
+        Assert.Equal(Core.Resources.Strings.ImportFolderNotLocal, Problem("Unc"));
+        Assert.Equal(Core.Resources.Strings.ImportFolderNotLocal, Problem("LongUnc"));
+        Assert.Equal(Core.Resources.Strings.ImportFolderNotLocal, Problem("Device"));
+        Assert.Equal(Core.Resources.Strings.ImportFolderSensitive, Problem("Startup"));
+        Assert.Equal(Core.Resources.Strings.ImportFolderSensitive, Problem("Windows"));
+        Assert.Equal(Core.Resources.Strings.ImportFolderOutsideProfile, Problem("Root"));
+        Assert.Null(Problem("Fine"));
+        Assert.Null(Problem("Relative"));
+        Assert.All(items, i => Assert.False(i.Include)); // nothing of a configuration is ticked in advance
+        var network = items.Single(i => i.Kind == ImportKind.NetworkSettings);
+        Assert.Equal(Core.Resources.Strings.ImportPacNotHttps, network.Problem); // a PAC over plain http could be swapped on the way
+        Assert.Contains(Core.Resources.Strings.ImportNetworkNoConfirm, network.Detail);
+
+        // Even ticked, refused items and the refused network part change nothing.
+        foreach (var item in items)
+            item.Include = true;
+        PortableImport.Apply(items, DuplicateMode.KeepBoth, _service, _grabber);
+        Assert.DoesNotContain(_service.Categories, c => c.Name is "Unc" or "Startup" or "Windows" or "Root");
+        Assert.NotEqual(ProxyMode.Pac, _service.Settings.ProxyMode);
+        Assert.True(_service.Settings.ConfirmBrowserDownloads);
+        Assert.Equal(ProfileFolder("ok"), _service.Settings.DownloadFolder);
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", EntryPoint = "GetShortPathNameW", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int GetShortPathName(string longPath, System.Text.StringBuilder shortPath, int length);
+
+    [Fact]
+    public void ImportedFolders_AreJudgedByTheirRealPath_NotByShortNamesOrLinks()
+    {
+        // A junction: what it leads to counts, also for a sub-folder that does not exist yet.
+        var target = Path.Combine(_dir, "real target");
+        Directory.CreateDirectory(target);
+        var link = Path.Combine(_dir, "link");
+        using (var mklink = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe", ["/c", "mklink", "/J", link, target])
+               { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true })!)
+            mklink.WaitForExit();
+        try
+        {
+            Assert.Equal(Path.Combine(target, "new", "sub"), SafePaths.RealPath(Path.Combine(link, "new", "sub")), ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(link); // the junction only, never what it points to
+        }
+
+        // "C:\Users\x\APPDAT~1\...\Startup" is the Startup folder, even though it does not read as one.
+        var startup = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+        var buffer = new System.Text.StringBuilder(1024);
+        var shortName = GetShortPathName(startup, buffer, buffer.Capacity) > 0 ? buffer.ToString() : startup;
+        Assert.Equal(startup, SafePaths.RealPath(shortName), ignoreCase: true);
+        Assert.Equal(Core.Resources.Strings.ImportFolderSensitive, SafePaths.CheckImportedFolder(Path.Combine(shortName, "x")));
+        // PowerShell runs a profile.ps1 found there at every start.
+        var documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        Assert.Equal(Core.Resources.Strings.ImportFolderSensitive, SafePaths.CheckImportedFolder(Path.Combine(documents, "WindowsPowerShell")));
+        Assert.Equal(Core.Resources.Strings.ImportFolderSensitive, SafePaths.CheckImportedFolder(Path.Combine(documents, "PowerShell", "Modules")));
     }
 
     [Fact]

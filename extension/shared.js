@@ -29,12 +29,17 @@ export async function sendNative(message, timeoutMs = Rules.APP_TIMEOUT_MS) {
   }
 }
 
-/** The cookies the browser would send to `url`, in the app's format. Never for private windows. */
-export async function cookiesFor(url, incognito) {
+/**
+ * The cookies the browser would send to `url` for this kind of request, in the app's format: SameSite is honoured
+ * against `initiator` (the page that started it), as the browser would. An unknown initiator (a page that hides its
+ * referrer) counts as another site: SameSite=Strict cookies are never handed over on a guess. Never for private windows.
+ */
+export async function cookiesFor(url, incognito, { initiator = null, topLevel = true, method = "GET" } = {}) {
   if (incognito || !/^https?:/i.test(url)) return [];
+  const crossSite = !initiator || !/^https?:/i.test(initiator) || !Rules.sameSite(url, initiator);
   try {
     const cookies = await chrome.cookies.getAll({ url });
-    return cookies.map(toAppCookie);
+    return cookies.filter((c) => Rules.cookieAllowed(c, { crossSite, topLevel, method })).map(toAppCookie);
   } catch {
     return [];
   }

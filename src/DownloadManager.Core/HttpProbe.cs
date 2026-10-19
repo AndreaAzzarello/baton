@@ -12,9 +12,11 @@ public sealed record ProbeResult(long? TotalSize, bool SupportsRanges, string? E
 public static class HttpProbe
 {
     public static async Task<ProbeResult> ProbeAsync(HttpClient http, string url, CancellationToken ct, RequestContext? context = null,
-        TimeSpan? timeout = null)
+        TimeSpan? timeout = null, Net.UrlGuard? guard = null)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (guard is not null)
+            await guard.PrepareAsync(request, ct);
         context.ApplyTo(request);
         request.Headers.Range = new RangeHeaderValue(0, 0);
         using var response = await HttpErrors.SendAsync(http, request, timeout ?? TimeSpan.FromSeconds(30), ct);

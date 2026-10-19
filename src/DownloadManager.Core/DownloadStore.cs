@@ -8,7 +8,7 @@ namespace DownloadManager.Core;
 public sealed partial class DownloadStore : IDisposable
 {
     /// <summary>Version written by this build. Every older version is upgraded by <see cref="Migrate"/>.</summary>
-    public const int SchemaVersion = 7;
+    public const int SchemaVersion = 8;
 
     private const string PreferencePrefix = "ui.";
 
@@ -56,6 +56,25 @@ public sealed partial class DownloadStore : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// The file of a finished download, read without opening the store (for a notification's button, handled before
+    /// the app starts); null when the download no longer exists or is not finished.
+    /// </summary>
+    public static string? CompletedFileOf(string databasePath, long downloadId)
+    {
+        if (!File.Exists(databasePath))
+            return null;
+        using var db = new SqliteConnection(new SqliteConnectionStringBuilder
+            { DataSource = databasePath, Mode = SqliteOpenMode.ReadOnly, Pooling = false }.ToString());
+        db.Open();
+        using var command = db.CreateCommand();
+        command.CommandText = "SELECT directory, file_name FROM downloads WHERE id = $id AND status = $completed AND file_name IS NOT NULL;";
+        command.Parameters.AddWithValue("$id", downloadId);
+        command.Parameters.AddWithValue("$completed", (int)DownloadStatus.Completed);
+        using var reader = command.ExecuteReader();
+        return reader.Read() ? Path.Combine(reader.GetString(0), reader.GetString(1)) : null;
+    }
+
     /// <summary>Copy of the database taken before an upgrade in this session; null when none was needed.</summary>
     public string? BackupPath { get; private set; }
 
@@ -101,6 +120,8 @@ public sealed partial class DownloadStore : IDisposable
             MigrateTo6(tx);
         if (version < 7)
             MigrateTo7(tx);
+        if (version < 8)
+            MigrateTo8(tx);
         Execute($"PRAGMA user_version = {SchemaVersion};", tx);
         tx.Commit();
     }
@@ -305,12 +326,58 @@ public sealed partial class DownloadStore : IDisposable
             """, tx);
     }
 
+    /// <summary>
+    /// Logins become valid for one scheme. The scheme a login was used with is taken from the downloads of its server
+    /// (when they all agree); otherwise the encrypted one (https, or FTPS on port 990, explicit FTPS elsewhere for FTP
+    /// ports). A login that lands on a plain scheme has not been confirmed for it: the app asks once, with a warning.
+    /// </summary>
+    private void MigrateTo8(SqliteTransaction tx)
+    {
+        AddColumnIfMissing("credentials", "scheme", "TEXT NOT NULL DEFAULT 'https'", tx);
+        AddColumnIfMissing("credentials", "plain_confirmed", "INTEGER NOT NULL DEFAULT 0", tx);
+        var used = new List<Uri>();
+        using (var downloads = Command("SELECT url FROM downloads;", tx))
+        using (var reader = downloads.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                if (Uri.TryCreate(reader.GetString(0), UriKind.Absolute, out var url))
+                    used.Add(url);
+            }
+        }
+        var logins = new List<(long Id, string Host, int? Port)>();
+        using (var select = Command("SELECT id, host, port FROM credentials;", tx))
+        using (var reader = select.ExecuteReader())
+        {
+            while (reader.Read())
+                logins.Add((reader.GetInt64(0), reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetInt32(2)));
+        }
+        foreach (var (id, host, port) in logins)
+        {
+            var schemes = used.Where(u => string.Equals(u.Host, host, StringComparison.OrdinalIgnoreCase)
+                                          && (port is null || (FtpPortOf(u) ?? u.Port) == port))
+                .Select(u => u.Scheme.ToLowerInvariant()).Where(SiteCredential.Schemes.Contains).Distinct().ToList();
+            var scheme = schemes.Count == 1 ? schemes[0] : port switch
+            {
+                990 => "ftps",
+                21 => "ftpes",
+                _ => "https",
+            };
+            using var update = Command("UPDATE credentials SET scheme = $scheme WHERE id = $id;", tx);
+            update.Parameters.AddWithValue("$scheme", scheme);
+            update.Parameters.AddWithValue("$id", id);
+            update.ExecuteNonQuery();
+        }
+    }
+
+    private static int? FtpPortOf(Uri url) => url.Scheme is "ftp" or "ftps" or "ftpes" ? Net.FtpTransport.PortOf(url) : null;
+
     public List<SiteCredential> LoadCredentials()
     {
         lock (_lock)
         {
             var result = new List<SiteCredential>();
-            using var cmd = Command("SELECT id, host, port, username, secret, windows_account, added_utc FROM credentials ORDER BY host, id;");
+            using var cmd = Command("SELECT id, host, port, username, secret, windows_account, added_utc, scheme, plain_confirmed FROM credentials ORDER BY host, id;");
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
@@ -324,6 +391,8 @@ public sealed partial class DownloadStore : IDisposable
                     Password = Secrets.Unprotect(reader.GetString(4)) ?? "",
                     UseWindowsAccount = reader.GetInt64(5) != 0,
                     AddedUtc = ParseDate(reader.GetString(6)),
+                    Scheme = reader.GetString(7),
+                    PlainConfirmed = reader.GetInt64(8) != 0,
                 });
             }
             return result;
@@ -336,15 +405,21 @@ public sealed partial class DownloadStore : IDisposable
         {
             using var cmd = Command(credential.Id == 0
                 ? """
-                  INSERT INTO credentials (host, port, username, secret, windows_account, added_utc) VALUES ($host, $port, $user, $secret, $windows, $added);
+                  INSERT INTO credentials (host, port, username, secret, windows_account, added_utc, scheme, plain_confirmed)
+                  VALUES ($host, $port, $user, $secret, $windows, $added, $scheme, $plain);
                   SELECT last_insert_rowid();
                   """
-                : "UPDATE credentials SET host = $host, port = $port, username = $user, secret = $secret, windows_account = $windows WHERE id = $id; SELECT $id;");
+                : """
+                  UPDATE credentials SET host = $host, port = $port, username = $user, secret = $secret, windows_account = $windows,
+                      scheme = $scheme, plain_confirmed = $plain WHERE id = $id; SELECT $id;
+                  """);
             cmd.Parameters.AddWithValue("$host", credential.Host);
             cmd.Parameters.AddWithValue("$port", (object?)credential.Port ?? DBNull.Value);
             cmd.Parameters.AddWithValue("$user", credential.Username);
             cmd.Parameters.AddWithValue("$secret", Secrets.Protect(credential.Password));
             cmd.Parameters.AddWithValue("$windows", credential.UseWindowsAccount ? 1 : 0);
+            cmd.Parameters.AddWithValue("$scheme", credential.Scheme);
+            cmd.Parameters.AddWithValue("$plain", credential.PlainConfirmed ? 1 : 0);
             cmd.Parameters.AddWithValue("$added", credential.AddedUtc.ToString("O", CultureInfo.InvariantCulture));
             cmd.Parameters.AddWithValue("$id", credential.Id);
             credential.Id = (long)cmd.ExecuteScalar()!;
@@ -696,7 +771,7 @@ public sealed partial class DownloadStore : IDisposable
                     case nameof(AppSettings.TimeoutSeconds): settings.TimeoutSeconds = int.Parse(value, CultureInfo.InvariantCulture); break;
                     case nameof(AppSettings.MaxConnectionsPerServer): settings.MaxConnectionsPerServer = int.Parse(value, CultureInfo.InvariantCulture); break;
                     // The default of an earlier version follows the app's version instead of staying behind.
-                    case nameof(AppSettings.UserAgent): settings.UserAgent = value.StartsWith("DownloadManager/0.", StringComparison.Ordinal) ? AppSettings.DefaultUserAgent : value; break;
+                    case nameof(AppSettings.UserAgent): settings.UserAgent = AppSettings.IsEarlierDefaultUserAgent(value) ? AppSettings.DefaultUserAgent : value; break;
                     case nameof(AppSettings.FfmpegPath): settings.FfmpegPath = value; break;
                     case nameof(AppSettings.ComputeHashOnCompletion): settings.ComputeHashOnCompletion = value == "1"; break;
                     case nameof(AppSettings.HashAlgorithm) when PostDownload.FileHash.Algorithms.Contains(value): settings.HashAlgorithm = value; break;

@@ -282,7 +282,7 @@ public sealed class SettingsViewModel : ObservableObject
         set
         {
             Set(ref _selectedLogin, value);
-            LoginHost = value is null ? "" : value.Port is { } port ? $"{value.Host}:{port}" : value.Host;
+            LoginHost = value is null ? "" : $"{value.Scheme}://{value.Host}{(value.Port is { } port ? $":{port}" : "")}";
             LoginUser = value?.Username ?? "";
             LoginWindowsAccount = value?.UseWindowsAccount ?? false;
             LoginPassword = "";
@@ -453,6 +453,19 @@ public sealed class SettingsViewModel : ObservableObject
     private void SaveLogin()
     {
         var text = LoginHost.Trim();
+        // "https://host:port", or a bare "host:port", which is https: a login is valid for one scheme only.
+        var scheme = "https";
+        var separator = text.IndexOf("://", StringComparison.Ordinal);
+        if (separator > 0)
+        {
+            scheme = text[..separator].ToLowerInvariant();
+            text = text[(separator + 3)..].TrimEnd('/');
+            if (!SiteCredential.Schemes.Contains(scheme))
+            {
+                LoginMessage = Strings.LoginSchemeUnknown;
+                return;
+            }
+        }
         int? port = null;
         var colon = text.LastIndexOf(':');
         if (colon > 0 && int.TryParse(text[(colon + 1)..], out var parsed) && parsed is > 0 and < 65536)
@@ -466,9 +479,16 @@ public sealed class SettingsViewModel : ObservableObject
             LoginMessage = Strings.LoginPasswordRequired;
             return;
         }
+        // A password that would travel readable (http with Basic, ftp) is saved only after an explicit yes.
+        var plain = SiteCredential.IsPlainScheme(scheme) && !LoginWindowsAccount;
+        if (plain && !(editing is { PlainConfirmed: true } && editing.Scheme == scheme)
+            && !_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.LoginPlainSaveConfirm, scheme), Strings.SettingsTabCredentials))
+            return;
         var credential = new SiteCredential
         {
             Id = editing?.Id ?? 0,
+            Scheme = scheme,
+            PlainConfirmed = plain,
             Host = text,
             Port = port,
             Username = LoginUser.Trim(),

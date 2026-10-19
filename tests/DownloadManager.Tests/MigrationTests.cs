@@ -203,7 +203,7 @@ public sealed class MigrationTests : IDisposable
 
         using (var store = new DownloadStore(DbPath))
         {
-            Assert.Equal(7, store.Version);
+            Assert.Equal(DownloadStore.SchemaVersion, store.Version);
             Assert.EndsWith(".v6.bak", store.BackupPath);
             var record = store.LoadAll().Single();
             Assert.Null(record.Check);
@@ -219,6 +219,31 @@ public sealed class MigrationTests : IDisposable
             store.Update(record);
             Assert.Equal(Core.PostDownload.ScanOutcome.Clean, store.LoadAll().Single().Check!.Scan);
         }
+    }
+
+    [Fact]
+    public void Version7_IsUpgradedTo8_LoginsGetTheirScheme_TheSecureOneWhenUnknown()
+    {
+        using (var store = new DownloadStore(DbPath))
+        {
+            store.Insert(new DownloadRecord { Url = "http://intranet.local/report.pdf", Directory = @"D:\dl", FileName = "report.pdf", Status = DownloadStatus.Completed, AddedUtc = DateTime.UtcNow });
+            store.SaveCredential(new Core.Security.SiteCredential { Host = "intranet.local", Username = "a", Password = "pw-a", AddedUtc = DateTime.UtcNow });
+            store.SaveCredential(new Core.Security.SiteCredential { Host = "unknown.example", Username = "b", Password = "pw-b", AddedUtc = DateTime.UtcNow });
+            store.SaveCredential(new Core.Security.SiteCredential { Host = "files.example", Port = 21, Username = "c", Password = "pw-c", AddedUtc = DateTime.UtcNow });
+        }
+        // Version 7: logins without a scheme.
+        Run("ALTER TABLE credentials DROP COLUMN scheme; ALTER TABLE credentials DROP COLUMN plain_confirmed; PRAGMA user_version = 7;");
+
+        using var upgraded = new DownloadStore(DbPath);
+        Assert.Equal(8, upgraded.Version);
+        Assert.EndsWith(".v7.bak", upgraded.BackupPath);
+        var logins = upgraded.LoadCredentials().ToDictionary(c => c.Host);
+        Assert.Equal("http", logins["intranet.local"].Scheme);   // the scheme it was used with
+        Assert.False(logins["intranet.local"].PlainConfirmed);   // readable password: asked once, with a warning
+        Assert.Equal("https", logins["unknown.example"].Scheme); // unknown: the encrypted one
+        Assert.Equal("ftpes", logins["files.example"].Scheme);   // FTP port, unknown: explicit FTPS
+        Assert.Equal("pw-b", logins["unknown.example"].Password); // nothing lost
+        Assert.Single(upgraded.LoadAll());
     }
 
     [Fact]

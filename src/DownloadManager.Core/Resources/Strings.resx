@@ -205,6 +205,7 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="ErrorFolderNotWritable" xml:space="preserve"><value>Impossibile scrivere nella cartella {0}: scegli un'altra cartella in Proprietà o nelle Impostazioni.</value></data>
   <data name="ErrorHashFormat" xml:space="preserve"><value>Hash non riconosciuto: incolla un MD5 (32 caratteri), un SHA-1 (40) o uno SHA-256 (64), anche con il prefisso "sha256:".</value></data>
   <data name="ErrorInvalidUrl" xml:space="preserve"><value>Inserisci un indirizzo valido: http://, https://, ftp://, ftps:// (TLS implicito) o ftpes:// (TLS esplicito).</value></data>
+  <data name="ErrorNotificationExpired" xml:space="preserve"><value>Questo pulsante della notifica non è più valido (è scaduto, oppure il download è stato rimosso o spostato). Apri DownloadManager per trovare il file.</value></data>
   <data name="ErrorPacUrl" xml:space="preserve"><value>Indica l'indirizzo del file PAC.</value></data>
   <data name="ErrorPathTooLong" xml:space="preserve"><value>Percorso troppo lungo {0}: scegli una cartella più corta o un nome più breve.</value></data>
   <data name="ErrorPerServer" xml:space="preserve"><value>Le connessioni per server devono essere tra 1 e 256.</value></data>
@@ -254,6 +255,7 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="FirstRunVerify" xml:space="preserve"><value>Verifica connessione</value></data>
   <data name="FirstRunVerifyToolTip" xml:space="preserve"><value>Apri il pulsante dell'estensione nel browser, poi premi qui</value></data>
   <data name="FromBrowser" xml:space="preserve"><value>Inviato dal browser.</value></data>
+  <data name="FromBrowserCrossSiteForm" xml:space="preserve"><value>Attenzione: un modulo inviato da {0} a {1}. Proseguendo, l'app rinvia i dati del modulo con la tua sessione su {1}: fallo solo se l'hai inviato tu, consapevolmente.</value></data>
   <data name="FromBrowserForm" xml:space="preserve"><value>Inviato dal browser compilando un modulo: verranno rinviati i dati del modulo (POST), i cookie e la pagina di provenienza. Un modulo non si può riprendere: se si interrompe, riparte da capo.</value></data>
   <data name="FromBrowserMedia" xml:space="preserve"><value>Video {0} dalla pagina, qualità {1}: i segmenti vengono scaricati in parallelo e poi uniti.</value></data>
   <data name="FromBrowserMediaAudio" xml:space="preserve"><value>Audio: {0}.</value></data>
@@ -345,7 +347,7 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="GrabberModeFilesShort" xml:space="preserve"><value>File filtrati</value></data>
   <data name="GrabberModeHeading" xml:space="preserve"><value>Cosa vuoi ottenere</value></data>
   <data name="GrabberModeMirror" xml:space="preserve"><value>Copia del sito da consultare offline</value></data>
-  <data name="GrabberModeMirrorHint" xml:space="preserve"><value>Salva pagine, fogli di stile, script e immagini mantenendo le cartelle del sito; i link puntano ai file locali.</value></data>
+  <data name="GrabberModeMirrorHint" xml:space="preserve"><value>Salva pagine, fogli di stile e immagini mantenendo le cartelle del sito; i link puntano ai file locali.</value></data>
   <data name="GrabberModeMirrorShort" xml:space="preserve"><value>Copia offline</value></data>
   <data name="GrabberNameLabel" xml:space="preserve"><value>_Nome del progetto</value></data>
   <data name="GrabberNameName" xml:space="preserve"><value>Nome del progetto</value></data>
@@ -418,6 +420,8 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="GrabberStepScope" xml:space="preserve"><value>Ambito</value></data>
   <data name="GrabberStepsName" xml:space="preserve"><value>Passi della procedura</value></data>
   <data name="GrabberStop" xml:space="preserve"><value>Ferma</value></data>
+  <data name="GrabberStripScripts" xml:space="preserve"><value>Rimuovi gli script dalla copia offline (consigliato)</value></data>
+  <data name="GrabberStripScriptsWarning" xml:space="preserve"><value>Attenzione: aprendo la copia dal disco, gli script del sito verrebbero eseguiti sul tuo computer con i permessi di un file locale. Lasciali solo per siti di cui ti fidi.</value></data>
   <data name="GrabberSummary" xml:space="preserve"><value>{0} pagine, {1} file ({2} nuovi, {3} modificati, {4} rimossi dal sito)</value></data>
   <data name="GrabberSummaryLimit" xml:space="preserve"><value>fermato dal limite di {0}</value></data>
   <data name="GrabberSummaryStopped" xml:space="preserve"><value>interrotto</value></data>
@@ -446,12 +450,16 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="ImportErrorMissing" xml:space="preserve"><value>Il file non esiste.</value></data>
   <data name="ImportErrorTooLarge" xml:space="preserve"><value>Il file è troppo grande o contiene troppi elementi.</value></data>
   <data name="ImportFilter" xml:space="preserve"><value>Esportazioni e liste di indirizzi (*.json;*.txt)|*.json;*.txt|Tutti i file (*.*)|*.*</value></data>
+  <data name="ImportFolderNotLocal" xml:space="preserve"><value>Cartella non ammessa: deve essere su un disco di questo computer (niente cartelle di rete \\server\… o unità di rete).</value></data>
+  <data name="ImportFolderOutsideProfile" xml:space="preserve"><value>Cartella non ammessa: sul disco di Windows sono accettate solo cartelle dentro il tuo profilo utente.</value></data>
+  <data name="ImportFolderSensitive" xml:space="preserve"><value>Cartella non ammessa: è una cartella di sistema, dei programmi, dell'avvio automatico o dei dati delle applicazioni.</value></data>
   <data name="ImportHint" xml:space="preserve"><value>I download importati restano in pausa nella cartella della loro categoria; code e progetti arrivano senza pianificazione. Password, cookie e altri dati riservati non vengono mai esportati né importati.</value></data>
   <data name="ImportInvalidAddress" xml:space="preserve"><value>Indirizzo non valido: non verrà importato.</value></data>
   <data name="ImportInvalidFolder" xml:space="preserve"><value>Cartella non valida: non verrà importato.</value></data>
   <data name="ImportInvalidItem" xml:space="preserve"><value>Dati non validi: non verrà importato.</value></data>
   <data name="ImportKindCategory" xml:space="preserve"><value>Categoria</value></data>
   <data name="ImportKindDownload" xml:space="preserve"><value>Download</value></data>
+  <data name="ImportKindNetwork" xml:space="preserve"><value>Rete</value></data>
   <data name="ImportKindProject" xml:space="preserve"><value>Progetto</value></data>
   <data name="ImportKindQueue" xml:space="preserve"><value>Coda</value></data>
   <data name="ImportKindSettings" xml:space="preserve"><value>Impostazioni</value></data>
@@ -459,6 +467,12 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="ImportModeReplace" xml:space="preserve"><value>Sostituisci</value></data>
   <data name="ImportModeReplaceToolTip" xml:space="preserve"><value>Categorie, code e progetti prendono i valori importati; i download già presenti non vengono mai sostituiti.</value></data>
   <data name="ImportModeSkip" xml:space="preserve"><value>Salta</value></data>
+  <data name="ImportNetworkName" xml:space="preserve"><value>Proxy, file PAC e conferma dei download dal browser</value></data>
+  <data name="ImportNetworkNoConfirm" xml:space="preserve"><value>download dal browser senza conferma</value></data>
+  <data name="ImportNetworkPac" xml:space="preserve"><value>file PAC {0}</value></data>
+  <data name="ImportNetworkProxy" xml:space="preserve"><value>proxy {0}</value></data>
+  <data name="ImportNetworkWarning" xml:space="preserve"><value>Attenzione: da qui in poi tutto il traffico dell'app passerebbe dal proxy indicato in questo file, e la conferma dei download potrebbe essere disattivata. Spunta solo se il file viene da una fonte di cui ti fidi.</value></data>
+  <data name="ImportPacNotHttps" xml:space="preserve"><value>File PAC non ammesso: deve essere un indirizzo https o un file su questo computer (mai http o cartelle di rete).</value></data>
   <data name="ImportQueueDetail" xml:space="preserve"><value>{0} download contemporanei</value></data>
   <data name="ImportSettingsName" xml:space="preserve"><value>Impostazioni (senza password, programmi e indirizzo di aggiornamento)</value></data>
   <data name="ImportSummary" xml:space="preserve"><value>{0}: {1} elementi, {2} già presenti, {3} non validi. Scegli cosa importare.</value></data>
@@ -470,13 +484,15 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="LoginDelete" xml:space="preserve"><value>_Elimina</value></data>
   <data name="LoginDetails" xml:space="preserve"><value>Per scaricare «{0}» (autenticazione {1}).</value></data>
   <data name="LoginHeading" xml:space="preserve"><value>{0} chiede le credenziali</value></data>
-  <data name="LoginHostLabel" xml:space="preserve"><value>_Server (nome, facoltativamente :porta)</value></data>
+  <data name="LoginHostLabel" xml:space="preserve"><value>_Server (https://nome:porta; senza schema vale https)</value></data>
   <data name="LoginHostName" xml:space="preserve"><value>Server delle credenziali</value></data>
   <data name="LoginNew" xml:space="preserve"><value>_Nuova</value></data>
   <data name="LoginPasswordKeep" xml:space="preserve"><value>Lascia vuoto per mantenere la password salvata</value></data>
   <data name="LoginPasswordLabel" xml:space="preserve"><value>_Password</value></data>
   <data name="LoginPasswordName" xml:space="preserve"><value>Password</value></data>
   <data name="LoginPasswordRequired" xml:space="preserve"><value>Inserisci la password.</value></data>
+  <data name="LoginPlainConfirm" xml:space="preserve"><value>Ho capito: la password viaggerà in chiaro e chi è sulla stessa rete potrà leggerla</value></data>
+  <data name="LoginPlainSaveConfirm" xml:space="preserve"><value>Con {0} la password viaggia in chiaro: chi è sulla stessa rete (Wi-Fi pubblico, rete aziendale) può leggerla. Salvarla comunque per questo server?</value></data>
   <data name="LoginProxyHeading" xml:space="preserve"><value>Il proxy {0} chiede le credenziali</value></data>
   <data name="LoginProxyTitle" xml:space="preserve"><value>Accesso al proxy</value></data>
   <data name="LoginRealm" xml:space="preserve"><value>Area: «{0}».</value></data>
@@ -484,6 +500,7 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="LoginRememberToolTip" xml:space="preserve"><value>Se non selezionato, le credenziali valgono solo finché l'app resta aperta.</value></data>
   <data name="LoginSave" xml:space="preserve"><value>Sa_lva credenziali</value></data>
   <data name="LoginSaved" xml:space="preserve"><value>Credenziali salvate per {0}.</value></data>
+  <data name="LoginSchemeUnknown" xml:space="preserve"><value>Schema non riconosciuto: usa https://, http://, ftps://, ftpes:// o ftp:// (senza schema vale https).</value></data>
   <data name="LoginSignIn" xml:space="preserve"><value>_Accedi</value></data>
   <data name="LoginTitle" xml:space="preserve"><value>Accesso richiesto</value></data>
   <data name="LoginUnencrypted" xml:space="preserve"><value>Attenzione: la connessione non è cifrata, la password viaggerà leggibile.</value></data>
@@ -495,6 +512,8 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="MediaBlockedLive" xml:space="preserve"><value>È una diretta: si possono scaricare solo video completi, non trasmissioni in corso.</value></data>
   <data name="MediaBlockedTerms" xml:space="preserve"><value>Questo sito non consente di scaricare i suoi video nei termini di servizio: DownloadManager non lo fa.</value></data>
   <data name="MediaCannotChangeUrl" xml:space="preserve"><value>L'indirizzo di un video non si può cambiare: riaprilo dalla pagina e scaricalo di nuovo.</value></data>
+  <data name="MediaErrorPrivate" xml:space="preserve"><value>Il video chiede indirizzi di questo computer o della rete locale, ma la pagina non è su quella rete: richiesta bloccata per sicurezza.</value></data>
+  <data name="MediaErrorScheme" xml:space="preserve"><value>Indirizzo del video non supportato ({0}): sono ammessi solo http e https.</value></data>
   <data name="MediaMuxFailed" xml:space="preserve"><value>ffmpeg non è riuscito a unire le tracce ({0}): video e audio sono stati salvati separatamente così come scaricati.</value></data>
   <data name="MediaNoFfmpegTracks" xml:space="preserve"><value>ffmpeg non trovato: video e audio sono stati salvati in due file separati. Indica ffmpeg in Impostazioni › Generale per ottenere un unico MP4.</value></data>
   <data name="MediaNoFfmpegTs" xml:space="preserve"><value>ffmpeg non trovato: il video è stato salvato in formato .ts (MPEG-TS), riproducibile da VLC e dai lettori più diffusi. Indica ffmpeg in Impostazioni › Generale per ottenere un MP4.</value></data>
@@ -536,6 +555,7 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="NavigationName" xml:space="preserve"><value>Filtri e categorie</value></data>
   <data name="No" xml:space="preserve"><value>No</value></data>
   <data name="Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="PacNotLocal" xml:space="preserve"><value>Il file PAC deve essere un indirizzo https (o http) oppure un file su questo computer: mai una cartella di rete (\\server\…).</value></data>
   <data name="PacUrlLabel" xml:space="preserve"><value>Indirizzo del file PAC (http, https o percorso locale)</value></data>
   <data name="PacUrlName" xml:space="preserve"><value>Indirizzo del file PAC</value></data>
   <data name="PerServerLabel" xml:space="preserve"><value>Connessioni _massime per server (1–256)</value></data>
@@ -779,11 +799,13 @@ Limite: {2}</value></data>
   <data name="UpdateConfirmRestore" xml:space="preserve"><value>Ripristinare la versione precedente? Il programma verrà chiuso e riaperto.</value></data>
   <data name="UpdateDownloading" xml:space="preserve"><value>Download dell'aggiornamento…</value></data>
   <data name="UpdateErrorAddress" xml:space="preserve"><value>L'indirizzo degli aggiornamenti deve essere un indirizzo https.</value></data>
+  <data name="UpdateErrorBadSignature" xml:space="preserve"><value>La versione {0} non viene installata: la sua firma non è valida o non è di una chiave riconosciuta. Il file potrebbe essere stato alterato; scaricalo solo dalla pagina ufficiale.</value></data>
   <data name="UpdateErrorHashMismatch" xml:space="preserve"><value>Il file scaricato non corrisponde al suo SHA-256: è stato eliminato.</value></data>
   <data name="UpdateErrorNoExe" xml:space="preserve"><value>La versione non contiene il programma (.exe).</value></data>
   <data name="UpdateErrorNoHash" xml:space="preserve"><value>La versione non indica lo SHA-256 del programma (o un indirizzo https per scaricarlo): non viene proposta.</value></data>
   <data name="UpdateErrorNoRelease" xml:space="preserve"><value>L'indirizzo degli aggiornamenti non restituisce una versione valida.</value></data>
   <data name="UpdateErrorNoShaAsset" xml:space="preserve"><value>La versione {1} non viene installata: la release non contiene l'allegato {0} con lo SHA-256 del programma (o non contiene un hash valido), quindi il file scaricato non si potrebbe verificare. Va aggiunto alla release su GitHub.</value></data>
+  <data name="UpdateErrorNoSignature" xml:space="preserve"><value>La versione {1} non viene installata: manca la firma dell'autore ({0}). Dalla 1.1.0 l'app installa solo aggiornamenti firmati.</value></data>
   <data name="UpdateErrorNotProgram" xml:space="preserve"><value>Il file scaricato non è un programma Windows: è stato eliminato.</value></data>
   <data name="UpdateErrorStatus" xml:space="preserve"><value>Il server ha risposto {0}.</value></data>
   <data name="UpdateErrorTooLarge" xml:space="preserve"><value>La risposta del server è troppo grande.</value></data>

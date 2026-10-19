@@ -358,12 +358,19 @@ public sealed class BrowserProtocolTests : IAsyncLifetime
     [Fact]
     public void FfmpegSetting_RoundTrips_AndTheOldDefaultUserAgentFollowsTheVersion()
     {
-        using (var store = new DownloadStore(DbPath))
-            store.SaveSettings(new AppSettings { FfmpegPath = @"D:\tools\ffmpeg.exe", UserAgent = "DownloadManager/0.5" });
-        using var reopened = new DownloadStore(DbPath);
-        var settings = reopened.LoadSettings();
-        Assert.Equal(@"D:\tools\ffmpeg.exe", settings.FfmpegPath);
-        Assert.Equal(AppSettings.DefaultUserAgent, settings.UserAgent);
+        foreach (var (saved, expected) in new[]
+                 {
+                     ("DownloadManager/0.5", AppSettings.DefaultUserAgent), ("DownloadManager/1.0", AppSettings.DefaultUserAgent),
+                     ("DownloadManager/1.0 (custom)", "DownloadManager/1.0 (custom)"), ("Mozilla/5.0", "Mozilla/5.0"),
+                 })
+        {
+            using (var store = new DownloadStore(DbPath))
+                store.SaveSettings(new AppSettings { FfmpegPath = @"D:\tools\ffmpeg.exe", UserAgent = saved });
+            using var reopened = new DownloadStore(DbPath);
+            var settings = reopened.LoadSettings();
+            Assert.Equal(@"D:\tools\ffmpeg.exe", settings.FfmpegPath);
+            Assert.Equal(expected, settings.UserAgent); // an earlier default follows the version, the user's own value stays
+        }
     }
 
     // ------------------------------------------------------------------ the extension's own tests

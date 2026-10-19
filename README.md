@@ -4,7 +4,8 @@ Download manager per Windows (C# / .NET 10 LTS / WPF) con download segmentato, p
 code con nome e pianificazione, categorie, FTP/FTPS, proxy, autenticazione, video HLS/DASH (con lingue e sottotitoli), grabber
 di siti (file filtrati o copia offline, sincronizzabile e pianificabile), verifica dei file (hash e antivirus), esportazione e
 importazione, aggiornamenti verificati e integrazione con Chrome, Edge, Opera, Brave e Firefox.
-Versione 1.0.1.
+Versione 1.1.0: rafforzamento della sicurezza (aggiornamenti firmati, credenziali legate allo schema, import e copia offline più
+sicuri, cookie secondo SameSite, controllo degli indirizzi dei video).
 
 ## Struttura
 
@@ -22,6 +23,7 @@ Versione 1.0.1.
 | `tests/extension` | Test dell'estensione con `node --test` (regole, moduli, media, ripiego), eseguiti anche da `dotnet test` |
 | `tools/trials` | Prove reali nei browser (Edge, Opera, Firefox headless) con l'app isolata: `prepare.ps1`, `chromium-trial.mjs`, `firefox-trial.mjs`, `grab-trial.ps1`, `perf.ps1` con `fill_downloads.py` (elenco di migliaia di download, memoria), `finish.ps1`; sito di prova locale (anche `/grab/` per il grabber) |
 | `tools/sign-firefox.ps1` | Firma "non elencata" dell'estensione per Firefox su addons.mozilla.org (chiavi solo da variabili d'ambiente) |
+| `tools/sign-release.ps1` | Chiavi di firma delle release (fuori dal repository, DPAPI o password) e firma `.sha256` + `.sig` degli aggiornamenti |
 | `tools/make_resx.py`, `tools/make_locales.py` | Generatori dei testi: `Strings.resx` dell'app e `_locales` dell'estensione (la tabella è nello script) |
 | `CLAUDE.md`, `.claude/` | Regole del progetto per Claude Code, hook (guardia su registro e Desktop, controlli dell'estensione, build incrementale) e skill `prova-reale`, `fine-fase`, `stringhe` |
 | `publish/DownloadManager.exe` | Build Release self-contained win-x64 (non richiede il runtime .NET) |
@@ -75,14 +77,18 @@ Compressi, Documenti, Musica, Video, Programmi e Generale, ognuna con estensioni
 ## Proxy e autenticazione
 
 - **Proxy** (Impostazioni › Rete): nessuno, di sistema (predefinito, come nelle versioni precedenti: le impostazioni di Windows,
-  incluso il rilevamento automatico), manuale HTTP / HTTPS / SOCKS5 con utente e password, oppure file PAC (http, https o locale),
-  eseguito in Jint, un interprete JavaScript isolato, senza accesso a file o .NET, con limiti di tempo e memoria.
+  incluso il rilevamento automatico), manuale HTTP / HTTPS / SOCKS5 con utente e password, oppure file PAC (http, https o locale;
+  mai da una cartella di rete), eseguito in Jint, un interprete JavaScript isolato, senza accesso a file o .NET, con limiti di
+  tempo e memoria. La password del proxy viene data solo al proxy scritto nelle impostazioni o a quelli indicati da un PAC letto
+  via https o da un file locale: un PAC in http, che si potrebbe alterare per strada, non può dirottarla su un altro proxy.
   Le eccezioni accettano `*`, `?` e `<local>`; **localhost, 127.0.0.0/8 e ::1 non usano mai il proxy**.
   FTP usa il proxy quando il tipo lo consente: SOCKS5 e HTTP (CONNECT); con un proxy HTTPS FTP va diretto.
 - **Verifica**: scarica un indirizzo di prova con le impostazioni scritte, prima di salvarle, e dice se è passato dal proxy.
 - **Autenticazione HTTP**: Basic, Digest, NTLM e Negotiate/Kerberos (gestiti da .NET). Con un 401 o un 407 senza credenziali il
   download va in pausa e compare la richiesta, con *Ricorda* (salvate cifrate) o solo per la sessione; più download dello stesso
-  server condividono una sola richiesta. Le credenziali salvate sono offerte solo al loro server; *Usa il mio account di Windows*
+  server condividono una sola richiesta. Le credenziali salvate valgono per **schema + host + porta**: una salvata per https,
+  ftps o ftpes non viene mai inviata su http o ftp in chiaro. Per Basic su http (o FTP senza TLS) la finestra avvisa che la
+  password viaggerà in chiaro e chiede una conferma esplicita, ricordata con la credenziale. *Usa il mio account di Windows*
   vale solo per NTLM/Negotiate. Le credenziali del proxy (407) vanno nelle impostazioni del proxy.
 - **Segreti**: password dei siti e del proxy cifrate con DPAPI (account Windows); mai nell'interfaccia, nei log o negli indirizzi.
   I cookie del browser restano legati al loro sito anche dopo un redirect o attraverso un proxy.
@@ -146,6 +152,12 @@ DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; ma
   relativi, frammenti `#…` mantenuti); ciò che non è stato salvato resta un link assoluto, che funziona online. `<base>`,
   `integrity` e `crossorigin` vengono tolti (non servono e impedirebbero di aprire la copia da file), la codifica diventa UTF-8.
   Le pagine `.php`/`.asp` diventano `.php.html` ecc., così si aprono nel browser.
+  **Rimuovi gli script dalla copia offline** (attiva per impostazione): una copia aperta dal disco eseguirebbe gli script del
+  sito con i permessi di un file locale. Vengono tolti elementi `<script>` (anche in SVG), gestori `on…`, indirizzi
+  `javascript:`/`vbscript:` (anche nei meta refresh), `srcdoc` e precaricamenti di script; i `.js` non vengono scaricati e ogni
+  pagina riceve una Content-Security-Policy `script-src 'none'` come seconda difesa. Le immagini SVG e i file XML/HTML salvati
+  come risorse vengono ripuliti allo stesso modo; `.svgz`, `.xsl`, `.xslt`, `.hta`, `.mht` non vengono salvati (il link resta
+  online). Disattivarla mostra un avviso.
 - **Rispetto dei siti**: robots.txt (RFC 9309: gruppo del proprio user-agent o `*`, Allow/Disallow con `*` e `$`, la regola
   più lunga vince; `Crawl-delay` rallenta il ritmo) è attivo per impostazione; disattivarlo richiede una conferma esplicita.
   Ogni host riceve al massimo il numero di richieste al secondo scelto; 429 e 503 fanno attendere **tutto l'host** per il
@@ -207,7 +219,11 @@ DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; ma
   duplicati (salta, sostituisci, mantieni entrambi); l'anteprima mostra anche le cartelle di categorie e progetti. Il file
   importato non è fidato: i download entrano in pausa nella cartella della loro categoria (mai in una cartella indicata dal file
   né come già completati), code e progetti senza pianificazione né azione di fine coda, e la password del proxy resta solo se
-  il proxy è lo stesso.
+  il proxy è lo stesso. Categorie e impostazioni **non sono mai preselezionate**; le cartelle sono accettate solo se locali e
+  assolute, nel profilo dell'utente o su un disco dati, e mai di sistema o di avvio (Windows, Programmi, ProgramData, AppData,
+  menu Start ed Esecuzione automatica, profili di PowerShell), giudicate sul percorso reale (nomi brevi 8.3, junction e
+  collegamenti risolti); quelle scartate compaiono nell'anteprima con il motivo. Proxy, PAC e la disattivazione della conferma
+  dei download dal browser stanno in una riga a parte con un avviso evidente; un PAC importato deve essere https o un file locale.
 - **Primo avvio** (solo se il database non esiste): cartella dei download (predefinita **Download**, mai il Desktop), cartelle
   delle categorie, istruzioni per ogni browser trovato con **Verifica connessione**, avvio con Windows e tema.
 - **Download sul Desktop** (installazioni precedenti): se la cartella dei download o quelle delle categorie sono sul Desktop,
@@ -228,14 +244,15 @@ DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; ma
   stessa dimensione e stesso ETag (o data di ultima modifica) → i dati già scaricati vengono mantenuti; file diverso → si
   ricomincia da zero dopo conferma; stessa dimensione ma nessun dato per verificare → decidi tu.
 - **Notifiche di Windows** a fine download con i pulsanti **Apri** e **Apri cartella** (disattivabili in Impostazioni).
-  I pulsanti usano link `downloadmanager:` firmati con una chiave dell'utente, quindi una pagina web non può usarli per aprire file.
+  I pulsanti usano link `downloadmanager:` firmati (HMAC) con una chiave dell'utente, che coprono anche l'ID del download e una
+  scadenza di 7 giorni: una pagina web non può usarli per aprire file, e un link vecchio o di un altro download non vale.
 - **Aggiungi / conferma dal browser**: scelta di categoria e coda; *Scarica ora* avvia subito, *Aggiungi alla coda* aspetta il turno.
 - **Tastiera**: Ctrl+G grabber, Ctrl+N aggiungi, Ctrl+V incolla link, Ctrl+F cerca, Canc rimuovi, Invio avanzamento, Alt+Invio proprietà.
   Tutti i controlli hanno un nome leggibile dagli screen reader.
 
 ## Dati
 
-`%LOCALAPPDATA%\DownloadManager\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 7):
+`%LOCALAPPDATA%\DownloadManager\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 8):
 all'avvio i database delle versioni precedenti vengono aggiornati un passo alla volta in un'unica transazione, dopo averne
 salvato una copia accanto (`downloads.db.v<versione>.bak`). Un database creato da una versione più recente non viene modificato.
 Passando alla 3, tutti i download entrano nella Coda principale, che eredita il vecchio limite e lo stato avviata/fermata;
@@ -246,12 +263,17 @@ La 6 aggiunge `grabber_projects` (impostazioni in JSON, pianificazione, cookie c
 rimozione dal sito). Nella colonna `media` compaiono anche lingua audio e sottotitoli scelti.
 La 7 aggiunge `downloads.post_check` (hash atteso e calcolato, esito dell'antivirus) e, in `grabber_files`, il download a cui il
 file è stato mandato e se è stato davvero ottenuto (i file già presenti contano come ottenuti).
+La 8 aggiunge alle credenziali `scheme` (lo schema per cui valgono: quello dei download passati per quel server, altrimenti
+quello cifrato) e `plain_confirmed` (conferma dell'invio in chiaro, inizialmente no).
 
 **Log**: `%LOCALAPPDATA%\DownloadManager\logs\app.log`, al massimo 1 MB per file e 5 file (`app.1.log` … `app.4.log`). Gli
 indirizzi vi compaiono senza parametri né credenziali, e password, cookie e token vengono mascherati.
 
 **Errori del disco**: disco pieno, cartella non scrivibile e percorso troppo lungo fermano il download con un messaggio
 chiaro invece di riprovare all'infinito; i nomi dei file oltre 200 caratteri vengono accorciati mantenendo l'estensione.
+**Nomi dei file** (download e grabber, con la stessa funzione): tolti i caratteri invisibili e di direzione del testo (U+202A–202E,
+U+2066–2069, U+200B–200F, U+FEFF), che farebbero sembrare `fattura‮fdp.exe` un PDF; i nomi di dispositivo (`CON`, `PRN`, `AUX`,
+`NUL`, `COM1`–`9`, `LPT1`–`9`, anche con estensione) prefissati con `_`; punti e spazi finali e punti iniziali tolti.
 
 Pubblicazione: eseguibile singolo self-contained non compresso (circa 165 MB). Il trimming non è possibile con WPF (l'SDK lo
 rifiuta, NETSDK1168); ReadyToRun è stato misurato (finestra in 604 ms invece di 675, ma +66 MB su disco e +10 MB di RAM) e
@@ -265,13 +287,44 @@ allegato **`DownloadManager.exe.sha256`** — l'hash nei formati comuni: solo l'
 `hash  nome` di sha256sum, `SHA256 (nome) = hash`, l'output di certutil; se nomina un altro programma viene rifiutato. Un hash
 nelle note o in un file `SHA256SUMS` non basta: senza quell'allegato una versione più recente non viene installata e l'app lo
 dice, anche dopo il controllo automatico all'avvio, una sola volta per release) oppure un manifest JSON
-`{ "version": "1.1.0", "notes": "…", "url": "https://…/DownloadManager.exe", "sha256": "…" }`. Solo indirizzi https.
+`{ "version": "1.1.0", "notes": "…", "url": "https://…/DownloadManager.exe", "sha256": "…", "signature": "…" }`. Solo
+indirizzi https.
+**Dalla 1.1.0 gli aggiornamenti devono essere firmati**: la release deve contenere anche l'allegato
+**`DownloadManager.exe.sig`** (per il manifest, il campo `signature`) con una firma ECDSA P-256 dell'autore di
+"versione + nome del file + SHA-256", verificata con le chiavi pubbliche incorporate nell'app
+(`src/DownloadManager.Core/Updates/release-keys.txt`). Una firma assente, errata, di una chiave sconosciuta o di un'altra
+versione (una vecchia release firmata ripresentata come nuova) blocca l'installazione con un avviso. Le versioni fino alla
+1.0.1 non leggono la firma e si aggiornano alla 1.1.0 con il solo `.sha256`: per questo ogni release li contiene entrambi.
 Con il controllo all'avvio attivo, una versione più recente mostra le note; nulla viene scaricato senza **Scarica e installa**.
 Il file scaricato deve corrispondere allo SHA-256 dichiarato ed essere un programma Windows, altrimenti viene eliminato.
 Poi l'eseguibile in uso diventa `DownloadManager.exe.old`, il nuovo prende il suo posto e la versione precedente, avviata come
 "guardiano", avvia la nuova e aspetta che segnali di essere partita: se si chiude o non risponde entro 90 secondi, la nuova
 viene messa da parte come `.failed`, la precedente torna al suo posto e si riavvia con un avviso. **Ripristina la versione
 precedente** fa lo stesso scambio a mano. Funziona solo con l'eseguibile pubblicato (un file unico).
+
+### Pubblicare una release firmata
+
+La chiave privata non è mai nel repository: `tools\sign-release.ps1` la tiene in `%LOCALAPPDATA%\DownloadManager-signing`,
+cifrata con DPAPI (utilizzabile solo da questo utente Windows) oppure, con `-Password`, con una password (PBKDF2-SHA256 e
+AES-256 con HMAC), per una copia di riserva da conservare fuori dal PC.
+
+1. **Una volta sola**: `.\tools\sign-release.ps1 -NewKey` crea la chiave e aggiunge la sua parte pubblica a
+   `release-keys.txt`. Consigliata anche una chiave di riserva: `.\tools\sign-release.ps1 -NewKey -Password`, poi copia il suo
+   file `<id>.key.json` su un supporto esterno e toglilo dal PC (con la sua password permette di firmare anche se la chiave
+   DPAPI va persa, per esempio reinstallando Windows). Ricompila e fai il commit di `release-keys.txt`: solo le versioni che
+   contengono una chiave accettano le firme fatte con essa.
+2. **A ogni release**: aumenta `<Version>` in `src\DownloadManager.App\DownloadManager.App.csproj`, pubblica
+   (`dotnet publish … -o publish`), poi `.\tools\sign-release.ps1` scrive `publish\DownloadManager.exe.sha256` e
+   `publish\DownloadManager.exe.sig` (la versione è letta dall'exe; con `-Version` la si indica). Con
+   `-Url https://…/DownloadManager.exe` scrive anche `latest.json` per un indirizzo che non sia GitHub.
+3. Su GitHub crea la release con il tag `v<versione>` e allega **i tre file**: `DownloadManager.exe`,
+   `DownloadManager.exe.sha256` e `DownloadManager.exe.sig`. Il tag deve essere la stessa versione firmata.
+
+**Rotazione della chiave**: crea la nuova chiave con `-NewKey` (si aggiunge all'elenco), pubblica una versione firmata con la
+vecchia che contiene entrambe, poi firma con tutte e due (`-Key <vecchia>,<nuova>`, il `.sig` ha una riga per chiave) finché
+circolano versioni che conoscono solo la vecchia. Per ritirarla, togli la sua riga da `release-keys.txt` in una versione
+successiva: da lì in poi le sue firme non bastano più. Se la chiave privata è stata compromessa, ritirala subito e firma solo
+con quella di riserva.
 
 ## Prestazioni
 
@@ -368,7 +421,15 @@ con metodo, campi, cookie e pagina di provenienza; l'app rinvia il modulo nello 
 Il modulo è inviato una sola volta per tentativo: la risposta della verifica iniziale è già il download. Un download da modulo
 non si può riprendere a metà: se si interrompe, il modulo viene rinviato e il file riparte da capo. I moduli che caricano file
 (o con corpi non rappresentabili come campi) restano al browser. I campi sono cifrati con DPAPI insieme ai cookie e cancellati
-a download completato.
+a download completato. Nell'estensione un modulo resta in `storage.session` solo il tempo necessario: viene tolto appena
+l'app lo riceve, dopo 15 secondi se nessun download lo usa (con un allarme che lo garantisce anche se il service worker viene
+fermato); quelli delle finestre private non vengono mai registrati, e nei log i campi come `password`, `pass`, `pwd`, `token`
+sono mascherati. Un modulo inviato da **un altro sito** (o da una pagina che nasconde la sua origine) viene ripetuto dall'app
+solo dopo una conferma esplicita, anche con la conferma dei download disattivata.
+
+**Cookie**: l'estensione passa solo i cookie che il browser avrebbe inviato per quella richiesta, secondo SameSite rispetto
+alla pagina che l'ha avviata: `Strict` mai da un altro sito, `Lax` solo per una navigazione GET di primo livello, `None` solo
+se `Secure`. Nessun cookie dalle finestre private.
 
 ### Video (pulsante "Scarica questo video")
 
@@ -383,7 +444,13 @@ parallelo in una cartella accanto al file finale e conservati uno per uno, quind
 mancante. Al termine i segmenti vengono uniti (TS e MP4 frammentato sono fatti per essere concatenati) e, se c'è **ffmpeg**
 (Impostazioni › Generale, oppure nel PATH; non è incluso nell'app), video e audio vengono copiati senza ricodifica in un unico
 `.mp4`. Senza ffmpeg il video viene salvato in `.ts` o in due file (`.video.mp4` / `.audio.m4a`) e il download lo dice
-("Completato (vedi nota)").
+("Completato (vedi nota)"). ffmpeg riceve solo i file preparati dall'app, con il formato indicato (`-f`) e
+`-protocol_whitelist file`: un segmento che in realtà è una playlist non può fargli leggere altri file o indirizzi.
+
+Le richieste fatte per un video (manifest, playlist, segmenti, sottotitoli) sono solo http/https e, se la pagina è su Internet,
+non possono raggiungere questo computer, la rete locale o indirizzi link-local (IPv4 e IPv6, anche NAT64/6to4): il controllo
+avviene dopo la risoluzione DNS, di nuovo alla connessione e a ogni redirect, anche attraverso un proxy. Una pagina che è già
+sulla rete locale può usare indirizzi della rete locale.
 
 Non vengono scaricati, e il pannello lo spiega:
 - contenuti **protetti**: pagine che usano Encrypted Media Extensions (DRM), DASH con `ContentProtection`, HLS con
@@ -425,6 +492,7 @@ così i file rispettano comunque il limite di download contemporanei.
 | `notifications` | avvisare quando un download torna al browser |
 | `webRequest` | riconoscere video/manifest dalle intestazioni delle risposte e i moduli inviati (solo lettura, nessun blocco) |
 | `scripting` | leggere link e immagini della pagina per "Scarica tutto", solo quando lo si chiede |
+| `alarms` | cancellare i moduli registrati anche se il service worker è stato fermato prima del timer |
 | host `<all_urls>` | tutto quanto sopra deve funzionare su qualsiasi sito; lo script di contenuto solo su http/https |
 
 Non usa `tabs`, `webRequestBlocking`, `declarativeNetRequest` né `history`. Il service worker (o la pagina di eventi in
@@ -458,6 +526,7 @@ node tools/build-extension.mjs                # estensione per Chromium e Firefo
 & $dn run --project src\DownloadManager.App   # avvio in debug
 & $dn publish src\DownloadManager.App -c Release -r win-x64 -o publish   # exe self-contained
 .\tools\sign-firefox.ps1 -Check                                          # firma dell'estensione per Firefox (vedi sopra)
+.\tools\sign-release.ps1                                                 # firma publish\DownloadManager.exe (vedi Aggiornamenti)
 powershell -File tools\trials\grab-trial.ps1 -Mode Mirror                 # prova reale del grabber (dopo prepare.ps1)
 ```
 
@@ -485,6 +554,12 @@ un file `Strings.<lingua>.resx`.
 - Aggiornamenti automatici solo per l'eseguibile pubblicato in un unico file; l'aspetto della barra degli strumenti non fa
   parte dell'esportazione delle impostazioni.
 - L'estensione per Firefox va firmata dall'utente con le proprie chiavi AMO (`tools\sign-firefox.ps1`).
+- Identità dell'estensione: l'host nativo riconosce l'estensione dal suo ID, che il browser garantisce per le estensioni
+  installate dallo store o firmate. L'ID di Chromium però deriva dalla `key` pubblica nel manifest e quello di Firefox si può
+  dichiarare in un componente aggiuntivo temporaneo: un'estensione caricata a mano in modalità sviluppatore con lo stesso ID
+  verrebbe accettata. Serve un'azione deliberata dell'utente (modalità sviluppatore, caricamento di una cartella), e anche
+  allora ogni messaggio passa dagli stessi controlli (`MessageValidator`, conferme, nessun file eseguito): non installare
+  estensioni non pacchettizzate di cui non conosci la provenienza.
 
 ## Risoluzione dei problemi
 

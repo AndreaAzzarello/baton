@@ -266,8 +266,62 @@
     return new Intl.NumberFormat(locale, { maximumFractionDigits: value < 10 && unit > 0 ? 1 : 0 }).format(value) + " " + units[unit];
   }
 
+  // Public suffixes of more than one label common enough to matter ("example.co.uk" is a site, "co.uk" is not).
+  // shortcut: not the full Public Suffix List, a site under a rarer suffix is seen as broader than it is.
+  const PUBLIC_SUFFIXES = new Set([
+    "co.uk", "org.uk", "ac.uk", "gov.uk", "me.uk", "ltd.uk", "plc.uk", "net.uk", "sch.uk",
+    "com.au", "net.au", "org.au", "edu.au", "gov.au", "co.nz", "org.nz", "co.jp", "ne.jp", "or.jp", "ac.jp",
+    "com.br", "net.br", "org.br", "com.cn", "net.cn", "org.cn", "com.mx", "com.tr", "com.ar", "co.in", "co.za", "co.kr",
+    "com.sg", "com.hk", "com.tw", "gov.it", "edu.it", "github.io", "gitlab.io", "blogspot.com", "herokuapp.com",
+    "netlify.app", "vercel.app", "pages.dev", "workers.dev", "web.app", "firebaseapp.com", "azurewebsites.net",
+    "cloudfront.net", "s3.amazonaws.com", "appspot.com",
+  ]);
+
+  /** The "site" of an address as browsers compare it for SameSite: scheme and registrable domain (or the IP address). */
+  function siteOf(url) {
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch {
+      return null;
+    }
+    const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(host) || host.startsWith("[")) return `${parsed.protocol}//${host}`;
+    const labels = host.split(".");
+    // The longest listed suffix ("s3.amazonaws.com" has three labels), and one label more.
+    let keep = 2;
+    for (let n = labels.length - 1; n >= 2; n--) {
+      if (PUBLIC_SUFFIXES.has(labels.slice(-n).join("."))) {
+        keep = n + 1;
+        break;
+      }
+    }
+    return `${parsed.protocol}//${labels.slice(-keep).join(".")}`;
+  }
+
+  function sameSite(a, b) {
+    const sa = siteOf(a);
+    return sa !== null && sa === siteOf(b);
+  }
+
+  /**
+   * Whether the browser itself would send `cookie` with a request: same-site requests carry every cookie; a cross-site
+   * one never Strict cookies, Lax (and unspecified, which browsers treat as Lax) only for a top-level GET navigation,
+   * None cookies only when Secure. The app must not carry cookies the browser would have withheld.
+   */
+  function cookieAllowed(cookie, { crossSite = false, topLevel = true, method = "GET" } = {}) {
+    if (!crossSite) return true;
+    const policy = String(cookie.sameSite || "unspecified").toLowerCase();
+    if (policy === "strict") return false;
+    if (policy === "no_restriction" || policy === "none") return cookie.secure === true;
+    return topLevel && String(method).toUpperCase() === "GET";
+  }
+
   const api = {
     PROTOCOL,
+    siteOf,
+    sameSite,
+    cookieAllowed,
     APP_TIMEOUT_MS,
     RESTRICTED_SITES,
     MIME_EXTENSIONS,

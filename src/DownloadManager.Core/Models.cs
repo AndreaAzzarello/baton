@@ -243,7 +243,12 @@ public sealed class AppSettings
     public int MaxConnectionsPerServer { get; set; } = 16;
     public string UserAgent { get; set; } = DefaultUserAgent;
 
-    public const string DefaultUserAgent = "DownloadManager/1.0";
+    public const string DefaultUserAgent = "DownloadManager/1.1";
+
+    /// <summary>The default of an earlier version ("DownloadManager/1.0"), saved as is: it follows the version, a custom value does not.</summary>
+    public static bool IsEarlierDefaultUserAgent(string value) =>
+        value != DefaultUserAgent && value.StartsWith("DownloadManager/", StringComparison.Ordinal)
+        && value["DownloadManager/".Length..] is { Length: > 0 } number && number.All(c => char.IsAsciiDigit(c) || c == '.');
 
     /// <summary>ffmpeg.exe used to put the video and audio of a stream into one MP4; empty = look for it in PATH.</summary>
     public string FfmpegPath { get; set; } = "";

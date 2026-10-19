@@ -65,6 +65,7 @@ public sealed class GrabberWizardViewModel : ObservableObject
     private string _name;
     private string _startUrl;
     private bool _mirror;
+    private bool _stripScripts;
     // Step 2
     private string _depth;
     private bool _sameDomainOnly;
@@ -111,6 +112,7 @@ public sealed class GrabberWizardViewModel : ObservableObject
         _name = project.Name;
         _startUrl = project.StartUrl;
         _mirror = project.Mode == GrabberMode.Mirror;
+        _stripScripts = project.StripScripts;
         _depth = project.MaxDepth.ToString(CultureInfo.CurrentCulture);
         _sameDomainOnly = project.SameDomainOnly;
         _domains = string.Join(Environment.NewLine, project.AllowedDomains);
@@ -249,6 +251,19 @@ public sealed class GrabberWizardViewModel : ObservableObject
                 MirrorMode = false;
         }
     }
+
+    /// <summary>Offline copy without scripts (default); turning it off is warned about.</summary>
+    public bool StripScripts
+    {
+        get => _stripScripts;
+        set
+        {
+            if (Set(ref _stripScripts, value))
+                OnPropertyChanged(nameof(StripScriptsWarning));
+        }
+    }
+
+    public string? StripScriptsWarning => _stripScripts ? null : Strings.GrabberStripScriptsWarning;
 
     public bool MirrorMode
     {
@@ -612,6 +627,7 @@ public sealed class GrabberWizardViewModel : ObservableObject
         p.ExcludePattern = Exclude.Trim();
         p.UseCookies = _useCookies;
         p.ForgetCookiesAfterRun = _forgetCookies;
+        p.StripScripts = _stripScripts;
         if (_cookiesCleared)
             p.Cookies = [];
         p.UseSavedCredentials = _useCredentials;

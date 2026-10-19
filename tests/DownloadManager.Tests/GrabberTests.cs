@@ -379,6 +379,7 @@ public sealed class GrabberTests : IAsyncLifetime
         var project = Project(GrabberMode.Mirror);
         project.Folder = root;
         project.Extensions = ["pdf"]; // linked files: only PDFs; what pages need is always kept
+        project.StripScripts = false; // the complete copy, scripts included
         var (run, result) = await RunAsync(project);
 
         var site = Path.Combine(root, "site.test");
@@ -416,6 +417,83 @@ public sealed class GrabberTests : IAsyncLifetime
         Assert.Contains("href=\"../dir%20with%20space/x.html\"", sub);
         Assert.Equal(0, result.Failed);
         Assert.Contains(run.Items, i => i.IsPage && i.LocalPath == "site.test\\index.html");
+    }
+
+    [Fact]
+    public async Task Mirror_WithoutScripts_ByDefault_KeepsNoWayOfRunningCode()
+    {
+        _site.Page("/", """
+            <!doctype html><html><head><title>Home</title>
+            <script src="/js/app.js"></script><script>alert(1)</script>
+            <link rel="modulepreload" href="/js/mod.mjs"><link rel="preload" as="script" href="/js/pre.js">
+            <meta http-equiv="refresh" content="5; url=javascript:alert(2)">
+            </head><body onload="alert(3)">
+            <a href="java&#9;script:alert(4)">x</a> <a href=" JavaScript:alert(5)">y</a> <a href="/js/plain.js">js</a>
+            <iframe srcdoc="&lt;script&gt;alert(6)&lt;/script&gt;"></iframe>
+            <svg><script>alert(7)</script><a href="vbscript:msgbox(8)"><text>t</text></a></svg>
+            <img src="/img/a.png" onerror="alert(9)" alt="kept"> <a href="/sub.html">sub</a>
+            <img src="/img/logo.svg"> <object data="/img/broken.svg"></object> <a href="/run.hta">hta</a>
+            <object data="/feed.xml"></object> <a href="/page.mht">mht</a>
+            </body></html>
+            """);
+        _site.Page("/sub.html", """<p onclick="alert(10)">text kept</p>""");
+        _site.Set("site.test", "/img/logo.svg", new SiteResource
+        {
+            ContentType = "image/svg+xml",
+            Body = """
+                <?xml version="1.0"?><?xml-stylesheet type="text/xsl" href="evil.xsl"?>
+                <!DOCTYPE svg [<!ENTITY x SYSTEM "file:///C:/Windows/win.ini">]>
+                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" onload="alert(11)">
+                <script>alert(12)</script><circle r="5" fill="red"/>
+                <a xlink:href="javascript:alert(13)"><text>t</text></a>
+                <set attributeName="href" to="javascript:alert(14)"/>
+                <foreignObject><body xmlns="http://www.w3.org/1999/xhtml"><script>alert(15)</script><p>shape label</p></body></foreignObject>
+                </svg>
+                """u8.ToArray(),
+        });
+        _site.Set("site.test", "/img/broken.svg", new SiteResource { ContentType = "image/svg+xml", Body = "<svg><script>alert(16)</svg"u8.ToArray() });
+        _site.Set("site.test", "/run.hta", SiteResource.File(30, "application/hta"));
+        _site.Set("site.test", "/feed.xml", new SiteResource
+        {
+            ContentType = "application/xml",
+            Body = """<html xmlns="http://www.w3.org/1999/xhtml"><body onload="alert(17)"><script>alert(18)</script><p>feed text</p></body></html>"""u8.ToArray(),
+        });
+        _site.Set("site.test", "/page.mht", SiteResource.File(30, "multipart/related"));
+        foreach (var name in new[] { "/js/app.js", "/js/mod.mjs", "/js/pre.js", "/js/plain.js", "/img/a.png" })
+            _site.Set("site.test", name, SiteResource.File(30, "application/octet-stream"));
+        var root = Path.Combine(_dir, "copy");
+        var project = Project(GrabberMode.Mirror);
+        project.Folder = root;
+        Assert.True(project.StripScripts); // the default
+        await RunAsync(project);
+
+        var site = Path.Combine(root, "site.test");
+        var index = File.ReadAllText(Path.Combine(site, "index.html"));
+        foreach (var bad in new[] { "<script", "alert", "msgbox", "onload", "onerror", "srcdoc", "javascript:", "vbscript:", ".mjs", "pre.js" })
+            Assert.DoesNotContain(bad, index, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains($"content=\"{PageLinks.NoScriptPolicy}\"", index);
+        Assert.Contains("src=\"img/a.png\"", index); // everything else stays and points at the copy
+        Assert.Contains("alt=\"kept\"", index);
+        Assert.False(Directory.Exists(Path.Combine(site, "js"))); // no script was downloaded, not even through a plain link
+        Assert.Equal(0, _site.Requests.Count(r => r.Path.StartsWith("/js/", StringComparison.Ordinal)));
+        var sub = File.ReadAllText(Path.Combine(site, "sub.html"));
+        Assert.Contains("text kept", sub);
+        Assert.DoesNotContain("onclick", sub);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(sub, "Content-Security-Policy")); // added once, not at every rewrite
+
+        // An SVG opened from disk is a document of its own (no page CSP): cleaned, or not kept when it cannot be read.
+        var svg = File.ReadAllText(Path.Combine(site, "img", "logo.svg"));
+        foreach (var bad in new[] { "script", "alert", "onload", "javascript:", "xml-stylesheet", "win.ini", "<set" })
+            Assert.DoesNotContain(bad, svg, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("<circle", svg);
+        Assert.Contains("shape label", svg);
+        Assert.False(File.Exists(Path.Combine(site, "img", "broken.svg")));
+        Assert.False(File.Exists(Path.Combine(site, "run.hta")));
+        Assert.Contains(_site.Requests, r => r.Path == "/run.hta"); // fetched, then not kept (not merely filtered out)
+        var xml = File.ReadAllText(Directory.GetFiles(site, "feed*", SearchOption.AllDirectories).Single());
+        Assert.Contains("feed text", xml);
+        Assert.DoesNotContain("alert", xml);
+        Assert.Empty(Directory.GetFiles(site, "page*.mht*", SearchOption.AllDirectories));
     }
 
     [Fact]

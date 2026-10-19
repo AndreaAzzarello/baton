@@ -107,7 +107,7 @@ public static partial class Log
     [GeneratedRegex(@"(?:https?|ftps?|ftpes)://[^\s""'<>]+", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex UrlPattern();
 
-    [GeneratedRegex(@"(?<key>password|passwd|pwd|secret|token|cookie|authorization|api[_-]?key|session[_-]?id|jwt)(?<sep>\s*[=:]\s*)[^\s&;,]+",
+    [GeneratedRegex(@"(?<key>password|passwd|passcode|pass|pwd|secret|token|cookie|authorization|api[_-]?key|session[_-]?id|jwt)(?<sep>\s*[=:]\s*)[^\s&;,]+",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex SecretPattern();
 }

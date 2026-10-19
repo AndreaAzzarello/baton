@@ -16,16 +16,22 @@ public sealed class UpdateException(string message, Exception? inner = null, boo
 
 /// <summary>
 /// Reads the update address: a GitHub "latest release" (api.github.com/repos/OWNER/REPO/releases/latest), whose
-/// executable asset comes with a "&lt;exe&gt;.sha256" asset holding its hash, or a small JSON manifest
-/// { "version": "1.1.0", "notes": "…", "url": "https://…/DownloadManager.exe", "sha256": "…" }. Without a SHA-256 an
-/// update is never offered. Only https addresses are used (http only for this computer, for tests).
+/// executable asset comes with a "&lt;exe&gt;.sha256" asset holding its hash and a "&lt;exe&gt;.sig" asset holding the
+/// author's signature, or a small JSON manifest
+/// { "version": "1.1.0", "notes": "…", "url": "https://…/DownloadManager.exe", "sha256": "…", "signature": "…" }.
+/// Without a SHA-256 and a valid signature (<see cref="UpdateSignature"/>) an update is never offered. Only https
+/// addresses are used (http only for this computer, for tests).
 /// </summary>
 public static partial class UpdateChecker
 {
     private const int MaxManifestBytes = 1024 * 1024;
+    private const int MaxSignatureBytes = 4 * 1024;
 
-    public static async Task<UpdateInfo?> CheckAsync(HttpClient http, string address, Version current, CancellationToken ct)
+    /// <param name="keys">The accepted signing keys; the ones built into the app when null (tests pass their own).</param>
+    public static async Task<UpdateInfo?> CheckAsync(HttpClient http, string address, Version current, CancellationToken ct,
+        IReadOnlyList<ReleaseKey>? keys = null)
     {
+        keys ??= UpdateSignature.Trusted;
         var url = Allowed(address) ?? throw new UpdateException(Resources.Strings.UpdateErrorAddress);
         var text = await GetTextAsync(http, url, MaxManifestBytes, ct);
         JsonElement root;
@@ -42,19 +48,33 @@ public static partial class UpdateChecker
         var version = ParseVersion(Text(root, gitHub ? "tag_name" : "version")) ?? throw new UpdateException(Resources.Strings.UpdateErrorNoRelease);
         if (version <= Normalize(current))
             return null;
-        return gitHub ? await FromGitHubAsync(http, root, version, ct) : FromManifest(root, url, version);
+        return gitHub ? await FromGitHubAsync(http, root, version, keys, ct) : FromManifest(root, url, version, keys);
     }
 
-    private static UpdateInfo FromManifest(JsonElement root, Uri baseUrl, Version version)
+    private static UpdateInfo FromManifest(JsonElement root, Uri baseUrl, Version version, IReadOnlyList<ReleaseKey> keys)
     {
         var download = Text(root, "url") is { } link && Uri.TryCreate(baseUrl, link, out var u) ? Allowed(u.AbsoluteUri) : null;
         var sha = Text(root, "sha256")?.Trim().ToLowerInvariant();
         if (download is null || sha is null || !IsSha256(sha))
             throw new UpdateException(Resources.Strings.UpdateErrorNoHash, unverifiable: true);
-        return new UpdateInfo(version, Text(root, "notes") ?? "", download, sha, Path.GetFileName(download.AbsolutePath));
+        var name = Path.GetFileName(download.AbsolutePath);
+        CheckSignature(Text(root, "signature"), "\"signature\"", version, name, sha, keys);
+        return new UpdateInfo(version, Text(root, "notes") ?? "", download, sha, name);
     }
 
-    private static async Task<UpdateInfo> FromGitHubAsync(HttpClient http, JsonElement root, Version version, CancellationToken ct)
+    /// <summary>Refuses an update whose signature is missing, or is not a valid one by an accepted key.</summary>
+    private static void CheckSignature(string? signatures, string where, Version version, string file, string sha, IReadOnlyList<ReleaseKey> keys)
+    {
+        if (string.IsNullOrWhiteSpace(signatures))
+            throw new UpdateException(string.Format(CultureInfo.CurrentCulture, Resources.Strings.UpdateErrorNoSignature, where, version.ToString(3)),
+                unverifiable: true);
+        if (!UpdateSignature.Verify(signatures, version, file, sha, keys))
+            throw new UpdateException(string.Format(CultureInfo.CurrentCulture, Resources.Strings.UpdateErrorBadSignature, version.ToString(3)),
+                unverifiable: true);
+    }
+
+    private static async Task<UpdateInfo> FromGitHubAsync(HttpClient http, JsonElement root, Version version, IReadOnlyList<ReleaseKey> keys,
+        CancellationToken ct)
     {
         var notes = Text(root, "body") ?? "";
         var assets = root.TryGetProperty("assets", out var list) && list.ValueKind == JsonValueKind.Array
@@ -83,6 +103,21 @@ public static partial class UpdateChecker
         if (sha is null)
             throw new UpdateException(string.Format(CultureInfo.CurrentCulture, Resources.Strings.UpdateErrorNoShaAsset, exe.Name + ".sha256", version.ToString(3)),
                 unverifiable: true);
+
+        var sigAsset = assets.FirstOrDefault(a => a.Name.Equals(exe.Name + ".sig", StringComparison.OrdinalIgnoreCase));
+        string? signatures = null;
+        if (sigAsset.Url is not null && Allowed(sigAsset.Url) is { } sigUrl)
+        {
+            try
+            {
+                signatures = await GetTextAsync(http, sigUrl, MaxSignatureBytes, ct);
+            }
+            catch (Exception ex) when (ex is UpdateException or HttpRequestException)
+            {
+                // Listed but not readable: the same as a missing signature.
+            }
+        }
+        CheckSignature(signatures, exe.Name + ".sig", version, exe.Name, sha, keys);
         return new UpdateInfo(version, notes, download, sha, exe.Name);
     }
 

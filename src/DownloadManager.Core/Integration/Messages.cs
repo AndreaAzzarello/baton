@@ -24,6 +24,12 @@ public sealed record BrowserDownload(
         Body = Body,
         BodyType = BodyType,
     };
+
+    /// <summary>
+    /// A form another site sent to this address (or with no known origin). Repeating it carries the user's session to
+    /// that address on behalf of a page they may not trust, so the app always asks first.
+    /// </summary>
+    public bool IsCrossSitePost => string.Equals(Method, "POST", StringComparison.OrdinalIgnoreCase) && !Urls.SameSite(Url, Referrer);
 }
 
 /// <summary>A video or audio resource the extension saw the page load (protocol 2).</summary>

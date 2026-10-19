@@ -8,7 +8,9 @@ const MENU_ALL = "dm-all";
 const MENU_GRAB = "dm-grab";
 
 /** A form submission is matched to the download it starts within this time. */
-const POST_TTL_MS = 60_000;
+/** How long a submitted form is kept to match its download: they follow each other within moments. */
+const POST_TTL_MS = 15_000;
+const SWEEP_ALARM = "forget-forms";
 
 /** Firefox: how long to wait, at each of 5 tries, for a form event that arrives after its download (tests shorten it). */
 const LATE_FORM_STEP_MS = globalThis.DM_LATE_FORM_STEP_MS ?? 100;
@@ -64,7 +66,8 @@ async function handOver({ url, referrer, fileName, incognito, post }) {
     fileName: fileName || null,
     referrer: referrer && /^https?:/i.test(referrer) ? referrer : null,
     userAgent: navigator.userAgent,
-    cookies: await cookiesFor(url, incognito),
+    // A download is a top-level navigation started by the referring page: the cookies the browser itself sent with it.
+    cookies: await cookiesFor(url, incognito, { initiator: referrer, topLevel: true, method: post ? "POST" : "GET" }),
     queue: queue || null, // older apps ignore it; newer ones use the main queue for unknown names
   };
   if (post) Object.assign(download, { method: "POST", body: post.body, bodyType: post.bodyType });
@@ -184,7 +187,8 @@ function remember(values) {
 
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    if (details.method !== "POST" || details.tabId < 0) return;
+    // Forms of private windows are never kept, not even for a moment (Firefox says so here, Chromium through the tab).
+    if (details.method !== "POST" || details.tabId < 0 || details.incognito) return;
     const body = details.requestBody;
     const entry = {
       url: details.url,
@@ -192,45 +196,72 @@ chrome.webRequest.onBeforeRequest.addListener(
       time: Date.now(),
       formData: body?.formData ?? null,
       unsupported: !body || !!body.raw || !!body.error,
-      referrer: details.documentUrl || details.originUrl || null,
+      // Firefox gives the page, Chromium its origin (initiator): set by the browser, whatever the page's Referrer-Policy.
+      referrer: details.documentUrl || details.originUrl || details.initiator || null,
     };
-    recentPosts.set(`post:${details.requestId}`, entry);
-    remember({ [`post:${details.requestId}`]: entry });
+    const key = `post:${details.requestId}`;
+    const write = chrome.tabs.get(details.tabId).catch(() => null).then((tab) => {
+      if (!tab || tab.incognito) return;
+      recentPosts.set(key, entry);
+      // Gone after a short while even if no download follows (the form may hold a password). The timer dies with the
+      // service worker, so an alarm (at least 30 s, it wakes the worker) sweeps whatever the timer could not.
+      setTimeout(() => forget([key, `posttype:${details.requestId}`]), POST_TTL_MS);
+      chrome.alarms.create(SWEEP_ALARM, { delayInMinutes: 0.5 });
+      return chrome.storage.session.set({ [key]: entry });
+    }).finally(() => postWrites.delete(write));
+    postWrites.add(write);
   },
   { urls: ["<all_urls>"], types: ["main_frame", "sub_frame"] },
   ["requestBody"]);
 
 chrome.webRequest.onBeforeSendHeaders.addListener(
   (details) => {
-    if (details.method !== "POST" || details.tabId < 0) return;
-    const type = details.requestHeaders?.find((h) => h.name.toLowerCase() === "content-type")?.value ?? "";
+    if (details.method !== "POST" || details.tabId < 0 || details.incognito) return;
+    const type = { type: details.requestHeaders?.find((h) => h.name.toLowerCase() === "content-type")?.value ?? "", time: Date.now() };
     recentPosts.set(`posttype:${details.requestId}`, type);
     remember({ [`posttype:${details.requestId}`]: type });
   },
   { urls: ["<all_urls>"], types: ["main_frame", "sub_frame"] },
   ["requestHeaders"]);
 
-/** The latest form submitted to `url` in the last minute, encoded for the app; old entries are forgotten. */
-async function findPost(url) {
-  await Promise.allSettled([...postWrites]);
+function forget(keys) {
+  keys.forEach((key) => recentPosts.delete(key));
+  return chrome.storage.session.remove(keys).catch(() => {});
+}
+
+/** Forgets every form (and form type) older than POST_TTL_MS; returns what is left of the stored ones. */
+async function sweepPosts() {
   const all = { ...(await chrome.storage.session.get(null)), ...Object.fromEntries(recentPosts) };
   const now = Date.now();
-  const stale = [];
+  const stale = Object.entries(all)
+    .filter(([key, value]) => (key.startsWith("post:") || key.startsWith("posttype:")) && !(now - (value?.time ?? 0) <= POST_TTL_MS))
+    .map(([key]) => key);
+  if (stale.length) await forget(stale);
+  stale.forEach((key) => delete all[key]);
+  return all;
+}
+
+// Each time the worker starts (it may have been stopped with forms still stored) and when the sweep alarm fires.
+sweepPosts();
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === SWEEP_ALARM) sweepPosts();
+});
+
+/**
+ * The latest form submitted to `url` in the last seconds, encoded for the app. It is taken away as it is handed over
+ * (and old entries are forgotten), so a form's data is kept no longer than needed.
+ */
+async function findPost(url) {
+  await Promise.allSettled([...postWrites]);
+  const all = await sweepPosts();
   let best = null;
   for (const [key, value] of Object.entries(all)) {
     if (!key.startsWith("post:")) continue;
     const id = key.slice(5);
-    if (now - value.time > POST_TTL_MS) {
-      stale.push(key, `posttype:${id}`);
-      continue;
-    }
-    if (value.url === url && (!best || value.time > best.time)) best = { ...value, type: all[`posttype:${id}`] };
-  }
-  if (stale.length) {
-    stale.forEach((key) => recentPosts.delete(key));
-    await chrome.storage.session.remove(stale);
+    if (value.url === url && (!best || value.time > best.time)) best = { ...value, id, type: all[`posttype:${id}`]?.type };
   }
   if (!best) return null;
+  await forget([`post:${best.id}`, `posttype:${best.id}`]);
   const encoded = best.unsupported ? null : Rules.encodeForm({ formData: best.formData }, best.type);
   if (!encoded) return { unsupported: true };
   let referrer = best.referrer;
@@ -315,7 +346,8 @@ async function grabSite(info, tab) {
   try {
     const reply = await sendNative({
       type: "grab",
-      grab: { url, title: tab?.title || null, userAgent: navigator.userAgent, cookies: await cookiesFor(url, false) },
+      // Asked by the user on this very page: its own cookies, as for a visit.
+      grab: { url, title: tab?.title || null, userAgent: navigator.userAgent, cookies: await cookiesFor(url, false, { initiator: url }) },
     });
     if (!reply?.ok) {
       // An app before 0.7 does not know "grab": it says so with its older protocol number.
@@ -451,7 +483,8 @@ async function handleContentMessage(message, tab, sender) {
         title: tab.title,
         referrer: tab.url,
         userAgent: navigator.userAgent,
-        cookies: await cookiesFor(message.url, tab.incognito),
+        // The page loaded the stream as a subresource: only the cookies the browser sent with those requests.
+        cookies: await cookiesFor(message.url, tab.incognito, { initiator: tab.url, topLevel: false }),
       };
       if (message.type === "addMedia") {
         Object.assign(media, { variantId: String(message.variantId || ""), label: message.label || null, queue: queue || null },

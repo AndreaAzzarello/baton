@@ -46,27 +46,39 @@ public sealed class NetworkContext
     public HttpClient CreateHttpClient(CookieContainer? cookies = null, NetworkCredential? ownLogin = null, Uri? ownLoginFor = null,
         bool followRedirects = true)
     {
-        var handler = new SocketsHttpHandler
+        ICredentials credentials = ownLogin is not null && ownLoginFor is not null ? new OneHostCredential(ownLoginFor, ownLogin, _stored) : _stored;
+        SocketsHttpHandler Handler(bool redirects)
         {
-            AllowAutoRedirect = followRedirects,
-            MaxAutomaticRedirections = 10,
-            AutomaticDecompression = DecompressionMethods.None, // byte ranges refer to the raw entity
-            ConnectTimeout = Timeout < TimeSpan.FromSeconds(20) ? Timeout : TimeSpan.FromSeconds(20),
-            MaxConnectionsPerServer = Math.Clamp(Settings.MaxConnectionsPerServer, 1, 256),
-            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
-            UseProxy = Settings.ProxyMode != ProxyMode.None,
-            Proxy = Settings.ProxyMode != ProxyMode.None ? Proxy : null,
-            Credentials = ownLogin is not null && ownLoginFor is not null ? new OneHostCredential(ownLoginFor, ownLogin, _stored) : _stored,
-            PreAuthenticate = false,
-        };
-        if (cookies is not null)
-            handler.CookieContainer = cookies;
-        var client = new HttpClient(handler) { Timeout = System.Threading.Timeout.InfiniteTimeSpan };
+            var handler = new SocketsHttpHandler
+            {
+                AllowAutoRedirect = redirects,
+                MaxAutomaticRedirections = 10,
+                AutomaticDecompression = DecompressionMethods.None, // byte ranges refer to the raw entity
+                ConnectTimeout = Timeout < TimeSpan.FromSeconds(20) ? Timeout : TimeSpan.FromSeconds(20),
+                MaxConnectionsPerServer = Math.Clamp(Settings.MaxConnectionsPerServer, 1, 256),
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+                UseProxy = Settings.ProxyMode != ProxyMode.None,
+                Proxy = Settings.ProxyMode != ProxyMode.None ? Proxy : null,
+                Credentials = credentials,
+                PreAuthenticate = false,
+            };
+            handler.ConnectCallback = (connection, ct) => UrlGuard.ConnectAsync(connection, IsProxyEndpoint(connection), ct);
+            if (cookies is not null)
+                handler.CookieContainer = cookies;
+            return handler;
+        }
+        HttpMessageHandler top = followRedirects ? new GuardedRedirectHandler(Handler(true), Handler(false)) : Handler(false);
+        var client = new HttpClient(top) { Timeout = System.Threading.Timeout.InfiniteTimeSpan };
         var agent = string.IsNullOrWhiteSpace(Settings.UserAgent) ? AppSettings.DefaultUserAgent : Settings.UserAgent.Trim();
         if (!client.DefaultRequestHeaders.UserAgent.TryParseAdd(agent))
             client.DefaultRequestHeaders.UserAgent.ParseAdd(AppSettings.DefaultUserAgent);
         return client;
     }
+
+    /// <summary>The connection goes to the proxy chosen for the request (an address the user configured), not to the site.</summary>
+    private bool IsProxyEndpoint(SocketsHttpConnectionContext connection) =>
+        Settings.ProxyMode != ProxyMode.None && connection.InitialRequestMessage.RequestUri is { } target && Proxy.GetProxy(target) is { } proxy
+        && string.Equals(proxy.Host, connection.DnsEndPoint.Host, StringComparison.OrdinalIgnoreCase) && proxy.Port == connection.DnsEndPoint.Port;
 
     /// <summary>The transport for a download: HTTP(S) or FTP(S), with the download's own cookies and login when it has them.</summary>
     public ITransport CreateTransport(DownloadRecord record, HttpClient? shared = null)
@@ -77,7 +89,10 @@ public sealed class NetworkContext
 
         if (FtpTransport.IsFtp(url))
         {
-            var saved = Credentials.Find(url.Host, FtpTransport.PortOf(url));
+            var saved = Credentials.Find(url.Scheme, url.Host, FtpTransport.PortOf(url));
+            // FTP without TLS sends the password readable: only a login the user confirmed for that.
+            if (saved is not null && url.Scheme == "ftp" && !saved.PlainConfirmed)
+                saved = null;
             var login = ownLogin
                         ?? (saved is not null ? new NetworkCredential(saved.Username, saved.Password) : null)
                         ?? new NetworkCredential("anonymous", "anonymous@");
@@ -97,10 +112,10 @@ public sealed class NetworkContext
         return await transport.ProbeAsync(ct);
     }
 
-    /// <summary>A login given for one download: offered to its own host only, the saved logins elsewhere.</summary>
+    /// <summary>A login given for one download: offered to its own scheme and host only, the saved logins elsewhere.</summary>
     private sealed class OneHostCredential(Uri host, NetworkCredential login, ICredentials fallback) : ICredentials
     {
         public NetworkCredential? GetCredential(Uri uri, string authType) =>
-            string.Equals(uri.Host, host.Host, StringComparison.OrdinalIgnoreCase) ? login : fallback.GetCredential(uri, authType);
+            string.Equals(uri.Host, host.Host, StringComparison.OrdinalIgnoreCase) && uri.Scheme == host.Scheme ? login : fallback.GetCredential(uri, authType);
     }
 }

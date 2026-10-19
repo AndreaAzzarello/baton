@@ -53,6 +53,12 @@ public sealed class GrabberProject
     /// </summary>
     public bool ForgetCookiesAfterRun { get; set; } = true;
 
+    /// <summary>
+    /// Offline copy: scripts are taken out of the saved pages (and not downloaded). A copy opened from disk would run them
+    /// with the local file's rights; without them the pages still show their text, images and styles.
+    /// </summary>
+    public bool StripScripts { get; set; } = true;
+
     /// <summary>Offer the app's saved logins to sites that ask (HTTP authentication).</summary>
     public bool UseSavedCredentials { get; set; } = true;
 

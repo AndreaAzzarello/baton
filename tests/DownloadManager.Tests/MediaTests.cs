@@ -307,7 +307,8 @@ public sealed partial class MediaTests : IAsyncLifetime
         using var store = Store();
         await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
 
-        var id = service.AddMedia(new MediaRequest(url, "https://page.test/watch", "Il mio video: parte 1/2", VariantId: "hls:1"), "hls", "720p");
+        // The page is on this computer like the stream: a public page could not make the app fetch it (see Phase7Tests).
+        var id = service.AddMedia(new MediaRequest(url, "http://127.0.0.1/watch", "Il mio video: parte 1/2", VariantId: "hls:1"), "hls", "720p");
         var maxConnections = 0;
         await WaitUntil(() =>
         {
@@ -325,7 +326,7 @@ public sealed partial class MediaTests : IAsyncLifetime
         Assert.NotNull(done.Error); // the note: saved as .ts because ffmpeg is missing
         Assert.Empty(Directory.GetDirectories(Path.GetDirectoryName(done.FinalPath)!)); // the segments folder is gone
         Assert.DoesNotContain(_server.Requests, r => r.Path.StartsWith("v360_"));
-        Assert.All(_server.Requests.Where(r => r.Path.EndsWith(".ts")), r => Assert.Equal("https://page.test/watch", r.Referer));
+        Assert.All(_server.Requests.Where(r => r.Path.EndsWith(".ts")), r => Assert.Equal("http://127.0.0.1/watch", r.Referer));
     }
 
     [Fact]
@@ -369,6 +370,10 @@ public sealed partial class MediaTests : IAsyncLifetime
         var args = File.ReadAllLines(Path.Combine(Path.GetDirectoryName(ffmpeg)!, "args.txt"));
         Assert.Contains("copy", args); // streams are copied, never re-encoded
         Assert.Contains("1:a:0", args);
+        // Every input is read as the format the app wrote, from a local file only (B4): never guessed from its content.
+        var inputs = args.Select((a, i) => (a, i)).Where(x => x.a == "-i").Select(x => x.i).ToList();
+        Assert.Equal(2, inputs.Count);
+        Assert.All(inputs, i => Assert.Equal(["-protocol_whitelist", "file", "-f", "mp4"], args[(i - 4)..i]));
         Assert.Single(Directory.GetFiles(VideoDir, "Muxed*"));
     }
 

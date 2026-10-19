@@ -1,16 +1,23 @@
 ﻿# PreToolUse (Bash, PowerShell): blocks commands that would change the real registration of the app or delete files
 # on the Desktop. It only blocks, with a reason; it never changes or deletes anything itself.
 # Allowed: reading the registry, tests, sandboxed runs (DOWNLOADMANAGER_DATA), anything inside the project folder.
+# Fail-closed: an input it cannot read or any error of its own blocks the command (exit 2), and settings.json has
+# "onFailure": "block" for a timeout or a script that cannot start.
 $ErrorActionPreference = "Stop"
+trap {
+  [Console]::Error.WriteLine("BLOCCATO dal guard del progetto: errore interno del controllo ($_). Nel dubbio il comando non viene eseguito.")
+  exit 2
+}
 [Console]::InputEncoding = [Text.Encoding]::UTF8
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
-try { $command = ([Console]::In.ReadToEnd() | ConvertFrom-Json).tool_input.command } catch { exit 0 }
-if (-not $command) { exit 0 }
 
 function Block([string]$reason) {
   [Console]::Error.WriteLine("BLOCCATO dal guard del progetto: $reason")
   exit 2
 }
+
+try { $command = ([Console]::In.ReadToEnd() | ConvertFrom-Json).tool_input.command } catch { Block "richiesta dell'hook non leggibile, quindi non controllabile." }
+if (-not $command) { exit 0 }
 
 # Commands that write to the registry (reg.exe, PowerShell cmdlets, .NET RegistryKey calls).
 $writesRegistry = '(?i)\breg(\.exe)?\s+(add|delete|import|copy|restore|load|unload)\b|\b(Set|New|Remove|Rename|Clear|Copy|Move)-ItemProperty\b|\b(New|Set|Remove)-Item\b|\.(SetValue|DeleteValue|DeleteSubKey|DeleteSubKeyTree|CreateSubKey)\('

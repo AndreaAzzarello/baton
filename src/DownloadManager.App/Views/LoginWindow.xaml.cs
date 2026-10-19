@@ -17,9 +17,13 @@ public partial class LoginWindow : Window
         Details.Text = string.Format(CultureInfo.CurrentCulture, Strings.LoginDetails, request.DisplayName, request.Scheme)
                        + (request.Realm is { Length: > 0 } realm ? " " + string.Format(CultureInfo.CurrentCulture, Strings.LoginRealm, realm) : "");
         // Basic sends the password readable by anyone on the way when the connection is not encrypted.
-        if (!request.IsProxy && request.Scheme.Equals("Basic", StringComparison.OrdinalIgnoreCase) && request.Target.Scheme == "http"
-            || request.Scheme == "FTP" && request.Target.Scheme == "ftp")
+        // Then the user must say explicitly that they accept it: the button stays disabled until they do.
+        if (request.SendsPasswordInClear)
+        {
             Warning.Text = Strings.LoginUnencrypted;
+            PlainBox.Visibility = Visibility.Visible;
+            SignInButton.IsEnabled = false;
+        }
         Loaded += (_, _) =>
         {
             Activate();
@@ -31,8 +35,15 @@ public partial class LoginWindow : Window
     public string Password => PasswordBox.Password;
     public bool Remember => RememberBox.IsChecked == true;
 
+    private void OnPlainChanged(object sender, RoutedEventArgs e) => SignInButton.IsEnabled = PlainBox.IsChecked == true;
+
     private void OnOk(object sender, RoutedEventArgs e)
     {
+        if (PlainBox.Visibility == Visibility.Visible && PlainBox.IsChecked != true)
+        {
+            PlainBox.Focus();
+            return;
+        }
         if (Username.Length == 0)
         {
             UserBox.Focus();

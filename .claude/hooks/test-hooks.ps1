@@ -40,6 +40,12 @@ foreach ($case in $guardCases) {
     $(if ($r.Code -eq 2) { "`n       -> " + $r.Err.Substring(0, [Math]::Min(140, $r.Err.Length)) } else { "" })
 }
 
+# Fail-closed: a request the guard cannot read is blocked, not let through.
+$garbled = Invoke-Hook "guard.ps1" "{ not json"
+$okGarbled = $garbled.Code -eq 2
+"{0} guard blocca richiesta illeggibile ({1} ms)" -f ($(if ($okGarbled) { "OK  " } else { "FAIL" })), $garbled.Ms
+if (-not $okGarbled) { $failures++ }
+
 # extension-check: a valid change passes; a syntax error in a copy inside extension/ is reported (then removed).
 $valid = Invoke-Hook "extension-check.ps1" (@{ tool_name = "Edit"; tool_input = @{ file_path = "$root\extension\rules.js" } } | ConvertTo-Json -Compress)
 $okValid = $valid.Code -eq 0 -and $valid.Ms -lt 2000

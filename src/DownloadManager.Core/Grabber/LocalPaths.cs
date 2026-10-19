@@ -17,13 +17,6 @@ public sealed class LocalPaths
 
     public const int MaxSegment = 80;
 
-    private static readonly HashSet<string> DeviceNames = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$",
-        "COM0", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM¹", "COM²", "COM³",
-        "LPT0", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", "LPT¹", "LPT²", "LPT³",
-    };
-
     private readonly string _root;
     private readonly Dictionary<string, string> _byUrl = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _owners = new(StringComparer.OrdinalIgnoreCase); // relative file path -> url
@@ -145,17 +138,9 @@ public sealed class LocalPaths
     /// <summary>One file or folder name made valid and safe for Windows.</summary>
     public static string Segment(string name, bool isFile)
     {
-        var builder = new StringBuilder(name.Length);
-        foreach (var c in name)
-            builder.Append(c < 32 || c is '<' or '>' or ':' or '"' or '/' or '\\' or '|' or '?' or '*' or '\u007f' ? '_' : c);
-        var cleaned = builder.ToString().TrimEnd('.', ' ').TrimStart(' ');
-        if (cleaned.Length == 0 || cleaned is "." or "..")
+        var cleaned = FileNames.CleanSegment(name);
+        if (cleaned.Length == 0)
             cleaned = "_";
-        // "CON", "con.txt", "COM1.tar.gz"... are devices whatever follows the first dot.
-        var stemEnd = cleaned.IndexOf('.');
-        var device = stemEnd < 0 ? cleaned : cleaned[..stemEnd];
-        if (DeviceNames.Contains(device.TrimEnd(' ')))
-            cleaned = "_" + cleaned;
         if (cleaned.Length > MaxSegment)
         {
             var ext = isFile ? Path.GetExtension(cleaned) : "";

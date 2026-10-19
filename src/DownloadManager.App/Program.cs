@@ -62,11 +62,29 @@ internal static class Program
     private static int? HandleNotificationLink(string link)
     {
         var links = NotificationLinks.FromKeyFile(ToastService.KeyPath(App.DataDirectory));
-        if (!links.TryParse(link, out var action, out var path))
+        if (!links.TryParse(link, DateTime.UtcNow, out var action, out var path, out var downloadId))
+        {
+            MessageBox.Show(Strings.ErrorNotificationExpired, Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Information);
             return 1;
+        }
         if (action == NotificationAction.Show)
             return null;
 
+        // The link opens only the file of its own download, still finished and still at that place.
+        string? current;
+        try
+        {
+            current = DownloadStore.CompletedFileOf(Path.Combine(App.DataDirectory, "downloads.db"), downloadId);
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            current = null;
+        }
+        if (current is null || !string.Equals(Path.GetFullPath(current), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show(Strings.ErrorNotificationExpired, Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Information);
+            return 1;
+        }
         if (!File.Exists(path))
         {
             MessageBox.Show(Strings.ErrorFileMissing, Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Warning);

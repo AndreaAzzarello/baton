@@ -14,6 +14,8 @@
             </StackPanel>
         </DockPanel>
         <TextBlock x:Name="Warning" Style="{StaticResource ErrorText}" />
+        <CheckBox x:Name="PlainBox" Content="{x:Static r:Strings.LoginPlainConfirm}" Margin="0,8,0,0" Visibility="Collapsed"
+                  Checked="OnPlainChanged" Unchecked="OnPlainChanged" />
 
         <Label Content="{x:Static r:Strings.LoginUserLabel}" Target="{Binding ElementName=UserBox}" Padding="0" Margin="0,16,0,4" Foreground="{DynamicResource MutedBrush}" />
         <TextBox x:Name="UserBox" AutomationProperties.Name="{x:Static r:Strings.LoginUserName}" />
@@ -22,7 +24,7 @@
         <CheckBox x:Name="RememberBox" Content="{x:Static r:Strings.LoginRemember}" Margin="0,12,0,0" ToolTip="{x:Static r:Strings.LoginRememberToolTip}" />
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
-            <Button Content="{x:Static r:Strings.LoginSignIn}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnOk" />
+            <Button x:Name="SignInButton" Content="{x:Static r:Strings.LoginSignIn}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnOk" />
             <Button Content="{x:Static r:Strings.Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
         </StackPanel>
     </StackPanel>

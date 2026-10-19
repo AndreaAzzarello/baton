@@ -351,7 +351,7 @@ public partial class App : Application
                 }
                 catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or TimeoutException or DownloadFailedException
                                                or AuthenticationRequiredException or FormatException or System.Xml.XmlException
-                                               or OperationCanceledException)
+                                               or OperationCanceledException or NotSupportedException or ArgumentException)
                 {
                     return new ChannelReply(false, Error: string.Format(CultureInfo.CurrentCulture, Strings.MediaProbeFailed, ex.Message));
                 }

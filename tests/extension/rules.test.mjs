@@ -142,3 +142,32 @@ test("video panel choices: strings only, at most 20 subtitles, a known format", 
   assert.equal(R.mediaChoice({ subtitleIds: ["en"], subtitleMode: "embed" }).subtitleMode, "embed");
   assert.equal(R.mediaChoice({ audioId: { toString: () => "x" } }).audioId, undefined);
 });
+
+test("sites as SameSite compares them: scheme and registrable domain", () => {
+  assert.equal(R.siteOf("https://www.shop.example.com/a"), "https://example.com");
+  assert.equal(R.siteOf("https://news.bbc.co.uk/x"), "https://bbc.co.uk");
+  assert.equal(R.siteOf("https://alice.github.io/"), "https://alice.github.io");
+  assert.equal(R.siteOf("http://127.0.0.1:8080/"), "http://127.0.0.1");
+  assert.ok(R.sameSite("https://a.example.com/", "https://b.example.com/x"));
+  assert.ok(!R.sameSite("https://example.com/", "http://example.com/"));   // schemeful: http is another site
+  assert.ok(!R.sameSite("https://bank.example/", "https://evil.test/"));
+  assert.ok(!R.sameSite("https://alice.github.io/", "https://mallory.github.io/"));
+  assert.equal(R.siteOf("https://victim.s3.amazonaws.com/f"), "https://victim.s3.amazonaws.com"); // a three-label suffix
+  assert.ok(!R.sameSite("https://attacker.s3.amazonaws.com/", "https://victim.s3.amazonaws.com/"));
+  assert.equal(R.siteOf("https://co.uk/"), "https://co.uk");
+  assert.ok(!R.sameSite("not a url", "not a url"));
+});
+
+test("cookies: only those the browser itself would send (B1)", () => {
+  const strict = { name: "s", sameSite: "strict", secure: true };
+  const lax = { name: "l", sameSite: "lax", secure: true };
+  const unspecified = { name: "u", sameSite: "unspecified", secure: false };
+  const none = { name: "n", sameSite: "no_restriction", secure: true };
+  const noneInsecure = { name: "x", sameSite: "no_restriction", secure: false };
+  const all = [strict, lax, unspecified, none, noneInsecure];
+  const sent = (ctx) => all.filter((c) => R.cookieAllowed(c, ctx)).map((c) => c.name).join("");
+  assert.equal(sent({ crossSite: false }), "slunx");                               // same site: all
+  assert.equal(sent({ crossSite: true, topLevel: true, method: "GET" }), "lun");   // cross-site link: no Strict
+  assert.equal(sent({ crossSite: true, topLevel: true, method: "POST" }), "n");    // cross-site form: only None
+  assert.equal(sent({ crossSite: true, topLevel: false, method: "GET" }), "n");    // a page's video from elsewhere
+});

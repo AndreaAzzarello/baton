@@ -17,21 +17,43 @@ public sealed class ProxyResolver : IWebProxy
     private readonly ConcurrentDictionary<string, (Uri? Proxy, DateTime Until)> _pacCache = new();
     private PacScript? _pac;
 
+    private ICredentials? _credentials;
+    private bool _savedLogin;
+
     public ProxyResolver(AppSettings settings, PacScript? pac = null)
     {
         _settings = settings;
         _pac = pac;
+        PacTrusted = pac is not null;
         var patterns = settings.ProxyBypass.Split([';', ',', ' ', '\r', '\n', '\t'], StringSplitOptions.RemoveEmptyEntries);
         _bypassPlainNames = patterns.Any(p => p.Equals("<local>", StringComparison.OrdinalIgnoreCase));
         _bypass = patterns.Where(p => !p.StartsWith('<'))
             .Select(p => new Regex("^" + Regex.Escape(p.Trim()).Replace(@"\*", ".*").Replace(@"\?", ".") + "$", RegexOptions.IgnoreCase))
             .ToArray();
         if (settings.ProxyMode != ProxyMode.None && (settings.ProxyUser.Length > 0 || settings.ProxyPassword.Length > 0))
-            Credentials = new NetworkCredential(settings.ProxyUser, settings.ProxyPassword);
+        {
+            _credentials = new NetworkCredential(settings.ProxyUser, settings.ProxyPassword);
+            _savedLogin = true;
+        }
     }
 
-    /// <summary>Login for the proxy (407): from the settings, or entered when the proxy asked.</summary>
-    public ICredentials? Credentials { get; set; }
+    /// <summary>
+    /// Login for the proxy (407): from the settings, or entered when the proxy asked. The saved one is offered only to a
+    /// proxy the user chose: written in the settings, Windows' own, or picked by a PAC file read over https or from this
+    /// computer. A PAC file fetched over plain http could have been changed on the way to name another proxy.
+    /// </summary>
+    public ICredentials? Credentials
+    {
+        get => _savedLogin && _settings.ProxyMode == ProxyMode.Pac && !PacTrusted ? null : _credentials;
+        set
+        {
+            _credentials = value;
+            _savedLogin = false; // entered by the user for the proxy that asked
+        }
+    }
+
+    /// <summary>The PAC file in use came over https or from a file on this computer.</summary>
+    public bool PacTrusted { get; private set; }
 
     public ProxyMode Mode => _settings.ProxyMode;
 
@@ -83,12 +105,14 @@ public sealed class ProxyResolver : IWebProxy
         try
         {
             _pac = new PacScript(await DownloadPacAsync(_settings.PacUrl, ct));
+            PacTrusted = !Uri.TryCreate(_settings.PacUrl, UriKind.Absolute, out var location) || location.Scheme is "https" or "file";
             PacError = null;
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
         {
             // Network, file, syntax or script errors alike: the downloads must not stop because of the PAC file.
             _pac = null;
+            PacTrusted = false;
             PacError = ex.Message;
         }
         _pacCache.Clear();
@@ -103,6 +127,9 @@ public sealed class ProxyResolver : IWebProxy
             return await http.GetStringAsync(uri, ct);
         }
         var path = uri is { IsFile: true } ? uri.LocalPath : location;
+        // Never from a network share: reading it would send the user's Windows credentials (NTLM) to that server.
+        if (!SafePaths.IsLocal(path))
+            throw new IOException(Resources.Strings.PacNotLocal);
         return await File.ReadAllTextAsync(path, ct);
     }
 

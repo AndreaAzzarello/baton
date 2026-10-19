@@ -3,6 +3,8 @@ using System.Net.Http.Headers;
 using DownloadManager.Core.Integration;
 using DownloadManager.Core.Resources;
 
+using DownloadManager.Core.Net;
+
 namespace DownloadManager.Core.Media;
 
 /// <summary>One stream of a download: its segments, put together into one file with <see cref="Extension"/>.</summary>
@@ -65,23 +67,25 @@ public static class MediaCatalog
         if (MediaPolicy.IsRestricted(url) || MediaPolicy.IsRestricted(pageUrl))
             return Blocked("unknown", MediaBlock.Terms, Strings.MediaBlockedTerms);
 
-        var (text, finalUrl, contentType) = await FetchAsync(http, url, context, ct);
+        // The page decides which networks its video may reach (see UrlGuard).
+        var guard = await UrlGuard.ForOriginAsync(pageUrl ?? context?.Referrer ?? url, ct);
+        var (text, finalUrl, contentType) = await FetchAsync(http, url, context, guard, ct);
         if (text is null)
         {
             // Not a manifest: a plain video or audio file, downloaded like any other file.
-            var probe = await HttpProbe.ProbeAsync(http, url, ct, context);
+            var probe = await HttpProbe.ProbeAsync(http, url, ct, context, guard: guard);
             var label = probe.ContentType ?? Path.GetExtension(probe.FileName).TrimStart('.').ToUpperInvariant();
             return new MediaInfoReply("file", [new MediaVariantInfo("file", label, probe.TotalSize, null, "file")], null);
         }
 
         if (HlsPlaylist.LooksLikeHls(text))
-            return await ProbeHlsAsync(http, HlsPlaylist.Parse(text, finalUrl), context, ct);
+            return await ProbeHlsAsync(http, HlsPlaylist.Parse(text, finalUrl), context, guard, ct);
         if (DashManifest.LooksLikeDash(text))
             return ProbeDash(DashManifest.Parse(text, finalUrl));
         return Blocked("unknown", MediaBlock.Unsupported, string.Format(CultureInfo.CurrentCulture, Strings.MediaUnsupported, contentType ?? "?"));
     }
 
-    private static async Task<MediaInfoReply> ProbeHlsAsync(HttpClient http, HlsPlaylist playlist, RequestContext? context, CancellationToken ct)
+    private static async Task<MediaInfoReply> ProbeHlsAsync(HttpClient http, HlsPlaylist playlist, RequestContext? context, UrlGuard guard, CancellationToken ct)
     {
         if (playlist.IsEncrypted)
             return Blocked("hls", MediaBlock.Drm, Strings.MediaBlockedDrm);
@@ -91,7 +95,7 @@ public static class MediaCatalog
 
         // The first quality's playlist tells the duration, and whether the segments are encrypted or the stream is live.
         var first = playlist.Variants.OrderByDescending(v => v.Bandwidth).First();
-        var (text, finalUrl, _) = await FetchAsync(http, first.Url.AbsoluteUri, context, ct);
+        var (text, finalUrl, _) = await FetchAsync(http, first.Url.AbsoluteUri, context, guard, ct);
         if (text is null || !HlsPlaylist.LooksLikeHls(text))
             throw new DownloadFailedException("The stream's quality playlist could not be read.");
         var media = HlsPlaylist.Parse(text, finalUrl);
@@ -198,11 +202,12 @@ public static class MediaCatalog
     /// downloaded.
     /// </summary>
     public static async Task<MediaPlan> ResolveAsync(HttpClient http, string url, string variantId, RequestContext? context, CancellationToken ct,
-        string? audioId = null, IReadOnlyList<string>? subtitleIds = null)
+        string? audioId = null, IReadOnlyList<string>? subtitleIds = null, UrlGuard? guard = null)
     {
         if (MediaPolicy.IsRestricted(url) || MediaPolicy.IsRestricted(context?.Referrer))
             throw new DownloadFailedException(Strings.MediaBlockedTerms);
-        var (text, finalUrl, _) = await FetchAsync(http, url, context, ct);
+        guard ??= await UrlGuard.ForOriginAsync(context?.Referrer ?? url, ct);
+        var (text, finalUrl, _) = await FetchAsync(http, url, context, guard, ct);
         if (text is null)
             throw new DownloadFailedException("The address no longer returns a stream manifest.");
 
@@ -217,10 +222,10 @@ public static class MediaCatalog
             if (index < 0 || index >= playlist.Variants.Count)
                 throw new DownloadFailedException("The chosen quality is no longer offered.");
             var variant = playlist.Variants[index];
-            var video = await FetchPlaylistAsync(http, variant.Url, context, ct);
+            var video = await FetchPlaylistAsync(http, variant.Url, context, guard, ct);
             HlsPlaylist? audio = null;
             if (ChooseAudio(playlist, variant, audioId) is { Url: { } audioUrl })
-                audio = await FetchPlaylistAsync(http, audioUrl, context, ct);
+                audio = await FetchPlaylistAsync(http, audioUrl, context, guard, ct);
             var subtitles = new List<SubtitlePlan>();
             foreach (var id in subtitleIds ?? [])
             {
@@ -229,7 +234,7 @@ public static class MediaCatalog
                     continue; // no longer offered: the video is still downloaded
                 try
                 {
-                    var track = await FetchPlaylistAsync(http, subtitleUrl, context, ct);
+                    var track = await FetchPlaylistAsync(http, subtitleUrl, context, guard, ct);
                     subtitles.Add(new SubtitlePlan(rendition.Language, TrackLabel(rendition.Name, rendition.Language), track.Segments));
                 }
                 catch (Exception ex) when (ex is HttpRequestException or DownloadFailedException or IOException or TimeoutException
@@ -273,9 +278,9 @@ public static class MediaCatalog
         throw new DownloadFailedException("The stream changed since it was added.");
     }
 
-    private static async Task<HlsPlaylist> FetchPlaylistAsync(HttpClient http, Uri url, RequestContext? context, CancellationToken ct)
+    private static async Task<HlsPlaylist> FetchPlaylistAsync(HttpClient http, Uri url, RequestContext? context, UrlGuard guard, CancellationToken ct)
     {
-        var (text, finalUrl, _) = await FetchAsync(http, url.AbsoluteUri, context, ct);
+        var (text, finalUrl, _) = await FetchAsync(http, url.AbsoluteUri, context, guard, ct);
         if (text is null || !HlsPlaylist.LooksLikeHls(text))
             throw new DownloadFailedException("A playlist of the stream could not be read.");
         var playlist = HlsPlaylist.Parse(text, finalUrl);
@@ -335,6 +340,7 @@ public static class MediaCatalog
         var path = playlist.Segments.FirstOrDefault()?.Url.AbsolutePath ?? "";
         return Path.GetExtension(path).ToLowerInvariant() switch
         {
+            ".ts" => ".ts", // also an audio-only rendition: MPEG-TS, not raw AAC
             ".aac" => ".aac",
             ".mp3" => ".mp3",
             ".m4s" or ".mp4" or ".m4v" => ".mp4",
@@ -367,9 +373,12 @@ public static class MediaCatalog
     /// its body.
     /// </summary>
     private static async Task<(string? Text, Uri FinalUrl, string? ContentType)> FetchAsync(HttpClient http, string url, RequestContext? context,
-        CancellationToken ct)
+        UrlGuard guard, CancellationToken ct)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var target))
+            throw new DownloadFailedException(string.Format(CultureInfo.CurrentCulture, Strings.MediaErrorScheme, "?"));
+        using var request = new HttpRequestMessage(HttpMethod.Get, target);
+        await guard.PrepareAsync(request, ct);
         context.ApplyTo(request);
         using var response = await HttpErrors.SendAsync(http, request, TimeSpan.FromSeconds(30), ct);
         if (!response.IsSuccessStatusCode)

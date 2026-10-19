@@ -119,7 +119,9 @@ public sealed class NetworkTests : IAsyncLifetime
         Assert.Equal(file.Sha256, Hash(Path.Combine(_dir, "digest.bin")));
         Assert.Contains(_server.Requests, r => r.Authorization.StartsWith("Digest ", StringComparison.Ordinal));
         Assert.Empty(service.Credentials.Saved); // "Remember" unchecked: only for this session
-        Assert.NotNull(service.Credentials.Find("127.0.0.1", new Uri(url).Port));
+        var kept = service.Credentials.Find("http", "127.0.0.1", new Uri(url).Port);
+        Assert.NotNull(kept);
+        Assert.False(kept!.PlainConfirmed); // Digest never shows the password: no consent to a readable one was asked or given
     }
 
     [Fact]
@@ -134,6 +136,47 @@ public sealed class NetworkTests : IAsyncLifetime
         var id = service.Add(url);
         Assert.Equal(DownloadStatus.Completed, await Finished(service, id));
         Assert.All(_server.Requests, r => Assert.Equal("", r.Authorization));
+    }
+
+    [Fact]
+    public async Task LoginSavedForHttps_IsNeverSentOverPlainHttp()
+    {
+        // M1: the same host and port asks over http (here an attacker on the network could): the https login stays home.
+        var file = new ServedFile { Content = TestFileServer.RandomBytes(1000, 23), BasicLogin = ("anna", "pw-https-only") };
+        var url = _server.Add("plain.bin", file);
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        service.Credentials.Save(new SiteCredential { Scheme = "https", Host = "127.0.0.1", Username = "anna", Password = "pw-https-only" }, remember: true);
+        LoginRequest? request = null;
+        service.LoginRequired += r => request = r;
+
+        service.Add(url);
+        await WaitUntil(() => request is not null);
+        Assert.Equal("http", request!.Target.Scheme);
+        Assert.All(_server.Requests, r => Assert.Equal("", r.Authorization));
+    }
+
+    [Fact]
+    public async Task PlainHttpLogin_IsSentWithBasicOnlyOnceConfirmed()
+    {
+        var file = new ServedFile { Content = TestFileServer.RandomBytes(1000, 24), BasicLogin = ("bruno", "pw-plain") };
+        var url = _server.Add("confirm.bin", file);
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        var login = service.Credentials.Save(new SiteCredential { Scheme = "http", Host = "127.0.0.1", Username = "bruno", Password = "pw-plain" }, remember: true);
+        LoginRequest? request = null;
+        service.LoginRequired += r => request = r;
+
+        var first = service.Add(url);
+        await WaitUntil(() => request is not null); // saved for http, but never confirmed for a readable password: asked
+        Assert.All(_server.Requests, r => Assert.Equal("", r.Authorization));
+
+        login.PlainConfirmed = true;
+        service.Credentials.Save(login, remember: true);
+        var second = service.Add(url, fileName: "confirm-2.bin");
+        Assert.Equal(DownloadStatus.Completed, await Finished(service, second));
+        Assert.Contains(_server.Requests, r => r.Authorization.StartsWith("Basic ", StringComparison.Ordinal));
+        _ = first;
     }
 
     // Proxies

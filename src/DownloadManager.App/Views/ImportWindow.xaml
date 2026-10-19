@@ -32,6 +32,7 @@
                             <TextBlock Text="{Binding Item.Name}" TextTrimming="CharacterEllipsis" />
                             <TextBlock Text="{Binding Item.Detail}" Foreground="{DynamicResource MutedBrush}" TextTrimming="CharacterEllipsis" />
                             <TextBlock Text="{Binding Note}" Style="{StaticResource NoteText}" Margin="0" />
+                            <TextBlock Text="{Binding Warning}" Style="{StaticResource ErrorText}" Margin="0,2,0,0" FontWeight="SemiBold" />
                         </StackPanel>
                     </DockPanel>
                 </DataTemplate>

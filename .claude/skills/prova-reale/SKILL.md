@@ -51,6 +51,14 @@ Video con lingue e sottotitoli: lo stream di esempio avanzato di Apple (`.../img
 lingue audio e sottotitoli WebVTT; `probeMedia` deve elencarli in `audioTracks` e `subtitles`, e `addMedia` con `audioId`,
 `subtitleIds` e `subtitleMode` deve produrre il video e i file `.vtt`/`.srt` accanto.
 
+Aggiornamenti firmati (dalla 1.1.0), senza toccare `publish\` né l'app reale:
+`powershell -File tools\trials\update-trial.ps1 -Build` pubblica il codice come 1.1.0 (`%TEMP%\dm-trials\update\app`) e 1.1.1
+firmata con la chiave reale, più due manifest ostili per 1.1.2 (`replay.json`: firma vera della 1.1.1 riusata; `bad.json`:
+programma alterato), serviti su 127.0.0.1:8766. Poi `-Start bad.json`, `-Start replay.json` (prima cancella
+`data\updates\reported`, altrimenti il messaggio uguale non viene ripetuto) e `-Start good/latest.json`: dopo 30 s compare
+la finestra «Aggiornamento» (`ui.ps1 -Window Aggiornamento -Action dump`/`invoke`). Gli ostili devono essere rifiutati senza
+scaricare nulla; il valido deve finire con `app\DownloadManager.exe` 1.1.1, `.old` 1.1.0 e `data\updates\started`.
+
 Guarda sempre gli screenshot del pannello video e del popup (grafica, testi troncati, tema).
 
 ## 3. Chiusura (obbligatoria)

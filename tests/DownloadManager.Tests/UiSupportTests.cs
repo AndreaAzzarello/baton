@@ -107,19 +107,25 @@ public sealed class UiSupportTests : IAsyncLifetime
         var links = NotificationLinks.FromKeyFile(keyPath);
         var path = @"C:\Users\Test\Downloads\Compressi\file con spazi & simboli.zip";
 
-        var open = links.Create(NotificationAction.Open, path);
+        var now = new DateTime(2026, 10, 20, 12, 0, 0, DateTimeKind.Utc);
+        var open = links.Create(NotificationAction.Open, path, 42, now + NotificationLinks.Lifetime);
         Assert.StartsWith("downloadmanager:open?", open);
-        Assert.True(NotificationLinks.FromKeyFile(keyPath).TryParse(open, out var action, out var parsed)); // same key from disk
+        Assert.True(NotificationLinks.FromKeyFile(keyPath).TryParse(open, now, out var action, out var parsed, out var id)); // same key from disk
         Assert.Equal(NotificationAction.Open, action);
         Assert.Equal(path, parsed);
+        Assert.Equal(42, id);
 
         // Another user's (or a web page's) key, a different verb, or an edited path are all refused.
-        Assert.False(new NotificationLinks(new byte[32]).TryParse(open, out _, out _));
-        Assert.False(links.TryParse(open.Replace("downloadmanager:open", "downloadmanager:reveal"), out _, out _));
-        var forgedPath = links.Create(NotificationAction.Open, @"C:\Windows\System32\calc.exe").Split("&s=")[0];
-        Assert.False(links.TryParse(forgedPath + "&s=" + open.Split("&s=")[1], out _, out _));
-        Assert.False(links.TryParse("downloadmanager:open?p=QUJD", out _, out _));
-        Assert.False(links.TryParse("https://example.com", out _, out _));
+        Assert.False(new NotificationLinks(new byte[32]).TryParse(open, now, out _, out _, out _));
+        Assert.False(links.TryParse(open.Replace("downloadmanager:open", "downloadmanager:reveal"), now, out _, out _, out _));
+        var forgedPath = links.Create(NotificationAction.Open, @"C:\Windows\System32\calc.exe", 42, now + NotificationLinks.Lifetime).Split("&s=")[0];
+        Assert.False(links.TryParse(forgedPath + "&s=" + open.Split("&s=")[1], now, out _, out _, out _));
+        Assert.False(links.TryParse("downloadmanager:open?p=QUJD", now, out _, out _, out _));
+        Assert.False(links.TryParse("https://example.com", now, out _, out _, out _));
+        // Another download, or a later expiry, cannot be swapped in; an old link has expired.
+        Assert.False(links.TryParse(open.Replace("&d=42&", "&d=43&"), now, out _, out _, out _));
+        Assert.False(links.TryParse(open.Replace("&e=", "&e=9"), now, out _, out _, out _));
+        Assert.False(links.TryParse(open, now + NotificationLinks.Lifetime + TimeSpan.FromSeconds(1), out _, out _, out _));
     }
 
     [Fact]
@@ -135,10 +141,12 @@ public sealed class UiSupportTests : IAsyncLifetime
         Assert.Contains(toast.Descendants("text"), t => t.Value.Contains("Compressi") && !t.Value.Contains(@"C:\dl"));
         var actions = toast.Descendants("action").ToList();
         Assert.Equal(2, actions.Count);
-        Assert.True(links.TryParse(actions[0].Attribute("arguments")!.Value, out var a0, out var p0));
-        Assert.Equal((NotificationAction.Open, snapshot.FinalPath), (a0, p0));
-        Assert.True(links.TryParse(actions[1].Attribute("arguments")!.Value, out var a1, out _));
+        Assert.True(links.TryParse(actions[0].Attribute("arguments")!.Value, DateTime.UtcNow, out var a0, out var p0, out var id0));
+        Assert.Equal((NotificationAction.Open, snapshot.FinalPath, 7L), (a0, p0, id0));
+        Assert.True(links.TryParse(actions[1].Attribute("arguments")!.Value, DateTime.UtcNow, out var a1, out _, out _));
         Assert.Equal(NotificationAction.Reveal, a1);
+        // The buttons stop working after a week.
+        Assert.False(links.TryParse(actions[0].Attribute("arguments")!.Value, DateTime.UtcNow.AddDays(8), out _, out _, out _));
     }
 
     [Fact]

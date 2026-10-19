@@ -15,6 +15,7 @@ namespace DownloadManager.Core.Media;
 public sealed class MediaJob : IDownloadJob
 {
     private readonly HttpClient _sharedHttp;
+    private UrlGuard _guard = UrlGuard.Open;
     private readonly NetworkContext? _network;
     private readonly RateLimiter _limiter;
     private readonly EngineOptions _options;
@@ -66,7 +67,10 @@ public sealed class MediaJob : IDownloadJob
         try
         {
             var media = Record.Media!;
-            var plan = await WithRetriesAsync(() => MediaCatalog.ResolveAsync(http, Record.Url, media.VariantId, context, ct, media.AudioId, media.SubtitleIds), ct);
+            // Every segment and subtitle comes from the page's manifest: the page decides which networks they may reach.
+            _guard = await UrlGuard.ForOriginAsync(context?.Referrer ?? Record.Url, ct);
+            var plan = await WithRetriesAsync(() => MediaCatalog.ResolveAsync(http, Record.Url, media.VariantId, context, ct, media.AudioId, media.SubtitleIds,
+                _guard), ct);
             await DownloadAsync(http, plan, ct);
             await FinishAsync(http, plan, ct);
         }
@@ -188,6 +192,7 @@ public sealed class MediaJob : IDownloadJob
     private async Task<long> FetchAsync(HttpClient http, MediaSegment segment, string path, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, segment.Url);
+        await _guard.PrepareAsync(request, ct);
         Record.Context.ApplyTo(request);
         var range = MediaCatalog.RangeOf(segment);
         if (range is not null)

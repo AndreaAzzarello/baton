@@ -159,6 +159,10 @@
                                 <TextBlock Text="{x:Static r:Strings.GrabberModeMirrorHint}" Style="{StaticResource Hint}" />
                             </StackPanel>
                         </RadioButton>
+                        <StackPanel Margin="24,4,0,0" Visibility="{Binding MirrorMode, Converter={StaticResource BoolToVisibility}}">
+                            <CheckBox Content="{x:Static r:Strings.GrabberStripScripts}" IsChecked="{Binding StripScripts}" />
+                            <TextBlock Text="{Binding StripScriptsWarning}" Style="{StaticResource ErrorText}" Margin="24,2,0,0" AutomationProperties.LiveSetting="Assertive" />
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                             <TextBlock Style="{StaticResource Glyph}" Text="&#xE8D7;" FontSize="13" Foreground="{DynamicResource MutedBrush}" Margin="0,1,8,0" VerticalAlignment="Top" />
                             <TextBlock Text="{Binding CookieText}" Style="{StaticResource Hint}" Margin="0" MaxWidth="520" />

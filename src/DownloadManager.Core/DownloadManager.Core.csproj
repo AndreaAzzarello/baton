@@ -17,6 +17,11 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <!-- Public keys whose signatures updates must carry (written by tools\sign-release.ps1 -NewKey) -->
+  <ItemGroup>
+    <EmbeddedResource Include="Updates\release-keys.txt" LogicalName="DownloadManager.Core.Updates.release-keys.txt" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="AngleSharp" Version="1.8.3" />
     <PackageReference Include="FluentFTP" Version="55.0.0" />

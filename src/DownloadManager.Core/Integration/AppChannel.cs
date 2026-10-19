@@ -1,4 +1,4 @@
-using System.IO.Pipes;
+﻿using System.IO.Pipes;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -13,16 +13,51 @@ public static class AppChannel
 {
     private const int MaxMessageBytes = 8 * 1024 * 1024;
 
+    /// <summary>Connections served at the same time; more wait (or time out) instead of each holding a buffer.</summary>
+    public const int MaxConnections = 8;
+
     public static string DefaultPipeName { get; } =
         "DownloadManager." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{Environment.UserDomainName}\\{Environment.UserName}")))[..16];
 
-    /// <summary>Accepts connections until cancelled. The handler runs once per message.</summary>
-    public static async Task ServeAsync(string pipeName, Func<ChannelMessage, Task<ChannelReply>> handler, CancellationToken ct)
+    /// <summary>
+    /// Accepts connections until cancelled, at most <paramref name="maxConnections"/> at a time. The handler runs once per
+    /// message; a client has <paramref name="readTimeout"/> (default 10 s) to send it, so idle connections do not pile up.
+    /// </summary>
+    public static async Task ServeAsync(string pipeName, Func<ChannelMessage, Task<ChannelReply>> handler, CancellationToken ct,
+        int maxConnections = MaxConnections, TimeSpan? readTimeout = null)
     {
+        // Not disposed: connections still being answered release their slot after this method has returned.
+        var slots = new SemaphoreSlim(maxConnections, maxConnections);
         while (!ct.IsCancellationRequested)
         {
-            var pipe = new NamedPipeServerStream(pipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances,
-                PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            try
+            {
+                await slots.WaitAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            NamedPipeServerStream pipe;
+            try
+            {
+                pipe = new NamedPipeServerStream(pipeName, PipeDirection.InOut, maxConnections,
+                    PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            }
+            catch (IOException)
+            {
+                // Every instance busy (or the name briefly taken): the slot goes back, and the next try comes a little later.
+                slots.Release();
+                try
+                {
+                    await Task.Delay(200, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+                continue;
+            }
             try
             {
                 await pipe.WaitForConnectionAsync(ct);
@@ -30,9 +65,10 @@ public static class AppChannel
             catch (OperationCanceledException)
             {
                 await pipe.DisposeAsync();
+                slots.Release();
                 return;
             }
-            _ = HandleConnectionAsync(pipe, handler, ct);
+            _ = HandleConnectionAsync(pipe, handler, readTimeout ?? TimeSpan.FromSeconds(10), ct).ContinueWith(_ => slots.Release(), TaskScheduler.Default);
         }
     }
 
@@ -56,15 +92,16 @@ public static class AppChannel
         return line is null ? null : JsonSerializer.Deserialize<ChannelReply>(line, Messages.Json);
     }
 
-    private static async Task HandleConnectionAsync(NamedPipeServerStream pipe, Func<ChannelMessage, Task<ChannelReply>> handler, CancellationToken ct)
+    private static async Task HandleConnectionAsync(NamedPipeServerStream pipe, Func<ChannelMessage, Task<ChannelReply>> handler, TimeSpan readTimeout,
+        CancellationToken ct)
     {
         await using (pipe)
         {
             try
             {
-                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-                timeout.CancelAfter(TimeSpan.FromSeconds(30));
-                var line = await ReadLineAsync(pipe, timeout.Token);
+                using var reading = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                reading.CancelAfter(readTimeout);
+                var line = await ReadLineAsync(pipe, reading.Token);
                 if (line is null)
                     return;
 
@@ -82,7 +119,9 @@ public static class AppChannel
                 {
                     reply = new ChannelReply(false, Error: ex.Message);
                 }
-                await WriteLineAsync(pipe, JsonSerializer.SerializeToUtf8Bytes(reply, Messages.Json), timeout.Token);
+                using var writing = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                writing.CancelAfter(TimeSpan.FromSeconds(10));
+                await WriteLineAsync(pipe, JsonSerializer.SerializeToUtf8Bytes(reply, Messages.Json), writing.Token);
             }
             catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException)
             {
