@@ -287,7 +287,11 @@ public sealed class AppSettings
     public bool UpdateCheckEnabled { get; set; }
 
     /// <summary>A GitHub "latest release" API address, or a JSON manifest (version, notes, url, sha256).</summary>
-    public string UpdateUrl { get; set; } = "";
+    // Empty (the default up to 1.1.0) means the project's own releases, both when loaded and when saved.
+    public string UpdateUrl { get; set => field = string.IsNullOrWhiteSpace(value) ? DefaultUpdateUrl : value; } = DefaultUpdateUrl;
+
+    /// <summary>The releases of the project's own repository; checking stays off until the user turns it on.</summary>
+    public const string DefaultUpdateUrl = "https://api.github.com/repos/AndreaAzzarello/DownloadManager/releases/latest";
 
     /// <summary>The move of folders off the Desktop was proposed once (whatever the answer): it is not proposed again.</summary>
     public bool DesktopRelocationAsked { get; set; }

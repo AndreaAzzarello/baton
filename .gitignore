@@ -487,3 +487,17 @@ dist/
 # Claude Code: local state of the hooks and personal settings
 .claude/state/
 .claude/settings.local.json
+
+# Never published: user data, keys and trial artifacts
+*.db
+*.db-shm
+*.db-wal
+*.db.v*.bak
+*.key.json
+*.pem
+*.key
+*.p12
+*.dmp
+*.har
+dm-trials/
+tools/trials/out/

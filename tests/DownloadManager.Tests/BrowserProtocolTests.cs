@@ -373,6 +373,20 @@ public sealed class BrowserProtocolTests : IAsyncLifetime
         }
     }
 
+    [Fact]
+    public void EmptyUpdateUrl_OfEarlierVersions_BecomesTheProjectReleases_AndTheUsersOwnStays()
+    {
+        foreach (var (saved, expected) in new[] { ("", AppSettings.DefaultUpdateUrl), ("https://updates.test/latest.json", "https://updates.test/latest.json") })
+        {
+            using (var store = new DownloadStore(DbPath))
+                store.SaveSettings(new AppSettings { UpdateUrl = saved });
+            using var reopened = new DownloadStore(DbPath);
+            Assert.Equal(expected, reopened.LoadSettings().UpdateUrl);
+        }
+        Assert.Equal(AppSettings.DefaultUpdateUrl, new AppSettings { UpdateUrl = " " }.UpdateUrl); // also when saved from Settings
+        Assert.NotNull(Core.Updates.UpdateChecker.Allowed(AppSettings.DefaultUpdateUrl));
+    }
+
     // ------------------------------------------------------------------ the extension's own tests
 
     [Fact]

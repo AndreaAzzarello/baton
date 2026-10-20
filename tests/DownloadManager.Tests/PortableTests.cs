@@ -154,7 +154,7 @@ public sealed class PortableTests : IAsyncLifetime
 
         Assert.Equal(["a.zip", "b.zip"], _service.GetSnapshots().Select(s => s.DisplayName).Order()); // the name is only a name
         Assert.Equal("", _service.Settings.ScannerPath);
-        Assert.Equal("", _service.Settings.UpdateUrl);
+        Assert.Equal(AppSettings.DefaultUpdateUrl, _service.Settings.UpdateUrl);
         Assert.Equal("", _service.Settings.FfmpegPath);
         Assert.DoesNotContain(_service.Categories, c => c.Name == "Escape");
 

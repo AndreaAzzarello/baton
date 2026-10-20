@@ -1,0 +1,28 @@
+# Build and test on every push and pull request. No signing here: the release key never leaves the author's PC.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Build (zero warnings)
+        run: dotnet build DownloadManager.slnx -warnaserror
+      - name: Test (xUnit and the extension's Node tests)
+        run: dotnet test DownloadManager.slnx --no-build
+      - name: Build the extension
+        run: node tools/build-extension.mjs

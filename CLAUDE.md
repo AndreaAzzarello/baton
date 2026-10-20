@@ -1,7 +1,7 @@
 # DownloadManager — regole per Claude Code
 
 Download manager per Windows: C# / .NET 10 / WPF (tema Fluent), più estensione MV3 per Chromium e Firefox.
-Fasi 1–5 completate, versione **0.7.0**. L'utente scrive in italiano: rispondi in italiano; codice e commenti in inglese.
+Fasi 1–7 completate, versione **1.1.1** (pubblica su GitHub, licenza MIT). L'utente scrive in italiano: rispondi in italiano; codice e commenti in inglese.
 
 ## Vincoli permanenti
 - Nessun codice, grafica, icona, nome o marchio di altri prodotti. Solo codice originale.

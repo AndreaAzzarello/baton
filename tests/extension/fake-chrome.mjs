@@ -1,4 +1,13 @@
 // A small stand-in for the extension APIs, enough to load background.js in Node and drive its listeners.
+
+// background.js forgets captured forms with a real 15 s timer: long timers must not keep the test process alive.
+const realSetTimeout = globalThis.setTimeout;
+globalThis.setTimeout = (fn, ms, ...args) => {
+  const timer = realSetTimeout(fn, ms, ...args);
+  if (ms >= 1000) timer.unref();
+  return timer;
+};
+
 export function createFakeChrome({ firefox = false, nativeReply } = {}) {
   const listeners = {};
   const event = (name) => ({

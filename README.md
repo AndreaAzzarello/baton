@@ -1,11 +1,84 @@
 # DownloadManager
 
-Download manager per Windows (C# / .NET 10 LTS / WPF) con download segmentato, pausa/ripresa persistente,
-code con nome e pianificazione, categorie, FTP/FTPS, proxy, autenticazione, video HLS/DASH (con lingue e sottotitoli), grabber
-di siti (file filtrati o copia offline, sincronizzabile e pianificabile), verifica dei file (hash e antivirus), esportazione e
-importazione, aggiornamenti verificati e integrazione con Chrome, Edge, Opera, Brave e Firefox.
-Versione 1.1.0: rafforzamento della sicurezza (aggiornamenti firmati, credenziali legate allo schema, import e copia offline più
-sicuri, cookie secondo SameSite, controllo degli indirizzi dei video).
+[![CI](https://github.com/AndreaAzzarello/DownloadManager/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreaAzzarello/DownloadManager/actions/workflows/ci.yml)
+[![Licenza: MIT](https://img.shields.io/badge/licenza-MIT-blue.svg)](LICENSE)
+
+Download manager open source per Windows (C# / .NET 10 LTS / WPF), ispirato ai download manager classici, con
+un'estensione per Chrome, Edge, Opera, Brave e Firefox. Progetto indipendente, scritto da zero: non è affiliato né
+compatibile con alcun prodotto commerciale.
+
+*English: an open-source download manager for Windows 10/11 with segmented and resumable downloads, queues and
+scheduling, FTP/FTPS, proxies, HLS/DASH video, a site grabber, signed updates and a browser extension (Chromium and
+Firefox). The interface is in Italian; the extension is in Italian and English. See [CHANGELOG.md](CHANGELOG.md) and
+[SECURITY.md](SECURITY.md).*
+
+Versione **1.1.1** — novità in [CHANGELOG.md](CHANGELOG.md).
+
+| Tema chiaro | Tema scuro |
+|---|---|
+| ![Finestra principale nel tema chiaro](docs/screenshots/main-light.png) | ![Finestra principale nel tema scuro](docs/screenshots/main-dark.png) |
+
+*Screenshot con dati di prova.*
+
+## Funzioni principali
+
+- **Download segmentati** con più connessioni, segmentazione dinamica, pausa e ripresa anche dopo il riavvio.
+- **Code con nome** e pianificazione (giorni, orari, quota oraria, timer di riattivazione), azioni di fine coda.
+- **Categorie** per tipo di file con cartelle proprie; temi chiaro, scuro e di sistema; area di notifica.
+- **HTTP/HTTPS, FTP/FTPS**, proxy (sistema, HTTP, SOCKS5, PAC) e autenticazione (Basic, Digest, NTLM, Negotiate) con
+  credenziali cifrate da Windows (DPAPI).
+- **Video HLS e DASH** con scelta della qualità, lingua audio e sottotitoli; unione in MP4 con ffmpeg se lo installi tu.
+- **Grabber** di siti: file filtrati o copia offline senza script, sincronizzabile e pianificabile, rispettando robots.txt.
+- **Dopo il download**: verifica dell'hash e scansione antivirus facoltative.
+- **Integrazione con il browser**: intercettazione dei download, menu contestuale, moduli (POST), "Scarica tutto",
+  pulsante per i video.
+- **Aggiornamenti firmati** (ECDSA P-256) con ritorno automatico alla versione precedente; esportazione e importazione.
+
+## Requisiti
+
+- Windows 10 (1809 o successivo) o Windows 11, **x64**. Il runtime .NET è incluso nell'eseguibile.
+- Per l'estensione: Chrome, Edge, Brave, Opera (basati su Chromium) o Firefox 128 o successivo.
+- Facoltativo: [ffmpeg](https://ffmpeg.org) per unire video e audio in un MP4 (non incluso).
+- Per compilare: .NET 10 SDK e Node.js (per i test dell'estensione).
+
+## Installazione
+
+1. Dalla pagina [Releases](https://github.com/AndreaAzzarello/DownloadManager/releases/latest) scarica
+   `DownloadManager.exe`, `DownloadManager.exe.sha256` e `DownloadManager.exe.sig`, e verificali (sezione seguente).
+2. Metti `DownloadManager.exe` in una cartella tua (per esempio `%LOCALAPPDATA%\Programs\DownloadManager`) e avvialo: non
+   serve installazione né diritti di amministratore. Il primo avvio propone cartelle, categorie, browser e tema, e registra
+   per l'utente corrente l'host nativo usato dall'estensione. L'eseguibile non è firmato con un certificato di firma del
+   codice: SmartScreen può chiedere conferma (**Ulteriori informazioni › Esegui comunque**) dopo che hai verificato la firma.
+3. **Estensione** — scarica dalla release `downloadmanager-chromium-<versione>.zip` (estrailo in una cartella che non
+   sposterai) oppure usa la cartella `extension` del repository:
+   - **Chrome / Brave** — `chrome://extensions` (Brave: `brave://extensions`) → attiva **Modalità sviluppatore** →
+     **Carica estensione non pacchettizzata** → la cartella estratta.
+   - **Edge** — `edge://extensions` → **Modalità sviluppatore** → **Carica decompressa** → la cartella estratta.
+   - **Opera** — `opera://extensions` → **Modalità sviluppatore** → **Carica estensione decompressa** → la cartella estratta.
+   - **Firefox** — il file `downloadmanager-firefox-<versione>.xpi` della release **non è firmato** da Mozilla: Firefox
+     normale lo accetta solo come componente temporaneo (`about:debugging#/runtime/this-firefox` → **Carica componente
+     aggiuntivo temporaneo** → il file `.xpi`, rimosso alla chiusura). Per un'installazione permanente firmalo con le tue
+     chiavi AMO (vedi [Firefox permanente](#firefox-permanente-firma-non-elencata-su-addonsmozillaorg)) oppure usa
+     Firefox Developer Edition/Nightly con `xpinstall.signatures.required = false`.
+
+   Dal popup dell'estensione, **Verifica connessione** controlla che l'app risponda.
+
+## Verificare una release
+
+Ogni release contiene l'hash SHA-256 (`DownloadManager.exe.sha256`) e una firma ECDSA P-256 (`DownloadManager.exe.sig`) di
+"versione + nome del file + SHA-256", fatta con una chiave privata che non lascia mai il PC dell'autore. Le chiavi pubbliche
+sono in [`src/DownloadManager.Core/Updates/release-keys.txt`](src/DownloadManager.Core/Updates/release-keys.txt):
+`b80f666050fcbc7d` (principale) e `cc691630b30bf7f1` (di riserva, dalla 1.1.1). Con i tre file nella stessa cartella, da
+una copia del repository:
+
+```powershell
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\DownloadManager.exe" -Version 1.1.1
+# OK: DownloadManager.exe 1.1.1, SHA-256 …, signed by b80f666050fcbc7d.
+```
+
+Solo l'hash, senza clonare nulla: `(Get-FileHash .\DownloadManager.exe -Algorithm SHA256).Hash` deve coincidere con il
+contenuto di `DownloadManager.exe.sha256` (l'hash da solo prova l'integrità del download, non l'autore). L'app fa le stesse
+verifiche, firma compresa, prima di installare un aggiornamento. Le build della CI non sono firmate e non vengono pubblicate.
 
 ## Struttura
 
@@ -24,6 +97,9 @@ sicuri, cookie secondo SameSite, controllo degli indirizzi dei video).
 | `tools/trials` | Prove reali nei browser (Edge, Opera, Firefox headless) con l'app isolata: `prepare.ps1`, `chromium-trial.mjs`, `firefox-trial.mjs`, `grab-trial.ps1`, `perf.ps1` con `fill_downloads.py` (elenco di migliaia di download, memoria), `finish.ps1`; sito di prova locale (anche `/grab/` per il grabber) |
 | `tools/sign-firefox.ps1` | Firma "non elencata" dell'estensione per Firefox su addons.mozilla.org (chiavi solo da variabili d'ambiente) |
 | `tools/sign-release.ps1` | Chiavi di firma delle release (fuori dal repository, DPAPI o password) e firma `.sha256` + `.sig` degli aggiornamenti |
+| `tools/verify-release.ps1` | Verifica SHA-256 e firma di una release scaricata |
+| `.github/workflows/ci.yml` | CI su GitHub Actions: build senza avvisi, test e build dell'estensione su Windows (nessuna firma) |
+| `docs/screenshots` | Screenshot del README, fatti con dati di prova |
 | `tools/make_resx.py`, `tools/make_locales.py` | Generatori dei testi: `Strings.resx` dell'app e `_locales` dell'estensione (la tabella è nello script) |
 | `CLAUDE.md`, `.claude/` | Regole del progetto per Claude Code, hook (guardia su registro e Desktop, controlli dell'estensione, build incrementale) e skill `prova-reale`, `fine-fase`, `stringhe` |
 | `publish/DownloadManager.exe` | Build Release self-contained win-x64 (non richiede il runtime .NET) |
@@ -281,7 +357,10 @@ non è usato.
 
 ## Aggiornamenti
 
-Disattivati per impostazione. In Impostazioni › *Aggiornamenti* si indica l'indirizzo: le release di GitHub
+Disattivati per impostazione: in Impostazioni › *Aggiornamenti* si attiva il controllo all'avvio, oppure **Controlla ora**.
+Dalla 1.1.1 l'indirizzo predefinito sono le release di questo repository
+(`https://api.github.com/repos/AndreaAzzarello/DownloadManager/releases/latest`; un indirizzo lasciato vuoto nelle versioni
+precedenti diventa questo). Si può indicare un altro indirizzo: le release di GitHub
 (`https://api.github.com/repos/UTENTE/REPOSITORY/releases/latest`, con l'eseguibile tra gli allegati e il suo SHA-256 in un
 allegato **`DownloadManager.exe.sha256`** — l'hash nei formati comuni: solo l'hash (anche scritto da PowerShell in UTF-16),
 `hash  nome` di sha256sum, `SHA256 (nome) = hash`, l'output di certutil; se nomina un altro programma viene rifiutato. Un hash
@@ -540,7 +619,7 @@ qualsiasi accesso fa fallire il test.
 I testi dell'interfaccia sono in `src/DownloadManager.Core/Resources/Strings.resx`; per tradurre l'app basta aggiungere
 un file `Strings.<lingua>.resx`.
 
-## Limiti noti
+## Limiti noti (known issues)
 
 - Protocolli: niente SFTP (SSH) né FTP tramite proxy HTTPS.
 - Grabber: niente JavaScript (i contenuti generati da script non vengono trovati); un link che sembra una pagina
@@ -554,12 +633,29 @@ un file `Strings.<lingua>.resx`.
 - Aggiornamenti automatici solo per l'eseguibile pubblicato in un unico file; l'aspetto della barra degli strumenti non fa
   parte dell'esportazione delle impostazioni.
 - L'estensione per Firefox va firmata dall'utente con le proprie chiavi AMO (`tools\sign-firefox.ps1`).
-- Identità dell'estensione: l'host nativo riconosce l'estensione dal suo ID, che il browser garantisce per le estensioni
+- **I4 — identità dell'estensione**: l'host nativo riconosce l'estensione dal suo ID, che il browser garantisce per le estensioni
   installate dallo store o firmate. L'ID di Chromium però deriva dalla `key` pubblica nel manifest e quello di Firefox si può
   dichiarare in un componente aggiuntivo temporaneo: un'estensione caricata a mano in modalità sviluppatore con lo stesso ID
   verrebbe accettata. Serve un'azione deliberata dell'utente (modalità sviluppatore, caricamento di una cartella), e anche
   allora ogni messaggio passa dagli stessi controlli (`MessageValidator`, conferme, nessun file eseguito): non installare
   estensioni non pacchettizzate di cui non conosci la provenienza.
+
+### Punti aperti dell'audit di sicurezza
+
+Un audit interno della 1.1.0 (sola lettura del codice, ottobre 2026) non ha confermato vulnerabilità, ma ha lasciato
+**8 ipotesi da verificare** (*needs validation*): nessuna è stata riprodotta, perché servono ambienti di prova dedicati.
+Restano aperte finché un test non le conferma o le esclude; le segnalazioni sono benvenute (vedi [SECURITY.md](SECURITY.md)).
+
+| # | Ipotesi | Mitigazione attuale / cosa fare |
+|---|---|---|
+| L1 | "Scarica tutto" inoltra all'app i cookie (anche `SameSite=Strict`) degli host dei link scelti dalla pagina, fino a 50 | Serve un clic su "Scarica tutto" e la conferma nella finestra; usalo sui siti di cui ti fidi |
+| L2 | "Aggiorna indirizzo" verso un altro host potrebbe reinviare login e dati del modulo salvati per il download | Le credenziali sono legate a schema+host+porta; controlla il nuovo indirizzo prima di confermare |
+| L3 | Uno script PAC riceve l'URL https completo (percorso e query) e potrebbe farlo trapelare via DNS | Usa solo PAC fidati (https o file locale, gli unici accettati con password del proxy) |
+| L4 | Il POST di un modulo tra siti diversi sotto suffissi pubblici assenti dall'elenco interno salta la conferma obbligatoria | Lascia attiva la conferma dei download dal browser |
+| L5 | Tipi di file "di shell" (`.library-ms`, `.searchConnector-ms`, `.url`, `.scf`, `.lnk`) salvati senza una politica per tipo | I file ricevono il contrassegno Internet (`Zone.Identifier`); non aprire file inattesi |
+| L6 | La copia offline potrebbe lasciare script in HTML salvato con estensioni insolite (`.shtm`, `.xhtm`, `.ehtml`, `.xbl`, nessuna) | Apri le copie offline in un browser aggiornato; gli script noti sono rimossi |
+| L7 | Un grabber pianificato in modalità File salva tipi scelti dal server (per esempio `.exe`) che il filtro escluderebbe | Il file non viene eseguito; controlla la cartella dei progetti pianificati |
+| L8 | Impostazioni importate con una cartella di categoria relativa potrebbero portare tipi non assegnati (`.bat`, `.cmd`, `.lnk`) nella cartella Esecuzione automatica | Importa solo file tuoi; l'import mostra tutto e non preseleziona nulla |
 
 ## Risoluzione dei problemi
 
@@ -576,3 +672,16 @@ un file `Strings.<lingua>.resx`.
 - **Qualcosa non va**: `%LOCALAPPDATA%\DownloadManager\logs\app.log`; nelle finestre d'errore **Copia dettagli** copia
   versione, sistema ed eccezione senza dati riservati.
 - **Database**: prima di ogni aggiornamento di schema ne resta una copia `downloads.db.v<N>.bak` accanto all'originale.
+
+## Sicurezza
+
+Le vulnerabilità vanno segnalate in privato, non con una issue pubblica: vedi [SECURITY.md](SECURITY.md) (GitHub ›
+**Security › Report a vulnerability**). Principi del progetto: segreti (password, cookie, campi dei moduli) cifrati con
+DPAPI e mai nei log; ogni messaggio del browser validato due volte; aggiornamenti solo https, con hash e firma; grabber senza
+esecuzione di script; nessuna telemetria.
+
+## Licenza
+
+[MIT](LICENSE) © 2026 Andrea Azzarello. Componenti di terze parti e relative licenze:
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). ffmpeg non è incluso. Le modalità dell'estensione riprendono solo
+l'idea di "Download with…" (vedi [Riferimenti](#riferimenti)).
