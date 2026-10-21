@@ -53,38 +53,11 @@
                         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
                         <Setter Property="BorderThickness" Value="0,0,0,1" />
                     </Style>
-                    <Style TargetType="DataGridCell">
-                        <Setter Property="BorderThickness" Value="0" />
-                        <Setter Property="Padding" Value="10,0" />
-                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="DataGridCell">
-                                    <Border Padding="{TemplateBinding Padding}" Background="Transparent">
-                                        <ContentPresenter VerticalAlignment="Center" />
-                                    </Border>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                    <Style TargetType="DataGridRow">
+                    <Style TargetType="DataGridCell" BasedOn="{StaticResource ListCell}" />
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource ListRow}">
                         <Setter Property="ToolTip" Value="{Binding LastResult}" />
-                        <Setter Property="Background" Value="Transparent" />
                         <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
                         <Setter Property="AutomationProperties.ItemStatus" Value="{Binding State}" />
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                <Setter Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
-                                <Setter Property="BorderThickness" Value="1" />
-                            </Trigger>
-                        </Style.Triggers>
                     </Style>
                 </DataGrid.Resources>
                 <DataGrid.Columns>

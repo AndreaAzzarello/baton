@@ -187,6 +187,9 @@ function remember(values) {
 
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
+    // A new page in the tab, or the same one loaded again (the browser clears the tab's badge itself): its videos are
+    // found again as it plays them. Frames loading inside the page leave them alone.
+    if (details.type === "main_frame" && details.tabId >= 0) forgetMedia(details.tabId);
     // Forms of private windows are never kept, not even for a moment (Firefox says so here, Chromium through the tab).
     if (details.method !== "POST" || details.tabId < 0 || details.incognito) return;
     const body = details.requestBody;
@@ -410,7 +413,7 @@ function recordMedia(tabId, entry) {
 /** Tells the page's top frame what was found, and shows the count on the icon for that tab. */
 async function announce(tabId, state) {
   const streams = state.items.length;
-  await chrome.action.setBadgeBackgroundColor({ tabId, color: "#2457D1" }).catch(() => {});
+  await chrome.action.setBadgeBackgroundColor({ tabId, color: "#0449EF" }).catch(() => {});
   await chrome.action.setBadgeText({ tabId, text: streams ? String(streams) : "" }).catch(() => {});
   await chrome.tabs.sendMessage(tabId, { type: "media", ...state }, { frameId: 0 }).catch(() => {});
 }
@@ -428,10 +431,23 @@ chrome.tabs.onRemoved.addListener((tabId) => forgetMedia(tabId));
 
 // ---------------------------------------------------------------- messages from the content script
 
+/** What the popup may ask about the active tab's videos (with "only from the extension's menu" it is where they are downloaded). */
+const POPUP_MEDIA_MESSAGES = ["getMedia", "probe", "addMedia"];
+
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
-  const tab = sender.tab;
-  if (!tab?.id || sender.id !== chrome.runtime.id) return false;
-  handleContentMessage(message, tab, sender)
+  if (sender.id !== chrome.runtime.id) return false;
+  // The popup names the tab it asks about (also when popup.html is opened as a page, in a tab of its own).
+  const fromPopup = typeof sender.url === "string" && sender.url.startsWith(chrome.runtime.getURL("popup.html"));
+  let tab;
+  if (fromPopup) {
+    if (!POPUP_MEDIA_MESSAGES.includes(message?.type) || !Number.isInteger(message.tabId)) return false;
+    tab = chrome.tabs.get(message.tabId);
+  } else if (sender.tab?.id) {
+    tab = Promise.resolve(sender.tab);
+  } else {
+    return false;
+  }
+  tab.then((t) => handleContentMessage(message, t, sender))
     .then(reply)
     .catch((error) => reply({ ok: false, error: error.message }));
   return true; // answered asynchronously
@@ -444,7 +460,7 @@ async function handleContentMessage(message, tab, sender) {
       const settings = await loadSettings();
       const state = (await chrome.storage.session.get(key))[key] ?? { items: [], drm: false };
       const disabled = Rules.parseSites(settings.mediaDisabledSites).some((s) => Rules.hostMatches(Rules.hostOf(tab.url), s));
-      return { ok: true, ...state, enabled: settings.mediaButton && !disabled && !tab.incognito };
+      return { ok: true, ...state, mode: settings.mediaPanel, enabled: !disabled && !tab.incognito };
     }
     case "drm": {
       // The page uses Encrypted Media Extensions: whatever it plays is protected.

@@ -28,7 +28,7 @@ public sealed class MemoryTests(ITestOutputHelper output) : IAsyncLifetime
         _store.SaveSettings(new AppSettings { DownloadFolder = Path.Combine(_dir, "downloads"), ProxyMode = ProxyMode.None });
         _http = _site.CreateClient(new CookieContainer());
         _downloads = new DownloadService(_store, _http, new EngineOptions { MinSegmentSize = 64 * 1024, CheckpointInterval = TimeSpan.FromMilliseconds(100) },
-            autoTick: false);
+            autoTick: false) { RecycleBin = new EmptyingBin() };
         await _downloads.StopQueueAsync();
     }
 
@@ -82,6 +82,16 @@ public sealed class MemoryTests(ITestOutputHelper output) : IAsyncLifetime
         }
         foreach (var id in ids)
             await _downloads.RemoveAsync(id, deleteFile: true);
+    }
+
+    /// <summary>Takes the files out of the folder, as the Recycle Bin does (the test checks the folder ends up empty).</summary>
+    private sealed class EmptyingBin : Baton.Core.Platform.IRecycleBin
+    {
+        public bool Recycle(string path)
+        {
+            File.Delete(path);
+            return true;
+        }
     }
 
     private static long Measure()

@@ -38,8 +38,7 @@
 
   <ItemGroup>
     <Resource Include="app.ico" />
-    <Resource Include="tray-light.ico" />
-    <Resource Include="tray-dark.ico" />
+    <InternalsVisibleTo Include="Baton.UiTests" />
   </ItemGroup>
 
 </Project>

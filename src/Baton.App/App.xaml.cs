@@ -75,7 +75,7 @@ public partial class App : Application
         var databasePath = Path.Combine(DataDirectory, "downloads.db");
         var firstRun = Core.Setup.FirstRun.IsNeeded(databasePath);
         _store = new DownloadStore(databasePath);
-        _service = new DownloadService(_store);
+        _service = new DownloadService(_store) { RecycleBin = new Core.Platform.WindowsRecycleBin() };
         var service = _service;
 
         var themes = new ThemeService(this);

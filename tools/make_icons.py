@@ -1,14 +1,13 @@
-# Builds the app's .ico files from the frames rendered by docs/brand/brand.mjs (run that first):
+# Builds src/Baton.App/app.ico from the frames prepared by docs/brand/brand.mjs (run that first): the brand kit's
+# Windows icon at 16-256 px (20 and 40 px rendered from the kit's SVG). The exe, its windows, the notification area and
+# the notifications all use it. Frames are stored as PNG, which Windows reads since Vista.
 #   python tools/make_icons.py
-# app.ico: 16-256 px (small sizes on the pixel grid, the white tile from 32 px); tray-light.ico / tray-dark.ico:
-# 16, 20, 24, 32 px for a light or a dark taskbar. Frames are stored as PNG, which Windows reads since Vista.
 import os
 import struct
 import sys
 
 root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 frames = os.path.join(root, "docs", "brand", "out")
-app = os.path.join(root, "src", "Baton.App")
 
 
 def ico(path, names):
@@ -27,6 +26,4 @@ def ico(path, names):
     print(f"{os.path.relpath(path, root)}: {', '.join(n.split('-')[-1][:-4] for n in names)} px")
 
 
-ico(os.path.join(app, "app.ico"), [f"app-{s}.png" for s in (16, 20, 24, 32, 40, 48, 64, 256)])
-for theme in ("light", "dark"):
-    ico(os.path.join(app, f"tray-{theme}.ico"), [f"tray-{theme}-{s}.png" for s in (16, 20, 24, 32)])
+ico(os.path.join(root, "src", "Baton.App", "app.ico"), [f"app-{s}.png" for s in (16, 20, 24, 32, 40, 48, 64, 256)])

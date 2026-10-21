@@ -1,13 +1,10 @@
 using System.Globalization;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using Baton.Core;
-using Baton.Core.Platform;
 using Baton.Core.Resources;
-using Microsoft.Win32;
 
 namespace Baton.App.Services;
 
@@ -31,7 +28,6 @@ public sealed class TrayIcon : IDisposable
     private readonly NativeWindow _window;
     private readonly int _taskbarCreated;
     private IntPtr _iconHandle;
-    private bool _lightTaskbar;
     private string _tip = Strings.AppName;
 
     public TrayIcon(DownloadService service, Action show, Action exit, Func<long, long?> askCustomLimit)
@@ -44,8 +40,7 @@ public sealed class TrayIcon : IDisposable
         // graphics stack (Direct3D and the GPU driver, tens of MB) for an app that may never show a window.
         _taskbarCreated = RegisterWindowMessage("TaskbarCreated");
         _window = new NativeWindow(WndProc);
-        _lightTaskbar = TaskbarIsLight();
-        _iconHandle = LoadTrayIcon(_lightTaskbar);
+        _iconHandle = LoadAppIcon();
         AddIcon();
     }
 
@@ -95,11 +90,6 @@ public sealed class TrayIcon : IDisposable
         {
             AddIcon(); // Explorer restarted: the icon must be added again
             return true;
-        }
-        if (msg == WmSettingChange)
-        {
-            FollowTaskbarTheme();
-            return false;
         }
         if (msg != CallbackMessage)
             return false;
@@ -187,57 +177,6 @@ public sealed class TrayIcon : IDisposable
 
         [DllImport("user32.dll")]
         private static extern IntPtr DefWindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam);
-    }
-
-    /// <summary>A light or dark taskbar (Windows settings, Personalization › Colors) gets the icon drawn for it.</summary>
-    private void FollowTaskbarTheme()
-    {
-        var light = TaskbarIsLight();
-        if (light == _lightTaskbar)
-            return;
-        _lightTaskbar = light;
-        var previous = _iconHandle;
-        _iconHandle = LoadTrayIcon(light);
-        var data = NewData(NifIcon);
-        Shell_NotifyIcon(NimModify, ref data);
-        if (previous != IntPtr.Zero)
-            DestroyIcon(previous);
-    }
-
-    private static bool TaskbarIsLight()
-    {
-        try
-        {
-            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
-            return key?.GetValue("SystemUsesLightTheme") is int light && light != 0;
-        }
-        catch (System.Security.SecurityException)
-        {
-            return false; // Windows' default: a dark taskbar
-        }
-    }
-
-    /// <summary>
-    /// tray-light.ico or tray-dark.ico, drawn on the pixel grid for 16-32 px (the darker blue has too little contrast on a
-    /// dark taskbar), at the size the notification area uses on this screen; the executable's icon if it cannot be read.
-    /// </summary>
-    private static IntPtr LoadTrayIcon(bool lightTaskbar)
-    {
-        var size = GetSystemMetrics(SmCxSmIcon);
-        try
-        {
-            using var stream = Application.GetResourceStream(new Uri($"pack://application:,,,/tray-{(lightTaskbar ? "light" : "dark")}.ico")).Stream;
-            using var bytes = new MemoryStream();
-            stream.CopyTo(bytes);
-            if (IconFile.Frame(bytes.ToArray(), size) is { } frame
-                && CreateIconFromResourceEx(frame.Data, frame.Data.Length, true, 0x00030000, size, size, 0) is var icon && icon != IntPtr.Zero)
-                return icon;
-        }
-        catch (IOException)
-        {
-            // The resource is part of the executable: only a damaged build gets here.
-        }
-        return LoadAppIcon();
     }
 
     /// <summary>The application icon embedded in the executable, at the size the notification area uses on this screen.</summary>
@@ -345,7 +284,6 @@ public sealed class TrayIcon : IDisposable
     private const int NiifInfo = 0x1, NotifyIconVersion4 = 4;
     private const int NinSelect = 0x400, NinKeySelect = 0x401, WmContextMenu = 0x7B, WmLButtonDblClk = 0x203;
     private const int SmCxSmIcon = 49;
-    private const int WmSettingChange = 0x1A;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct NotifyIconData
@@ -387,9 +325,6 @@ public sealed class TrayIcon : IDisposable
 
     [DllImport("user32.dll")]
     private static extern bool DestroyIcon(IntPtr icon);
-
-    [DllImport("user32.dll")]
-    private static extern IntPtr CreateIconFromResourceEx(byte[] data, int size, bool icon, int version, int width, int height, int flags);
 
     [DllImport("user32.dll")]
     private static extern bool SetForegroundWindow(IntPtr window);

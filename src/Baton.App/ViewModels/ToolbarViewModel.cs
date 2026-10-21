@@ -69,6 +69,7 @@ public sealed class ToolbarViewModel : ObservableObject
         "pause" => Strings.ActionPause,
         "enqueue" => Strings.ActionEnqueue,
         "remove" => Strings.ActionRemove,
+        "deletefiles" => Strings.ActionDeleteFiles,
         "progress" => Strings.ActionProgress,
         "properties" => Strings.ActionProperties,
         "up" => Strings.ActionUp,

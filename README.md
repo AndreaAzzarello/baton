@@ -1,6 +1,10 @@
-<p align="center"><img src="docs/brand/baton.svg" width="112" alt="Logo di Baton: tre barre che si uniscono in una freccia"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/kit/01_Logo_SVG/BATON_logo_orizzontale_bianco.svg">
+    <img src="docs/brand/kit/01_Logo_SVG/BATON_logo_orizzontale_scuro.svg" width="360" alt="Baton">
+  </picture>
+</p>
 
-<h1 align="center">Baton</h1>
 <p align="center"><b>A fast segmented download manager for Windows</b></p>
 
 <p align="center">
@@ -12,8 +16,8 @@
 
 Download manager open source per Windows (C# / .NET 10 LTS / WPF), ispirato ai download manager classici, con
 un'estensione per Chrome, Edge, Opera, Brave e Firefox. Il nome è il testimone della staffetta: le connessioni si passano
-i pezzi del file (segmentazione dinamica), e il logo le mostra come tre barre che diventano una sola freccia. Fino alla 1.1
-si chiamava DownloadManager. Progetto indipendente, scritto da zero: non è affiliato né
+i pezzi del file (segmentazione dinamica); il logo è una "B" che contiene la freccia di download. Fino alla 1.1 si chiamava
+DownloadManager. Progetto indipendente, scritto da zero: non è affiliato né
 compatibile con alcun prodotto commerciale.
 
 *English: an open-source download manager for Windows 10/11 with segmented and resumable downloads, queues and
@@ -125,7 +129,7 @@ verifiche, firma compresa, prima di installare un aggiornamento. Le build della 
 | `tools/verify-release.ps1` | Verifica SHA-256 e firma di una release scaricata |
 | `.github/workflows/ci.yml` | CI su GitHub Actions: build senza avvisi, test e build dell'estensione su Windows (nessuna firma) |
 | `docs/screenshots` | Screenshot del README, fatti con dati di prova |
-| `docs/brand` | Logo (SVG) e `brand.mjs`, che ne ricava icone dell'app, della tray e dell'estensione, logo e immagine per GitHub; `tools/make_icons.py` compone i file `.ico` |
+| `docs/brand` | Brand kit ufficiale (`kit/`: SVG, PNG, icone Windows e browser) e `brand.mjs`, che ne ricava le misure mancanti, le icone grigie dell'estensione e l'immagine per GitHub; `tools/make_icons.py` compone `app.ico` |
 | `tools/make_resx.py`, `tools/make_locales.py` | Generatori dei testi: `Strings.resx` dell'app e `_locales` dell'estensione (la tabella è nello script) |
 | `CLAUDE.md`, `.claude/` | Regole del progetto per Claude Code, hook (guardia su registro e Desktop, controlli dell'estensione, build incrementale) e skill `prova-reale`, `fine-fase`, `stringhe` |
 | `publish/Baton.exe` | Build Release self-contained win-x64 (non richiede il runtime .NET) |
@@ -311,6 +315,18 @@ Baton…** (l'estensione passa indirizzo, titolo e cookie del sito; mai dalle fi
 
 ## Interfaccia
 
+- **Elenco e selezione come in Esplora file**: clic, Ctrl+clic, Maiusc+clic, Ctrl+A; clic sul vuoto per deselezionare. Le
+  righe selezionate hanno uno sfondo pieno ben visibile (testo con contrasto ≥ 4,5:1 nei due temi) e la barra di stato dice
+  "3 selezionati · 1,2 GB". Un clic su una riga già selezionata riduce la selezione solo al rilascio, così si possono
+  trascinare più file completati in Esplora file (il trascinamento parte oltre la distanza minima di Windows). Tasto destro,
+  tasto Menu o Maiusc+F10: menu sull'intera selezione (Apri, Apri cartella, Avvia/riprendi, Pausa, Riprova, Metti in coda,
+  Sposta nella coda, Cambia categoria, Copia indirizzo, Avanzamento e Proprietà con un solo download, **Rimuovi N download
+  dalla lista** e **Elimina N download dalla lista e dal disco**); le voci che non valgono per nessun elemento sono disattivate.
+- **Canc** rimuove dalla lista (chiede conferma se sono più di uno o se un download non è finito, perché i dati parziali vanno persi): i file scaricati restano. **Maiusc+Canc** (o il pulsante *Elimina dal
+  disco*, aggiungibile alla barra) ferma i download in corso, pulisce i dati parziali e sposta i file nel **Cestino di Windows**
+  dopo una conferma con numero e dimensione totale: mai eliminati definitivamente. Dove il Cestino non c'è (unità di rete,
+  molte chiavette) i file restano dove sono e l'app lo dice. Lo stesso comportamento del mouse vale nelle finestre "Scarica
+  tutto" e anteprima del grabber.
 - **Barra degli strumenti personalizzabile**: **Altro** › *Personalizza la barra degli strumenti…* (o tasto destro sulla
   barra): pulsanti visibili, ordine (Alt+Su/Giù), separatori, spazio flessibile che divide sinistra e destra, icone piccole o
   grandi, testo sì/no. Salvato tra una sessione e l'altra; *Ripristina* torna alla barra predefinita.
@@ -540,9 +556,18 @@ se `Secure`. Nessun cookie dalle finestre private.
 
 L'estensione nota le risorse video e audio caricate dalla pagina: manifest HLS (`.m3u8`, `application/vnd.apple.mpegurl`) e DASH
 (`.mpd`, `application/dash+xml`) e file `video/*` / `audio/*` caricati da un elemento `<video>`/`<audio>` (non i segmenti che i
-player scaricano a pezzi). Compare allora un pulsante discreto in basso a destra, trascinabile (la posizione viene ricordata),
-con l'elenco delle qualità e delle dimensioni stimate (bitrate × durata, o la dimensione esatta per i file). Si può nascondere su
-un sito (dal pannello o dal popup) o disattivare del tutto.
+player scaricano a pezzi). Come mostrarli si sceglie nel popup, *Regole* › **Comparsa del pulsante video**:
+- **Ridotto a icona** (predefinito): una piccola linguetta con il logo sul bordo destro; un clic apre il pannello con le
+  qualità e le dimensioni stimate (bitrate × durata, o la dimensione esatta per i file);
+- **Sempre visibile**: il pulsante "Scarica questo video" con **⋯** e **×**;
+- **Solo dal menu dell'estensione**: nulla nella pagina; l'icona di Baton mostra il numero di video trovati e il popup li elenca
+  con le qualità da scaricare (e *Mostra nella pagina* per lingue e sottotitoli).
+
+**×** (o Esc quando il riquadro ha il focus) lo chiude per la scheda: ricompare solo ricaricando la pagina o se arriva un video
+diverso (un altro manifest o file). Il menu **⋯** offre *Nascondi su questa pagina*, *Non mostrare mai su questo sito*
+(l'elenco "Siti senza pulsante video" del popup) e *Riduci a icona*. Il riquadro si trascina (la posizione è ricordata per
+sito), non copre mai la fascia dei controlli del player e si nasconde a schermo intero. Il simbolo è quello del brand kit,
+incluso nel codice: nessuna risorsa dell'estensione è visibile alle pagine (che potrebbero usarla per riconoscerla).
 
 Nell'app un video è un download come gli altri (code, limiti di velocità, quote, proxy, cookie): i segmenti vengono scaricati in
 parallelo in una cartella accanto al file finale e conservati uno per uno, quindi pausa e ripresa ripartono dal primo segmento
@@ -706,6 +731,13 @@ Le vulnerabilità vanno segnalate in privato, non con una issue pubblica: vedi [
 **Security › Report a vulnerability**). Principi del progetto: segreti (password, cookie, campi dei moduli) cifrati con
 DPAPI e mai nei log; ogni messaggio del browser validato due volte; aggiornamenti solo https, con hash e firma; grabber senza
 esecuzione di script; nessuna telemetria.
+
+## Brand
+
+Il nome Baton, il logo e le icone (cartella [`docs/brand/kit`](docs/brand/kit), dal brand kit ufficiale del progetto, e
+le immagini che ne derivano: `app.ico`, le icone dell'estensione, `docs/brand/social-preview.png`) appartengono al progetto
+e **non rientrano nella licenza MIT** del codice. Si possono mostrare per indicare Baton, senza modificarli; per altri usi
+(prodotti derivati, versioni modificate) usa un nome e un logo diversi.
 
 ## Licenza
 

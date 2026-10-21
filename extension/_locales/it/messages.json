@@ -96,7 +96,40 @@
     "message": "Chiudi"
   },
   "mediaHideOnSite": {
-    "message": "Non mostrare su questo sito"
+    "message": "Non mostrare mai su questo sito"
+  },
+  "mediaHidePage": {
+    "message": "Nascondi su questa pagina"
+  },
+  "mediaMinimize": {
+    "message": "Riduci a icona"
+  },
+  "mediaMore": {
+    "message": "Altre opzioni"
+  },
+  "mediaOpenTab": {
+    "message": "Baton: video in questa pagina"
+  },
+  "mediaPanelLegend": {
+    "message": "Comparsa del pulsante video"
+  },
+  "mediaPanelAlways": {
+    "message": "Sempre visibile"
+  },
+  "mediaPanelMinimized": {
+    "message": "Ridotto a icona (predefinita)"
+  },
+  "mediaPanelMenu": {
+    "message": "Solo dal menu dell'estensione"
+  },
+  "popupVideos": {
+    "message": "Video in questa pagina"
+  },
+  "popupQualities": {
+    "message": "Qualità…"
+  },
+  "popupShowPanel": {
+    "message": "Mostra nella pagina, con lingue e sottotitoli"
   },
   "mediaStream": {
     "message": "Video $1 · $2"
@@ -193,9 +226,6 @@
   },
   "sitesPlaceholder": {
     "message": "esempio.it file.esempio.org"
-  },
-  "mediaButtonSetting": {
-    "message": "Mostra il pulsante «Scarica questo video»"
   },
   "mediaDisabledLabel": {
     "message": "Siti senza pulsante video"

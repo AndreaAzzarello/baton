@@ -96,7 +96,40 @@
     "message": "Close"
   },
   "mediaHideOnSite": {
-    "message": "Don't show on this site"
+    "message": "Never show on this site"
+  },
+  "mediaHidePage": {
+    "message": "Hide on this page"
+  },
+  "mediaMinimize": {
+    "message": "Minimize to a tab"
+  },
+  "mediaMore": {
+    "message": "More options"
+  },
+  "mediaOpenTab": {
+    "message": "Baton: videos on this page"
+  },
+  "mediaPanelLegend": {
+    "message": "Video button"
+  },
+  "mediaPanelAlways": {
+    "message": "Always visible"
+  },
+  "mediaPanelMinimized": {
+    "message": "Minimized to a tab (default)"
+  },
+  "mediaPanelMenu": {
+    "message": "Only from the extension's menu"
+  },
+  "popupVideos": {
+    "message": "Videos on this page"
+  },
+  "popupQualities": {
+    "message": "Qualities…"
+  },
+  "popupShowPanel": {
+    "message": "Show in the page, with languages and subtitles"
   },
   "mediaStream": {
     "message": "Video $1 · $2"
@@ -193,9 +226,6 @@
   },
   "sitesPlaceholder": {
     "message": "example.com files.example.org"
-  },
-  "mediaButtonSetting": {
-    "message": "Show the “Download this video” button"
   },
   "mediaDisabledLabel": {
     "message": "Sites without the video button"

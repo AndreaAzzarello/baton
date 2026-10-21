@@ -65,6 +65,8 @@ public sealed class MainViewModel : ObservableObject
         PauseCommand = new RelayCommand(Pause, () => _selected.Any(i => i.Status is DownloadStatus.Downloading or DownloadStatus.Queued));
         EnqueueCommand = new RelayCommand(Enqueue, () => _selected.Any(i => i.Status is DownloadStatus.Paused or DownloadStatus.Failed));
         RemoveCommand = new RelayCommand(Remove, () => _selected.Count > 0);
+        DeleteFilesCommand = new RelayCommand(DeleteFiles, () => _selected.Count > 0);
+        RetryCommand = new RelayCommand(Retry, () => _selected.Any(i => i.Status == DownloadStatus.Failed));
         MoveUpCommand = new RelayCommand(() => Move(-1), () => _selected.Count == 1 && IsQueueOrder);
         MoveDownCommand = new RelayCommand(() => Move(1), () => _selected.Count == 1 && IsQueueOrder);
         ToggleQueueCommand = new RelayCommand(ToggleQueue);
@@ -90,8 +92,8 @@ public sealed class MainViewModel : ObservableObject
             () => PortableData.Serialize(PortableData.ExportSettings(_service.Settings, _service.Categories, _service.Queues, _grabber.Service.Projects, _service.UtcNow))));
         ImportCommand = new RelayCommand(Import);
         CustomizeToolbarCommand = new RelayCommand(CustomizeToolbar);
-        OpenFileCommand = new RelayCommand(OpenFile, () => _selected.FirstOrDefault() is { IsCompleted: true });
-        OpenFolderCommand = new RelayCommand(() => _shell.Reveal(_selected[0].Snapshot.FinalPath, _selected[0].Directory), () => _selected.Count > 0);
+        OpenFileCommand = new RelayCommand(OpenFile, () => _selected.Any(i => i.IsCompleted));
+        OpenFolderCommand = new RelayCommand(OpenFolders, () => _selected.Count > 0);
         CopyUrlCommand = new RelayCommand(() => _shell.SetClipboardText(string.Join(Environment.NewLine, _selected.Select(i => i.Url))), () => _selected.Count > 0);
         ProgressCommand = new RelayCommand(() => _dialogs.ShowProgress(_selected[0]), () => _selected.Count == 1);
         PropertiesCommand = new RelayCommand(ShowProperties, () => _selected.Count == 1);
@@ -120,6 +122,8 @@ public sealed class MainViewModel : ObservableObject
     public ICommand PauseCommand { get; }
     public ICommand EnqueueCommand { get; }
     public ICommand RemoveCommand { get; }
+    public ICommand DeleteFilesCommand { get; }
+    public ICommand RetryCommand { get; }
     public ICommand MoveUpCommand { get; }
     public ICommand MoveDownCommand { get; }
     public ICommand ToggleQueueCommand { get; }
@@ -262,8 +266,35 @@ public sealed class MainViewModel : ObservableObject
     public void UpdateSelection(IEnumerable<DownloadItemViewModel> selected)
     {
         _selected = selected.ToList();
+        OnPropertyChanged(nameof(SelectionText));
         CommandManager.InvalidateRequerySuggested();
     }
+
+    /// <summary>"3 selezionati · 1,2 GB" in the status bar; empty without a selection.</summary>
+    public string SelectionText => _selected.Count switch
+    {
+        0 => "",
+        1 => string.Format(CultureInfo.CurrentCulture, Strings.SelectionStatusOne, Format.Bytes(SizeOf(_selected))),
+        var n => string.Format(CultureInfo.CurrentCulture, Strings.SelectionStatus, n, Format.Bytes(SizeOf(_selected))),
+    };
+
+    /// <summary>What the downloads take on the disk: the whole file once finished, else what was downloaded so far.</summary>
+    private static long SizeOf(IEnumerable<DownloadItemViewModel> items) =>
+        items.Sum(i => i.IsCompleted ? i.Snapshot.TotalSize ?? i.Snapshot.Downloaded : i.Snapshot.Downloaded);
+
+    /// <summary>"Rimuovi dalla lista" / "Rimuovi 5 download dalla lista", and the same for deleting from the disk.</summary>
+    public string RemoveText => _selected.Count > 1 ? string.Format(CultureInfo.CurrentCulture, Strings.MenuRemoveMany, _selected.Count) : Strings.MenuRemove;
+    public string DeleteFilesText => _selected.Count > 1 ? string.Format(CultureInfo.CurrentCulture, Strings.MenuDeleteFilesMany, _selected.Count) : Strings.MenuDeleteFiles;
+
+    /// <summary>Re-files the downloads in another category (menu "Change category", or a drop on the category).</summary>
+    public void ChangeCategory(IReadOnlyList<long> ids, long categoryId)
+    {
+        foreach (var id in ids)
+            _service.SetCategory(id, categoryId);
+        Refresh();
+    }
+
+    public IReadOnlyList<Category> Categories => _categories;
 
     public IReadOnlyList<DownloadItemViewModel> SelectedItems => _selected;
 
@@ -323,11 +354,7 @@ public sealed class MainViewModel : ObservableObject
         if (node.QueueId is { } queueId)
             MoveToQueue(ids, queueId);
         else if (node.CategoryId is { } categoryId)
-        {
-            foreach (var id in ids)
-                _service.SetCategory(id, categoryId);
-            Refresh();
-        }
+            ChangeCategory(ids, categoryId);
         else
             return false;
         return true;
@@ -706,24 +733,41 @@ public sealed class MainViewModel : ObservableObject
         Refresh();
     }
 
+    private void Retry()
+    {
+        foreach (var item in _selected.Where(i => i.Status == DownloadStatus.Failed))
+            _service.Start(item.Id);
+        Refresh();
+    }
+
+    /// <summary>Del: removes from the list (asked when more than one, or when partial data would go); downloaded files stay on the disk.</summary>
     private async void Remove()
     {
         var selected = _selected.ToList();
-        var deleteFiles = false;
-        if (selected.Any(i => i.IsCompleted))
-        {
-            var answer = _dialogs.Ask(Strings.ConfirmRemoveCompleted, Strings.RemoveTitle);
-            if (answer == Answer.Cancel)
-                return;
-            deleteFiles = answer == Answer.Yes;
-        }
-        else if (!_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmRemove, selected.Count), Strings.RemoveTitle))
-        {
+        if ((selected.Count > 1 || selected.Any(i => !i.IsCompleted)) && !_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmRemove, selected.Count), Strings.RemoveTitle))
             return;
-        }
-
-        await Task.WhenAll(selected.Select(i => _service.RemoveAsync(i.Id, deleteFiles)));
+        await Task.WhenAll(selected.Select(i => _service.RemoveAsync(i.Id, deleteFile: false)));
         Refresh();
+    }
+
+    /// <summary>
+    /// Shift+Del: removes from the list and moves the files to the Recycle Bin, always after a confirmation that says how
+    /// many and how much. Running downloads stop first and their partial data is cleaned; nothing is deleted for good.
+    /// </summary>
+    private async void DeleteFiles()
+    {
+        var selected = _selected.ToList();
+        if (!_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmDeleteFiles, selected.Count, Format.Bytes(SizeOf(selected))), Strings.DeleteTitle))
+            return;
+        var kept = new List<string>();
+        foreach (var item in selected)
+        {
+            if (!await _service.RemoveAsync(item.Id, deleteFile: true) && item.Snapshot.FinalPath is { } path)
+                kept.Add(path);
+        }
+        Refresh();
+        if (kept.Count > 0)
+            _dialogs.ShowError(string.Format(CultureInfo.CurrentCulture, Strings.DeleteKeptOnDisk, kept.Count, string.Join("\n", kept.Take(10))), Strings.DeleteTitle);
     }
 
     private void Move(int delta)
@@ -808,12 +852,21 @@ public sealed class MainViewModel : ObservableObject
 
     private void OpenFile()
     {
-        if (_selected.FirstOrDefault() is not { IsCompleted: true } item)
+        var files = _selected.Where(i => i.IsCompleted).Select(i => i.Snapshot.FinalPath).ToList();
+        // Like File Explorer: past 15 files at once, asked first.
+        if (files.Count > 15 && !_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmOpenMany, files.Count), Strings.AppName))
             return;
-        if (item.Snapshot.FinalPath is { } path && File.Exists(path))
+        foreach (var path in files.OfType<string>().Where(File.Exists))
             _shell.OpenFile(path);
-        else
+        if (files.Any(p => p is null || !File.Exists(p)))
             _dialogs.ShowError(Strings.ErrorFileMissing, Strings.AppName);
+    }
+
+    /// <summary>Each folder once, with the first of its selected files highlighted.</summary>
+    private void OpenFolders()
+    {
+        foreach (var item in _selected.GroupBy(i => i.Directory, StringComparer.OrdinalIgnoreCase).Select(g => g.First()))
+            _shell.Reveal(item.Snapshot.FinalPath, item.Directory);
     }
 
     private void ShowProperties()

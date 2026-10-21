@@ -53,6 +53,7 @@ export function createFakeChrome({ firefox = false, nativeReply } = {}) {
         return nativeReply(message);
       },
       getManifest: () => ({ version: "0.7.0" }),
+      getURL: (path) => `chrome-extension://test-extension/${path}`,
     },
     storage: { local: area(local), session: area(session), onChanged: event("storage.onChanged") },
     downloads,

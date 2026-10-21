@@ -171,3 +171,58 @@ test("cookies: only those the browser itself would send (B1)", () => {
   assert.equal(sent({ crossSite: true, topLevel: true, method: "POST" }), "n");    // cross-site form: only None
   assert.equal(sent({ crossSite: true, topLevel: false, method: "GET" }), "n");    // a page's video from elsewhere
 });
+
+// ---------------------------------------------------------------- the video panel in the page
+
+test("video panel: the three ways it appears, and the setting of 1.1 carried over", () => {
+  const items = [{ url: "https://cdn.test/a.m3u8" }];
+  assert.equal(R.normalizeSettings({}).mediaPanel, "minimized"); // the default
+  assert.equal(R.normalizeSettings({ mediaButton: false }).mediaPanel, "menu"); // "button off" up to 1.1
+  assert.equal(R.normalizeSettings({ mediaButton: true }).mediaPanel, "minimized");
+  assert.equal(R.normalizeSettings({ mediaPanel: "always", mediaButton: false }).mediaPanel, "always");
+  assert.equal(R.normalizeSettings({ mediaPanel: "everywhere" }).mediaPanel, "minimized");
+  assert.equal(R.normalizeSettings({ mediaButton: true }).mediaButton, undefined);
+
+  assert.equal(R.mediaView({ mode: "always", enabled: true, items }), "panel");
+  assert.equal(R.mediaView({ mode: "minimized", enabled: true, items, minimized: true }), "tab");
+  assert.equal(R.mediaView({ mode: "minimized", enabled: true, items, minimized: false }), "panel"); // the tab, clicked
+  // "Show in the page" from the popup: also with "only from the menu" or on a site without the button, never in full screen.
+  assert.equal(R.mediaView({ mode: "menu", enabled: true, items, requested: true }), "panel");
+  assert.equal(R.mediaView({ mode: "always", enabled: false, items, hiddenOnPage: true, requested: true }), "panel");
+  assert.equal(R.mediaView({ mode: "menu", enabled: true, items, requested: true, fullscreen: true }), "none");
+  assert.equal(R.mediaView({ mode: "menu", enabled: true, items: [], requested: true }), "none");
+  assert.equal(R.mediaView({ mode: "menu", enabled: true, items }), "none"); // only from the extension's icon
+  assert.equal(R.mediaView({ mode: "always", enabled: false, items }), "none"); // a site in the "never" list
+  assert.equal(R.mediaView({ mode: "always", enabled: true, items: [] }), "none");
+});
+
+test("video panel: closed for the tab until a different video, hidden on the page until it reloads, never in full screen", () => {
+  const first = { url: "https://cdn.test/a.m3u8" };
+  const next = { url: "https://cdn.test/b.m3u8" };
+  const base = { mode: "always", enabled: true };
+  assert.equal(R.mediaView({ ...base, items: [first], dismissed: [first.url] }), "none");
+  assert.equal(R.mediaView({ ...base, items: [first, next], dismissed: [first.url] }), "panel"); // a new manifest: back
+  assert.equal(R.mediaView({ ...base, items: [first, next], dismissed: [first.url], hiddenOnPage: true }), "none");
+  assert.equal(R.mediaView({ ...base, items: [first], fullscreen: true }), "none");
+  assert.equal(R.mediaView({ ...base, items: [first], fullscreen: false }), "panel");
+});
+
+test("video panel: kept off the players' controls, its place remembered for each site", () => {
+  const player = { left: 0, right: 1000, top: 100, bottom: 700 };
+  const height = 800;
+  // Over the controls strip (the last 64 px of the player): moved above it.
+  const box = { left: 800, right: 980, top: 650, bottom: 690 };
+  const bottom = R.clearOfControls(box, [player], height);
+  assert.equal(bottom, height - (700 - 64) + 8);
+  assert.ok(height - bottom <= 700 - 64); // its lower edge is above the strip
+  // Beside the player, or below it: where it was.
+  assert.equal(R.clearOfControls({ left: 1010, right: 1100, top: 650, bottom: 690 }, [player], height), 110);
+  assert.equal(R.clearOfControls({ left: 800, right: 980, top: 740, bottom: 780 }, [player], height), 20);
+
+  let positions = {};
+  for (let i = 0; i < 105; i++) positions = R.rememberPosition(positions, `site${i}.test`, { right: i, bottom: i });
+  assert.equal(Object.keys(positions).length, 100);
+  assert.equal(positions["site0.test"], undefined); // the least recent go
+  positions = R.rememberPosition(positions, "site10.test", { right: 1, bottom: 2 });
+  assert.deepEqual(positions["site10.test"], { right: 1, bottom: 2 });
+});

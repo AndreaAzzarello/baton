@@ -200,26 +200,6 @@ public sealed class RenameTests : IDisposable
         Assert.Equal(@"C:\Windows\notepad.exe", (string)shell.CreateShortcut(Path.Combine(folder, "Other.lnk")).TargetPath);
     }
 
-    [Fact]
-    public void TrayIcons_HaveTheirPixelGridSizes_AndTheRightFrameIsPicked()
-    {
-        var root = AppContext.BaseDirectory;
-        while (!File.Exists(Path.Combine(root, "Baton.slnx")))
-            root = Path.GetDirectoryName(root)!;
-        foreach (var name in new[] { "tray-light.ico", "tray-dark.ico", "app.ico" })
-        {
-            var ico = File.ReadAllBytes(Path.Combine(root, "src", "Baton.App", name));
-            Assert.Equal(16, IconFile.Frame(ico, 16)!.Value.Size);
-            Assert.Equal(20, IconFile.Frame(ico, 18)!.Value.Size); // 112 % scaling: the next larger frame, never a blurred smaller one
-            Assert.Equal(32, IconFile.Frame(ico, 32)!.Value.Size);
-            Assert.Equal([0x89, (byte)'P', (byte)'N', (byte)'G'], IconFile.Frame(ico, 16)!.Value.Data[..4]);
-        }
-        Assert.Equal(32, IconFile.Frame(File.ReadAllBytes(Path.Combine(root, "src", "Baton.App", "tray-dark.ico")), 48)!.Value.Size); // the largest
-        Assert.Equal(256, IconFile.Frame(File.ReadAllBytes(Path.Combine(root, "src", "Baton.App", "app.ico")), 100)!.Value.Size);
-        Assert.Null(IconFile.Frame([1, 2, 3], 16));
-        Assert.Null(IconFile.Frame([0, 0, 1, 0, 1, 0, 16, 16, 0, 0, 1, 0, 32, 0, 255, 255, 0, 0, 0, 0, 0, 0], 16)); // frame outside the file
-    }
-
     /// <summary>Texts that explain the rename name the old app on purpose; nothing else visible says "DownloadManager".</summary>
     private static readonly string[] ExplainTheRename = ["MigrationFailed", "UpdateConfirmRestoreLegacy", "ImportErrorFormat", "LegacyAppRunning"];
 

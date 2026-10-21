@@ -9,14 +9,33 @@ quelle dei commit.
 Prima versione pubblica, con il nuovo nome **Baton**: il testimone della staffetta, come le connessioni che si passano i
 pezzi del file nella segmentazione dinamica. Comprende la 1.1.1, mai pubblicata.
 
+**Mouse e selezione multipla**
+- Le righe selezionate non si vedevano: il template delle celle toglieva l'evidenziazione e il tema Fluent ignora lo sfondo
+  della riga. Ora le celle disegnano selezione (sfondo pieno, testo ≥ 4,5:1), passaggio del mouse e focus da tastiera,
+  nell'elenco principale, in "Scarica tutto" e nell'anteprima del grabber.
+- Mouse come in Esplora file: clic sul vuoto deseleziona; clic su una riga di una selezione multipla la riduce solo al rilascio
+  (si trascinano più file); trascinamento oltre la distanza di sistema; tasto destro che seleziona solo se la riga non lo era;
+  menu anche con il tasto Menu e Maiusc+F10.
+- Menu contestuale sull'intera selezione con Riprova, Cambia categoria e le voci "Rimuovi N download" / "Elimina N download
+  dalla lista e dal disco"; Canc rimuove dalla lista (conferma se più di uno o se un download non è finito), **Maiusc+Canc** sposta i file nel Cestino dopo
+  una conferma con numero e dimensione: prima "elimina i file" li cancellava definitivamente. Pulsante facoltativo *Elimina dal
+  disco* nella barra. Barra di stato con "N selezionati · dimensione".
+
+**Riquadro dei video**
+- Si chiude (× o Esc) per la scheda, ricompare con un video diverso o ricaricando la pagina; menu ⋯ con *Nascondi su questa
+  pagina*, *Non mostrare mai su questo sito*, *Riduci a icona* (linguetta con il logo).
+- Comparsa a scelta nel popup: sempre visibile, ridotto a icona (predefinita), solo dal menu dell'estensione (badge con il
+  numero di video e download dal popup).
+- Mai sopra i controlli del player, posizione ricordata per sito, nascosto a schermo intero; colori del brand kit.
+- Corretto: dopo un ricaricamento il badge restava vuoto e i video della pagina non venivano ricontati.
+
 **Nuovo nome e identità**
 - App `Baton.exe`, progetti `Baton.*`, estensione «Baton» con le voci «Scarica con Baton», «Scarica tutto con Baton…» e
   «Cattura questo sito con Baton…»; user agent `Baton/1.2`.
-- Nuovo logo: tre barre (le connessioni in parallelo) che si uniscono in una sola freccia (il file). Icone dell'app e
-  delle finestre, area di notifica in versione per barra delle applicazioni chiara e scura (disegnata pixel per pixel a
-  16–32 px), estensione (anche grigia per «solo menu»), notifiche, logo del README e immagine per GitHub.
-- Colori del tema allineati al logo dove il contrasto resta ≥ 4,5:1 (accento del tema scuro, segmenti nella finestra di
-  avanzamento).
+- Logo e icone dal **brand kit ufficiale** (una "B" con la freccia di download): app, finestre, area di notifica, notifiche,
+  estensione (anche grigia per «solo menu»), logo del README per tema chiaro e scuro, immagine per GitHub. Generati solo i
+  formati mancanti (20 e 40 px dagli SVG del kit, le grigie desaturando i PNG del kit). Il marchio non rientra nella licenza MIT.
+- Accento del tema dai colori del kit (#0449EF chiaro, #049AFF scuro) con contrasto ≥ 4,5:1.
 
 **Passaggio da DownloadManager (automatico)**
 - Al primo avvio i dati di `%LOCALAPPDATA%\DownloadManager` (download, impostazioni, credenziali e certificati, progetti
@@ -49,7 +68,9 @@ pezzi del file nella segmentazione dinamica. Comprende la 1.1.1, mai pubblicata.
 **Test**
 - Nuovi test: migrazione dei dati (anche interrotta a metà e con database danneggiato), rimozione delle vecchie
   registrazioni (registro in memoria), schema `baton:`, aggiornamento da `DownloadManager.exe` a `Baton.exe` con
-  ripristino, collegamenti, icone, nessun testo visibile con il vecchio nome.
+  ripristino, collegamenti, nessun testo visibile con il vecchio nome.
+- Nuovo progetto `tests/Baton.UiTests` (WPF su thread STA, finestra fuori schermo, Ctrl e Maiusc impostati solo sul
+  thread del test): selezione con mouse e tastiera, menu da tastiera, comandi sulla selezione, Cestino con conferma.
 - Corretti tre test instabili: timer lunghi che tenevano vivo Node (da 15 s a meno di 1 s), lettura del log mentre altri
   test scrivono, contesto di un modulo letto un istante prima del salvataggio.
 

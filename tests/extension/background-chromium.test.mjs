@@ -274,3 +274,46 @@ test("the chosen audio language and subtitles reach the app with the video", asy
   assert.equal(media.subtitleMode, "srt");
   assert.equal(media.extra, undefined);
 });
+
+test("videos found: counted on the icon of their tab, listed for the popup, never shown again on a site when asked", async () => {
+  fake.calls.length = 0;
+  const onMessage = fake.listeners["runtime.onMessage"][0];
+  for (const name of ["one", "two"])
+    fake.listeners["webRequest.onHeadersReceived"][0]({ tabId: 12, statusCode: 200, type: "xmlhttprequest", url: `https://cdn.videos.test/${name}.m3u8`,
+      responseHeaders: [{ name: "Content-Type", value: "application/vnd.apple.mpegurl" }] });
+  await settle();
+  assert.deepEqual(named("badge").at(-1)[1], { tabId: 12, text: "2" });
+
+  // The popup (an extension page, no tab) asks about the active tab; anything else without a tab is ignored.
+  const popup = (message, url = "chrome-extension://test-extension/popup.html") => new Promise((resolve) => {
+    if (!onMessage(message, { id: "test-extension", url }, resolve)) resolve(null);
+  });
+  const listed = await popup({ type: "getMedia", tabId: 12 });
+  assert.equal(listed.items.length, 2);
+  assert.equal(listed.mode, "minimized");
+  assert.equal(await popup({ type: "getMedia", tabId: 12 }, "chrome-extension://test-extension/check.html"), null);
+  assert.equal(await popup({ type: "hideOnSite", tabId: 12 }), null); // not something the popup does through here
+  assert.equal(await popup({ type: "getMedia", tabId: "12" }), null);
+
+  // The page loaded again (same address): its videos are found again as it plays them, and counted again.
+  // A frame loading inside the page (an ad, a player) leaves them alone.
+  const found = (await popup({ type: "getMedia", tabId: 12 })).items.length;
+  assert.ok(found > 0);
+  fake.listeners["webRequest.onBeforeRequest"][0]({ tabId: 12, type: "sub_frame", method: "GET", url: "https://ads.test/frame.html" });
+  await settle();
+  assert.equal((await popup({ type: "getMedia", tabId: 12 })).items.length, found);
+  fake.listeners["webRequest.onBeforeRequest"][0]({ tabId: 12, type: "main_frame", method: "GET", url: "https://videos.test/watch" });
+  await settle();
+  assert.equal((await popup({ type: "getMedia", tabId: 12 })).items.length, 0);
+  fake.listeners["webRequest.onHeadersReceived"][0]({ tabId: 12, statusCode: 200, type: "xmlhttprequest", url: "https://cdn.videos.test/one.m3u8",
+    responseHeaders: [{ name: "Content-Type", value: "application/vnd.apple.mpegurl" }] });
+  await settle();
+  assert.deepEqual(named("badge").at(-1)[1], { tabId: 12, text: "1" });
+
+  // "Never show on this site", from the panel's menu: the site joins the list, and the page is told the button is off.
+  const page = { id: "test-extension", tab: { id: 13, url: "https://www.videos.test/watch", title: "Clip" } };
+  await new Promise((resolve) => onMessage({ type: "hideOnSite" }, page, resolve));
+  const after = await new Promise((resolve) => onMessage({ type: "getMedia" }, page, resolve));
+  assert.equal(after.enabled, false);
+  assert.match(fake.local.mediaDisabledSites, /www\.videos\.test/);
+});

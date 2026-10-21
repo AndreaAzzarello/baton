@@ -38,24 +38,48 @@
 
   if (window.top !== window) return;
 
-  let state = { items: [], drm: false, enabled: false };
+  let state = { items: [], drm: false, enabled: false, mode: "minimized" };
+  // This page only (gone when it is loaded again): what was closed, hidden or minimized (see Rules.mediaView).
+  const local = { dismissed: [], hiddenOnPage: false, minimized: true, requested: false };
 
-  chrome.runtime.onMessage.addListener((message) => {
-    if (message?.type !== "media") return;
-    state = { ...state, items: message.items, drm: message.drm || state.drm };
-    refresh();
+  chrome.runtime.onMessage.addListener((message, sender) => {
+    if (sender.id !== chrome.runtime.id) return;
+    if (message?.type === "media") {
+      state = { ...state, items: message.items, drm: message.drm || state.drm };
+      refresh();
+    } else if (message?.type === "showPanel") {
+      // "Show in the page" from the popup: whatever was closed or hidden here, the panel opens.
+      Object.assign(local, { dismissed: [], hiddenOnPage: false, minimized: false, requested: true });
+      refresh();
+      ui?.open();
+    }
   });
 
   send({ type: "getMedia" }).then((reply) => {
     if (!reply?.ok) return;
     state = reply;
+    local.minimized = state.mode === "minimized";
     refresh();
   });
 
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes.mediaPanel) return;
+    state.mode = changes.mediaPanel.newValue ?? "minimized";
+    local.minimized = state.mode === "minimized";
+    refresh();
+  });
+
+  // Full screen: nothing over the video while it lasts.
+  for (const name of ["fullscreenchange", "webkitfullscreenchange"]) document.addEventListener(name, () => refresh());
+
   function refresh() {
-    if (!state.enabled || !state.items?.length) return;
+    const view = Rules.mediaView({ ...state, ...local, fullscreen: Boolean(document.fullscreenElement || document.webkitFullscreenElement) });
+    if (view === "none") {
+      ui?.hide();
+      return;
+    }
     if (!ui) ui = createUi();
-    ui.update();
+    ui.show(view);
   }
 
   function hasProtectedVideo() {
@@ -78,35 +102,58 @@
           </header>
           <div class="body"></div>
           <p class="status" role="status" aria-live="polite"></p>
-          <footer><button class="link hide" type="button"></button></footer>
         </section>
-        <button class="pill" type="button">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m0 0l-3.5-3.5M10 12l3.5-3.5M4 15.5h12"/></svg>
-          <span class="label"></span>
-          <span class="count" hidden></span>
-        </button>
+        <div class="bar" role="group">
+          <button class="pill" type="button"><span class="logo">${symbol("p")}</span><span class="label"></span><span class="count" hidden></span></button>
+          <button class="icon more" type="button" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path class="dots" d="M3.5 8h.01M8 8h.01M12.5 8h.01"/></svg></button>
+          <button class="icon dismiss" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg></button>
+          <div class="menu" role="menu" hidden>
+            <button type="button" role="menuitem" data-act="page"></button>
+            <button type="button" role="menuitem" data-act="site"></button>
+            <button type="button" role="menuitem" data-act="minimize"></button>
+          </div>
+        </div>
+        <button class="tab" type="button" hidden><span class="logo">${symbol("t")}</span><span class="count" hidden></span></button>
       </div>`;
     const $ = (selector) => root.querySelector(selector);
     const pill = $(".pill");
     const panel = $(".panel");
     const body = $(".body");
     const status = $(".status");
+    const bar = $(".bar");
+    const tab = $(".tab");
+    const more = $(".more");
+    const menu = $(".menu");
+    const wrap = $(".wrap");
     $(".label").textContent = t("mediaButton");
     $("h2").textContent = t("mediaPanelTitle");
     $(".close").setAttribute("aria-label", t("close"));
-    $(".hide").textContent = t("mediaHideOnSite");
+    $(".close").title = t("close");
+    for (const [selector, key] of [[".dismiss", "close"], [".more", "mediaMore"], [".tab", "mediaOpenTab"]]) {
+      $(selector).setAttribute("aria-label", t(key));
+      $(selector).title = t(key);
+    }
+    $("[data-act=page]").textContent = t("mediaHidePage");
+    $("[data-act=site]").textContent = t("mediaHideOnSite");
+    $("[data-act=minimize]").textContent = t("mediaMinimize");
+    bar.setAttribute("aria-label", "Baton");
+    menu.setAttribute("aria-label", t("mediaMore"));
     panel.setAttribute("aria-label", t("mediaPanelTitle"));
     pill.setAttribute("aria-haspopup", "dialog");
     pill.setAttribute("aria-expanded", "false");
+    let view = "none";
 
     const probes = new Map(); // stream address -> reply (or a pending promise)
     const choices = new Map(); // stream address -> { audioId, subtitleIds, subtitleMode } chosen in the panel
     let uid = 0;
 
-    // Dragging: the button follows the pointer; a short move is still a click.
+    // Dragging: the button follows the pointer; a short move is still a click. The place is remembered for each site.
     let drag = null;
-    chrome.storage.local.get("mediaButtonPosition").then(({ mediaButtonPosition: p }) => {
-      if (p) place(p.right, p.bottom);
+    let saved = { right: 24, bottom: 24 };
+    const site = location.hostname;
+    chrome.storage.local.get("mediaButtonPositions").then(({ mediaButtonPositions: all }) => {
+      if (all?.[site]) saved = all[site];
+      place();
     }).catch(() => {});
     pill.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
@@ -120,13 +167,15 @@
       const dy = e.clientY - drag.y;
       if (!drag.moved && Math.hypot(dx, dy) < 5) return;
       drag.moved = true;
-      place(drag.right - dx, drag.bottom - dy);
+      saved = { right: drag.right - dx, bottom: drag.bottom - dy };
+      place(false);
     });
-    pill.addEventListener("pointerup", () => {
+    pill.addEventListener("pointerup", async () => {
       if (drag?.moved) {
-        const rect = host.getBoundingClientRect();
-        chrome.storage.local.set({ mediaButtonPosition: { right: innerWidth - rect.right, bottom: innerHeight - rect.bottom } }).catch(() => {});
         pill.dataset.dragged = "1";
+        place();
+        const { mediaButtonPositions: all } = await chrome.storage.local.get("mediaButtonPositions").catch(() => ({}));
+        chrome.storage.local.set({ mediaButtonPositions: Rules.rememberPosition(all, site, saved) }).catch(() => {});
       }
       drag = null;
     });
@@ -138,36 +187,91 @@
       toggle(panel.hidden);
     });
 
-    function place(right, bottom) {
-      const r = Math.min(Math.max(8, right), innerWidth - 60);
-      const b = Math.min(Math.max(8, bottom), innerHeight - 50);
-      host.style.right = `${r}px`;
-      host.style.bottom = `${b}px`;
+    /** The remembered place (the tab keeps only its height, on the right edge), moved above the players' controls. */
+    function place(avoidControls = true) {
+      const right = view === "tab" ? 0 : Math.min(Math.max(8, saved.right), innerWidth - 60);
+      let bottom = Math.min(Math.max(8, saved.bottom), innerHeight - 50);
+      host.style.right = `${right}px`;
+      host.style.bottom = `${bottom}px`;
+      if (avoidControls && view !== "none") {
+        const players = [...document.querySelectorAll("video")].map((v) => v.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
+        const box = bar.hidden ? tab.getBoundingClientRect() : bar.getBoundingClientRect();
+        const below = host.getBoundingClientRect().bottom - box.bottom; // the open panel, when it is under the bar
+        bottom = Math.min(Rules.clearOfControls(box, players, innerHeight) - below, innerHeight - 50);
+        host.style.bottom = `${bottom}px`;
+      }
       // The panel opens on the side with more room.
-      root.querySelector(".wrap").classList.toggle("below", b > innerHeight / 2);
+      wrap.classList.toggle("below", bottom > innerHeight / 2);
     }
+    let pending = 0;
+    const replace = () => {
+      if (!pending && view !== "none") pending = requestAnimationFrame(() => { pending = 0; place(); });
+    };
+    addEventListener("resize", replace, { passive: true });
+    addEventListener("scroll", replace, { passive: true, capture: true });
 
     $(".close").addEventListener("click", () => toggle(false));
-    $(".hide").addEventListener("click", async () => {
-      await send({ type: "hideOnSite" });
-      host.remove();
-      ui = null;
+    $(".dismiss").addEventListener("click", dismiss);
+    more.addEventListener("click", () => showMenu(menu.hidden));
+    tab.addEventListener("click", () => {
+      local.minimized = false;
+      refresh();
+      open();
+    });
+    menu.addEventListener("click", async (e) => {
+      const act = e.target instanceof Element ? e.target.closest("[data-act]")?.dataset.act : null;
+      if (!act) return;
+      showMenu(false);
+      local.requested = false;
+      if (act === "minimize") {
+        local.minimized = true;
+        toggle(false);
+      } else {
+        if (act === "site") await send({ type: "hideOnSite" }); // the list of sites without the button, in the popup
+        local.hiddenOnPage = true;
+      }
+      refresh();
     });
     root.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !panel.hidden) {
-        e.stopPropagation();
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      if (!menu.hidden) {
+        showMenu(false);
+        more.focus();
+      } else if (!panel.hidden) {
         toggle(false);
+      } else {
+        dismiss();
       }
     });
 
-    function toggle(open) {
+    /** Closed (×, or Esc): for this tab, until a video at a new address appears or the page is loaded again. */
+    function dismiss() {
+      local.dismissed = state.items.map((item) => item.url);
+      local.requested = false;
+      showMenu(false);
+      toggle(false, false);
+      refresh();
+    }
+
+    function showMenu(show) {
+      menu.hidden = !show;
+      more.setAttribute("aria-expanded", String(show));
+      if (show) menu.querySelector("button").focus();
+    }
+
+    function open() {
+      if (panel.hidden) toggle(true);
+    }
+
+    function toggle(open, focus = true) {
       panel.hidden = !open;
       pill.setAttribute("aria-expanded", String(open));
       if (open) {
         if (hasProtectedVideo()) reportDrm();
         render();
         $(".close").focus();
-      } else {
+      } else if (focus && !bar.hidden) {
         pill.focus();
       }
     }
@@ -345,14 +449,28 @@
 
     document.documentElement.append(host);
     return {
-      update() {
+      /** "panel": the button (and its list when open); "tab": the small tab on the edge. */
+      show(next) {
+        view = next;
+        host.style.display = ""; // (the host's inline "all: initial" would beat a hidden attribute)
+        bar.hidden = next !== "panel";
+        tab.hidden = next !== "tab";
+        if (next !== "panel") toggle(false, false);
         const count = state.items.length;
-        const badge = $(".count");
-        badge.hidden = count < 2;
-        badge.textContent = String(count);
+        for (const badge of root.querySelectorAll(".count")) {
+          badge.hidden = count < 2;
+          badge.textContent = String(count);
+        }
         pill.setAttribute("aria-label", count > 1 ? t("mediaButtonCount", count) : t("mediaButton"));
+        place();
         if (!panel.hidden) render();
       },
+      hide() {
+        view = "none";
+        host.style.display = "none";
+        toggle(false, false);
+      },
+      open,
       setDrm() {
         state.drm = true;
         if (!panel.hidden) render();
@@ -360,18 +478,24 @@
     };
   }
 
+  // The brand kit's symbol, inline: an image from the extension would let any page detect it.
+  const SYMBOL = `<svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 365 365"><defs><linearGradient id="top" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0449ef"/><stop offset="0.47" stop-color="#047aff"/><stop offset="1" stop-color="#04c5e9"/></linearGradient><linearGradient id="bottom" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#095eff"/><stop offset="0.53" stop-color="#049aff"/><stop offset="1" stop-color="#12dbc6"/></linearGradient><clipPath id="top-clip"><rect x="0" y="0" width="365" height="188"/></clipPath><clipPath id="bottom-clip"><rect x="0" y="188" width="365" height="177"/></clipPath></defs><g ><g><path d="M 40,27 L 33,35 L 29,44 L 29,173 L 40,185 L 46,189 L 43,197 L 36,203 L 29,215 L 29,322 L 35,334 L 42,340 L 48,342 L 49,344 L 262,344 L 263,342 L 282,337 L 292,332 L 306,322 L 314,314 L 324,300 L 331,284 L 334,270 L 334,250 L 332,239 L 324,220 L 309,202 L 294,192 L 273,185 L 274,182 L 287,175 L 305,159 L 318,138 L 324,119 L 325,96 L 322,81 L 312,59 L 301,45 L 289,35 L 277,28 L 264,23 L 249,20 L 55,20 Z M 205,93 L 209,98 L 209,220 L 249,218 L 252,221 L 252,225 L 175,298 L 170,298 L 98,226 L 98,221 L 100,219 L 119,219 L 135,221 L 142,220 L 142,96 L 146,93 Z" fill="url(#top)" fill-rule="evenodd" clip-path="url(#top-clip)"/><path d="M 40,27 L 33,35 L 29,44 L 29,173 L 40,185 L 46,189 L 43,197 L 36,203 L 29,215 L 29,322 L 35,334 L 42,340 L 48,342 L 49,344 L 262,344 L 263,342 L 282,337 L 292,332 L 306,322 L 314,314 L 324,300 L 331,284 L 334,270 L 334,250 L 332,239 L 324,220 L 309,202 L 294,192 L 273,185 L 274,182 L 287,175 L 305,159 L 318,138 L 324,119 L 325,96 L 322,81 L 312,59 L 301,45 L 289,35 L 277,28 L 264,23 L 249,20 L 55,20 Z M 205,93 L 209,98 L 209,220 L 249,218 L 252,221 L 252,225 L 175,298 L 170,298 L 98,226 L 98,221 L 100,219 L 119,219 L 135,221 L 142,220 L 142,96 L 146,93 Z" fill="url(#bottom)" fill-rule="evenodd" clip-path="url(#bottom-clip)"/></g></g></svg>`;
+
+  /** A copy of the symbol whose gradient ids are its own: with two copies in one shadow root, the first id would win. */
+  const symbol = (prefix) => SYMBOL.replaceAll('id="', `id="${prefix}-`).replaceAll("url(#", `url(#${prefix}-`);
+
   const STYLE = `
     :host { all: initial; }
     * { box-sizing: border-box; }
     .wrap {
-      --bg: #ffffff; --fg: #1b2230; --muted: #5b6475; --line: #dfe3ea; --accent: #2457d1; --accent-fg: #fff;
+      --bg: #ffffff; --fg: #1b2230; --muted: #5b6475; --line: #dfe3ea; --accent: #0449ef; --accent-fg: #fff;
       --soft: #eef3fd; --danger-bg: #fdf0ee; --danger: #a12a1c; --shadow: 0 10px 30px rgba(16, 24, 40, .18), 0 2px 6px rgba(16, 24, 40, .08);
       position: relative; font: 13px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif; color: var(--fg);
       display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
     }
     .wrap.below { flex-direction: column-reverse; }
     @media (prefers-color-scheme: dark) {
-      .wrap { --bg: #1c1f26; --fg: #e7eaf0; --muted: #a7afbd; --line: #353b47; --accent: #82aaff; --accent-fg: #0a1428;
+      .wrap { --bg: #1c1f26; --fg: #e7eaf0; --muted: #a7afbd; --line: #353b47; --accent: #049aff; --accent-fg: #0a1428;
               --soft: #25365c; --danger-bg: #3a2020; --danger: #ffb4a8; --shadow: 0 10px 30px rgba(0, 0, 0, .5); }
     }
     .pill {
@@ -382,7 +506,24 @@
     }
     .pill:hover, .pill:focus-visible, .pill[aria-expanded="true"] { opacity: 1; }
     .pill:active { cursor: grabbing; }
-    .pill svg { width: 18px; height: 18px; fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .logo { display: inline-grid; width: 18px; height: 18px; }
+    .logo svg { width: 100%; height: 100%; }
+    [hidden] { display: none !important; }
+    .bar { position: relative; display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: 19px;
+           background: var(--bg); border: 1px solid var(--line); box-shadow: var(--shadow); }
+    .bar .pill { border: 0; box-shadow: none; opacity: 1; }
+    .bar .icon { width: 30px; height: 30px; border-radius: 15px; color: var(--fg); }
+    .dots { stroke-width: 3.2; }
+    .menu { position: absolute; right: 0; bottom: calc(100% + 6px); min-width: 230px; padding: 4px; display: grid;
+            background: var(--bg); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+    .below .menu { bottom: auto; top: calc(100% + 6px); }
+    .menu button { text-align: left; padding: 8px 10px; border: 0; border-radius: 6px; background: none; color: var(--fg);
+                   font: inherit; cursor: pointer; }
+    .menu button:hover, .menu button:focus-visible { background: var(--soft); }
+    .tab { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px 8px 8px;
+           border: 1px solid var(--line); border-right: 0; border-radius: 12px 0 0 12px; background: var(--bg);
+           box-shadow: var(--shadow); cursor: pointer; }
+    .tab .logo { width: 22px; height: 22px; }
     .count { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--accent-fg);
              font-size: 11px; line-height: 18px; text-align: center; }
     button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -412,9 +553,6 @@
     .notice.blocked { background: var(--danger-bg); color: var(--danger); }
     .status { margin: 0; padding: 0 14px; color: var(--muted); font-size: 12px; }
     .status:empty { display: none; }
-    footer { padding: 6px 14px 10px; border-top: 1px solid var(--line); margin-top: 6px; }
-    .link { border: 0; background: none; padding: 0; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; text-decoration: underline; }
-    .link:hover { color: var(--fg); }
     .tracks { margin: 2px 0 8px; padding: 8px 10px; border-radius: 8px; background: var(--soft); display: grid; gap: 6px; }
     .tracks .row { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px; }
     .tracks label { color: var(--muted); }

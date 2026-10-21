@@ -63,6 +63,8 @@ report("extension loaded", !!worker, `service worker ${ID}`);
 // 1. Connection check
 const page = await browser.newPage();
 await page.goto(`chrome-extension://${ID}/check.html`);
+// The steps below use the video button with its panel ("always visible"); the other ways are in video-panel-trial.mjs.
+await page.evaluate(() => chrome.storage.local.set({ mediaPanel: "always" }));
 await page.waitForFunction(() => document.getElementById("result").className.includes("ok") || document.getElementById("result").className.includes("bad"), { timeout: 20000 });
 const check = await page.evaluate(() => ({ title: resultTitle.textContent, facts: [...document.querySelectorAll("dd")].map((d) => d.textContent) }));
 await page.screenshot({ path: join(shots, "1-check.png") });
@@ -74,6 +76,8 @@ await page.waitForFunction(() => document.getElementById("status").className.inc
 const popup = await page.evaluate(() => ({ status: statusText.textContent, queues: [...queue.options].map((o) => o.text), mode: document.querySelector("input[name=mode]:checked")?.value }));
 await page.setViewport({ width: 360, height: 760 });
 await page.screenshot({ path: join(shots, "2-popup.png") });
+await page.evaluate(() => { document.querySelector("details").open = true; });
+await page.screenshot({ path: join(shots, "2-popup-rules.png"), fullPage: true });
 await page.setViewport({ width: 1280, height: 900 });
 report("popup", popup.mode === "auto" && popup.queues.length > 0, `${popup.status} | code: ${popup.queues.join(", ")} | modalità ${popup.mode}`);
 

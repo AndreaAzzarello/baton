@@ -148,6 +148,39 @@ public sealed class ServiceTests : IAsyncLifetime
         Assert.Empty(Directory.GetFiles(_dir, "*.part"));
     }
 
+    private sealed class FakeRecycleBin(bool works) : Baton.Core.Platform.IRecycleBin
+    {
+        public List<string> Received { get; } = [];
+
+        public bool Recycle(string path)
+        {
+            Received.Add(path);
+            return works;
+        }
+    }
+
+    [Fact]
+    public async Task DeleteFromDisk_SendsFinishedFilesToTheRecycleBin_NeverDeletesThem()
+    {
+        using var store = new DownloadStore(DbPath);
+        store.SaveSettings(new AppSettings { DownloadFolder = _dir });
+        await using var service = new DownloadService(store, engineTemplate: Fast);
+        var ids = new[] { "a.bin", "b.bin" }.Select(n => service.Add(_server.Add(n, new ServedFile { Content = TestFileServer.RandomBytes(64 * 1024, n.Length) }))).ToList();
+        await WaitUntil(() => service.GetSnapshots().All(s => s.Status == DownloadStatus.Completed), TimeSpan.FromSeconds(15));
+        var files = ids.Select(id => service.GetSnapshot(id)!.FinalPath!).ToList();
+
+        var bin = new FakeRecycleBin(works: true);
+        service.RecycleBin = bin;
+        Assert.True(await service.RemoveAsync(ids[0], deleteFile: true));
+        Assert.Equal([files[0]], bin.Received);
+        Assert.True(File.Exists(files[0])); // the service itself never deletes a finished file: the Recycle Bin moves it
+
+        service.RecycleBin = new FakeRecycleBin(works: false); // no Recycle Bin on that disk
+        Assert.False(await service.RemoveAsync(ids[1], deleteFile: true));
+        Assert.True(File.Exists(files[1]));
+        Assert.Empty(service.GetSnapshots()); // removed from the list in both cases
+    }
+
     [Fact]
     public async Task Add_RejectsUnsupportedUrls()
     {

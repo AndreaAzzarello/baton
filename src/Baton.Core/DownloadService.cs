@@ -3,6 +3,7 @@ using System.Net;
 using Baton.Core.Integration;
 using Baton.Core.Media;
 using Baton.Core.Net;
+using Baton.Core.Platform;
 using Baton.Core.PostDownload;
 using Baton.Core.Resources;
 using Baton.Core.Security;
@@ -594,21 +595,32 @@ public sealed class DownloadService : IAsyncDisposable
         await task;
     }
 
-    public async Task RemoveAsync(long id, bool deleteFile)
+    /// <summary>Where the files of downloads deleted "from the disk" go; the app sets the Windows one. Never deleted for good.</summary>
+    public IRecycleBin RecycleBin { get; set; } = new NoRecycleBin();
+
+    /// <summary>
+    /// Stops the download if it runs and removes it from the list; its temporary data (.part, segments) is cleaned.
+    /// With <paramref name="deleteFile"/> the finished file goes to the Recycle Bin. False when that file stayed on the
+    /// disk (no Recycle Bin there, or in use): the download is removed from the list all the same.
+    /// </summary>
+    public async Task<bool> RemoveAsync(long id, bool deleteFile)
     {
         await PauseAsync(id);
+        string? recycle = null;
         lock (_lock)
         {
             if (Find(id) is not { } record)
-                return;
+                return true;
             _items.Remove(record);
             _store.Delete(id);
             TryDelete(record.PartPath);
             if (record.Media is not null && record.Status != DownloadStatus.Completed)
                 TryDeleteFolder(MediaJob.PartsFolderOf(record));
-            if (deleteFile && record.Status == DownloadStatus.Completed)
-                TryDelete(record.FinalPath);
+            if (deleteFile && record.Status == DownloadStatus.Completed && record.FinalPath is { } path && File.Exists(path))
+                recycle = path;
         }
+        // Outside the lock and off the caller's thread: the shell can take a moment, or ask before deleting for good.
+        return recycle is null || await Task.Run(() => RecycleBin.Recycle(recycle));
     }
 
     /// <summary>Moves a download up (negative) or down (positive) among the downloads of its own queue.</summary>

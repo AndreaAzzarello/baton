@@ -7,9 +7,11 @@
     <SolidColorBrush x:Key="BorderBrush" Color="#353B47" />
     <SolidColorBrush x:Key="TextBrush" Color="#E7EAF0" />
     <SolidColorBrush x:Key="MutedBrush" Color="#A7AFBD" />
-    <SolidColorBrush x:Key="AccentBrush" Color="#60A5FA" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#049AFF" />
     <SolidColorBrush x:Key="AccentTextBrush" Color="#0A1428" />
     <SolidColorBrush x:Key="AccentSoftBrush" Color="#25365C" />
+    <SolidColorBrush x:Key="SelectionBrush" Color="#1C3D73" />
+    <SolidColorBrush x:Key="SelectionTextBrush" Color="#F2F5FA" />
     <SolidColorBrush x:Key="HoverBrush" Color="#262B35" />
     <SolidColorBrush x:Key="PressedBrush" Color="#2F3B57" />
     <SolidColorBrush x:Key="SuccessBrush" Color="#56CF91" />
@@ -17,8 +19,8 @@
     <SolidColorBrush x:Key="DangerSoftBrush" Color="#3A2226" />
     <SolidColorBrush x:Key="TrackBrush" Color="#2C313B" />
     <SolidColorBrush x:Key="ProgressFillBrush" Color="#34508A" />
-    <SolidColorBrush x:Key="SegmentDoneBrush" Color="#60A5FA" />
-    <SolidColorBrush x:Key="SegmentActiveBrush" Color="#2DD4BF" />
+    <SolidColorBrush x:Key="SegmentDoneBrush" Color="#049AFF" />
+    <SolidColorBrush x:Key="SegmentActiveBrush" Color="#12DBC6" />
     <SolidColorBrush x:Key="SegmentTodoBrush" Color="#2C313B" />
     <SolidColorBrush x:Key="FocusBrush" Color="#E7EAF0" />
     <SolidColorBrush x:Key="EmptyGlyphBrush" Color="#5E6676" />

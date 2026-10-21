@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:r="clr-namespace:Baton.Core.Resources;assembly=Baton.Core"
         xmlns:vm="clr-namespace:Baton.App.ViewModels"
+        xmlns:c="clr-namespace:Baton.App.Controls"
         Title="{x:Static r:Strings.AppName}" Height="640" Width="1280" MinWidth="800" MinHeight="380"
         Style="{StaticResource AppWindow}" WindowStartupLocation="CenterScreen" Icon="/app.ico"
         AllowDrop="True" DragEnter="OnDragOver" DragOver="OnDragOver" Drop="OnDrop">
@@ -40,6 +41,9 @@
                 </Button>
                 <Button Style="{StaticResource ToolButton}" Command="{Binding RemoveCommand}" Tag="remove" AutomationProperties.Name="{x:Static r:Strings.ActionRemove}" ToolTip="{x:Static r:Strings.ActionRemoveToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" /><TextBlock Text="{x:Static r:Strings.ActionRemove}" Margin="0,3,0,0" /></StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding DeleteFilesCommand}" Tag="deletefiles" AutomationProperties.Name="{x:Static r:Strings.ActionDeleteFiles}" ToolTip="{x:Static r:Strings.ActionDeleteFilesToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE107;" /><TextBlock Text="{x:Static r:Strings.ActionDeleteFiles}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
                 <Button Style="{StaticResource ToolButton}" Command="{Binding ProgressCommand}" Tag="progress" AutomationProperties.Name="{x:Static r:Strings.ActionProgress}" ToolTip="{x:Static r:Strings.ActionProgressToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE9D9;" /><TextBlock Text="{x:Static r:Strings.ActionProgress}" Margin="0,3,0,0" /></StackPanel>
@@ -186,10 +190,11 @@
                           RowHeight="36" HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="{x:Static r:Strings.ListName}"
                           EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                           SelectionChanged="OnSelectionChanged" Sorting="OnSorting" MouseDoubleClick="OnRowDoubleClick"
-                          PreviewMouseLeftButtonDown="OnGridMouseDown" PreviewMouseMove="OnGridMouseMove"
+                          c:ListSelection.IsEnabled="True"
                           ColumnReordered="OnColumnsChanged">
                     <DataGrid.InputBindings>
                         <KeyBinding Key="Delete" Command="{Binding RemoveCommand}" />
+                        <KeyBinding Key="Delete" Modifiers="Shift" Command="{Binding DeleteFilesCommand}" />
                         <KeyBinding Key="Enter" Command="{Binding DefaultActionCommand}" />
                         <KeyBinding Key="Enter" Modifiers="Alt" Command="{Binding PropertiesCommand}" />
                         <KeyBinding Key="V" Modifiers="Control" Command="{Binding PasteCommand}" />
@@ -203,39 +208,12 @@
                             <Setter Property="BorderThickness" Value="0,0,0,1" />
                             <Setter Property="ContextMenu" Value="{Binding ColumnMenu, RelativeSource={RelativeSource AncestorType=Window}}" />
                         </Style>
-                        <Style TargetType="DataGridCell">
-                            <Setter Property="BorderThickness" Value="0" />
-                            <Setter Property="Padding" Value="10,0" />
-                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="DataGridCell">
-                                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
-                                            <ContentPresenter VerticalAlignment="Center" />
-                                        </Border>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                        <Style TargetType="DataGridRow">
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource ListCell}" />
+                        <Style TargetType="DataGridRow" BasedOn="{StaticResource ListRow}">
                             <Setter Property="ToolTip" Value="{Binding ToolTip}" />
-                            <Setter Property="Background" Value="Transparent" />
                             <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
                             <Setter Property="AutomationProperties.ItemStatus" Value="{Binding StatusText}" />
                             <Setter Property="ContextMenu" Value="{Binding RowMenu, RelativeSource={RelativeSource AncestorType=Window}}" />
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
-                                </Trigger>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
-                                </Trigger>
-                                <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                    <Setter Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
-                                    <Setter Property="BorderThickness" Value="1" />
-                                </Trigger>
-                            </Style.Triggers>
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
@@ -289,6 +267,8 @@
         <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="14,6">
             <DockPanel>
                 <TextBlock Text="{Binding SpeedText}" DockPanel.Dock="Right" Foreground="{DynamicResource MutedBrush}" />
+                <TextBlock Text="{Binding SelectionText}" DockPanel.Dock="Right" Margin="0,0,24,0" Foreground="{DynamicResource TextBrush}"
+                           AutomationProperties.LiveSetting="Polite" />
                 <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource MutedBrush}" />
             </DockPanel>
         </Border>

@@ -1,11 +1,11 @@
 :root {
   --bg: #ffffff; --surface: #f4f6fa; --text: #1b2230; --muted: #5b6475; --border: #dfe3ea;
-  --accent: #2457d1; --accent-soft: #e2ebfd; --ok: #167a4b; --bad: #bf2a2a;
+  --accent: #0449ef; --accent-fg: #ffffff; --accent-soft: #e2ebfd; --ok: #167a4b; --bad: #bf2a2a;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root { --bg: #1c1f26; --surface: #14161b; --text: #e7eaf0; --muted: #a7afbd; --border: #353b47;
-          --accent: #82aaff; --accent-soft: #25365c; --ok: #56cf91; --bad: #ff8080; }
+          --accent: #049aff; --accent-fg: #0a1428; --accent-soft: #25365c; --ok: #56cf91; --bad: #ff8080; }
 }
 * { box-sizing: border-box; }
 body { margin: 0; padding: 14px 16px 12px; width: 340px; background: var(--bg); color: var(--text);
@@ -43,3 +43,17 @@ summary { cursor: pointer; font-weight: 600; padding: 2px 0; }
 footer { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 8px; display: grid; gap: 6px; }
 footer a { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.videos { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; background: var(--surface); }
+.videos ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.videos li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; }
+.videos li.hint, .videos .qualities { grid-column: 1 / -1; }
+.videos .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qualities { margin: 2px 0 4px 8px !important; }
+.small { padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text);
+         font: inherit; font-size: 12px; cursor: pointer; }
+.small.primary { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.small:disabled { opacity: .7; cursor: default; }
+.link { margin-top: 8px; padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+.panels { margin-top: 10px; }
+.panels .row { margin-top: 2px; }
+input[type=radio] { accent-color: var(--accent); margin: 0; }

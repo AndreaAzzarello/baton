@@ -1,111 +1,112 @@
-// Baton's visual identity: the SVG sources and every raster made from them (app and tray icons, extension icons,
-// README logo, social preview). Rendered by headless Edge through puppeteer-core (installed in tools/trials).
-//   node docs/brand/brand.mjs            -> docs/brand/*.svg|png, docs/brand/out/*.png (frames for tools/make_icons.py)
-// Three rounded bars (parallel connections) join into one arrowhead (one file): outer bars blue, middle bar teal.
-import { mkdirSync, writeFileSync } from "node:fs";
+// Baton's icons, all made from the official brand kit in docs/brand/kit (Baton_Brand_Kit.zip): the kit's own PNGs are
+// used as they are; only the sizes it lacks are rendered from its SVGs, and the grey "context menu only" icons are the
+// kit's PNGs desaturated. Nothing is redrawn. Rendered by headless Edge through puppeteer-core (installed in tools/trials).
+//   node docs/brand/brand.mjs           -> docs/brand/out: icon frames, social preview, preview page (index.html)
+//   node docs/brand/brand.mjs --apply   -> also extension/icons and docs/brand/social-preview.png; then run
+//                                          python tools/make_icons.py for app.ico (also the tray's icon)
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..", "..");
+const kit = join(here, "kit");
+const out = join(here, "out");
 const require = createRequire(join(root, "tools", "trials", "package.json"));
 const puppeteer = require("puppeteer-core");
 const EDGE = process.env.EDGE || "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const apply = process.argv.includes("--apply");
 
-export const BLUE = "#2563EB", TEAL = "#14B8A6";
-// For a dark taskbar: the same hues, light enough for 4.5:1 on #202020.
-export const BLUE_DARK_BG = "#60A5FA", TEAL_DARK_BG = "#2DD4BF";
-export const GREY = "#8A9099", GREY_LIGHT = "#B4B9C0"; // the extension's "context menu only" mode
-
-/** The mark on a 256 grid, transparent. */
-export const glyph = (blue = BLUE, teal = TEAL) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <rect x="73" y="52" width="30" height="110" rx="15" fill="${blue}"/>
-  <rect x="113" y="34" width="30" height="128" rx="15" fill="${teal}"/>
-  <rect x="153" y="64" width="30" height="98" rx="15" fill="${blue}"/>
-  <polygon points="62,146 194,146 128,216" fill="${blue}" stroke="${blue}" stroke-width="12" stroke-linejoin="round"/>
-</svg>`;
-
-/** The app icon: the mark, a little larger, on a white rounded square (readable on any taskbar or wallpaper). */
-export const tile = () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <rect x="8" y="8" width="240" height="240" rx="56" fill="#FFFFFF"/>
-  <rect x="8.5" y="8.5" width="239" height="239" rx="55.5" fill="none" stroke="#0F172A" stroke-opacity=".08"/>
-  <g transform="translate(128 125) scale(1.12) translate(-128 -125)">${glyph().replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>
-</svg>`;
-
-/**
- * Hand-placed on the pixel grid, so the gaps between the bars survive at small sizes:
- * bars [x, top] with width w, arrow from (ax0, ay) to (ax1, ay) with its tip at (tx, ty).
- */
-const PIXEL = {
-  16: { w: 2, bars: [[4, 2], [7, 1], [10, 3]], bottom: 9, arrow: [2, 9, 14, 8, 15] },
-  20: { w: 2, bars: [[5, 3], [9, 2], [13, 4]], bottom: 11, arrow: [3, 11, 17, 10, 18] },
-  24: { w: 4, bars: [[5, 4], [10, 2], [15, 5]], bottom: 14, arrow: [3, 14, 21, 12, 22] },
-  32: { w: 4, bars: [[8, 4], [14, 2], [20, 6]], bottom: 18, arrow: [4, 18, 28, 16, 30] },
+const K = {
+  appDark: (s) => join(kit, "03_Icone_Windows", `BATON_windows_${s}.png`), // the kit's app icon (dark tile)
+  appDarkSvg: join(kit, "01_Logo_SVG", "BATON_icona_app_scura.svg"),
+  ext: (s) => join(kit, "04_Icone_Browser", `baton_extension_${s}.png`),
+  logoDark: join(kit, "01_Logo_SVG", "BATON_logo_orizzontale_scuro.svg"), // dark text, for light backgrounds
+  logoWhite: join(kit, "01_Logo_SVG", "BATON_logo_orizzontale_bianco.svg"),
 };
-export const pixel = (size, blue = BLUE, teal = TEAL) => {
-  const p = PIXEL[size];
-  const [ax0, ay, ax1, tx, ty] = p.arrow;
-  const bars = p.bars.map(([x, top], i) =>
-    `<rect x="${x}" y="${top}" width="${p.w}" height="${p.bottom - top}" fill="${i === 1 ? teal : blue}"/>`).join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges">${bars}<polygon points="${ax0},${ay} ${ax1},${ay} ${tx},${ty}" fill="${blue}"/></svg>`;
-};
+const KIT_SIZES = [16, 24, 32, 48, 64, 128, 256, 512];
+const dataUrl = (file) => `data:${file.endsWith(".svg") ? "image/svg+xml" : "image/png"};base64,${readFileSync(file).toString("base64")}`;
 
-const social = () => `<!doctype html><html><head><meta charset="utf-8"><style>
-  html, body { margin: 0; width: 1280px; height: 640px; }
-  body { display: flex; align-items: center; gap: 64px; padding: 0 112px; box-sizing: border-box;
-    background: #F8FAFC; font-family: "Segoe UI Variable Display", "Segoe UI", sans-serif; color: #0F172A; position: relative; }
-  .mark { width: 300px; height: 300px; flex: none; filter: drop-shadow(0 12px 28px rgba(15, 23, 42, .12)); }
-  h1 { margin: 0; font-size: 132px; font-weight: 700; letter-spacing: -3px; line-height: 1; }
-  p { margin: 22px 0 0; font-size: 38px; color: #475569; line-height: 1.25; max-width: 640px; }
-  .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 14px;
-    background: linear-gradient(90deg, ${BLUE} 0 33.3%, ${TEAL} 33.3% 66.6%, ${BLUE} 66.6%); }
-</style></head><body>
-  <img class="mark" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(tile())}" alt="">
-  <div><h1>Baton</h1><p>A fast segmented download manager for Windows</p></div>
-  <div class="bar"></div>
-</body></html>`;
-
-const out = join(here, "out");
 mkdirSync(out, { recursive: true });
-const sources = {
-  "baton.svg": glyph(),
-  "baton-app.svg": tile(),
-  "baton-16.svg": pixel(16), "baton-20.svg": pixel(20), "baton-24.svg": pixel(24), "baton-32.svg": pixel(32),
-};
-for (const [name, svg] of Object.entries(sources)) writeFileSync(join(here, name), svg + "\n");
-
 const browser = await puppeteer.launch({ executablePath: EDGE, headless: true, args: ["--force-device-scale-factor=1"] });
 const page = await browser.newPage();
-async function render(svg, size, file) {
+const made = []; // what was generated rather than taken from the kit
+async function render(src, size, file, filter = "none") {
   await page.setViewport({ width: size, height: size, deviceScaleFactor: 1 });
-  await page.setContent(`<html><body style="margin:0;background:transparent"><img style="display:block;width:${size}px;height:${size}px"
-    src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}"></body></html>`);
+  await page.setContent(`<html><body style="margin:0;background:transparent"><img style="display:block;width:${size}px;height:${size}px;filter:${filter}"
+    src="${dataUrl(src)}"></body></html>`);
   await page.waitForFunction(() => document.images[0].complete);
   await page.screenshot({ path: file, omitBackground: true, clip: { x: 0, y: 0, width: size, height: size } });
 }
-
-// App icon frames: pixel-grid mark for the small sizes (title bar, small icons), the tile from 32 px up.
-for (const size of [16, 20, 24]) await render(pixel(size), size, join(out, `app-${size}.png`));
-for (const size of [32, 40, 48, 64, 256]) await render(tile(), size, join(out, `app-${size}.png`));
-// Tray: light and dark taskbar, 16/20/24/32 (100/125/150/200 %).
-for (const size of [16, 20, 24, 32]) {
-  await render(pixel(size), size, join(out, `tray-light-${size}.png`));
-  await render(pixel(size, BLUE_DARK_BG, TEAL_DARK_BG), size, join(out, `tray-dark-${size}.png`));
+async function frame(kitPng, svg, size, file) {
+  if (KIT_SIZES.includes(size)) copyFileSync(kitPng(size), file);
+  else {
+    await render(svg, size, file);
+    made.push(`${file.split(/[\\/]/).pop()} (${size} px, from ${svg.split(/[\\/]/).pop()})`);
+  }
 }
-// Extension: toolbar sizes on the pixel grid, store/extension page sizes as the tile; grey for "context menu only".
-const ext = join(root, "extension", "icons");
-await render(pixel(16), 16, join(ext, "icon16.png"));
-await render(pixel(32), 32, join(ext, "icon32.png"));
-await render(tile(), 48, join(ext, "icon48.png"));
-await render(tile(), 128, join(ext, "icon128.png"));
-await render(pixel(16, GREY, GREY_LIGHT), 16, join(ext, "icon16-off.png"));
-await render(pixel(32, GREY, GREY_LIGHT), 32, join(ext, "icon32-off.png"));
-// README logo and GitHub social preview (1280x640).
-await render(tile(), 256, join(here, "baton-256.png"));
+
+// App icon (exe, windows, notification area on light and dark taskbars, notifications): the kit's Windows icon, dark tile.
+for (const s of [16, 20, 24, 32, 40, 48, 64, 256]) await frame(K.appDark, K.appDarkSvg, s, join(out, `app-${s}.png`));
+// Extension: the kit's browser icons; grey ones for "context menu only" = the same PNGs desaturated.
+for (const s of [16, 32, 48, 128]) copyFileSync(K.ext(s), join(out, `ext-${s}.png`));
+for (const s of [16, 32]) {
+  await render(K.ext(s), s, join(out, `ext-${s}-off.png`), "grayscale(1)");
+  made.push(`ext-${s}-off.png (baton_extension_${s}.png desaturated)`);
+}
+// GitHub social preview: the kit's horizontal logo and the project's line.
+const social = `<!doctype html><html><head><meta charset="utf-8"><style>
+  html, body { margin: 0; width: 1280px; height: 640px; }
+  body { display: grid; place-items: center; background: #F5F7FB; font-family: "Lato", "Segoe UI", sans-serif; }
+  main { display: grid; justify-items: center; gap: 36px; }
+  img { width: 760px; }
+  p { margin: 0; font-size: 42px; color: #3A4A63; letter-spacing: .2px; }
+</style></head><body><main><img src="${dataUrl(K.logoDark)}" alt=""><p>A fast segmented download manager for Windows</p></main></body></html>`;
 await page.setViewport({ width: 1280, height: 640, deviceScaleFactor: 1 });
-await page.setContent(social());
+await page.setContent(social);
 await page.waitForFunction(() => document.images[0].complete);
-await page.screenshot({ path: join(here, "social-preview.png"), clip: { x: 0, y: 0, width: 1280, height: 640 } });
+await page.screenshot({ path: join(out, "social-preview.png"), clip: { x: 0, y: 0, width: 1280, height: 640 } });
+made.push("social-preview.png (kit logo + text)");
 await browser.close();
-console.log("brand: svg sources, extension icons, README logo, social preview, icon frames in docs/brand/out");
+
+// The preview page: every icon at its real size, on light and dark backgrounds.
+const img = (f, s, alt) => `<img width="${s}" height="${s}" alt="${alt}" src="${dataUrl(join(out, f))}">`;
+const row = (title, cells) => `<h2>${title}</h2>${["light", "dark"].map((t) => `<div class="row ${t}">${cells}</div>`).join("")}`;
+const fig = (inner, caption) => `<figure>${inner}<figcaption>${caption}</figcaption></figure>`;
+const html = `<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baton — icone dal brand kit</title><style>
+  body { margin: 0; padding: 24px 16px 48px; font: 14px/1.5 "Segoe UI", sans-serif; background: #f6f6f8; color: #1b1f2a; }
+  h1 { margin: 0 0 6px; font-size: 22px; } h2 { margin: 28px 0 8px; font-size: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; padding: 14px; border-radius: 10px; margin-top: 8px; }
+  .light { background: #fff; border: 1px solid #e3e3e3; } .dark { background: #202020; color: #ddd; }
+  figure { margin: 0; display: grid; justify-items: center; gap: 4px; font-size: 11px; text-align: center; }
+  .bar { display: flex; gap: 10px; align-items: center; padding: 6px 12px; border-radius: 6px; font-size: 12px; }
+  .light .bar { background: #eef0f3; } .dark .bar { background: #1c1c1c; }
+  .note { color: #5b6275; max-width: 80ch; } code { font-size: 12px; }
+  .wide img { max-width: 100%; height: auto; }
+</style></head><body>
+<h1>Baton — icone dal brand kit</h1>
+<p class="note">Tutto viene da <code>Baton_Brand_Kit.zip</code>. Generati da me (non presenti nel kit): ${made.join("; ")}.</p>
+${row("Icona dell'app (app.ico: exe, finestre, notifiche) — dal kit, tile scuro", [16, 20, 24, 32, 40, 48, 64, 256].map((s) => fig(img(`app-${s}.png`, Math.min(s, 128), `${s} px`), `${s}${s === 20 || s === 40 ? " (generato)" : ""}`)).join(""))}
+<h2>Area di notifica (16 e 20 px)</h2>
+<div class="row light">${fig(`<div class="bar">${img("app-16.png", 16, "")}${img("app-20.png", 20, "")} 21:44</div>`, "barra chiara")}</div>
+<div class="row dark">${fig(`<div class="bar">${img("app-16.png", 16, "")}${img("app-20.png", 20, "")} 21:44</div>`, "barra scura")}</div>
+${row("Estensione (barra del browser 16/32, pagina estensioni 48/128) e grigia per «solo menu»", [16, 32, 48, 128].map((s) => fig(img(`ext-${s}.png`, s, `${s} px`), `${s}`)).join("") + [16, 32].map((s) => fig(img(`ext-${s}-off.png`, s, `${s} px grigia`), `${s} grigia (generata)`)).join(""))}
+${row("Notifica (icona 256 px dell'app)", fig(img("app-256.png", 96, "notifica"), "256 → mostrata a 48–96"))}
+<h2>Logo del README (&lt;picture&gt;)</h2>
+<div class="row light wide">${fig(`<img width="420" alt="logo, tema chiaro" src="${dataUrl(K.logoDark)}">`, "tema chiaro: BATON_logo_orizzontale_scuro.svg")}</div>
+<div class="row dark wide">${fig(`<img width="420" alt="logo, tema scuro" src="${dataUrl(K.logoWhite)}">`, "tema scuro: BATON_logo_orizzontale_bianco.svg")}</div>
+<h2>Social preview per GitHub (1280×640, generata)</h2>
+<div class="row light wide">${fig(img("social-preview.png", 640, "social preview").replace('height="640"', 'height="320"'), "")}</div>
+</body></html>`;
+writeFileSync(join(out, "index.html"), html);
+
+if (apply) {
+  const ext = join(root, "extension", "icons");
+  for (const s of [16, 32, 48, 128]) copyFileSync(join(out, `ext-${s}.png`), join(ext, `icon${s}.png`));
+  for (const s of [16, 32]) copyFileSync(join(out, `ext-${s}-off.png`), join(ext, `icon${s}-off.png`));
+  copyFileSync(join(out, "social-preview.png"), join(here, "social-preview.png"));
+}
+console.log(`brand: frames and preview in ${out}${apply ? "; extension icons and social preview applied" : ""}`);
+console.log("generated:", made.join("; "));

@@ -14,7 +14,9 @@ versione **1.2.0** (licenza MIT, repository GitHub `AndreaAzzarello/baton`). L'u
   `GrabberService` progetti, sincronizzazione e pianificazione), `Net` (trasporti HTTP/FTP, proxy, PAC), `Security` (credenziali DPAPI, certificati), `Integration` (protocollo con l'estensione, `MessageValidator`, host nativo, pipe), `Platform` (registro), `DownloadStore` (SQLite), `Resources/Strings.resx`.
 - `src/Baton.App` — WPF in MVVM: `ViewModels`, `Views`, `Services` (dialoghi, tray, tema, notifiche). Le view model non creano finestre: passano da `IDialogService`.
 - `extension/` — sorgente unico dell'estensione, caricabile così com'è in Chromium; `node tools/build-extension.mjs` crea `dist/chromium` e `dist/firefox`. Logica pura in `rules.js` (testata con Node).
-- `tests/` — xUnit con server locali (HTTP, FTP/FTPS, proxy, fixture HLS/DASH, sito multi-host `GrabberTestSite`) e `tests/extension` (`node --test`), eseguiti anche da `dotnet test`.
+- `src/Baton.App/Controls/ListSelection.cs` — mouse delle liste come in Esplora file; stili `ListCell`/`ListRow` in `Themes/Controls.xaml` (selezione disegnata dalle celle). Usarli per ogni nuovo DataGrid.
+- `docs/brand/kit` — brand kit ufficiale (non rientra nella licenza MIT): mai ridisegnarlo; `docs/brand/brand.mjs` ne ricava solo i formati mancanti, `tools/make_icons.py` compone `app.ico`.
+- `tests/` — xUnit con server locali (HTTP, FTP/FTPS, proxy, fixture HLS/DASH, sito multi-host `GrabberTestSite`) e `tests/extension` (`node --test`), eseguiti anche da `dotnet test`; `tests/Baton.UiTests` prova le liste WPF in-process (finestra fuori schermo, Ctrl/Maiusc solo sul thread del test con `SetKeyboardState`: mai input simulato per l'utente).
 
 ## Comandi
 - Usa sempre `"C:\Program Files\dotnet\dotnet.exe"`: quello x86 viene prima nel PATH.

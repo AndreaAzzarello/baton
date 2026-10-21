@@ -24,6 +24,12 @@
     </label>
   </fieldset>
 
+  <section id="videos" class="videos" hidden aria-labelledby="videosTitle">
+    <h2 id="videosTitle" data-i18n="popupVideos"></h2>
+    <ul id="videoList"></ul>
+    <button type="button" id="showPanel" class="link" data-i18n="popupShowPanel"></button>
+  </section>
+
   <label for="queue" class="label" data-i18n="queueLabel"></label>
   <select id="queue" aria-describedby="queueHint"></select>
   <p id="queueHint" class="hint" data-i18n="queueHint"></p>
@@ -52,10 +58,12 @@
     <textarea id="alwaysSites" rows="2" spellcheck="false" data-i18n-placeholder="sitesPlaceholder"></textarea>
     <label for="neverSites" class="label" data-i18n="neverSitesLabel"></label>
     <textarea id="neverSites" rows="2" spellcheck="false" data-i18n-placeholder="sitesPlaceholder"></textarea>
-    <label class="row">
-      <input type="checkbox" id="mediaButton">
-      <span data-i18n="mediaButtonSetting"></span>
-    </label>
+    <fieldset class="panels">
+      <legend data-i18n="mediaPanelLegend"></legend>
+      <label class="row"><input type="radio" name="mediaPanel" value="always"><span data-i18n="mediaPanelAlways"></span></label>
+      <label class="row"><input type="radio" name="mediaPanel" value="minimized"><span data-i18n="mediaPanelMinimized"></span></label>
+      <label class="row"><input type="radio" name="mediaPanel" value="menu"><span data-i18n="mediaPanelMenu"></span></label>
+    </fieldset>
     <label for="mediaDisabledSites" class="label" data-i18n="mediaDisabledLabel"></label>
     <textarea id="mediaDisabledSites" rows="2" spellcheck="false" data-i18n-placeholder="sitesPlaceholder"></textarea>
   </details>

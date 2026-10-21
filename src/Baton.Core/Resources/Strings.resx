@@ -8,6 +8,8 @@
   <data name="ActionAddToolTip" xml:space="preserve"><value>Aggiungi un download (Ctrl+N). Se negli appunti c'è un link, viene già inserito.</value></data>
   <data name="ActionCategories" xml:space="preserve"><value>Categorie</value></data>
   <data name="ActionCategoriesToolTip" xml:space="preserve"><value>Gestisci categorie, estensioni e cartelle</value></data>
+  <data name="ActionDeleteFiles" xml:space="preserve"><value>Elimina dal disco</value></data>
+  <data name="ActionDeleteFilesToolTip" xml:space="preserve"><value>Rimuove i download selezionati dalla lista e sposta i loro file nel Cestino (Maiusc+Canc)</value></data>
   <data name="ActionDown" xml:space="preserve"><value>Giù</value></data>
   <data name="ActionDownToolTip" xml:space="preserve"><value>Sposta giù nella coda (solo con l'ordine della coda)</value></data>
   <data name="ActionEnqueue" xml:space="preserve"><value>In coda</value></data>
@@ -164,13 +166,13 @@ Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></da
   <data name="ColumnStatus" xml:space="preserve"><value>Stato</value></data>
   <data name="ConfirmAddLinks" xml:space="preserve"><value>Aggiungere {0} download alla coda?</value></data>
   <data name="ConfirmDeleteCategory" xml:space="preserve"><value>Eliminare la categoria "{0}"? I suoi download passeranno alla categoria Generale; i file restano dove sono.</value></data>
+  <data name="ConfirmDeleteFiles" xml:space="preserve"><value>Eliminare {0} download ({1}) dalla lista e spostare i file nel Cestino di Windows?
+
+I download in corso vengono fermati e i dati parziali eliminati. Dal Cestino i file si possono ripristinare.</value></data>
   <data name="ConfirmDeleteLogin" xml:space="preserve"><value>Eliminare le credenziali {0}?</value></data>
   <data name="ConfirmDeleteQueue" xml:space="preserve"><value>Eliminare la coda "{0}"? I suoi download passeranno alla Coda principale.</value></data>
-  <data name="ConfirmRemove" xml:space="preserve"><value>Rimuovere {0} download dall'elenco? I dati parziali verranno eliminati.</value></data>
-  <data name="ConfirmRemoveCompleted" xml:space="preserve"><value>Eliminare dal disco anche i file già scaricati?
-
-Sì: elimina file ed elemento
-No: rimuovi solo dall'elenco</value></data>
+  <data name="ConfirmOpenMany" xml:space="preserve"><value>Aprire {0} file insieme?</value></data>
+  <data name="ConfirmRemove" xml:space="preserve"><value>Rimuovere {0} download dalla lista? I file già scaricati restano sul disco; i dati parziali vengono eliminati.</value></data>
   <data name="ConnectionTitle" xml:space="preserve"><value>Connessioni</value></data>
   <data name="CountdownAnnouncement" xml:space="preserve"><value>{0} secondi</value></data>
   <data name="CountdownCancel" xml:space="preserve"><value>_Annulla</value></data>
@@ -181,6 +183,10 @@ No: rimuovi solo dall'elenco</value></data>
   <data name="CountdownTitle" xml:space="preserve"><value>{0} tra poco</value></data>
   <data name="CredentialsHint" xml:space="preserve"><value>Credenziali salvate per server (autenticazione HTTP e FTP). Le password sono cifrate con il tuo account di Windows e non vengono mai mostrate.</value></data>
   <data name="CredentialsListName" xml:space="preserve"><value>Credenziali salvate</value></data>
+  <data name="DeleteKeptOnDisk" xml:space="preserve"><value>{0} file non sono stati spostati nel Cestino e restano sul disco (per esempio su un'unità di rete o su una chiavetta, dove il Cestino non c'è, oppure perché sono aperti):
+
+{1}</value></data>
+  <data name="DeleteTitle" xml:space="preserve"><value>Elimina download</value></data>
   <data name="EmptyFilteredHint" xml:space="preserve"><value>Scegli un altro filtro nel pannello a sinistra o cambia la ricerca</value></data>
   <data name="EmptyFilteredTitle" xml:space="preserve"><value>Nessun download corrisponde</value></data>
   <data name="EmptyHint" xml:space="preserve"><value>Premi Aggiungi (Ctrl+N), incolla un link con Ctrl+V oppure trascinalo qui</value></data>
@@ -267,6 +273,7 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="GestureAltEnter" xml:space="preserve"><value>Alt+Invio</value></data>
   <data name="GestureDelete" xml:space="preserve"><value>Canc</value></data>
   <data name="GestureEnter" xml:space="preserve"><value>Invio</value></data>
+  <data name="GestureShiftDelete" xml:space="preserve"><value>Maiusc+Canc</value></data>
   <data name="GrabberAccessHeading" xml:space="preserve"><value>Accesso al sito</value></data>
   <data name="GrabberAccessHint" xml:space="preserve"><value>Valgono per la scansione. I file mandati a una coda usano poi le impostazioni di rete dell'app, come ogni download.</value></data>
   <data name="GrabberAutoFinished" xml:space="preserve"><value>Grabber «{0}»: {1}</value></data>
@@ -523,9 +530,12 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="MediaSubtitlesFailed" xml:space="preserve"><value>Sottotitoli non scaricati: {0}.</value></data>
   <data name="MediaSubtitlesNoFfmpeg" xml:space="preserve"><value>ffmpeg non trovato: i sottotitoli sono stati salvati come file .vtt accanto al video invece che al suo interno.</value></data>
   <data name="MediaUnsupported" xml:space="preserve"><value>Formato non riconosciuto ({0}).</value></data>
+  <data name="MenuChangeCategory" xml:space="preserve"><value>Cambia categoria</value></data>
   <data name="MenuCopyUrl" xml:space="preserve"><value>Copia indirizzo</value></data>
   <data name="MenuCustomizeToolbar" xml:space="preserve"><value>Personalizza la barra degli strumenti…</value></data>
   <data name="MenuDeleteCategory" xml:space="preserve"><value>Elimina categoria</value></data>
+  <data name="MenuDeleteFiles" xml:space="preserve"><value>Elimina dalla lista e dal disco</value></data>
+  <data name="MenuDeleteFilesMany" xml:space="preserve"><value>Elimina {0} download dalla lista e dal disco</value></data>
   <data name="MenuDeleteQueue" xml:space="preserve"><value>Elimina coda</value></data>
   <data name="MenuEditCategory" xml:space="preserve"><value>Modifica categoria…</value></data>
   <data name="MenuEditQueue" xml:space="preserve"><value>Modifica coda…</value></data>
@@ -543,8 +553,10 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="MenuProgress" xml:space="preserve"><value>Mostra avanzamento</value></data>
   <data name="MenuProperties" xml:space="preserve"><value>Proprietà</value></data>
   <data name="MenuQueueOrder" xml:space="preserve"><value>Ordine della coda</value></data>
-  <data name="MenuRemove" xml:space="preserve"><value>Rimuovi</value></data>
+  <data name="MenuRemove" xml:space="preserve"><value>Rimuovi dalla lista</value></data>
+  <data name="MenuRemoveMany" xml:space="preserve"><value>Rimuovi {0} download dalla lista</value></data>
   <data name="MenuResetColumns" xml:space="preserve"><value>Ripristina colonne</value></data>
+  <data name="MenuRetry" xml:space="preserve"><value>Riprova</value></data>
   <data name="MenuStart" xml:space="preserve"><value>Avvia / riprendi</value></data>
   <data name="MenuStartQueue" xml:space="preserve"><value>Avvia coda</value></data>
   <data name="MenuStopQueue" xml:space="preserve"><value>Ferma coda</value></data>
@@ -697,6 +709,8 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SegmentRange" xml:space="preserve"><value>Intervallo</value></data>
   <data name="SegmentState" xml:space="preserve"><value>Stato</value></data>
   <data name="SegmentWaiting" xml:space="preserve"><value>In attesa</value></data>
+  <data name="SelectionStatus" xml:space="preserve"><value>{0} selezionati  ·  {1}</value></data>
+  <data name="SelectionStatusOne" xml:space="preserve"><value>1 selezionato  ·  {0}</value></data>
   <data name="SettingsAppearance" xml:space="preserve"><value>Aspetto</value></data>
   <data name="SettingsCloseToTray" xml:space="preserve"><value>Chiudendo la finestra, resta _attivo nell'area di notifica</value></data>
   <data name="SettingsConcurrent" xml:space="preserve"><value>Download _simultanei in totale, per tutte le code (1–50)</value></data>

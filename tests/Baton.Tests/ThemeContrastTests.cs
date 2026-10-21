@@ -11,7 +11,7 @@ public sealed class ThemeContrastTests
     private static TheoryData<string, string, string> Build()
     {
         var data = new TheoryData<string, string, string>();
-        string[] backgrounds = ["WindowBrush", "SurfaceBrush", "SurfaceAltBrush", "HoverBrush", "PressedBrush", "AccentSoftBrush"];
+        string[] backgrounds = ["WindowBrush", "SurfaceBrush", "SurfaceAltBrush", "HoverBrush", "PressedBrush", "AccentSoftBrush", "SelectionBrush"];
         foreach (var theme in new[] { "Light", "Dark" })
         {
             foreach (var background in backgrounds)
@@ -27,6 +27,7 @@ public sealed class ThemeContrastTests
             }
             data.Add(theme, "DangerBrush", "DangerSoftBrush");
             data.Add(theme, "AccentTextBrush", "AccentBrush"); // the primary button
+            data.Add(theme, "SelectionTextBrush", "SelectionBrush"); // selected rows in the lists
         }
         return data;
     }

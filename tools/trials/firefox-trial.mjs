@@ -111,24 +111,52 @@ const form = await waitFor(() => db(`select file_name, status from downloads whe
 const posts = readFileSync(SITE_LOG, "utf8").trim().split("\n").map(JSON.parse).filter((l) => l.method === "POST").slice(-2);
 report("form download repeated by the app as POST", !!form, `${JSON.stringify(form)} | ${posts.map((p) => p.body).join(" / ")}`);
 
-// Video button (closed shadow root: reached by position and keyboard, like a user)
+// Videos. The panel lives in a closed shadow root that BiDi cannot reach: it is opened as the popup's "Show in the page"
+// does (screenshot), and a quality is chosen as the popup does, from the extension's own popup.html page.
 page = await browser.newPage();
 await page.goto(`${SITE}/video.html`);
 await page.waitForFunction(() => document.title.includes("("), { timeout: 20000 });
 await sleep(1500);
-await page.mouse.click(1280 - 24 - 40, 900 - 24 - 17);
+await page.screenshot({ path: join(shots, "3-video-tab.png") }); // the default: a small tab on the right edge
+const videoTab = await extPage.evaluate(async (url) => (await browser.tabs.query({})).find((x) => x.url?.startsWith(url))?.id, `${SITE}/video.html`);
+await extPage.evaluate((id) => browser.tabs.sendMessage(id, { type: "showPanel" }, { frameId: 0 }), videoTab);
 await sleep(6000); // qualities are read by the app
 await page.screenshot({ path: join(shots, "3-video-panel.png") });
-await page.mouse.click(1199, 750); // the 270p row's button, below the subtitles box (headless Firefox has no window focus for Tab)
+await extPage.evaluate(() => { location.href = "popup.html"; });
+await sleep(1500);
+const sentVideo = await extPage.evaluate(async (id) => {
+  const listed = await browser.runtime.sendMessage({ type: "getMedia", tabId: id });
+  const url = listed.items.at(-1).url;
+  const probe = await browser.runtime.sendMessage({ type: "probe", tabId: id, url });
+  const lowest = probe.media.variants.at(-1);
+  return browser.runtime.sendMessage({ type: "addMedia", tabId: id, url, variantId: lowest.id, label: lowest.label });
+}, videoTab);
 const media = await waitFor(() => db(`select file_name, media from downloads where id > ${before} and media is not null`)[0], 20000);
 await page.screenshot({ path: join(shots, "4-video-sent.png") });
-report("video: lowest quality chosen with the keyboard and sent", !!media && media[1].includes("270p"), JSON.stringify(media));
+report("video: lowest quality listed and sent from the popup", !!sentVideo?.ok && !!media && media[1].includes("270p"), JSON.stringify(media));
+
+// The public hls.js demo: the videos it plays are found (asked as the popup does), the tab is shown, the panel opens.
+const demo = await browser.newPage();
+await demo.goto("https://hlsjs.video-dev.org/demo/", { waitUntil: "domcontentloaded" }).catch(() => {});
+await sleep(10000);
+await demo.screenshot({ path: join(shots, "6-demo-tab.png") });
+const demoTab = await extPage.evaluate(async (url) => (await browser.tabs.query({})).find((x) => x.url?.startsWith(url))?.id, "https://hlsjs.video-dev.org/demo/");
+const demoMedia = await extPage.evaluate((id) => browser.runtime.sendMessage({ type: "getMedia", tabId: id }), demoTab);
+await extPage.evaluate((id) => browser.tabs.sendMessage(id, { type: "showPanel" }, { frameId: 0 }), demoTab);
+await sleep(6000);
+await demo.screenshot({ path: join(shots, "7-demo-panel.png") });
+report("hls.js demo: videos found, tab and panel (see 6-demo-tab.png, 7-demo-panel.png)", demoMedia?.items?.length > 0,
+  `${demoMedia?.items?.length} video, modalità ${demoMedia?.mode}`);
+await demo.close();
+await extPage.evaluate(() => { location.href = "check.html"; });
+await sleep(1000);
 
 page = await browser.newPage();
 await page.goto(`${SITE}/drm.html`);
 await page.waitForFunction(() => document.title.startsWith("drm"), { timeout: 20000 });
 await sleep(1500);
-await page.mouse.click(1280 - 24 - 40, 900 - 24 - 17);
+const drmTab = await extPage.evaluate(async (url) => (await browser.tabs.query({})).find((x) => x.url?.startsWith(url))?.id, `${SITE}/drm.html`);
+await extPage.evaluate((id) => browser.tabs.sendMessage(id, { type: "showPanel" }, { frameId: 0 }), drmTab);
 await sleep(1000);
 await page.screenshot({ path: join(shots, "5-drm.png") });
 report("protected video page", true, `${await page.title()} (vedi 5-drm.png)`);

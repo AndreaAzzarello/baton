@@ -22,7 +22,6 @@ public partial class MainWindow : Window
     private readonly Func<bool> _closeToTray;
     private readonly DispatcherTimer _saveLayout = new() { Interval = TimeSpan.FromSeconds(1) };
     private ColumnLayout _layout = new();
-    private Point? _dragStart;
     private bool _closingDone;
     private bool _exiting;
 
@@ -35,6 +34,7 @@ public partial class MainWindow : Window
         _closeToTray = closeToTray;
         DataContext = viewModel;
         RowMenu = BuildRowMenu();
+        Controls.ListSelection.SetDragData(Grid, DragData);
         NavigationMenu = BuildNavigationMenu();
         ColumnMenu = new ContextMenu();
         ColumnMenu.Opened += (_, _) => FillColumnMenu();
@@ -284,22 +284,47 @@ public partial class MainWindow : Window
         void Add(string header, ICommand command, string? gesture = null) =>
             menu.Items.Add(new MenuItem { Header = header, Command = command, InputGestureText = gesture ?? "" });
 
+        // Every entry acts on the whole selection; entries that apply to none of it are disabled.
         Add(Strings.MenuOpen, _vm.OpenFileCommand);
         Add(Strings.MenuOpenFolder, _vm.OpenFolderCommand);
         menu.Items.Add(new Separator());
         Add(Strings.MenuStart, _vm.StartCommand);
         Add(Strings.MenuPause, _vm.PauseCommand);
+        Add(Strings.MenuRetry, _vm.RetryCommand);
         Add(Strings.MenuEnqueue, _vm.EnqueueCommand);
-        menu.Items.Add(new Separator());
-        Add(Strings.MenuProgress, _vm.ProgressCommand, Strings.GestureEnter);
-        Add(Strings.MenuProperties, _vm.PropertiesCommand, Strings.GestureAltEnter);
-        Add(Strings.MenuCopyUrl, _vm.CopyUrlCommand);
         var moveTo = new MenuItem { Header = Strings.MenuMoveToQueue };
         menu.Items.Add(moveTo);
+        var category = new MenuItem { Header = Strings.MenuChangeCategory };
+        menu.Items.Add(category);
         menu.Items.Add(new Separator());
-        Add(Strings.MenuRemove, _vm.RemoveCommand, Strings.GestureDelete);
+        Add(Strings.MenuCopyUrl, _vm.CopyUrlCommand);
+        Add(Strings.MenuProgress, _vm.ProgressCommand, Strings.GestureEnter);
+        Add(Strings.MenuProperties, _vm.PropertiesCommand, Strings.GestureAltEnter);
+        menu.Items.Add(new Separator());
+        var remove = new MenuItem { Command = _vm.RemoveCommand, InputGestureText = Strings.GestureDelete };
+        var delete = new MenuItem { Command = _vm.DeleteFilesCommand, InputGestureText = Strings.GestureShiftDelete };
+        menu.Items.Add(remove);
+        menu.Items.Add(delete);
         menu.Opened += (_, _) =>
         {
+            remove.Header = _vm.RemoveText;
+            delete.Header = _vm.DeleteFilesText;
+            category.Items.Clear();
+            var selection = _vm.SelectedItems.Select(i => i.Id).ToList();
+            foreach (var c in _vm.Categories)
+            {
+                var item = new MenuItem
+                {
+                    Header = c.Name,
+                    IsCheckable = true,
+                    IsChecked = _vm.SelectedItems.Count > 0 && _vm.SelectedItems.All(i => i.CategoryId == c.Id),
+                };
+                var target = c.Id;
+                item.Click += (_, _) => _vm.ChangeCategory(selection, target);
+                category.Items.Add(item);
+            }
+            category.IsEnabled = selection.Count > 0;
+
             // One entry per queue; the queue all selected downloads are already in is checked.
             moveTo.Items.Clear();
             var ids = _vm.SelectedItems.Select(i => i.Id).ToList();
@@ -406,24 +431,9 @@ public partial class MainWindow : Window
         return [];
     }
 
-    private void OnGridMouseDown(object sender, MouseButtonEventArgs e)
+    /// <summary>A drag of the selection (see ListSelection): its finished files for Explorer, its ids for the side panel.</summary>
+    private IDataObject DragData()
     {
-        var row = e.OriginalSource is DependencyObject source ? FindAncestor<DataGridRow>(source) : null;
-        _dragStart = row is { IsSelected: true } ? e.GetPosition(Grid) : null;
-    }
-
-    private void OnGridMouseMove(object sender, MouseEventArgs e)
-    {
-        if (_dragStart is not { } start || e.LeftButton != MouseButtonState.Pressed)
-        {
-            _dragStart = null;
-            return;
-        }
-        var delta = e.GetPosition(Grid) - start;
-        if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance)
-            return;
-        _dragStart = null;
-
         var files = _vm.SelectedItems
             .Where(i => i.IsCompleted && i.Snapshot.FinalPath is { } p && File.Exists(p))
             .Select(i => i.Snapshot.FinalPath!)
@@ -433,7 +443,7 @@ public partial class MainWindow : Window
             data.SetFileDropList([.. files]);
         // The ids as a plain string: other programs may read every format offered.
         data.SetData(InternalDragFormat, string.Join(",", _vm.SelectedItems.Select(i => i.Id)));
-        DragDrop.DoDragDrop(Grid, data, DragDropEffects.Copy | DragDropEffects.Move);
+        return data;
     }
 
     private static NavigationNodeViewModel? NodeAt(DragEventArgs e) =>

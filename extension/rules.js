@@ -73,19 +73,64 @@
     neverSites: "",
     // Queue for downloads sent from the browser; "" = the app's main queue.
     queue: "",
-    // The floating "download this video" button.
-    mediaButton: true,
+    // How the page shows the videos it plays: "always" (the button with its panel), "minimized" (a small tab on the edge
+    // that opens it, the default) or "menu" (nothing in the page: the extension's icon counts them and its popup lists them).
+    mediaPanel: "minimized",
     mediaDisabledSites: "",
   };
+
+  const MEDIA_PANELS = ["always", "minimized", "menu"];
 
   /** Settings as stored, completed with defaults; "intercept: false" of 0.5 and earlier becomes the context-menu mode. */
   function normalizeSettings(stored) {
     const settings = { ...DEFAULTS, ...stored };
     if (stored && stored.mode === undefined && stored.intercept === false) settings.mode = "menu";
     if (settings.mode !== "auto" && settings.mode !== "menu") settings.mode = DEFAULTS.mode;
+    // Up to 1.1 the video button could only be on or off: off is now "only from the extension's menu".
+    if (stored && stored.mediaPanel === undefined && stored.mediaButton === false) settings.mediaPanel = "menu";
+    if (!MEDIA_PANELS.includes(settings.mediaPanel)) settings.mediaPanel = DEFAULTS.mediaPanel;
     settings.minSizeMB = Math.max(0, Number(settings.minSizeMB) || 0);
     delete settings.intercept;
+    delete settings.mediaButton;
     return settings;
+  }
+
+  /**
+   * What the page shows for its videos: "none", the small "tab" on the edge, or the "panel" (the button with its list).
+   * Closing (×) hides it for the tab until a video at an address not seen when it was closed; "hide on this page" until
+   * the page is loaded again; full screen hides it while it lasts.
+   */
+  function mediaView({ mode, enabled, items, dismissed = [], hiddenOnPage = false, minimized = false, fullscreen = false, requested = false }) {
+    if (requested && !fullscreen && items?.length) return "panel"; // "Show in the page", asked from the popup
+    if (!enabled || mode === "menu" || hiddenOnPage || fullscreen || !items?.length) return "none";
+    if (items.every((item) => dismissed.includes(item.url))) return "none";
+    return minimized ? "tab" : "panel";
+  }
+
+  /**
+   * The distance from the bottom of the window that keeps a box (its current rectangle) off the strip where players
+   * keep their controls (the last `controls` pixels of each visible player it overlaps): above that strip if needed.
+   */
+  function clearOfControls(box, players, viewportHeight, controls = 64, margin = 8) {
+    const height = box.bottom - box.top;
+    let bottom = viewportHeight - box.bottom;
+    for (const player of players) {
+      const top = viewportHeight - bottom - height;
+      const strip = player.bottom - controls;
+      if (box.left < player.right && box.right > player.left && viewportHeight - bottom > strip && top < player.bottom)
+        bottom = viewportHeight - strip + margin;
+    }
+    return bottom;
+  }
+
+  /** The button's position on one more site; the sites used least recently are forgotten past `limit`. */
+  function rememberPosition(positions, host, position, limit = 100) {
+    const next = { ...(positions || {}) };
+    delete next[host];
+    next[host] = position;
+    const hosts = Object.keys(next);
+    for (const old of hosts.slice(0, Math.max(0, hosts.length - limit))) delete next[old];
+    return next;
   }
 
   /** Host names (and "*.domain" patterns) from a text box: separated by spaces, commas, semicolons or new lines. */
@@ -341,6 +386,10 @@
     formatSize,
     grabTarget,
     mediaChoice,
+    mediaView,
+    clearOfControls,
+    rememberPosition,
+    MEDIA_PANELS,
     SUBTITLE_MODES,
   };
   root.DMRules = api;
