@@ -1,7 +1,7 @@
 # Changelog
 
 Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadManager**. Formato ispirato a
-[Keep a Changelog](https://keepachangelog.com/it/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
+[Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
 ## [1.2.0] — 2026-10-21

@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest an idea or an improvement for Baton or its extension.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! Please check the [Known issues](https://github.com/AndreaAzzarello/baton#known-issues) and the existing issues first.
+        Puoi scrivere anche in italiano.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and what gets in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: The solution you would like
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Downloads, queues, scheduling
+        - Browser extension
+        - Video (HLS/DASH)
+        - Grabber
+        - Interface, accessibility, translations
+        - Other
+    validations:
+      required: true

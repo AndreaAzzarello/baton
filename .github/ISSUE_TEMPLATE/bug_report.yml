@@ -1,0 +1,79 @@
+name: Bug report
+description: Something in Baton or its browser extension does not work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Security vulnerabilities must not be reported here**: see [SECURITY.md](https://github.com/AndreaAzzarello/baton/blob/main/SECURITY.md).
+        Puoi scrivere anche in italiano.
+  - type: input
+    id: version
+    attributes:
+      label: Baton version
+      description: Impostazioni › Aggiornamenti (Settings › Updates) shows it, for example 1.2.0.
+      placeholder: "1.2.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: Press Win+R, type `winver`.
+      placeholder: "Windows 11 24H2"
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser (if the extension is involved)
+      options:
+        - Not related to the browser
+        - Chrome
+        - Edge
+        - Opera
+        - Brave
+        - Firefox
+        - Other Chromium-based browser
+    validations:
+      required: true
+  - type: input
+    id: browser-version
+    attributes:
+      label: Browser and extension version
+      placeholder: "Edge 141, extension 1.2.0"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Use a public or test address if possible, never one with a private token in it.
+      placeholder: |
+        1. Add a download from …
+        2. Pause it and resume
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected and what happened
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log or error details
+      description: |
+        In error windows, **Copia dettagli** (Copy details) copies version, system and exception without private data.
+        The log is `%LOCALAPPDATA%\Baton\logs\app.log`: paste only the relevant lines and remove
+        user names, private addresses, cookies or anything you would not publish.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched the existing issues.
+          required: true
+        - label: This report contains no passwords, cookies, tokens or other private data.
+          required: true

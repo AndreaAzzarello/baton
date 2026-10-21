@@ -15,7 +15,8 @@ Segui i passi in ordine; se uno fallisce, correggi e riparti da quel passo. Non 
 4. **Revisione**: esegui `/code-review` sul diff della fase (rispetto all'ultimo commit di fase) e poi `/security-review`.
    Correggi ogni problema confermato (con un test quando possibile), poi ripeti il passo 3. Annota cosa è stato trovato e
    cosa no (per il riepilogo), senza nascondere i punti lasciati aperti.
-5. **README**: aggiorna versione, funzioni nuove, installazione per browser, schema del DB, limiti, comandi.
+5. **README**: `README.it.md` (guida completa: versione, funzioni nuove, installazione per browser, schema del DB, limiti,
+   comandi) e, in sintesi, `README.md` in inglese (funzioni, known issues); screenshot e GIF con dati di prova.
 6. **Ripubblicazione** (chiude l'app dell'utente):
    - controlla che non ci siano download in corso nel DB reale (`%LOCALAPPDATA%\Baton\downloads.db`, `status=1`);
      se ci sono, chiedi all'utente;

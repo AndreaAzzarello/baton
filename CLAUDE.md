@@ -6,7 +6,7 @@ versione **1.2.0** (licenza MIT, repository GitHub `AndreaAzzarello/baton`). L'u
 
 ## Vincoli permanenti
 - Nessun codice, grafica, icona, nome o marchio di altri prodotti. Solo codice originale.
-- Di "Download with…" (MPL 2.0) si riprendono solo idee, mai codice (dichiarato nel README).
+- Di "Download with…" (MPL 2.0) si riprendono solo idee, mai codice (dichiarato nei README).
 
 ## Architettura (dove mettere le cose)
 - `src/Baton.Core` — motore senza UI: `DownloadService` (code, scheduler, quote), `DownloadJob` (file a segmenti) e `Media/MediaJob` (HLS/DASH, lingue audio, sottotitoli WebVTT, DASH multi-periodo) dietro `IDownloadJob`, `Grabber`
@@ -39,6 +39,11 @@ versione **1.2.0** (licenza MIT, repository GitHub `AndreaAzzarello/baton`). L'u
   mai nel repository né nell'output; le pubbliche in `Updates/release-keys.txt`. I test usano chiavi proprie, mai quella reale.
 - Firma di Firefox: `tools\sign-firefox.ps1` legge `AMO_JWT_ISSUER`/`AMO_JWT_SECRET` dall'ambiente; mai chiavi nel repository,
   mai eseguirlo senza richiesta dell'utente (pubblica su AMO).
+
+## Documentazione
+- `README.md` in inglese, breve (presentazione, installazione, verifica, known issues); `README.it.md` è la guida completa in
+  italiano: le funzioni nuove vanno descritte lì, e in sintesi nel README inglese. File di comunità: `CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md`, `.github/ISSUE_TEMPLATE`, `.github/PULL_REQUEST_TEMPLATE.md`.
 
 ## Testi e accessibilità
 - Testi dell'app solo in `Strings.resx`, generato da `python tools/make_resx.py src` (la tabella è nello script; segnala chiavi mancanti o inutilizzate). Testi dell'estensione in `_locales/it` ed `_locales/en`, generati da `python tools/make_locales.py extension`. Non modificare a mano i file generati.
