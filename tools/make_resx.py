@@ -1,11 +1,11 @@
-# Generates src/DownloadManager.Core/Resources/Strings.resx (Italian UI texts) and checks every key used in code exists.
+# Generates src/Baton.Core/Resources/Strings.resx (Italian UI texts) and checks every key used in code exists.
 import re, sys, pathlib
 from xml.sax.saxutils import escape
 
 S = {
  # App
- "AppName": "DownloadManager",
- "ClosingTitle": "DownloadManager — salvataggio in corso…",
+ "AppName": "Baton",
+ "ClosingTitle": "Baton — salvataggio in corso…",
  "Yes": "Sì",
  "No": "No",
  "Ok": "OK",
@@ -313,25 +313,25 @@ S = {
  "CountdownSecondsName": "Secondi rimanenti",
  "CountdownCancel": "_Annulla",
  "CountdownNow": "{0} _ora",
- "StartupWarning": "Una coda è pianificata, ma DownloadManager non si avvia con Windows: la pianificazione funziona solo con l'app aperta (anche ridotta nell'area di notifica).",
+ "StartupWarning": "Una coda è pianificata, ma Baton non si avvia con Windows: la pianificazione funziona solo con l'app aperta (anche ridotta nell'area di notifica).",
  "EnableStartup": "Avvia con Windows",
  "SettingsSystem": "Sistema",
- "SettingsRunAtStartup": "Avvia DownloadManager con _Windows, ridotto nell'area di notifica",
+ "SettingsRunAtStartup": "Avvia Baton con _Windows, ridotto nell'area di notifica",
  "SettingsCloseToTray": "Chiudendo la finestra, resta _attivo nell'area di notifica",
  "SettingsGlobalQuota": "_Quota globale in MB all'ora (0 = nessuna)",
  "SpeedNoLimit": "Nessun limite",
  "SpeedCustomTitle": "Limite di velocità",
  "SpeedCustomLabel": "_Limite in KB/s (0 = nessun limite)",
  "SpeedCustomName": "Limite di velocità in KB/s",
- "TrayMenuName": "Menu di DownloadManager",
- "TrayOpen": "Apri DownloadManager",
+ "TrayMenuName": "Menu di Baton",
+ "TrayOpen": "Apri Baton",
  "TraySpeedLimit": "Limite di velocità: {0}",
  "TraySpeedCustom": "Personalizzato…",
  "TrayStartQueues": "Avvia tutte le code",
  "TrayStopQueues": "Ferma tutte le code",
  "TrayExit": "Esci",
- "TrayStatus": "DownloadManager\n{0} in download · {1} code attive\nLimite: {2}",
- "TrayHiddenHint": "DownloadManager resta attivo qui per completare download e code pianificate. Usa «Esci» nel menu per chiuderlo.",
+ "TrayStatus": "Baton\n{0} in download · {1} code attive\nLimite: {2}",
+ "TrayHiddenHint": "Baton resta attivo qui per completare download e code pianificate. Usa «Esci» nel menu per chiuderlo.",
 
  # Network (core)
  "WaitingLogin": "In attesa delle credenziali per {0}",
@@ -442,9 +442,9 @@ S = {
  "StatusCompletedWithNote": "Completato (vedi nota)",
  "FromBrowserForm": "Inviato dal browser compilando un modulo: verranno rinviati i dati del modulo (POST), i cookie e la pagina di provenienza. Un modulo non si può riprendere: se si interrompe, riparte da capo.",
  "FromBrowserMedia": "Video {0} dalla pagina, qualità {1}: i segmenti vengono scaricati in parallelo e poi uniti.",
- "BrowserRegistered": "DownloadManager è di nuovo collegato ai browser (Chrome, Edge, Opera, Brave, Chromium e Firefox). Ricarica la pagina «Verifica connessione» dell'estensione.",
- "MediaBlockedTerms": "Questo sito non consente di scaricare i suoi video nei termini di servizio: DownloadManager non lo fa.",
- "MediaBlockedDrm": "Il video è protetto (DRM o segmenti cifrati): non può essere scaricato e DownloadManager non aggira le protezioni.",
+ "BrowserRegistered": "Baton è di nuovo collegato ai browser (Chrome, Edge, Opera, Brave, Chromium e Firefox). Ricarica la pagina «Verifica connessione» dell'estensione.",
+ "MediaBlockedTerms": "Questo sito non consente di scaricare i suoi video nei termini di servizio: Baton non lo fa.",
+ "MediaBlockedDrm": "Il video è protetto (DRM o segmenti cifrati): non può essere scaricato e Baton non aggira le protezioni.",
  "MediaBlockedLive": "È una diretta: si possono scaricare solo video completi, non trasmissioni in corso.",
  "MediaUnsupported": "Formato non riconosciuto ({0}).",
  "MediaSingleQuality": "Unica qualità",
@@ -462,7 +462,7 @@ S = {
  "SettingsFfmpegMissingFile": "Il file indicato non esiste.",
  "BatchTitle": "Scarica tutto",
  "BatchHeading": "Link e immagini della pagina",
- "BatchNothing": "La pagina non contiene link che DownloadManager possa scaricare.",
+ "BatchNothing": "La pagina non contiene link che Baton possa scaricare.",
  "BatchFilterLabel": "_Cerca nel nome, nel testo o nell'indirizzo",
  "BatchFilterName": "Cerca",
  "BatchTypeLabel": "_Tipo di file",
@@ -503,7 +503,7 @@ S = {
  "GrabberProjectsName": "Progetti grabber",
  "GrabberProjectsHint": "Invio avvia la scansione, F2 modifica, Canc elimina. I file già scaricati non vengono mai cancellati.",
  "GrabberEmptyTitle": "Nessun progetto",
- "GrabberEmptyHint": "Crea un progetto con «Nuovo», oppure dal browser: tasto destro sulla pagina › «Cattura questo sito con DownloadManager…».",
+ "GrabberEmptyHint": "Crea un progetto con «Nuovo», oppure dal browser: tasto destro sulla pagina › «Cattura questo sito con Baton…».",
  "GrabberNew": "Nuovo",
  "GrabberNewToolTip": "Nuovo progetto grabber (Ctrl+N)",
  "GrabberRun": "Avvia",
@@ -721,7 +721,7 @@ S = {
  "UpdateErrorBadSignature": "La versione {0} non viene installata: la sua firma non è valida o non è di una chiave riconosciuta. Il file potrebbe essere stato alterato; scaricalo solo dalla pagina ufficiale.",
  "ImportErrorMissing": "Il file non esiste.",
  "ImportErrorTooLarge": "Il file è troppo grande o contiene troppi elementi.",
- "ImportErrorFormat": "Il file non è un'esportazione di DownloadManager.",
+ "ImportErrorFormat": "Il file non è un'esportazione di Baton (o di DownloadManager, il suo nome fino alla 1.1).",
  "ImportErrorEmpty": "Il file non contiene indirizzi.",
  "SettingsTabChecks": "Dopo il download",
  "SettingsHashTitle": "Hash",
@@ -793,7 +793,7 @@ S = {
  "ImportHint": "I download importati restano in pausa nella cartella della loro categoria; code e progetti arrivano senza pianificazione. Password, cookie e altri dati riservati non vengono mai esportati né importati.",
  "ImportApply": "Importa",
  "ImportDone": "Importazione completata: {0} aggiunti, {1} sostituiti, {2} saltati.",
- "FirstRunTitle": "Benvenuto in DownloadManager",
+ "FirstRunTitle": "Benvenuto in Baton",
  "FirstRunIntro": "Qualche scelta per iniziare. Puoi cambiarle in seguito dalle Impostazioni e dalle Categorie.",
  "FirstRunFolderTitle": "Dove salvare i download",
  "FirstRunCategoriesHint": "Cartelle delle categorie: un nome semplice è una sottocartella di quella dei download; puoi anche indicare un percorso completo.",
@@ -835,7 +835,10 @@ S = {
  "ScanFailedNoDetail": "Scansione non riuscita.",
  "MediaErrorScheme": "Indirizzo del video non supportato ({0}): sono ammessi solo http e https.",
  "MediaErrorPrivate": "Il video chiede indirizzi di questo computer o della rete locale, ma la pagina non è su quella rete: richiesta bloccata per sicurezza.",
- "ErrorNotificationExpired": "Questo pulsante della notifica non è più valido (è scaduto, oppure il download è stato rimosso o spostato). Apri DownloadManager per trovare il file.",
+ "LegacyAppRunning": "DownloadManager (il nome di Baton fino alla 1.1) è ancora aperto. Chiudilo (icona nell'area di notifica › Esci) e avvia di nuovo Baton: download e impostazioni passeranno a Baton.",
+ "MigrationFailed": "Non è stato possibile copiare i dati di DownloadManager (il nome di Baton fino alla 1.1) nella cartella di Baton: per ora Baton usa la cartella precedente, {0}, e riproverà al prossimo avvio. Nessun dato è stato perso.\n\nDettaglio: {1}",
+ "UpdateConfirmRestoreLegacy": "La versione precedente si chiama ancora DownloadManager: tornerà al suo posto e userà i suoi dati com'erano al passaggio a Baton (i download aggiunti dopo restano solo in Baton). Continuare?",
+ "ErrorNotificationExpired": "Questo pulsante della notifica non è più valido (è scaduto, oppure il download è stato rimosso o spostato). Apri Baton per trovare il file.",
  "PacNotLocal": "Il file PAC deve essere un indirizzo https (o http) oppure un file su questo computer: mai una cartella di rete (\\\\server\\…).",
  "ImportFolderNotLocal": "Cartella non ammessa: deve essere su un disco di questo computer (niente cartelle di rete \\\\server\\… o unità di rete).",
  "ImportFolderSensitive": "Cartella non ammessa: è una cartella di sistema, dei programmi, dell'avvio automatico o dei dati delle applicazioni.",
@@ -882,6 +885,6 @@ out = ['<?xml version="1.0" encoding="utf-8"?>', "<root>",
 for k in sorted(S):
     out.append(f'  <data name="{k}" xml:space="preserve"><value>{escape(S[k])}</value></data>')
 out.append("</root>")
-target = root / "DownloadManager.Core" / "Resources" / "Strings.resx"
+target = root / "Baton.Core" / "Resources" / "Strings.resx"
 target.write_text("\n".join(out) + "\n", encoding="utf-8")
 print(f"{len(S)} strings -> {target}")

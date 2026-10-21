@@ -2,7 +2,7 @@
 import "./rules.js";
 
 export const Rules = globalThis.DMRules;
-export const HOST = "com.downloadmanager.host";
+export const HOST = "com.andreaazzarello.baton";
 export const DEFAULTS = Rules.DEFAULTS;
 
 /** True in Firefox, which has no downloads.onDeterminingFilename and other small differences. */

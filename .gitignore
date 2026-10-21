@@ -501,3 +501,4 @@ dist/
 *.har
 dm-trials/
 tools/trials/out/
+docs/brand/out/

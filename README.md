@@ -1,10 +1,19 @@
-# DownloadManager
+<p align="center"><img src="docs/brand/baton.svg" width="112" alt="Logo di Baton: tre barre che si uniscono in una freccia"></p>
 
-[![CI](https://github.com/AndreaAzzarello/DownloadManager/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreaAzzarello/DownloadManager/actions/workflows/ci.yml)
+<h1 align="center">Baton</h1>
+<p align="center"><b>A fast segmented download manager for Windows</b></p>
+
+<p align="center">
+
+[![CI](https://github.com/AndreaAzzarello/baton/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreaAzzarello/baton/actions/workflows/ci.yml)
 [![Licenza: MIT](https://img.shields.io/badge/licenza-MIT-blue.svg)](LICENSE)
 
+</p>
+
 Download manager open source per Windows (C# / .NET 10 LTS / WPF), ispirato ai download manager classici, con
-un'estensione per Chrome, Edge, Opera, Brave e Firefox. Progetto indipendente, scritto da zero: non è affiliato né
+un'estensione per Chrome, Edge, Opera, Brave e Firefox. Il nome è il testimone della staffetta: le connessioni si passano
+i pezzi del file (segmentazione dinamica), e il logo le mostra come tre barre che diventano una sola freccia. Fino alla 1.1
+si chiamava DownloadManager. Progetto indipendente, scritto da zero: non è affiliato né
 compatibile con alcun prodotto commerciale.
 
 *English: an open-source download manager for Windows 10/11 with segmented and resumable downloads, queues and
@@ -12,7 +21,7 @@ scheduling, FTP/FTPS, proxies, HLS/DASH video, a site grabber, signed updates an
 Firefox). The interface is in Italian; the extension is in Italian and English. See [CHANGELOG.md](CHANGELOG.md) and
 [SECURITY.md](SECURITY.md).*
 
-Versione **1.1.1** — novità in [CHANGELOG.md](CHANGELOG.md).
+Versione **1.2.0** — novità in [CHANGELOG.md](CHANGELOG.md).
 
 | Tema chiaro | Tema scuro |
 |---|---|
@@ -43,19 +52,19 @@ Versione **1.1.1** — novità in [CHANGELOG.md](CHANGELOG.md).
 
 ## Installazione
 
-1. Dalla pagina [Releases](https://github.com/AndreaAzzarello/DownloadManager/releases/latest) scarica
-   `DownloadManager.exe`, `DownloadManager.exe.sha256` e `DownloadManager.exe.sig`, e verificali (sezione seguente).
-2. Metti `DownloadManager.exe` in una cartella tua (per esempio `%LOCALAPPDATA%\Programs\DownloadManager`) e avvialo: non
+1. Dalla pagina [Releases](https://github.com/AndreaAzzarello/baton/releases/latest) scarica
+   `Baton.exe`, `Baton.exe.sha256` e `Baton.exe.sig`, e verificali (sezione seguente).
+2. Metti `Baton.exe` in una cartella tua (per esempio `%LOCALAPPDATA%\Programs\Baton`) e avvialo: non
    serve installazione né diritti di amministratore. Il primo avvio propone cartelle, categorie, browser e tema, e registra
    per l'utente corrente l'host nativo usato dall'estensione. L'eseguibile non è firmato con un certificato di firma del
    codice: SmartScreen può chiedere conferma (**Ulteriori informazioni › Esegui comunque**) dopo che hai verificato la firma.
-3. **Estensione** — scarica dalla release `downloadmanager-chromium-<versione>.zip` (estrailo in una cartella che non
+3. **Estensione** — scarica dalla release `baton-chromium-<versione>.zip` (estrailo in una cartella che non
    sposterai) oppure usa la cartella `extension` del repository:
    - **Chrome / Brave** — `chrome://extensions` (Brave: `brave://extensions`) → attiva **Modalità sviluppatore** →
      **Carica estensione non pacchettizzata** → la cartella estratta.
    - **Edge** — `edge://extensions` → **Modalità sviluppatore** → **Carica decompressa** → la cartella estratta.
    - **Opera** — `opera://extensions` → **Modalità sviluppatore** → **Carica estensione decompressa** → la cartella estratta.
-   - **Firefox** — il file `downloadmanager-firefox-<versione>.xpi` della release **non è firmato** da Mozilla: Firefox
+   - **Firefox** — il file `baton-firefox-<versione>.xpi` della release **non è firmato** da Mozilla: Firefox
      normale lo accetta solo come componente temporaneo (`about:debugging#/runtime/this-firefox` → **Carica componente
      aggiuntivo temporaneo** → il file `.xpi`, rimosso alla chiusura). Per un'installazione permanente firmalo con le tue
      chiavi AMO (vedi [Firefox permanente](#firefox-permanente-firma-non-elencata-su-addonsmozillaorg)) oppure usa
@@ -63,34 +72,50 @@ Versione **1.1.1** — novità in [CHANGELOG.md](CHANGELOG.md).
 
    Dal popup dell'estensione, **Verifica connessione** controlla che l'app risponda.
 
+### Da DownloadManager (1.1) a Baton
+
+Il passaggio è automatico: aggiornando dalla 1.1 (Impostazioni › *Aggiornamenti*, con l'indirizzo di questo repository) o
+avviando `Baton.exe` nella stessa cartella di `DownloadManager.exe`, Baton al primo avvio
+
+- **copia** i dati da `%LOCALAPPDATA%\DownloadManager` a `%LOCALAPPDATA%\Baton` (download, impostazioni, credenziali,
+  certificati, progetti, log); la cartella vecchia resta com'era, con una nota `migrated-to-baton.txt`, e si può cancellare
+  quando Baton funziona. Se la copia non riesce, Baton usa la cartella vecchia, lo dice e riprova al prossimo avvio;
+- registra il nuovo host per i browser e toglie le registrazioni di DownloadManager; l'avvio con Windows passa a Baton solo
+  se era attivo;
+- prende il posto di `DownloadManager.exe` (la versione precedente resta come `Baton.exe.old` per **Ripristina la versione
+  precedente**) e aggiorna i collegamenti sul Desktop, nel menu Start e nella barra delle applicazioni.
+
+Estensione: in Chrome, Edge, Opera e Brave basta **ricaricarla** (l'ID non cambia); in **Firefox** l'ID è nuovo
+(`baton@andreaazzarello`): rimuovi la vecchia estensione e installa quella di Baton.
+
 ## Verificare una release
 
-Ogni release contiene l'hash SHA-256 (`DownloadManager.exe.sha256`) e una firma ECDSA P-256 (`DownloadManager.exe.sig`) di
+Ogni release contiene l'hash SHA-256 (`Baton.exe.sha256`) e una firma ECDSA P-256 (`Baton.exe.sig`) di
 "versione + nome del file + SHA-256", fatta con una chiave privata che non lascia mai il PC dell'autore. Le chiavi pubbliche
-sono in [`src/DownloadManager.Core/Updates/release-keys.txt`](src/DownloadManager.Core/Updates/release-keys.txt):
-`b80f666050fcbc7d` (principale) e `cc691630b30bf7f1` (di riserva, dalla 1.1.1). Con i tre file nella stessa cartella, da
+sono in [`src/Baton.Core/Updates/release-keys.txt`](src/Baton.Core/Updates/release-keys.txt):
+`b80f666050fcbc7d` (principale) e `cc691630b30bf7f1` (di riserva, dalla 1.2.0). Con i tre file nella stessa cartella, da
 una copia del repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\DownloadManager.exe" -Version 1.1.1
-# OK: DownloadManager.exe 1.1.1, SHA-256 …, signed by b80f666050fcbc7d.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton.exe" -Version 1.2.0
+# OK: Baton.exe 1.2.0, SHA-256 …, signed by b80f666050fcbc7d.
 ```
 
-Solo l'hash, senza clonare nulla: `(Get-FileHash .\DownloadManager.exe -Algorithm SHA256).Hash` deve coincidere con il
-contenuto di `DownloadManager.exe.sha256` (l'hash da solo prova l'integrità del download, non l'autore). L'app fa le stesse
+Solo l'hash, senza clonare nulla: `(Get-FileHash .\Baton.exe -Algorithm SHA256).Hash` deve coincidere con il
+contenuto di `Baton.exe.sha256` (l'hash da solo prova l'integrità del download, non l'autore). L'app fa le stesse
 verifiche, firma compresa, prima di installare un aggiornamento. Le build della CI non sono firmate e non vengono pubblicate.
 
 ## Struttura
 
 | Percorso | Contenuto |
 |---|---|
-| `src/DownloadManager.Core` | Motore: segmenti, connessioni, checkpoint, code e scheduler, categorie, SQLite; `Net` (trasporti HTTP e FTP, proxy, PAC), `Security` (credenziali, certificati, segreti DPAPI), `Platform` (registro iniettabile e registrazioni di sistema); testi in `Resources/Strings.resx` |
-| `src/DownloadManager.App` | Interfaccia WPF in MVVM: `ViewModels`, `Views`, `Services` (finestre, tema, notifiche, area di notifica, avvio con Windows, risparmio energia), `Themes`, `Controls` |
-| `src/DownloadManager.Core/Media` | Video: parser HLS (`HlsPlaylist`) e DASH (`DashManifest`), scelta delle qualità e controlli (`MediaCatalog`), download dei segmenti (`MediaJob`), ffmpeg facoltativo |
-| `src/DownloadManager.Core/Grabber` | Grabber: `GrabberEngine` (visita per livelli, HTML/CSS statici con AngleSharp), `RobotsTxt`, `HostThrottle` (richieste per host, 429/Retry-After), `TrapGuard` e `CrawlUrls` (normalizzazione, trappole), `LocalPaths` (percorsi locali sicuri), `PageLinks` (link di HTML, CSS e srcset, anche per la riscrittura), `GrabberService` (progetti, sincronizzazione, pianificazione) |
-| `src/DownloadManager.Core/PostDownload`, `Portable`, `Updates`, `Setup` | Dopo il download (`FileHash`, `VirusScanner`), esportazione e importazione senza segreti, aggiornamenti verificati con ripristino, primo avvio e spostamento dal Desktop; `Log` (log ruotati e mascherati) |
-| `src/DownloadManager.Core/Integration` | Protocollo con l'estensione (`Messages`, versione 3), validazione (`MessageValidator`), host nativo, pipe, "Scarica tutto" (`BatchLinks`) |
-| `tests/DownloadManager.Tests` | Test xUnit con server locali avviati dai test: HTTP (Range, ETag, 429, cookie, Basic/Digest, moduli POST), FTP/FTPS, proxy HTTP e SOCKS5; fixture HLS/DASH in `Fixtures/Media`; sito multi-host per il grabber (`GrabberTestSite`) |
+| `src/Baton.Core` | Motore: segmenti, connessioni, checkpoint, code e scheduler, categorie, SQLite; `Net` (trasporti HTTP e FTP, proxy, PAC), `Security` (credenziali, certificati, segreti DPAPI), `Platform` (registro iniettabile e registrazioni di sistema); testi in `Resources/Strings.resx` |
+| `src/Baton.App` | Interfaccia WPF in MVVM: `ViewModels`, `Views`, `Services` (finestre, tema, notifiche, area di notifica, avvio con Windows, risparmio energia), `Themes`, `Controls` |
+| `src/Baton.Core/Media` | Video: parser HLS (`HlsPlaylist`) e DASH (`DashManifest`), scelta delle qualità e controlli (`MediaCatalog`), download dei segmenti (`MediaJob`), ffmpeg facoltativo |
+| `src/Baton.Core/Grabber` | Grabber: `GrabberEngine` (visita per livelli, HTML/CSS statici con AngleSharp), `RobotsTxt`, `HostThrottle` (richieste per host, 429/Retry-After), `TrapGuard` e `CrawlUrls` (normalizzazione, trappole), `LocalPaths` (percorsi locali sicuri), `PageLinks` (link di HTML, CSS e srcset, anche per la riscrittura), `GrabberService` (progetti, sincronizzazione, pianificazione) |
+| `src/Baton.Core/PostDownload`, `Portable`, `Updates`, `Setup` | Dopo il download (`FileHash`, `VirusScanner`), esportazione e importazione senza segreti, aggiornamenti verificati con ripristino, primo avvio e spostamento dal Desktop; `Log` (log ruotati e mascherati) |
+| `src/Baton.Core/Integration` | Protocollo con l'estensione (`Messages`, versione 3), validazione (`MessageValidator`), host nativo, pipe, "Scarica tutto" (`BatchLinks`) |
+| `tests/Baton.Tests` | Test xUnit con server locali avviati dai test: HTTP (Range, ETag, 429, cookie, Basic/Digest, moduli POST), FTP/FTPS, proxy HTTP e SOCKS5; fixture HLS/DASH in `Fixtures/Media`; sito multi-host per il grabber (`GrabberTestSite`) |
 | `extension` | Sorgente unico dell'estensione (Manifest V3); è anche la build per Chromium, caricabile così com'è |
 | `tools/build-extension.mjs` | Build per Chromium e Firefox in `dist/` (cartelle e pacchetti .zip / .xpi) |
 | `tests/extension` | Test dell'estensione con `node --test` (regole, moduli, media, ripiego), eseguiti anche da `dotnet test` |
@@ -100,9 +125,10 @@ verifiche, firma compresa, prima di installare un aggiornamento. Le build della 
 | `tools/verify-release.ps1` | Verifica SHA-256 e firma di una release scaricata |
 | `.github/workflows/ci.yml` | CI su GitHub Actions: build senza avvisi, test e build dell'estensione su Windows (nessuna firma) |
 | `docs/screenshots` | Screenshot del README, fatti con dati di prova |
+| `docs/brand` | Logo (SVG) e `brand.mjs`, che ne ricava icone dell'app, della tray e dell'estensione, logo e immagine per GitHub; `tools/make_icons.py` compone i file `.ico` |
 | `tools/make_resx.py`, `tools/make_locales.py` | Generatori dei testi: `Strings.resx` dell'app e `_locales` dell'estensione (la tabella è nello script) |
 | `CLAUDE.md`, `.claude/` | Regole del progetto per Claude Code, hook (guardia su registro e Desktop, controlli dell'estensione, build incrementale) e skill `prova-reale`, `fine-fase`, `stringhe` |
-| `publish/DownloadManager.exe` | Build Release self-contained win-x64 (non richiede il runtime .NET) |
+| `publish/Baton.exe` | Build Release self-contained win-x64 (non richiede il runtime .NET) |
 
 ## Come funziona il download
 
@@ -210,7 +236,7 @@ Compressi, Documenti, Musica, Video, Programmi e Generale, ognuna con estensioni
 ## Grabber
 
 Pulsante **Grabber** (Ctrl+G) nella barra, oppure dal browser: tasto destro sulla pagina › **Cattura questo sito con
-DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; mai dalle finestre private).
+Baton…** (l'estensione passa indirizzo, titolo e cookie del sito; mai dalle finestre private).
 
 - **Procedura guidata** in cinque passi: indirizzo e modalità; ambito (profondità, solo questo sito o anche domini elencati,
   robots.txt, richieste al secondo per sito, user-agent); filtri (tipi con gruppi pronti — immagini, documenti, audio, video,
@@ -290,7 +316,7 @@ DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; ma
   grandi, testo sì/no. Salvato tra una sessione e l'altra; *Ripristina* torna alla barra predefinita.
 - **Esporta e importa** (**Altro**): la lista dei download in JSON o i soli indirizzi in testo; impostazioni, categorie, code e
   progetti del grabber in JSON. **Mai** password, cookie, campi dei moduli o altri segreti, né i percorsi dei programmi
-  (ffmpeg, antivirus) e l'indirizzo degli aggiornamenti. L'importazione (JSON di DownloadManager o un testo qualsiasi con
+  (ffmpeg, antivirus) e l'indirizzo degli aggiornamenti. L'importazione (JSON di Baton o di DownloadManager fino alla 1.1, o un testo qualsiasi con
   indirizzi) mostra prima un'anteprima: tipo, nome, già presente, non valido; si sceglie cosa importare e cosa fare dei
   duplicati (salta, sostituisci, mantieni entrambi); l'anteprima mostra anche le cartelle di categorie e progetti. Il file
   importato non è fidato: i download entrano in pausa nella cartella della loro categoria (mai in una cartella indicata dal file
@@ -303,7 +329,7 @@ DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; ma
 - **Primo avvio** (solo se il database non esiste): cartella dei download (predefinita **Download**, mai il Desktop), cartelle
   delle categorie, istruzioni per ogni browser trovato con **Verifica connessione**, avvio con Windows e tema.
 - **Download sul Desktop** (installazioni precedenti): se la cartella dei download o quelle delle categorie sono sul Desktop,
-  all'avvio viene proposto **una sola volta** di spostarle in `Download\DownloadManager`. Nulla cambia senza conferma, e i file
+  all'avvio viene proposto **una sola volta** di spostarle in `Download\Baton`. Nulla cambia senza conferma, e i file
   già scaricati vengono spostati solo dopo una seconda domanda separata.
 - **Errori imprevisti**: una finestra con *Dettagli tecnici* e **Copia dettagli** (senza dati riservati); tutto finisce anche
   nel log.
@@ -320,7 +346,7 @@ DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; ma
   stessa dimensione e stesso ETag (o data di ultima modifica) → i dati già scaricati vengono mantenuti; file diverso → si
   ricomincia da zero dopo conferma; stessa dimensione ma nessun dato per verificare → decidi tu.
 - **Notifiche di Windows** a fine download con i pulsanti **Apri** e **Apri cartella** (disattivabili in Impostazioni).
-  I pulsanti usano link `downloadmanager:` firmati (HMAC) con una chiave dell'utente, che coprono anche l'ID del download e una
+  I pulsanti usano link `baton:` firmati (HMAC) con una chiave dell'utente, che coprono anche l'ID del download e una
   scadenza di 7 giorni: una pagina web non può usarli per aprire file, e un link vecchio o di un altro download non vale.
 - **Aggiungi / conferma dal browser**: scelta di categoria e coda; *Scarica ora* avvia subito, *Aggiungi alla coda* aspetta il turno.
 - **Tastiera**: Ctrl+G grabber, Ctrl+N aggiungi, Ctrl+V incolla link, Ctrl+F cerca, Canc rimuovi, Invio avanzamento, Alt+Invio proprietà.
@@ -328,7 +354,7 @@ DownloadManager…** (l'estensione passa indirizzo, titolo e cookie del sito; ma
 
 ## Dati
 
-`%LOCALAPPDATA%\DownloadManager\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 8):
+`%LOCALAPPDATA%\Baton\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 8):
 all'avvio i database delle versioni precedenti vengono aggiornati un passo alla volta in un'unica transazione, dopo averne
 salvato una copia accanto (`downloads.db.v<versione>.bak`). Un database creato da una versione più recente non viene modificato.
 Passando alla 3, tutti i download entrano nella Coda principale, che eredita il vecchio limite e lo stato avviata/fermata;
@@ -342,7 +368,7 @@ file è stato mandato e se è stato davvero ottenuto (i file già presenti conta
 La 8 aggiunge alle credenziali `scheme` (lo schema per cui valgono: quello dei download passati per quel server, altrimenti
 quello cifrato) e `plain_confirmed` (conferma dell'invio in chiaro, inizialmente no).
 
-**Log**: `%LOCALAPPDATA%\DownloadManager\logs\app.log`, al massimo 1 MB per file e 5 file (`app.1.log` … `app.4.log`). Gli
+**Log**: `%LOCALAPPDATA%\Baton\logs\app.log`, al massimo 1 MB per file e 5 file (`app.1.log` … `app.4.log`). Gli
 indirizzi vi compaiono senza parametri né credenziali, e password, cookie e token vengono mascherati.
 
 **Errori del disco**: disco pieno, cartella non scrivibile e percorso troppo lungo fermano il download con un messaggio
@@ -358,32 +384,32 @@ non è usato.
 ## Aggiornamenti
 
 Disattivati per impostazione: in Impostazioni › *Aggiornamenti* si attiva il controllo all'avvio, oppure **Controlla ora**.
-Dalla 1.1.1 l'indirizzo predefinito sono le release di questo repository
-(`https://api.github.com/repos/AndreaAzzarello/DownloadManager/releases/latest`; un indirizzo lasciato vuoto nelle versioni
+Dalla 1.2.0 l'indirizzo predefinito sono le release di questo repository
+(`https://api.github.com/repos/AndreaAzzarello/baton/releases/latest`; un indirizzo lasciato vuoto nelle versioni
 precedenti diventa questo). Si può indicare un altro indirizzo: le release di GitHub
 (`https://api.github.com/repos/UTENTE/REPOSITORY/releases/latest`, con l'eseguibile tra gli allegati e il suo SHA-256 in un
-allegato **`DownloadManager.exe.sha256`** — l'hash nei formati comuni: solo l'hash (anche scritto da PowerShell in UTF-16),
+allegato **`Baton.exe.sha256`** — l'hash nei formati comuni: solo l'hash (anche scritto da PowerShell in UTF-16),
 `hash  nome` di sha256sum, `SHA256 (nome) = hash`, l'output di certutil; se nomina un altro programma viene rifiutato. Un hash
 nelle note o in un file `SHA256SUMS` non basta: senza quell'allegato una versione più recente non viene installata e l'app lo
 dice, anche dopo il controllo automatico all'avvio, una sola volta per release) oppure un manifest JSON
-`{ "version": "1.1.0", "notes": "…", "url": "https://…/DownloadManager.exe", "sha256": "…", "signature": "…" }`. Solo
+`{ "version": "1.2.0", "notes": "…", "url": "https://…/Baton.exe", "sha256": "…", "signature": "…" }`. Solo
 indirizzi https.
 **Dalla 1.1.0 gli aggiornamenti devono essere firmati**: la release deve contenere anche l'allegato
-**`DownloadManager.exe.sig`** (per il manifest, il campo `signature`) con una firma ECDSA P-256 dell'autore di
+**`Baton.exe.sig`** (per il manifest, il campo `signature`) con una firma ECDSA P-256 dell'autore di
 "versione + nome del file + SHA-256", verificata con le chiavi pubbliche incorporate nell'app
-(`src/DownloadManager.Core/Updates/release-keys.txt`). Una firma assente, errata, di una chiave sconosciuta o di un'altra
+(`src/Baton.Core/Updates/release-keys.txt`). Una firma assente, errata, di una chiave sconosciuta o di un'altra
 versione (una vecchia release firmata ripresentata come nuova) blocca l'installazione con un avviso. Le versioni fino alla
 1.0.1 non leggono la firma e si aggiornano alla 1.1.0 con il solo `.sha256`: per questo ogni release li contiene entrambi.
 Con il controllo all'avvio attivo, una versione più recente mostra le note; nulla viene scaricato senza **Scarica e installa**.
 Il file scaricato deve corrispondere allo SHA-256 dichiarato ed essere un programma Windows, altrimenti viene eliminato.
-Poi l'eseguibile in uso diventa `DownloadManager.exe.old`, il nuovo prende il suo posto e la versione precedente, avviata come
+Poi l'eseguibile in uso diventa `Baton.exe.old`, il nuovo prende il suo posto e la versione precedente, avviata come
 "guardiano", avvia la nuova e aspetta che segnali di essere partita: se si chiude o non risponde entro 90 secondi, la nuova
 viene messa da parte come `.failed`, la precedente torna al suo posto e si riavvia con un avviso. **Ripristina la versione
 precedente** fa lo stesso scambio a mano. Funziona solo con l'eseguibile pubblicato (un file unico).
 
 ### Pubblicare una release firmata
 
-La chiave privata non è mai nel repository: `tools\sign-release.ps1` la tiene in `%LOCALAPPDATA%\DownloadManager-signing`,
+La chiave privata non è mai nel repository: `tools\sign-release.ps1` la tiene in `%LOCALAPPDATA%\Baton-signing` (le chiavi create prima della rinomina restano in `%LOCALAPPDATA%\DownloadManager-signing` e vengono lette da lì),
 cifrata con DPAPI (utilizzabile solo da questo utente Windows) oppure, con `-Password`, con una password (PBKDF2-SHA256 e
 AES-256 con HMAC), per una copia di riserva da conservare fuori dal PC.
 
@@ -392,12 +418,12 @@ AES-256 con HMAC), per una copia di riserva da conservare fuori dal PC.
    file `<id>.key.json` su un supporto esterno e toglilo dal PC (con la sua password permette di firmare anche se la chiave
    DPAPI va persa, per esempio reinstallando Windows). Ricompila e fai il commit di `release-keys.txt`: solo le versioni che
    contengono una chiave accettano le firme fatte con essa.
-2. **A ogni release**: aumenta `<Version>` in `src\DownloadManager.App\DownloadManager.App.csproj`, pubblica
-   (`dotnet publish … -o publish`), poi `.\tools\sign-release.ps1` scrive `publish\DownloadManager.exe.sha256` e
-   `publish\DownloadManager.exe.sig` (la versione è letta dall'exe; con `-Version` la si indica). Con
-   `-Url https://…/DownloadManager.exe` scrive anche `latest.json` per un indirizzo che non sia GitHub.
-3. Su GitHub crea la release con il tag `v<versione>` e allega **i tre file**: `DownloadManager.exe`,
-   `DownloadManager.exe.sha256` e `DownloadManager.exe.sig`. Il tag deve essere la stessa versione firmata.
+2. **A ogni release**: aumenta `<Version>` in `src\Baton.App\Baton.App.csproj`, pubblica
+   (`dotnet publish … -o publish`), poi `.\tools\sign-release.ps1` scrive `publish\Baton.exe.sha256` e
+   `publish\Baton.exe.sig` (la versione è letta dall'exe; con `-Version` la si indica). Con
+   `-Url https://…/Baton.exe` scrive anche `latest.json` per un indirizzo che non sia GitHub.
+3. Su GitHub crea la release con il tag `v<versione>` e allega **i tre file**: `Baton.exe`,
+   `Baton.exe.sha256` e `Baton.exe.sig`. Il tag deve essere la stessa versione firmata.
 
 **Rotazione della chiave**: crea la nuova chiave con `-NewKey` (si aggiunge all'elenco), pubblica una versione firmata con la
 vecchia che contiene entrambe, poi firma con tutte e due (`-Key <vecchia>,<nuova>`, il `.sig` ha una riga per chiave) finché
@@ -419,9 +445,9 @@ giro (misurato: circa 30 KB per 100 download).
 
 ### Installazione
 
-In ogni caso, prima avvia DownloadManager almeno una volta: registra da sé, per l'utente corrente, l'host di native messaging
+In ogni caso, prima avvia Baton almeno una volta: registra da sé, per l'utente corrente, l'host di native messaging
 per Chrome, Edge, Chromium, Brave (Opera usa la registrazione di Chrome) e Firefox
-(`HKCU\Software\<browser>\NativeMessagingHosts\com.downloadmanager.host` e `HKCU\Software\Mozilla\NativeMessagingHosts\...`).
+(`HKCU\Software\<browser>\NativeMessagingHosts\com.andreaazzarello.baton` e `HKCU\Software\Mozilla\NativeMessagingHosts\...`).
 
 - **Edge** — `edge://extensions` → attiva **Modalità sviluppatore** → **Carica decompressa** → cartella `extension`
   (oppure `dist\chromium`).
@@ -456,17 +482,17 @@ pubblicarla nel catalogo. Si fa una volta per ogni nuova versione:
 6. Alla versione successiva aumenta `version` in `extension\manifest.json` (AMO non firma due volte la stessa versione) e
    ripeti il passo 4. Le chiavi si possono revocare dalla stessa pagina di AMO.
 
-L'ID (`downloadmanager@extension.local`) resta lo stesso, quindi l'host nativo già registrato funziona anche con l'estensione
+L'ID (`baton@andreaazzarello`) resta lo stesso, quindi l'host nativo già registrato funziona anche con l'estensione
 firmata.
 
-L'ID dell'estensione è fisso (chiave nel manifest per Chromium, `downloadmanager@extension.local` per Firefox): l'host accetta
+L'ID dell'estensione è fisso (chiave nel manifest per Chromium, `baton@andreaazzarello` per Firefox): l'host accetta
 solo quello.
 
 ### Verifica connessione
 
 La pagina **Verifica connessione** (link nel popup, oppure *Opzioni* dell'estensione) controlla l'host nativo e la versione del
 protocollo. Se l'host manca, rifiuta l'estensione o l'app è una versione precedente, mostra cosa fare e un pulsante
-**Registra**: apre il link `downloadmanager:register`, che (dopo la conferma del browser) avvia DownloadManager e registra di nuovo
+**Registra**: apre il link `baton:register`, che (dopo la conferma del browser) avvia Baton e registra di nuovo
 l'host per tutti i browser. Se l'app non è mai stata avviata, il link non è ancora registrato: basta avviarla una volta.
 
 ### Modalità (dal popup)
@@ -553,7 +579,7 @@ inizializzazione del periodo quando cambia.
 
 ### Scarica tutto
 
-Tasto destro sulla pagina → **Scarica tutto con DownloadManager…**: l'app apre una finestra con tutti i link e le immagini della
+Tasto destro sulla pagina → **Scarica tutto con Baton…**: l'app apre una finestra con tutti i link e le immagini della
 pagina (o del frame), una volta sola ciascuno, già spuntati quelli che sembrano file (non le pagine web). Filtri per testo
 (nome, testo del link, indirizzo), tipo di file e link/immagini; selezione multipla (Barra spaziatrice sulle righe evidenziate,
 "Seleziona/Deseleziona visibili"); categoria (automatica per tipo o una scelta), coda e cartella. "Scarica ora" avvia la coda,
@@ -602,21 +628,22 @@ $dn = "C:\Program Files\dotnet\dotnet.exe"
 & $dn test                                    # test (anche quelli dell'estensione: serve Node.js)
 node --test "tests/extension/*.test.mjs"      # solo i test dell'estensione
 node tools/build-extension.mjs                # estensione per Chromium e Firefox in dist\
-& $dn run --project src\DownloadManager.App   # avvio in debug
-& $dn publish src\DownloadManager.App -c Release -r win-x64 -o publish   # exe self-contained
+& $dn run --project src\Baton.App   # avvio in debug
+& $dn publish src\Baton.App -c Release -r win-x64 -o publish   # exe self-contained
 .\tools\sign-firefox.ps1 -Check                                          # firma dell'estensione per Firefox (vedi sopra)
-.\tools\sign-release.ps1                                                 # firma publish\DownloadManager.exe (vedi Aggiornamenti)
+.\tools\sign-release.ps1                                                 # firma publish\Baton.exe (vedi Aggiornamenti)
 powershell -File tools\trials\grab-trial.ps1 -Mode Mirror                 # prova reale del grabber (dopo prepare.ps1)
 ```
 
-`DOWNLOADMANAGER_DATA=<cartella>` avvia l'app su un'altra cartella dati (utile per le prove).
-`DOWNLOADMANAGER_SIMULATE_POWER=1` sostituisce sospensione, ibernazione e spegnimento con una riga in `simulated-power.log`
+`BATON_DATA=<cartella>` avvia l'app su un'altra cartella dati (utile per le prove). `DOWNLOADMANAGER_DATA`, la variabile
+della 1.1, serve solo alle prove: da sola isola l'app allo stesso modo, accanto a `BATON_DATA` indica i dati 1.1 da copiare.
+`BATON_SIMULATE_POWER=1` sostituisce sospensione, ibernazione e spegnimento con una riga in `simulated-power.log`
 nella cartella dati, per provare le azioni di fine coda senza spegnere il PC.
-Con `DOWNLOADMANAGER_DATA` l'app è **isolata**: registro tenuto in memoria (avvio con Windows, browser e notifiche non vengono
+Con `BATON_DATA` l'app è **isolata**: registro tenuto in memoria (avvio con Windows, browser e notifiche non vengono
 toccati), pipe e istanza singola separate, quindi può girare accanto all'app vera. Nei test il registro reale è proprio vietato:
 qualsiasi accesso fa fallire il test.
 
-I testi dell'interfaccia sono in `src/DownloadManager.Core/Resources/Strings.resx`; per tradurre l'app basta aggiungere
+I testi dell'interfaccia sono in `src/Baton.Core/Resources/Strings.resx`; per tradurre l'app basta aggiungere
 un file `Strings.<lingua>.resx`.
 
 ## Limiti noti (known issues)
@@ -659,7 +686,7 @@ Restano aperte finché un test non le conferma o le esclude; le segnalazioni son
 
 ## Risoluzione dei problemi
 
-- **L'estensione dice che l'app non risponde / host mancante**: avvia DownloadManager una volta (registra l'host per l'utente
+- **L'estensione dice che l'app non risponde / host mancante**: avvia Baton una volta (registra l'host per l'utente
   corrente), poi apri **Verifica connessione** dal popup dell'estensione; se l'eseguibile è stato spostato, il pulsante
   *Registra* della pagina lo ripunta. In Opera l'host è quello di Chrome.
 - **I download partono ma si fermano con "disco pieno" o "cartella non scrivibile"**: libera spazio o scegli un'altra cartella
@@ -668,8 +695,8 @@ Restano aperte finché un test non le conferma o le esclude; le segnalazioni son
   i parametri (`{file}` è il file) e i codici di uscita; con un antivirus diverso da Defender consulta la sua documentazione
   della riga di comando.
 - **Un aggiornamento non parte**: l'app torna da sola alla versione precedente e lo segnala; la versione scartata resta accanto
-  come `DownloadManager.exe.failed`. Il dettaglio è nel log.
-- **Qualcosa non va**: `%LOCALAPPDATA%\DownloadManager\logs\app.log`; nelle finestre d'errore **Copia dettagli** copia
+  come `Baton.exe.failed`. Il dettaglio è nel log.
+- **Qualcosa non va**: `%LOCALAPPDATA%\Baton\logs\app.log`; nelle finestre d'errore **Copia dettagli** copia
   versione, sistema ed eccezione senza dati riservati.
 - **Database**: prima di ogni aggiornamento di schema ne resta una copia `downloads.db.v<N>.bak` accanto all'originale.
 
@@ -683,5 +710,5 @@ esecuzione di script; nessuna telemetria.
 ## Licenza
 
 [MIT](LICENSE) © 2026 Andrea Azzarello. Componenti di terze parti e relative licenze:
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). ffmpeg non è incluso. Le modalità dell'estensione riprendono solo
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) (testi completi in [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt), allegato anche a ogni release). ffmpeg non è incluso. Le modalità dell'estensione riprendono solo
 l'idea di "Download with…" (vedi [Riferimenti](#riferimenti)).

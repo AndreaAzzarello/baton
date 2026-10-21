@@ -1,27 +1,27 @@
 {
   "extName": {
-    "message": "DownloadManager"
+    "message": "Baton"
   },
   "extDescription": {
-    "message": "Sends browser downloads, page links, videos and whole sites to the DownloadManager app for Windows."
+    "message": "Sends browser downloads, page links, videos and whole sites to the Baton app for Windows."
   },
   "menuLink": {
-    "message": "Download with DownloadManager"
+    "message": "Download with Baton"
   },
   "menuAll": {
-    "message": "Download all with DownloadManager…"
+    "message": "Download all with Baton…"
   },
   "menuGrab": {
-    "message": "Capture this site with DownloadManager…"
+    "message": "Capture this site with Baton…"
   },
   "errorGrabIncognito": {
-    "message": "Sites are not captured from private windows: nothing was sent to DownloadManager."
+    "message": "Sites are not captured from private windows: nothing was sent to Baton."
   },
   "errorGrabNotWeb": {
     "message": "Only http and https pages can be captured."
   },
   "errorGrabOutdated": {
-    "message": "Capturing a site needs DownloadManager 0.7 or later: update the app."
+    "message": "Capturing a site needs an up-to-date Baton: update the app."
   },
   "mediaAudioLabel": {
     "message": "Audio"
@@ -42,13 +42,13 @@
     "message": "inside the video (needs ffmpeg)"
   },
   "titleAuto": {
-    "message": "DownloadManager — intercepting downloads"
+    "message": "Baton — intercepting downloads"
   },
   "titleMenu": {
-    "message": "DownloadManager — context menu only"
+    "message": "Baton — context menu only"
   },
   "fallbackNotice": {
-    "message": "DownloadManager did not take the download ($1). The browser downloads it instead."
+    "message": "Baton did not take the download ($1). The browser downloads it instead."
   },
   "errorBadReply": {
     "message": "invalid reply from the app"
@@ -60,10 +60,10 @@
     "message": "This video is played from data inside the page: use the “Download this video” button that appears on the page."
   },
   "errorNotDownloadable": {
-    "message": "This link cannot be downloaded with DownloadManager."
+    "message": "This link cannot be downloaded with Baton."
   },
   "errorNotReceived": {
-    "message": "DownloadManager did not receive it: $1"
+    "message": "Baton did not receive it: $1"
   },
   "errorPageAccess": {
     "message": "The page cannot be read: $1"
@@ -75,10 +75,10 @@
     "message": "This video was not loaded by the page."
   },
   "mediaTerms": {
-    "message": "This site's terms of service do not allow downloading its videos, so DownloadManager does not offer it."
+    "message": "This site's terms of service do not allow downloading its videos, so Baton does not offer it."
   },
   "mediaDrm": {
-    "message": "This video is protected (DRM). It cannot be downloaded, and DownloadManager does not get around protections."
+    "message": "This video is protected (DRM). It cannot be downloaded, and Baton does not get around protections."
   },
   "mediaLive": {
     "message": "This is a live stream: only complete videos can be downloaded."
@@ -108,7 +108,7 @@
     "message": "Reading the available qualities…"
   },
   "mediaAppOutdated": {
-    "message": "Update DownloadManager to version 0.6 or later to download videos."
+    "message": "Update Baton to download videos."
   },
   "mediaSizeUnknown": {
     "message": "size unknown"
@@ -126,7 +126,7 @@
     "message": "Sent ✓"
   },
   "mediaSentStatus": {
-    "message": "$1 sent to DownloadManager."
+    "message": "$1 sent to Baton."
   },
   "mediaEstimateHint": {
     "message": "Sizes are estimates from the stream's bit rate."
@@ -252,7 +252,7 @@
     "message": "Connection problem"
   },
   "checkTitle": {
-    "message": "DownloadManager — check connection"
+    "message": "Baton — check connection"
   },
   "checkIntro": {
     "message": "The extension talks to the app through a small helper (the “native host”) that the app registers for each browser."
@@ -300,7 +300,7 @@
     "message": "Everything works. The app is not running now: it starts by itself when the browser sends it something."
   },
   "checkText_outdated": {
-    "message": "The app answers but is an older version: plain downloads work; videos, “Download all” and “Capture this site” need the latest DownloadManager."
+    "message": "The app answers but is an older version: plain downloads work; videos, “Download all” and “Capture this site” need the latest Baton."
   },
   "checkText_missing": {
     "message": "This browser cannot find the app's native host. It is registered by the app itself, for the current Windows user."
@@ -309,16 +309,16 @@
     "message": "The host is registered, but not for this extension's ID (for example a copy loaded from another folder in Firefox)."
   },
   "checkText_error": {
-    "message": "The app could not be reached. Try again; if it persists, restart DownloadManager."
+    "message": "The app could not be reached. Try again; if it persists, restart Baton."
   },
   "checkStepStart": {
-    "message": "Start DownloadManager once: it registers itself for Chrome, Edge, Opera, Brave and Firefox."
+    "message": "Start Baton once: it registers itself for Chrome, Edge, Opera, Brave and Firefox."
   },
   "checkStepRegister": {
-    "message": "Or press “Register”: the browser asks to open DownloadManager, which registers the host again."
+    "message": "Or press “Register”: the browser asks to open Baton, which registers the host again."
   },
   "checkStepFirefox": {
-    "message": "Firefox needs DownloadManager 0.6 or later (earlier versions do not register for Firefox)."
+    "message": "Firefox: start Baton once after installing the extension, so that it registers for Firefox too."
   },
   "checkStepChromium": {
     "message": "Opera, Brave and Chromium use Chrome's registration; restart the browser if it was open during the registration."

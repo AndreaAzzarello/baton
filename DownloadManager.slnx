@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/DownloadManager.App/DownloadManager.App.csproj" />
-    <Project Path="src/DownloadManager.Core/DownloadManager.Core.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/DownloadManager.Tests/DownloadManager.Tests.csproj" />
-  </Folder>
-</Solution>

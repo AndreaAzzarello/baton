@@ -1,6 +1,6 @@
 ﻿# PreToolUse (Bash, PowerShell): blocks commands that would change the real registration of the app or delete files
 # on the Desktop. It only blocks, with a reason; it never changes or deletes anything itself.
-# Allowed: reading the registry, tests, sandboxed runs (DOWNLOADMANAGER_DATA), anything inside the project folder.
+# Allowed: reading the registry, tests, sandboxed runs (BATON_DATA), anything inside the project folder.
 # Fail-closed: an input it cannot read or any error of its own blocks the command (exit 2), and settings.json has
 # "onFailure": "block" for a timeout or a script that cannot start.
 $ErrorActionPreference = "Stop"
@@ -24,10 +24,10 @@ $writesRegistry = '(?i)\breg(\.exe)?\s+(add|delete|import|copy|restore|load|unlo
 
 if ($command -match $writesRegistry) {
   if ($command -match '(?i)CurrentVersion\\+Run(Once)?\b') {
-    Block "modifica della chiave Run (avvio con Windows). La voce si gestisce solo dall'app (Impostazioni) tramite SystemRegistration; per le prove usa DOWNLOADMANAGER_DATA, che tiene il registro in memoria. Leggere la chiave (reg query, Get-ItemProperty) è consentito."
+    Block "modifica della chiave Run (avvio con Windows). La voce si gestisce solo dall'app (Impostazioni) tramite SystemRegistration; per le prove usa BATON_DATA, che tiene il registro in memoria. Leggere la chiave (reg query, Get-ItemProperty) è consentito."
   }
   if ($command -match '(?i)NativeMessagingHosts') {
-    Block "modifica di NativeMessagingHosts. L'host nativo lo registra l'app all'avvio (SystemRegistration.RegisterBrowserHost) o il link downloadmanager:register; per le prove usa DOWNLOADMANAGER_DATA. La lettura è consentita."
+    Block "modifica di NativeMessagingHosts. L'host nativo lo registra l'app all'avvio (SystemRegistration.RegisterBrowserHost) o il link baton:register; per le prove usa BATON_DATA. La lettura è consentita."
   }
 }
 

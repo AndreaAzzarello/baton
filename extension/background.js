@@ -47,7 +47,7 @@ async function updateIcon() {
 }
 
 function notify(message) {
-  chrome.notifications.create({ type: "basic", iconUrl: "icons/icon128.png", title: "DownloadManager", message });
+  chrome.notifications.create({ type: "basic", iconUrl: "icons/icon128.png", title: "Baton", message });
 }
 
 /** "!" on the icon after the app could not be reached; cleared by the next success. */

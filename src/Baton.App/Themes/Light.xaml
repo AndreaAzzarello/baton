@@ -1,0 +1,25 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Light palette. Text colours keep at least 4.5:1 contrast on their backgrounds (WCAG AA). -->
+    <SolidColorBrush x:Key="WindowBrush" Color="#F4F6FA" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="#ECEFF5" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#D5DAE3" />
+    <SolidColorBrush x:Key="TextBrush" Color="#1B2230" />
+    <SolidColorBrush x:Key="MutedBrush" Color="#515A6B" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#2457D1" />
+    <SolidColorBrush x:Key="AccentTextBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#E2EBFD" />
+    <SolidColorBrush x:Key="HoverBrush" Color="#EAF0FB" />
+    <SolidColorBrush x:Key="PressedBrush" Color="#D3E0FA" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#167A4B" />
+    <SolidColorBrush x:Key="DangerBrush" Color="#BF2A2A" />
+    <SolidColorBrush x:Key="DangerSoftBrush" Color="#FCEBEA" />
+    <SolidColorBrush x:Key="TrackBrush" Color="#E9ECF2" />
+    <SolidColorBrush x:Key="ProgressFillBrush" Color="#BFD3FA" />
+    <SolidColorBrush x:Key="SegmentDoneBrush" Color="#2563EB" />
+    <SolidColorBrush x:Key="SegmentActiveBrush" Color="#0F766E" />
+    <SolidColorBrush x:Key="SegmentTodoBrush" Color="#E2E6EE" />
+    <SolidColorBrush x:Key="FocusBrush" Color="#1B2230" />
+    <SolidColorBrush x:Key="EmptyGlyphBrush" Color="#9AA3B2" />
+</ResourceDictionary>

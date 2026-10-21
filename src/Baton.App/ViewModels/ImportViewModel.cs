@@ -1,0 +1,63 @@
+using System.Globalization;
+using Baton.App.Mvvm;
+using Baton.Core.Portable;
+using Baton.Core.Resources;
+
+namespace Baton.App.ViewModels;
+
+/// <summary>One line of the import preview: the item, whether to import it, and why it is marked.</summary>
+public sealed class ImportRow(ImportItem item) : ObservableObject
+{
+    public ImportItem Item { get; } = item;
+    public bool CanInclude => Item.Problem is null;
+
+    public bool Include
+    {
+        get => Item.Include && CanInclude;
+        set
+        {
+            Item.Include = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string KindText => Item.Kind switch
+    {
+        ImportKind.Download => Strings.ImportKindDownload,
+        ImportKind.Category => Strings.ImportKindCategory,
+        ImportKind.Queue => Strings.ImportKindQueue,
+        ImportKind.Project => Strings.ImportKindProject,
+        ImportKind.NetworkSettings => Strings.ImportKindNetwork,
+        _ => Strings.ImportKindSettings,
+    };
+
+    public string Note => Item.Problem ?? (Item.IsDuplicate && Item.Kind is not (ImportKind.Settings or ImportKind.NetworkSettings) ? Strings.ImportDuplicate : "");
+
+    /// <summary>A consequence to read before ticking the row (proxy, PAC, no confirmation of downloads), in the warning color.</summary>
+    public string Warning => Item.Problem is null ? Item.Warning ?? "" : "";
+
+    /// <summary>What screen readers announce for the row.</summary>
+    public override string ToString() => string.Join(", ", new[] { KindText, Item.Name, Item.Detail, Note, Warning }.Where(t => t.Length > 0));
+}
+
+/// <summary>The preview of an import: the user picks the items and what to do with duplicates.</summary>
+public sealed class ImportViewModel : ObservableObject
+{
+    private DuplicateMode _mode = DuplicateMode.Skip;
+
+    public ImportViewModel(string fileName, IReadOnlyList<ImportItem> items)
+    {
+        Rows = items.Select(i => new ImportRow(i)).ToList();
+        var duplicates = items.Count(i => i.IsDuplicate);
+        var invalid = items.Count(i => i.Problem is not null);
+        Summary = string.Format(CultureInfo.CurrentCulture, Strings.ImportSummary, fileName, items.Count, duplicates, invalid);
+    }
+
+    public IReadOnlyList<ImportRow> Rows { get; }
+    public string Summary { get; }
+    public DuplicateMode Mode => _mode;
+
+    public bool ModeSkip { get => _mode == DuplicateMode.Skip; set { if (value) _mode = DuplicateMode.Skip; } }
+    public bool ModeReplace { get => _mode == DuplicateMode.Replace; set { if (value) _mode = DuplicateMode.Replace; } }
+    public bool ModeKeepBoth { get => _mode == DuplicateMode.KeepBoth; set { if (value) _mode = DuplicateMode.KeepBoth; } }
+}

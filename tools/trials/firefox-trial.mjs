@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 
-const GECKO_ID = "downloadmanager@extension.local";
+const GECKO_ID = "baton@andreaazzarello";
 const UUID = "6b3e7a52-8d1f-4c3a-9b8e-2f5d0c7a1e44";
 const SITE = "http://127.0.0.1:8765";
 const shots = join(SHOTS, "firefox");
@@ -37,7 +37,7 @@ const browser = await puppeteer.launch({
   executablePath: FIREFOX_EXE,
   headless: true,
   userDataDir: mkdtempSync(join(tmpdir(), "dm-firefox-")),
-  env: { ...process.env, DOWNLOADMANAGER_DATA: DATA },
+  env: { ...process.env, BATON_DATA: DATA },
   defaultViewport: { width: 1280, height: 900 },
   args: ["-remote-allow-system-access"], // lets automation read the extension's own page
   extraPrefsFirefox: {
@@ -78,7 +78,7 @@ report("check connection", !/non|not/i.test(check.title), `${check.title} | ${ch
 
 */
 // The popup's code is the same as in Chromium; its native question is checked here from the extension page.
-const hello = await extPage.evaluate(() => browser.runtime.sendNativeMessage("com.downloadmanager.host", { type: "queues", version: 2 }));
+const hello = await extPage.evaluate(() => browser.runtime.sendNativeMessage("com.andreaazzarello.baton", { type: "queues", version: 2 }));
 report("queues asked from an extension page", Array.isArray(hello.queues), JSON.stringify(hello));
 /*
 await page.waitForFunction(() => /ok|bad/.test(document.getElementById("status").className), { timeout: 20000 });

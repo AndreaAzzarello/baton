@@ -1,8 +1,8 @@
-# Talks to DownloadManager through its native host, exactly like the extension: python host.py <exe> <data dir> '<json>' ...
+# Talks to Baton through its native host, exactly like the extension: python host.py <exe> <data dir> '<json>' ...
 import json, os, struct, subprocess, sys
 
 exe, data = sys.argv[1], sys.argv[2]
-env = dict(os.environ, DOWNLOADMANAGER_DATA=data)
+env = dict(os.environ, BATON_DATA=data, DOWNLOADMANAGER_DATA=data)  # the old name for a 1.1 exe
 p = subprocess.Popen([exe, "chrome-extension://fngmjmgaglmoebphcjohnhlaceogneno/"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env)
 for raw in sys.argv[3:]:
     if raw.startswith("@"):

@@ -5,14 +5,14 @@
 .PARAMETER Ffmpeg
   Optional ffmpeg.exe for the sandboxed app; by default a path that does not exist (no ffmpeg).
 .NOTES
-  The sandboxed app runs with DOWNLOADMANAGER_DATA: in-memory registry, own pipe. The real app is not touched.
+  The sandboxed app runs with BATON_DATA: in-memory registry, own pipe. The real app is not touched.
   The work folder is %TEMP%\dm-trials unless DM_TRIALS is set.
 #>
 param([string]$Ffmpeg = "", [switch]$SkipFirefox)
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path "$PSScriptRoot\..\.."
 $work = if ($env:DM_TRIALS) { $env:DM_TRIALS } else { Join-Path $env:TEMP "dm-trials" }
-$exe = Join-Path $root "publish\DownloadManager.exe"
+$exe = Join-Path $root "publish\Baton.exe"
 foreach ($d in "data", "downloads", "shots", "browser-downloads") { New-Item -ItemType Directory -Force (Join-Path $work $d) | Out-Null }
 # The trial starts at the first preparation; finish.ps1 -Apply ends it. Running prepare again keeps the date, so
 # finish.ps1 still recognizes the app instances started before.
@@ -22,11 +22,11 @@ if (-not (Test-Path $startedFile)) { Set-Content $startedFile (Get-Date -Format 
 # 1. Isolated data: the app creates its database once, then its folders are pointed at the work folder.
 $data = Join-Path $work "data"
 if (-not (Test-Path (Join-Path $data "downloads.db"))) {
-  $env:DOWNLOADMANAGER_DATA = $data
+  $env:BATON_DATA = $data
   $p = Start-Process $exe -ArgumentList "--tray" -PassThru
   Start-Sleep 4
   Stop-Process -Id $p.Id -Force   # only the instance started here
-  Remove-Item Env:DOWNLOADMANAGER_DATA
+  Remove-Item Env:BATON_DATA
   Start-Sleep 1
 }
 if (-not $Ffmpeg) { $Ffmpeg = Join-Path $work "no-ffmpeg\ffmpeg.exe" }

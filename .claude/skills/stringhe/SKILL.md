@@ -1,11 +1,11 @@
 ---
 name: stringhe
-description: Aggiunge, modifica o controlla i testi di DownloadManager - Strings.resx dell'app e _locales (italiano e inglese) dell'estensione - tramite i generatori in tools/. Usala quando si aggiunge o cambia un testo visibile, un'etichetta, un messaggio o una traduzione, o per cercare testi non usati.
+description: Aggiunge, modifica o controlla i testi di Baton - Strings.resx dell'app e _locales (italiano e inglese) dell'estensione - tramite i generatori in tools/. Usala quando si aggiunge o cambia un testo visibile, un'etichetta, un messaggio o una traduzione, o per cercare testi non usati.
 ---
 
 # Testi dell'app e dell'estensione
 
-I file `src/DownloadManager.Core/Resources/Strings.resx` ed `extension/_locales/*/messages.json` sono **generati**: la fonte è
+I file `src/Baton.Core/Resources/Strings.resx` ed `extension/_locales/*/messages.json` sono **generati**: la fonte è
 la tabella dentro i generatori. Non modificarli a mano (verrebbero sovrascritti).
 
 ## App (italiano)

@@ -33,7 +33,7 @@ public static class W {
 }
 "@
 [W]::SetProcessDPIAware() | Out-Null
-$pids = [uint32[]]@(Get-Process DownloadManager -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id })
+$pids = [uint32[]]@(Get-Process Baton, DownloadManager -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id })
 $h = [W]::Find($Title, $pids)
 if ($h -eq [IntPtr]::Zero) { Write-Output "window not found: $Title"; exit 1 }
 if (-not $NoFront) { [W]::SetForegroundWindow($h) | Out-Null; Start-Sleep -Milliseconds 400 }

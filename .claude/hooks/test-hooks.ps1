@@ -20,14 +20,16 @@ function Bash([string]$command) { @{ tool_name = "Bash"; tool_input = @{ command
 
 $guardCases = @(
   @{ Expect = 0; Command = 'reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Run"' },
-  @{ Expect = 0; Command = 'Get-ItemProperty "HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\com.downloadmanager.host"' },
-  @{ Expect = 0; Command = '$env:DOWNLOADMANAGER_DATA = "$env:TEMP\dm-trials\data"; Start-Process publish\DownloadManager.exe --tray' },
-  @{ Expect = 0; Command = '"C:\Program Files\dotnet\dotnet.exe" test DownloadManager.slnx' },
+  @{ Expect = 0; Command = 'Get-ItemProperty "HKCU:\Software\Microsoft\Edge\NativeMessagingHosts\com.andreaazzarello.baton"' },
+  @{ Expect = 0; Command = '$env:BATON_DATA = "$env:TEMP\dm-trials\data"; Start-Process publish\Baton.exe --tray' },
+  @{ Expect = 0; Command = '"C:\Program Files\dotnet\dotnet.exe" test Baton.slnx' },
   @{ Expect = 0; Command = 'Remove-Item C:\Users\user\Desktop\DownloadManager\dist -Recurse -Force' },
   @{ Expect = 0; Command = 'rm -rf dist' },
+  @{ Expect = 2; Command = 'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v Baton /d x' },
   @{ Expect = 2; Command = 'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v DownloadManager /d x' },
   @{ Expect = 2; Command = 'Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name DownloadManager' },
   @{ Expect = 2; Command = 'reg delete HKCU\Software\Google\Chrome\NativeMessagingHosts\com.downloadmanager.host /f' },
+  @{ Expect = 2; Command = 'reg add HKCU\Software\Google\Chrome\NativeMessagingHosts\com.andreaazzarello.baton /ve /d x /f' },
   @{ Expect = 2; Command = 'Remove-Item C:\Users\user\Desktop\hello-2.12.tar.gz' },
   @{ Expect = 2; Command = 'rm "$HOME/Desktop/explicit.txt"' },
   @{ Expect = 2; Command = '[IO.File]::Delete([Environment]::GetFolderPath("Desktop") + "\implicit.txt")' }
@@ -57,7 +59,7 @@ try {
 } finally { Remove-Item $broken -Force }   # the test's own temporary file, inside the project
 $okBad = $bad.Code -eq 2 -and $bad.Err -match 'node --check' -and $bad.Ms -lt 2000
 "{0} extension-check blocca ({1} ms) errore di sintassi -> {2}" -f ($(if ($okBad) { "OK  " } else { "FAIL" })), $bad.Ms, ($bad.Err -split "`n")[0]
-$other = Invoke-Hook "extension-check.ps1" (@{ tool_name = "Edit"; tool_input = @{ file_path = "$root\src\DownloadManager.Core\Models.cs" } } | ConvertTo-Json -Compress)
+$other = Invoke-Hook "extension-check.ps1" (@{ tool_name = "Edit"; tool_input = @{ file_path = "$root\src\Baton.Core\Models.cs" } } | ConvertTo-Json -Compress)
 $okOther = $other.Code -eq 0 -and $other.Ms -lt 1500
 "{0} extension-check ignora ({1} ms) file C#" -f ($(if ($okOther) { "OK  " } else { "FAIL" })), $other.Ms
 if (-not ($okValid -and $okBad -and $okOther)) { $failures++ }

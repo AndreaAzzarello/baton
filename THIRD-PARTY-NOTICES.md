@@ -1,10 +1,10 @@
 # Third-party notices
 
-DownloadManager is released under the MIT License (see `LICENSE`). The published program
-(`DownloadManager.exe`, a self-contained .NET single file) includes the components below, each under its own license.
+Baton (called DownloadManager up to 1.1) is released under the MIT License (see `LICENSE`). The published program
+(`Baton.exe`, a self-contained .NET single file) includes the components below, each under its own license.
 The licenses were checked against the package metadata of the exact versions used.
 
-## Included in DownloadManager.exe
+## Included in Baton.exe
 
 | Component | Version | License | Project |
 |---|---|---|---|
@@ -18,8 +18,8 @@ The licenses were checked against the package metadata of the exact versions use
 | SQLitePCLRaw (bundle_e_sqlite3, core, provider, lib) | 2.1.13 | Apache-2.0 | https://github.com/ericsink/SQLitePCL.raw |
 | SQLite (native e_sqlite3, inside SQLitePCLRaw) | — | Public domain | https://sqlite.org/copyright.html |
 
-The full license texts are published with each package (https://www.nuget.org) and at
-https://opensource.org/licenses (MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0).
+The full license texts, with their copyright notices, are in `THIRD-PARTY-LICENSES.txt`, which is also attached to every
+release next to `Baton.exe`.
 The Apache-2.0 components ship no NOTICE file that would have to be reproduced.
 
 ## Used only to build and test (not distributed)
@@ -41,6 +41,6 @@ copied or adapted.
 
 ## Optional external program: ffmpeg
 
-ffmpeg is **not** included and never downloaded by DownloadManager. If the user installs it and points the app at it
+ffmpeg is **not** included and never downloaded by Baton. If the user installs it and points the app at it
 (Settings, or a copy in `PATH`), the app runs it as a separate process only to join already downloaded video and audio
 tracks. ffmpeg is licensed by its authors (LGPL-2.1 or later, GPL for some builds): see https://ffmpeg.org/legal.html.

@@ -31,7 +31,7 @@ test("accepted: pause, then cancel, remove the partial file and erase", async ()
 test("app unreachable: the paused download is resumed in Firefox", async () => {
   fake.calls.length = 0;
   reply = async () => {
-    throw new Error("No such native application com.downloadmanager.host");
+    throw new Error("No such native application com.andreaazzarello.baton");
   };
   await created(download);
   await settle();

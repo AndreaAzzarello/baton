@@ -50,7 +50,7 @@ const browser = await puppeteer.launch({
   pipe: true,
   enableExtensions: [CHROMIUM_EXT],
   userDataDir: profile,
-  env: { ...process.env, DOWNLOADMANAGER_DATA: DATA },
+  env: { ...process.env, BATON_DATA: DATA },
   args: ["--no-first-run", "--no-default-browser-check", "--window-size=1280,900"],
   defaultViewport: { width: 1280, height: 900 },
 });

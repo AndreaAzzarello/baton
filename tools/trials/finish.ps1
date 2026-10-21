@@ -3,7 +3,7 @@
   Ends a real-browser trial. Without -Apply it only REPORTS what is left; with -Apply it stops the trial processes
   and removes the traces the portable Firefox leaves in the user's profile.
 .NOTES
-  Trial app instances are the publish\DownloadManager.exe processes started with --background after the trial began
+  Trial app instances are the publish\Baton.exe processes (and DownloadManager.exe of the update trial) started with --background after the trial began
   (by the native host of a trial browser). The real app in the tray (--tray or no arguments) is never touched.
 #>
 param([switch]$Apply)
@@ -12,7 +12,7 @@ $since = if (Test-Path "$work\started.txt") { [datetime](Get-Content "$work\star
 # Without the drive letter: some entries spell it \Device\HarddiskVolumeN\... instead of C:\...
 $needle = [regex]::Escape((Split-Path $work -NoQualifier))
 
-$apps = Get-CimInstance Win32_Process -Filter "Name='DownloadManager.exe'" |
+$apps = Get-CimInstance Win32_Process -Filter "Name='Baton.exe' OR Name='DownloadManager.exe' OR Name='Baton.exe.old' OR Name='DownloadManager.exe.old'" |
   Where-Object { ($_.CommandLine -like "*--background*" -and $_.CreationDate -gt $since) -or $_.CommandLine -like "*\bin\Debug\*" -or "$($_.ExecutablePath)" -like "$work\*" }
 # The trial site, and any other local server serving files from the trial folder (e.g. the update trial).
 $site = Get-CimInstance Win32_Process -Filter "Name='python.exe'" | Where-Object { $_.CommandLine -like "*trials*site*server.py*" -or $_.CommandLine -like "*dm-trials*" }
@@ -32,7 +32,7 @@ $audioKeys = @(Get-ChildItem $audio -ErrorAction SilentlyContinue | Where-Object
 # Explorer remembers every program that showed a tray icon: entries of debug builds or trial copies are trial traces.
 $trayIcons = "HKCU:\Control Panel\NotifyIconSettings"
 $trayKeys = @(Get-ChildItem $trayIcons -ErrorAction SilentlyContinue | Where-Object {
-  $path = "$($_.GetValue('ExecutablePath'))"; $path -like "*\bin\Debug\*DownloadManager.exe" -or $path -match $needle })
+  $path = "$($_.GetValue('ExecutablePath'))"; $path -like "*\bin\Debug\*\Baton.exe" -or $path -like "*\bin\Debug\*DownloadManager.exe" -or $path -match $needle })
 
 "trial apps: $(@($apps).Count) | test site: $(@($site).Count) | Firefox autostart: $(@($autostart).Count) | Firefox registry values: $($mozValues.Count) | shell cache: $(@($muiValues).Count) | audio: $($audioKeys.Count) | tray icon cache: $($trayKeys.Count)"
 if (-not $Apply) { "(report only; run with -Apply to clean up)"; return }

@@ -1,27 +1,27 @@
 {
   "extName": {
-    "message": "DownloadManager"
+    "message": "Baton"
   },
   "extDescription": {
-    "message": "Invia i download del browser, i link delle pagine, i video e interi siti all'app DownloadManager per Windows."
+    "message": "Invia i download del browser, i link delle pagine, i video e interi siti all'app Baton per Windows."
   },
   "menuLink": {
-    "message": "Scarica con DownloadManager"
+    "message": "Scarica con Baton"
   },
   "menuAll": {
-    "message": "Scarica tutto con DownloadManager…"
+    "message": "Scarica tutto con Baton…"
   },
   "menuGrab": {
-    "message": "Cattura questo sito con DownloadManager…"
+    "message": "Cattura questo sito con Baton…"
   },
   "errorGrabIncognito": {
-    "message": "I siti non vengono catturati dalle finestre private: a DownloadManager non è stato inviato nulla."
+    "message": "I siti non vengono catturati dalle finestre private: a Baton non è stato inviato nulla."
   },
   "errorGrabNotWeb": {
     "message": "Si possono catturare solo pagine http e https."
   },
   "errorGrabOutdated": {
-    "message": "Per catturare un sito serve DownloadManager 0.7 o successiva: aggiorna l'app."
+    "message": "Per catturare un sito serve una versione aggiornata di Baton: aggiorna l'app."
   },
   "mediaAudioLabel": {
     "message": "Audio"
@@ -42,13 +42,13 @@
     "message": "dentro il video (serve ffmpeg)"
   },
   "titleAuto": {
-    "message": "DownloadManager — intercetta i download"
+    "message": "Baton — intercetta i download"
   },
   "titleMenu": {
-    "message": "DownloadManager — solo menu contestuale"
+    "message": "Baton — solo menu contestuale"
   },
   "fallbackNotice": {
-    "message": "DownloadManager non ha preso il download ($1). Lo scarica il browser."
+    "message": "Baton non ha preso il download ($1). Lo scarica il browser."
   },
   "errorBadReply": {
     "message": "risposta non valida dall'app"
@@ -60,10 +60,10 @@
     "message": "Questo video è riprodotto da dati interni alla pagina: usa il pulsante «Scarica questo video» che compare sulla pagina."
   },
   "errorNotDownloadable": {
-    "message": "Questo collegamento non può essere scaricato con DownloadManager."
+    "message": "Questo collegamento non può essere scaricato con Baton."
   },
   "errorNotReceived": {
-    "message": "DownloadManager non l'ha ricevuto: $1"
+    "message": "Baton non l'ha ricevuto: $1"
   },
   "errorPageAccess": {
     "message": "Impossibile leggere la pagina: $1"
@@ -75,10 +75,10 @@
     "message": "Questo video non è stato caricato dalla pagina."
   },
   "mediaTerms": {
-    "message": "I termini di servizio di questo sito non consentono di scaricarne i video: DownloadManager non lo propone."
+    "message": "I termini di servizio di questo sito non consentono di scaricarne i video: Baton non lo propone."
   },
   "mediaDrm": {
-    "message": "Questo video è protetto (DRM): non si può scaricare e DownloadManager non aggira le protezioni."
+    "message": "Questo video è protetto (DRM): non si può scaricare e Baton non aggira le protezioni."
   },
   "mediaLive": {
     "message": "È una diretta: si possono scaricare solo video completi."
@@ -108,7 +108,7 @@
     "message": "Lettura delle qualità disponibili…"
   },
   "mediaAppOutdated": {
-    "message": "Aggiorna DownloadManager alla versione 0.6 o successiva per scaricare i video."
+    "message": "Aggiorna Baton per scaricare i video."
   },
   "mediaSizeUnknown": {
     "message": "dimensione ignota"
@@ -126,7 +126,7 @@
     "message": "Inviato ✓"
   },
   "mediaSentStatus": {
-    "message": "$1 inviato a DownloadManager."
+    "message": "$1 inviato a Baton."
   },
   "mediaEstimateHint": {
     "message": "Le dimensioni sono stime basate sul bitrate."
@@ -252,7 +252,7 @@
     "message": "Problema di collegamento"
   },
   "checkTitle": {
-    "message": "DownloadManager — verifica connessione"
+    "message": "Baton — verifica connessione"
   },
   "checkIntro": {
     "message": "L'estensione parla con l'app tramite un piccolo programma ponte (l'«host nativo») che l'app registra per ogni browser."
@@ -300,7 +300,7 @@
     "message": "Tutto funziona. L'app ora non è aperta: si avvia da sola quando il browser le invia qualcosa."
   },
   "checkText_outdated": {
-    "message": "L'app risponde ma è una versione precedente: i download semplici funzionano; video, «Scarica tutto» e «Cattura questo sito» richiedono l'ultima versione di DownloadManager."
+    "message": "L'app risponde ma è una versione precedente: i download semplici funzionano; video, «Scarica tutto» e «Cattura questo sito» richiedono l'ultima versione di Baton."
   },
   "checkText_missing": {
     "message": "Questo browser non trova l'host nativo dell'app. Lo registra l'app stessa, per l'utente Windows corrente."
@@ -309,16 +309,16 @@
     "message": "L'host è registrato, ma non per l'ID di questa estensione (per esempio una copia caricata da un'altra cartella in Firefox)."
   },
   "checkText_error": {
-    "message": "Impossibile raggiungere l'app. Riprova; se continua, riavvia DownloadManager."
+    "message": "Impossibile raggiungere l'app. Riprova; se continua, riavvia Baton."
   },
   "checkStepStart": {
-    "message": "Avvia DownloadManager una volta: si registra da sé per Chrome, Edge, Opera, Brave e Firefox."
+    "message": "Avvia Baton una volta: si registra da sé per Chrome, Edge, Opera, Brave e Firefox."
   },
   "checkStepRegister": {
-    "message": "Oppure premi «Registra»: il browser chiede di aprire DownloadManager, che registra di nuovo l'host."
+    "message": "Oppure premi «Registra»: il browser chiede di aprire Baton, che registra di nuovo l'host."
   },
   "checkStepFirefox": {
-    "message": "Firefox richiede DownloadManager 0.6 o successiva (le versioni precedenti non si registrano per Firefox)."
+    "message": "Firefox: avvia Baton una volta dopo aver installato l'estensione, così si registra anche per Firefox."
   },
   "checkStepChromium": {
     "message": "Opera, Brave e Chromium usano la registrazione di Chrome; riavvia il browser se era aperto durante la registrazione."

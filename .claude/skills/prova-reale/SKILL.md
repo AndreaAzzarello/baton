@@ -1,6 +1,6 @@
 ---
 name: prova-reale
-description: Prove reali di DownloadManager con l'app isolata e i browser veri (Edge, Opera, Firefox headless) sul sito di prova locale e su uno stream HLS pubblico, senza toccare i dati reali, il registro reale o il Desktop. Usala quando l'utente chiede prove reali, prove nei browser o la verifica dell'estensione, o prima di chiudere una fase.
+description: Prove reali di Baton (ex DownloadManager) con l'app isolata e i browser veri (Edge, Opera, Firefox headless) sul sito di prova locale e su uno stream HLS pubblico, senza toccare i dati reali, il registro reale o il Desktop. Usala quando l'utente chiede prove reali, prove nei browser o la verifica dell'estensione, o prima di chiudere una fase.
 ---
 
 # Prova reale
@@ -9,7 +9,7 @@ Obiettivo: verificare l'app pubblicata e l'estensione come le userebbe l'utente,
 (o `DM_TRIALS`). Regole (vedi CLAUDE.md): niente input simulato sul desktop, solo UI Automation e browser headless.
 
 ## 1. Preparazione
-1. Serve `publish\DownloadManager.exe` aggiornato. Se l'app è cambiata, prima ripubblica (vedi skill `fine-fase`, passi
+1. Serve `publish\Baton.exe` aggiornato. Se l'app è cambiata, prima ripubblica (vedi skill `fine-fase`, passi
    6–7) oppure chiedi all'utente: la ripubblicazione chiude la sua app.
 2. `powershell -NoProfile -ExecutionPolicy Bypass -File tools\trials\prepare.ps1` — opzioni: `-Ffmpeg <percorso>` per provare
    l'unione in MP4, `-SkipFirefox` se non serve. Crea dati isolati con download in `%TEMP%\dm-trials\downloads`, build
@@ -30,7 +30,7 @@ Coprono: verifica connessione, popup, intercettazione, Alt+clic, modulo POST, pu
 le richieste successive dei browser restano in attesa nell'app e la prova seguente sembra fallire).
 
 Stream HLS pubblico senza browser, attraverso l'host nativo come farebbe l'estensione:
-`python tools\trials\host.py publish\DownloadManager.exe %TEMP%\dm-trials\data @msg.json` con file JSON come
+`python tools\trials\host.py publish\Baton.exe %TEMP%\dm-trials\data @msg.json` con file JSON come
 `{"type":"probeMedia","version":2,"media":{"url":"https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/master.m3u8"}}`
 e poi `addMedia` con il `variantId` della qualità più bassa. Verifica il file con ffprobe se disponibile. I messaggi usano
 `"version":3` dalla 0.7.
@@ -51,13 +51,16 @@ Video con lingue e sottotitoli: lo stream di esempio avanzato di Apple (`.../img
 lingue audio e sottotitoli WebVTT; `probeMedia` deve elencarli in `audioTracks` e `subtitles`, e `addMedia` con `audioId`,
 `subtitleIds` e `subtitleMode` deve produrre il video e i file `.vtt`/`.srt` accanto.
 
-Aggiornamenti firmati (dalla 1.1.0), senza toccare `publish\` né l'app reale:
-`powershell -File tools\trials\update-trial.ps1 -Build` pubblica il codice come 1.1.0 (`%TEMP%\dm-trials\update\app`) e 1.1.1
-firmata con la chiave reale, più due manifest ostili per 1.1.2 (`replay.json`: firma vera della 1.1.1 riusata; `bad.json`:
-programma alterato), serviti su 127.0.0.1:8766. Poi `-Start bad.json`, `-Start replay.json` (prima cancella
-`data\updates\reported`, altrimenti il messaggio uguale non viene ripetuto) e `-Start good/latest.json`: dopo 30 s compare
-la finestra «Aggiornamento» (`ui.ps1 -Window Aggiornamento -Action dump`/`invoke`). Gli ostili devono essere rifiutati senza
-scaricare nulla; il valido deve finire con `app\DownloadManager.exe` 1.1.1, `.old` 1.1.0 e `data\updates\started`.
+Aggiornamento firmato da DownloadManager 1.1 a Baton, senza toccare `publish\` né l'app reale. Serve la 1.1.0 vera:
+`git worktree add %TEMP%\dm-trials\v110-src v1.1.0` e `dotnet publish ...\src\DownloadManager.App -c Release -r win-x64 -o
+%TEMP%\dm-trials\v110`. Poi `powershell -File tools\trials\update-trial.ps1 -Build` mette la 1.1.0 in
+`%TEMP%\dm-trials\update\app\DownloadManager.exe`, pubblica il codice come Baton 1.2.0 firmato con la chiave reale e due
+manifest ostili per 1.2.1 (`replay.json`: firma vera riusata; `bad.json`: programma alterato), serviti su 127.0.0.1:8766.
+`-Start bad.json`, `-Start replay.json` (prima cancella `data-legacy\updates\reported`) e `-Start good/latest.json`, anche con
+`-FromCopyOf %LOCALAPPDATA%\DownloadManager` per partire da una copia dei dati reali: dopo 30 s compare la finestra
+«Aggiornamento» (`ui.ps1 -Window Aggiornamento -Action dump`/`invoke`). Gli ostili devono essere rifiutati senza scaricare
+nulla; il valido deve finire con `app\Baton.exe` 1.2.0, `app\Baton.exe.old` 1.1.0, niente `DownloadManager.exe`, i dati
+copiati in `data` (stesso numero di download di `data-legacy`, che resta com'era) e `data-legacy\updates\started`.
 
 Guarda sempre gli screenshot del pannello video e del popup (grafica, testi troncati, tema).
 

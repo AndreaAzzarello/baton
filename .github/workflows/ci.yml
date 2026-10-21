@@ -21,8 +21,8 @@ jobs:
         with:
           node-version: '24'
       - name: Build (zero warnings)
-        run: dotnet build DownloadManager.slnx -warnaserror
+        run: dotnet build Baton.slnx -warnaserror
       - name: Test (xUnit and the extension's Node tests)
-        run: dotnet test DownloadManager.slnx --no-build
+        run: dotnet test Baton.slnx --no-build
       - name: Build the extension
         run: node tools/build-extension.mjs

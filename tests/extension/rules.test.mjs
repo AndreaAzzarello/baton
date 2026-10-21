@@ -114,7 +114,7 @@ test("connection states for the check page", () => {
   assert.equal(R.connectionState({ ok: false, error: "Tipo di messaggio sconosciuto: hello" }), "outdated"); // app 0.5
   assert.equal(R.connectionState({ ok: true, running: true }), "outdated");
   assert.equal(R.connectionState(null, new Error("Specified native messaging host not found.")), "missing");
-  assert.equal(R.connectionState(null, new Error("No such native application com.downloadmanager.host")), "missing"); // Firefox
+  assert.equal(R.connectionState(null, new Error("No such native application com.andreaazzarello.baton")), "missing"); // Firefox
   assert.equal(R.connectionState(null, new Error("Access to the specified native messaging host is forbidden.")), "forbidden");
   assert.equal(R.connectionState(null, new Error("the app did not answer in time")), "error");
 });

@@ -27,7 +27,7 @@ $ErrorActionPreference = "Stop"
 $root = Resolve-Path "$PSScriptRoot\..\.."
 $work = if ($env:DM_TRIALS) { $env:DM_TRIALS } else { Join-Path $env:TEMP "dm-trials" }
 $data = Join-Path $work "data"
-$exe = Join-Path $root "publish\DownloadManager.exe"
+$exe = Join-Path $root "publish\Baton.exe"
 $ui = Join-Path $PSScriptRoot "ui.ps1"
 $shot = Join-Path $PSScriptRoot "shot.ps1"
 $shots = Join-Path $work "shots"
@@ -41,11 +41,11 @@ function Ui([string]$Window, [string]$Action, [string]$Element, [string]$Value) 
 }
 
 # 1. The isolated app (its own pipe and in-memory registry), started minimized if it is not running.
-$running = Get-CimInstance Win32_Process -Filter "Name='DownloadManager.exe'" | Where-Object { $_.CommandLine -like "*--background*" }
+$running = Get-CimInstance Win32_Process -Filter "Name='Baton.exe'" | Where-Object { $_.CommandLine -like "*--background*" }
 if (-not $running) {
-  $env:DOWNLOADMANAGER_DATA = $data
+  $env:BATON_DATA = $data
   Start-Process $exe -ArgumentList "--background" | Out-Null
-  Remove-Item Env:DOWNLOADMANAGER_DATA
+  Remove-Item Env:BATON_DATA
   Start-Sleep 4
 }
 

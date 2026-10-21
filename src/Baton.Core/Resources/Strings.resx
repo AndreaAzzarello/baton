@@ -1,0 +1,850 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ActionAdd" xml:space="preserve"><value>Aggiungi</value></data>
+  <data name="ActionAddToolTip" xml:space="preserve"><value>Aggiungi un download (Ctrl+N). Se negli appunti c'è un link, viene già inserito.</value></data>
+  <data name="ActionCategories" xml:space="preserve"><value>Categorie</value></data>
+  <data name="ActionCategoriesToolTip" xml:space="preserve"><value>Gestisci categorie, estensioni e cartelle</value></data>
+  <data name="ActionDown" xml:space="preserve"><value>Giù</value></data>
+  <data name="ActionDownToolTip" xml:space="preserve"><value>Sposta giù nella coda (solo con l'ordine della coda)</value></data>
+  <data name="ActionEnqueue" xml:space="preserve"><value>In coda</value></data>
+  <data name="ActionEnqueueToolTip" xml:space="preserve"><value>Metti in coda i download selezionati</value></data>
+  <data name="ActionFolder" xml:space="preserve"><value>Cartella</value></data>
+  <data name="ActionFolderToolTip" xml:space="preserve"><value>Apri la cartella predefinita dei download</value></data>
+  <data name="ActionGrabber" xml:space="preserve"><value>Grabber</value></data>
+  <data name="ActionGrabberToolTip" xml:space="preserve"><value>Progetti grabber: trova i file di un sito o salvane una copia da consultare offline (Ctrl+G)</value></data>
+  <data name="ActionMore" xml:space="preserve"><value>Altro</value></data>
+  <data name="ActionMoreToolTip" xml:space="preserve"><value>Esporta, importa e personalizza la barra</value></data>
+  <data name="ActionPause" xml:space="preserve"><value>Pausa</value></data>
+  <data name="ActionPauseToolTip" xml:space="preserve"><value>Metti in pausa i download selezionati</value></data>
+  <data name="ActionProgress" xml:space="preserve"><value>Avanzamento</value></data>
+  <data name="ActionProgressToolTip" xml:space="preserve"><value>Mostra segmenti, connessioni e velocità del download selezionato (Invio)</value></data>
+  <data name="ActionProperties" xml:space="preserve"><value>Proprietà</value></data>
+  <data name="ActionPropertiesToolTip" xml:space="preserve"><value>Dettagli, categoria e aggiornamento dell'indirizzo del download selezionato (Alt+Invio)</value></data>
+  <data name="ActionQueues" xml:space="preserve"><value>Code</value></data>
+  <data name="ActionQueuesToolTip" xml:space="preserve"><value>Gestisci code, pianificazioni, limiti e azioni a fine coda</value></data>
+  <data name="ActionRemove" xml:space="preserve"><value>Rimuovi</value></data>
+  <data name="ActionRemoveToolTip" xml:space="preserve"><value>Rimuovi dall'elenco (Canc)</value></data>
+  <data name="ActionResume" xml:space="preserve"><value>Riprendi</value></data>
+  <data name="ActionSettings" xml:space="preserve"><value>Impostazioni</value></data>
+  <data name="ActionStart" xml:space="preserve"><value>Avvia</value></data>
+  <data name="ActionStartToolTip" xml:space="preserve"><value>Avvia o riprendi subito i download selezionati</value></data>
+  <data name="ActionUp" xml:space="preserve"><value>Su</value></data>
+  <data name="ActionUpToolTip" xml:space="preserve"><value>Sposta su nella coda (solo con l'ordine della coda)</value></data>
+  <data name="AddCategoryLabel" xml:space="preserve"><value>C_ategoria</value></data>
+  <data name="AddCategoryName" xml:space="preserve"><value>Categoria</value></data>
+  <data name="AddFolderLabel" xml:space="preserve"><value>_Salva nella cartella</value></data>
+  <data name="AddFolderName" xml:space="preserve"><value>Cartella di destinazione</value></data>
+  <data name="AddHashHint" xml:space="preserve"><value>Se lo indichi, a fine download il file viene verificato.</value></data>
+  <data name="AddHashLabel" xml:space="preserve"><value>_Hash atteso (facoltativo: MD5, SHA-1 o SHA-256)</value></data>
+  <data name="AddHashName" xml:space="preserve"><value>Hash atteso</value></data>
+  <data name="AddHashRecognized" xml:space="preserve"><value>{0} riconosciuto: verrà verificato a fine download.</value></data>
+  <data name="AddNameLabel" xml:space="preserve"><value>_Nome file (facoltativo)</value></data>
+  <data name="AddNameName" xml:space="preserve"><value>Nome file</value></data>
+  <data name="AddNameToolTip" xml:space="preserve"><value>Lascia vuoto per usare il nome indicato dal server</value></data>
+  <data name="AddQueueLabel" xml:space="preserve"><value>C_oda</value></data>
+  <data name="AddQueueName" xml:space="preserve"><value>Coda</value></data>
+  <data name="AddQueueToolTip" xml:space="preserve"><value>«Scarica ora» avvia subito il download; «Aggiungi alla coda» lo fa partire quando tocca a lui in questa coda</value></data>
+  <data name="AddStartNow" xml:space="preserve"><value>Scarica ora</value></data>
+  <data name="AddTitle" xml:space="preserve"><value>Aggiungi download</value></data>
+  <data name="AddToQueue" xml:space="preserve"><value>Aggiungi alla coda</value></data>
+  <data name="AddUrlLabel" xml:space="preserve"><value>_Indirizzo (URL)</value></data>
+  <data name="AddUrlName" xml:space="preserve"><value>Indirizzo</value></data>
+  <data name="AppName" xml:space="preserve"><value>Baton</value></data>
+  <data name="AskKeepUnverified" xml:space="preserve"><value>Non è possibile verificare che sia lo stesso file: {0}.
+
+Sì: usa il nuovo indirizzo e mantieni i dati già scaricati
+No: usa il nuovo indirizzo e ricomincia da zero</value></data>
+  <data name="AskRestartDifferent" xml:space="preserve"><value>Il file al nuovo indirizzo è diverso: {0}.
+
+Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></data>
+  <data name="BatchAllTypes" xml:space="preserve"><value>Tutti i tipi</value></data>
+  <data name="BatchCategoryAuto" xml:space="preserve"><value>Automatica (per tipo)</value></data>
+  <data name="BatchClearVisible" xml:space="preserve"><value>_Deseleziona visibili</value></data>
+  <data name="BatchColumnKind" xml:space="preserve"><value>Origine</value></data>
+  <data name="BatchColumnText" xml:space="preserve"><value>Testo del link</value></data>
+  <data name="BatchColumnType" xml:space="preserve"><value>Tipo</value></data>
+  <data name="BatchColumnUrl" xml:space="preserve"><value>Indirizzo</value></data>
+  <data name="BatchCount" xml:space="preserve"><value>{0} selezionati su {1} · {2} visibili</value></data>
+  <data name="BatchFilterLabel" xml:space="preserve"><value>_Cerca nel nome, nel testo o nell'indirizzo</value></data>
+  <data name="BatchFilterName" xml:space="preserve"><value>Cerca</value></data>
+  <data name="BatchFolderLabel" xml:space="preserve"><value>_Cartella (vuoto = quella di ogni categoria)</value></data>
+  <data name="BatchFolderToolTip" xml:space="preserve"><value>Lascia vuoto per salvare ogni file nella cartella della sua categoria.</value></data>
+  <data name="BatchHeading" xml:space="preserve"><value>Link e immagini della pagina</value></data>
+  <data name="BatchItemNotSelected" xml:space="preserve"><value>Non selezionato</value></data>
+  <data name="BatchItemSelected" xml:space="preserve"><value>Selezionato</value></data>
+  <data name="BatchKindAll" xml:space="preserve"><value>Link e immagini</value></data>
+  <data name="BatchKindImage" xml:space="preserve"><value>Immagine</value></data>
+  <data name="BatchKindImages" xml:space="preserve"><value>Solo immagini</value></data>
+  <data name="BatchKindLabel" xml:space="preserve"><value>_Mostra</value></data>
+  <data name="BatchKindLink" xml:space="preserve"><value>Link</value></data>
+  <data name="BatchKindLinks" xml:space="preserve"><value>Solo link</value></data>
+  <data name="BatchKindName" xml:space="preserve"><value>Link o immagini</value></data>
+  <data name="BatchListHelp" xml:space="preserve"><value>Barra spaziatrice: seleziona o deseleziona le righe evidenziate.</value></data>
+  <data name="BatchListName" xml:space="preserve"><value>Link della pagina</value></data>
+  <data name="BatchNothing" xml:space="preserve"><value>La pagina non contiene link che Baton possa scaricare.</value></data>
+  <data name="BatchSelectVisible" xml:space="preserve"><value>Seleziona _visibili</value></data>
+  <data name="BatchTitle" xml:space="preserve"><value>Scarica tutto</value></data>
+  <data name="BatchTypeLabel" xml:space="preserve"><value>_Tipo di file</value></data>
+  <data name="BatchTypeName" xml:space="preserve"><value>Tipo di file</value></data>
+  <data name="Browse" xml:space="preserve"><value>Sfoglia…</value></data>
+  <data name="BrowserRegistered" xml:space="preserve"><value>Baton è di nuovo collegato ai browser (Chrome, Edge, Opera, Brave, Chromium e Firefox). Ricarica la pagina «Verifica connessione» dell'estensione.</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annulla</value></data>
+  <data name="CategoriesListName" xml:space="preserve"><value>Elenco delle categorie</value></data>
+  <data name="CategoriesTitle" xml:space="preserve"><value>Categorie</value></data>
+  <data name="CategoryAdd" xml:space="preserve"><value>Aggiungi</value></data>
+  <data name="CategoryCompressed" xml:space="preserve"><value>Compressi</value></data>
+  <data name="CategoryDelete" xml:space="preserve"><value>Elimina</value></data>
+  <data name="CategoryDocuments" xml:space="preserve"><value>Documenti</value></data>
+  <data name="CategoryExtensionsHint" xml:space="preserve"><value>Separate da spazi o virgole, per esempio: zip rar 7z</value></data>
+  <data name="CategoryExtensionsLabel" xml:space="preserve"><value>_Estensioni</value></data>
+  <data name="CategoryExtensionsName" xml:space="preserve"><value>Estensioni dei file</value></data>
+  <data name="CategoryFolderLabel" xml:space="preserve"><value>_Cartella di destinazione</value></data>
+  <data name="CategoryFolderName" xml:space="preserve"><value>Cartella di destinazione della categoria</value></data>
+  <data name="CategoryGeneral" xml:space="preserve"><value>Generale</value></data>
+  <data name="CategoryGeneralHint" xml:space="preserve"><value>Categoria predefinita per i file che non corrispondono a nessun'altra: non può essere eliminata.</value></data>
+  <data name="CategoryMusic" xml:space="preserve"><value>Musica</value></data>
+  <data name="CategoryNameLabel" xml:space="preserve"><value>_Nome</value></data>
+  <data name="CategoryNameName" xml:space="preserve"><value>Nome della categoria</value></data>
+  <data name="CategoryNewName" xml:space="preserve"><value>Nuova categoria</value></data>
+  <data name="CategoryPrograms" xml:space="preserve"><value>Programmi</value></data>
+  <data name="CategoryVideo" xml:space="preserve"><value>Video</value></data>
+  <data name="CertificateAcceptAlways" xml:space="preserve"><value>Accetta _sempre per questo server</value></data>
+  <data name="CertificateAcceptOnce" xml:space="preserve"><value>Accetta solo _questa volta</value></data>
+  <data name="CertificateAdvice" xml:space="preserve"><value>Accetta solo se sai che è il certificato giusto, per esempio confrontando l'impronta con quella comunicata dal gestore del server. Se rifiuti, il download si interrompe.</value></data>
+  <data name="CertificateExpired" xml:space="preserve"><value>Il certificato è scaduto o non ancora valido.</value></data>
+  <data name="CertificateFingerprint" xml:space="preserve"><value>Impronta SHA-256</value></data>
+  <data name="CertificateForget" xml:space="preserve"><value>_Dimentica il certificato</value></data>
+  <data name="CertificateHeading" xml:space="preserve"><value>Windows non riconosce il certificato di {0}</value></data>
+  <data name="CertificateIssuer" xml:space="preserve"><value>Emesso da</value></data>
+  <data name="CertificateMissing" xml:space="preserve"><value>Il server non ha presentato un certificato.</value></data>
+  <data name="CertificateNameMismatch" xml:space="preserve"><value>Il certificato è intestato a un altro nome.</value></data>
+  <data name="CertificateReject" xml:space="preserve"><value>_Rifiuta</value></data>
+  <data name="CertificateRejected" xml:space="preserve"><value>Il certificato di {0} non è attendibile e non è stato accettato.</value></data>
+  <data name="CertificateSubject" xml:space="preserve"><value>Intestato a</value></data>
+  <data name="CertificateTitle" xml:space="preserve"><value>Certificato non attendibile</value></data>
+  <data name="CertificateUntrustedIssuer" xml:space="preserve"><value>Il certificato non è emesso da un'autorità riconosciuta (per esempio è autofirmato).</value></data>
+  <data name="CertificateValidity" xml:space="preserve"><value>Validità</value></data>
+  <data name="CertificateValidityRange" xml:space="preserve"><value>dal {0:d} al {1:d}</value></data>
+  <data name="CertificatesHint" xml:space="preserve"><value>Certificati FTPS che Windows non riconosce ma che hai scelto di accettare sempre per un server.</value></data>
+  <data name="CertificatesListName" xml:space="preserve"><value>Certificati accettati</value></data>
+  <data name="CertificatesTitle" xml:space="preserve"><value>Certificati accettati</value></data>
+  <data name="CheckAlgorithmName" xml:space="preserve"><value>Algoritmo dell'hash</value></data>
+  <data name="CheckComputedName" xml:space="preserve"><value>Hash calcolato</value></data>
+  <data name="CheckCopyHash" xml:space="preserve"><value>_Copia hash</value></data>
+  <data name="CheckExpectedLabel" xml:space="preserve"><value>Hash _atteso</value></data>
+  <data name="CheckHashCopied" xml:space="preserve"><value>Hash {0} copiato negli appunti.</value></data>
+  <data name="CheckHashDiffers" xml:space="preserve"><value>✗ L'hash NON corrisponde: il file è diverso da quello atteso (danneggiato o sostituito). Non aprirlo.</value></data>
+  <data name="CheckHashDiffersShort" xml:space="preserve"><value>Hash: NON corrisponde ✗</value></data>
+  <data name="CheckHashLabel" xml:space="preserve"><value>_Hash del file</value></data>
+  <data name="CheckHashMatches" xml:space="preserve"><value>✓ L'hash corrisponde: il file è quello atteso.</value></data>
+  <data name="CheckHashMatchesShort" xml:space="preserve"><value>Hash: corrisponde ✓</value></data>
+  <data name="CheckHashNoExpected" xml:space="preserve"><value>Nessun hash atteso indicato.</value></data>
+  <data name="CheckHashNotYet" xml:space="preserve"><value>Verrà verificato a fine download.</value></data>
+  <data name="CheckHeading" xml:space="preserve"><value>Verifica del file</value></data>
+  <data name="CheckResultLabel" xml:space="preserve"><value>Esito</value></data>
+  <data name="CheckRunning" xml:space="preserve"><value>Verifica in corso…</value></data>
+  <data name="CheckVerify" xml:space="preserve"><value>_Verifica</value></data>
+  <data name="Close" xml:space="preserve"><value>Chiudi</value></data>
+  <data name="ClosingTitle" xml:space="preserve"><value>Baton — salvataggio in corso…</value></data>
+  <data name="ColumnAdded" xml:space="preserve"><value>Aggiunto</value></data>
+  <data name="ColumnCategory" xml:space="preserve"><value>Categoria</value></data>
+  <data name="ColumnCompleted" xml:space="preserve"><value>Completato</value></data>
+  <data name="ColumnConnections" xml:space="preserve"><value>Conn.</value></data>
+  <data name="ColumnFolder" xml:space="preserve"><value>Cartella</value></data>
+  <data name="ColumnName" xml:space="preserve"><value>Nome file</value></data>
+  <data name="ColumnProgress" xml:space="preserve"><value>Avanzamento</value></data>
+  <data name="ColumnQueue" xml:space="preserve"><value>Coda</value></data>
+  <data name="ColumnRemaining" xml:space="preserve"><value>Tempo rimasto</value></data>
+  <data name="ColumnSize" xml:space="preserve"><value>Dimensione</value></data>
+  <data name="ColumnSpeed" xml:space="preserve"><value>Velocità</value></data>
+  <data name="ColumnStatus" xml:space="preserve"><value>Stato</value></data>
+  <data name="ConfirmAddLinks" xml:space="preserve"><value>Aggiungere {0} download alla coda?</value></data>
+  <data name="ConfirmDeleteCategory" xml:space="preserve"><value>Eliminare la categoria "{0}"? I suoi download passeranno alla categoria Generale; i file restano dove sono.</value></data>
+  <data name="ConfirmDeleteLogin" xml:space="preserve"><value>Eliminare le credenziali {0}?</value></data>
+  <data name="ConfirmDeleteQueue" xml:space="preserve"><value>Eliminare la coda "{0}"? I suoi download passeranno alla Coda principale.</value></data>
+  <data name="ConfirmRemove" xml:space="preserve"><value>Rimuovere {0} download dall'elenco? I dati parziali verranno eliminati.</value></data>
+  <data name="ConfirmRemoveCompleted" xml:space="preserve"><value>Eliminare dal disco anche i file già scaricati?
+
+Sì: elimina file ed elemento
+No: rimuovi solo dall'elenco</value></data>
+  <data name="ConnectionTitle" xml:space="preserve"><value>Connessioni</value></data>
+  <data name="CountdownAnnouncement" xml:space="preserve"><value>{0} secondi</value></data>
+  <data name="CountdownCancel" xml:space="preserve"><value>_Annulla</value></data>
+  <data name="CountdownHeading" xml:space="preserve"><value>La coda «{0}» ha finito</value></data>
+  <data name="CountdownMessage" xml:space="preserve"><value>Azione prevista: {0} tra {1} secondi. Puoi annullarla.</value></data>
+  <data name="CountdownNow" xml:space="preserve"><value>{0} _ora</value></data>
+  <data name="CountdownSecondsName" xml:space="preserve"><value>Secondi rimanenti</value></data>
+  <data name="CountdownTitle" xml:space="preserve"><value>{0} tra poco</value></data>
+  <data name="CredentialsHint" xml:space="preserve"><value>Credenziali salvate per server (autenticazione HTTP e FTP). Le password sono cifrate con il tuo account di Windows e non vengono mai mostrate.</value></data>
+  <data name="CredentialsListName" xml:space="preserve"><value>Credenziali salvate</value></data>
+  <data name="EmptyFilteredHint" xml:space="preserve"><value>Scegli un altro filtro nel pannello a sinistra o cambia la ricerca</value></data>
+  <data name="EmptyFilteredTitle" xml:space="preserve"><value>Nessun download corrisponde</value></data>
+  <data name="EmptyHint" xml:space="preserve"><value>Premi Aggiungi (Ctrl+N), incolla un link con Ctrl+V oppure trascinalo qui</value></data>
+  <data name="EmptyTitle" xml:space="preserve"><value>Nessun download</value></data>
+  <data name="EnableStartup" xml:space="preserve"><value>Avvia con Windows</value></data>
+  <data name="EndActionCloseApp" xml:space="preserve"><value>Chiudi l'app</value></data>
+  <data name="EndActionHibernate" xml:space="preserve"><value>Iberna</value></data>
+  <data name="EndActionNone" xml:space="preserve"><value>Nessuna</value></data>
+  <data name="EndActionShutdown" xml:space="preserve"><value>Spegni il PC</value></data>
+  <data name="EndActionSleep" xml:space="preserve"><value>Sospendi</value></data>
+  <data name="ErrorCategoryDuplicate" xml:space="preserve"><value>Esiste già una categoria chiamata "{0}".</value></data>
+  <data name="ErrorCategoryFolder" xml:space="preserve"><value>La cartella della categoria "{0}" deve essere un percorso completo.</value></data>
+  <data name="ErrorCategoryName" xml:space="preserve"><value>Ogni categoria deve avere un nome.</value></data>
+  <data name="ErrorConcurrentRange" xml:space="preserve"><value>I download simultanei in totale devono essere un numero tra 1 e 50.</value></data>
+  <data name="ErrorConnectionsRange" xml:space="preserve"><value>Le connessioni per download devono essere un numero tra 1 e 32.</value></data>
+  <data name="ErrorCopyDetails" xml:space="preserve"><value>_Copia dettagli</value></data>
+  <data name="ErrorDetails" xml:space="preserve"><value>Dettagli tecnici</value></data>
+  <data name="ErrorDetailsCopied" xml:space="preserve"><value>Dettagli copiati negli appunti.</value></data>
+  <data name="ErrorDiskFull" xml:space="preserve"><value>Spazio su disco esaurito {0}: libera spazio e riprendi il download, i dati già scaricati sono conservati.</value></data>
+  <data name="ErrorFileMissing" xml:space="preserve"><value>Il file non esiste più: potrebbe essere stato spostato o eliminato.</value></data>
+  <data name="ErrorFolderNotAbsolute" xml:space="preserve"><value>Indica una cartella completa (es. C:\Users\…\Downloads).</value></data>
+  <data name="ErrorFolderNotWritable" xml:space="preserve"><value>Impossibile scrivere nella cartella {0}: scegli un'altra cartella in Proprietà o nelle Impostazioni.</value></data>
+  <data name="ErrorHashFormat" xml:space="preserve"><value>Hash non riconosciuto: incolla un MD5 (32 caratteri), un SHA-1 (40) o uno SHA-256 (64), anche con il prefisso "sha256:".</value></data>
+  <data name="ErrorInvalidUrl" xml:space="preserve"><value>Inserisci un indirizzo valido: http://, https://, ftp://, ftps:// (TLS implicito) o ftpes:// (TLS esplicito).</value></data>
+  <data name="ErrorNotificationExpired" xml:space="preserve"><value>Questo pulsante della notifica non è più valido (è scaduto, oppure il download è stato rimosso o spostato). Apri Baton per trovare il file.</value></data>
+  <data name="ErrorPacUrl" xml:space="preserve"><value>Indica l'indirizzo del file PAC.</value></data>
+  <data name="ErrorPathTooLong" xml:space="preserve"><value>Percorso troppo lungo {0}: scegli una cartella più corta o un nome più breve.</value></data>
+  <data name="ErrorPerServer" xml:space="preserve"><value>Le connessioni per server devono essere tra 1 e 256.</value></data>
+  <data name="ErrorProxyHost" xml:space="preserve"><value>Indica il server del proxy.</value></data>
+  <data name="ErrorProxyPort" xml:space="preserve"><value>La porta del proxy deve essere un numero tra 1 e 65535.</value></data>
+  <data name="ErrorQueueConcurrent" xml:space="preserve"><value>i file simultanei devono essere un numero tra 1 e 20.</value></data>
+  <data name="ErrorQueueDate" xml:space="preserve"><value>scegli la data.</value></data>
+  <data name="ErrorQueueDays" xml:space="preserve"><value>scegli almeno un giorno della settimana.</value></data>
+  <data name="ErrorQueueDuplicate" xml:space="preserve"><value>esiste già una coda chiamata "{0}".</value></data>
+  <data name="ErrorQueueName" xml:space="preserve"><value>la coda deve avere un nome.</value></data>
+  <data name="ErrorQueueQuota" xml:space="preserve"><value>la quota deve essere 0 o un numero positivo di MB.</value></data>
+  <data name="ErrorQueueRepeat" xml:space="preserve"><value>la ripetizione deve essere tra 0 e 1440 minuti.</value></data>
+  <data name="ErrorQueueRetries" xml:space="preserve"><value>i tentativi devono essere un numero tra 0 e 100.</value></data>
+  <data name="ErrorQueueRetryDelay" xml:space="preserve"><value>la pausa tra i tentativi deve essere tra 0 e 86400 secondi.</value></data>
+  <data name="ErrorQueueStart" xml:space="preserve"><value>indica l'ora di avvio nel formato hh:mm, per esempio 22:30.</value></data>
+  <data name="ErrorQueueStop" xml:space="preserve"><value>l'ora di arresto deve essere nel formato hh:mm e diversa da quella di avvio.</value></data>
+  <data name="ErrorScanCodes" xml:space="preserve"><value>Indica almeno un codice di uscita numerico diverso da 0, separati da virgole.</value></data>
+  <data name="ErrorScanTimeout" xml:space="preserve"><value>Il tempo massimo dell'antivirus deve essere tra 10 e 3600 secondi.</value></data>
+  <data name="ErrorSpeedLimit" xml:space="preserve"><value>Il limite di velocità deve essere 0 o un numero positivo.</value></data>
+  <data name="ErrorTimeout" xml:space="preserve"><value>Il timeout deve essere tra 5 e 600 secondi.</value></data>
+  <data name="ErrorUnexpected" xml:space="preserve"><value>Errore imprevisto</value></data>
+  <data name="ErrorUnexpectedText" xml:space="preserve"><value>Si è verificato un errore imprevisto: {0}
+
+L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allegali alla segnalazione; si trovano anche nel registro dell'app (cartella dati › logs).</value></data>
+  <data name="ErrorUnknownMessage" xml:space="preserve"><value>Messaggio sconosciuto: {0}</value></data>
+  <data name="ErrorUpdateUrlMissing" xml:space="preserve"><value>Indica l'indirizzo degli aggiornamenti.</value></data>
+  <data name="ExportListFilter" xml:space="preserve"><value>File JSON (*.json)|*.json</value></data>
+  <data name="ExportTitle" xml:space="preserve"><value>Esporta</value></data>
+  <data name="ExportUrlsFilter" xml:space="preserve"><value>File di testo (*.txt)|*.txt</value></data>
+  <data name="FirstRunBrowsersTitle" xml:space="preserve"><value>Estensione per il browser</value></data>
+  <data name="FirstRunCategoriesHint" xml:space="preserve"><value>Cartelle delle categorie: un nome semplice è una sottocartella di quella dei download; puoi anche indicare un percorso completo.</value></data>
+  <data name="FirstRunChromiumSteps" xml:space="preserve"><value>Apri {0} (incolla l'indirizzo nella barra), attiva la modalità sviluppatore, scegli "Carica estensione non pacchettizzata" e indica la cartella {1}.</value></data>
+  <data name="FirstRunConnected" xml:space="preserve"><value>Estensione collegata: ultimo contatto alle {0}.</value></data>
+  <data name="FirstRunCopyPage" xml:space="preserve"><value>Copia l'indirizzo</value></data>
+  <data name="FirstRunCopyPageName" xml:space="preserve"><value>Copia l'indirizzo della pagina delle estensioni di {0}</value></data>
+  <data name="FirstRunExtensionFolderUnknown" xml:space="preserve"><value>"extension" del progetto</value></data>
+  <data name="FirstRunFinish" xml:space="preserve"><value>Inizia</value></data>
+  <data name="FirstRunFirefoxSteps" xml:space="preserve"><value>Installa il file .xpi firmato trascinandolo nella finestra di Firefox; per una prova senza firma apri {0} e carica il manifest.json della build per Firefox.</value></data>
+  <data name="FirstRunFolderTitle" xml:space="preserve"><value>Dove salvare i download</value></data>
+  <data name="FirstRunIntro" xml:space="preserve"><value>Qualche scelta per iniziare. Puoi cambiarle in seguito dalle Impostazioni e dalle Categorie.</value></data>
+  <data name="FirstRunNoBrowsers" xml:space="preserve"><value>Nessun browser supportato trovato (Edge, Chrome, Brave, Opera, Chromium, Firefox). Puoi installare l'estensione in seguito: vedi il README.</value></data>
+  <data name="FirstRunNotConnected" xml:space="preserve"><value>Nessun contatto dall'estensione finora. Installala, apri il suo pulsante nella barra del browser e riprova.</value></data>
+  <data name="FirstRunOpenExtensionFolder" xml:space="preserve"><value>Apri la cartella dell'estensione</value></data>
+  <data name="FirstRunSkip" xml:space="preserve"><value>Salta</value></data>
+  <data name="FirstRunSkipToolTip" xml:space="preserve"><value>Usa le impostazioni predefinite (download nella cartella Download)</value></data>
+  <data name="FirstRunTitle" xml:space="preserve"><value>Benvenuto in Baton</value></data>
+  <data name="FirstRunVerify" xml:space="preserve"><value>Verifica connessione</value></data>
+  <data name="FirstRunVerifyToolTip" xml:space="preserve"><value>Apri il pulsante dell'estensione nel browser, poi premi qui</value></data>
+  <data name="FromBrowser" xml:space="preserve"><value>Inviato dal browser.</value></data>
+  <data name="FromBrowserCrossSiteForm" xml:space="preserve"><value>Attenzione: un modulo inviato da {0} a {1}. Proseguendo, l'app rinvia i dati del modulo con la tua sessione su {1}: fallo solo se l'hai inviato tu, consapevolmente.</value></data>
+  <data name="FromBrowserForm" xml:space="preserve"><value>Inviato dal browser compilando un modulo: verranno rinviati i dati del modulo (POST), i cookie e la pagina di provenienza. Un modulo non si può riprendere: se si interrompe, riparte da capo.</value></data>
+  <data name="FromBrowserMedia" xml:space="preserve"><value>Video {0} dalla pagina, qualità {1}: i segmenti vengono scaricati in parallelo e poi uniti.</value></data>
+  <data name="FromBrowserMediaAudio" xml:space="preserve"><value>Audio: {0}.</value></data>
+  <data name="FromBrowserMediaEmbedded" xml:space="preserve"><value>dentro il video</value></data>
+  <data name="FromBrowserMediaSubtitles" xml:space="preserve"><value>Sottotitoli: {0} ({1}).</value></data>
+  <data name="FromBrowserWithCookies" xml:space="preserve"><value>Inviato dal browser: verranno usati i cookie della sessione e la pagina di provenienza.</value></data>
+  <data name="FtpActiveMode" xml:space="preserve"><value>FTP in modalità _attiva (il server apre la connessione dati)</value></data>
+  <data name="FtpActiveModeToolTip" xml:space="preserve"><value>La modalità passiva, predefinita, funziona quasi sempre; quella attiva serve solo con alcuni server e spesso è bloccata dal firewall.</value></data>
+  <data name="GestureAltEnter" xml:space="preserve"><value>Alt+Invio</value></data>
+  <data name="GestureDelete" xml:space="preserve"><value>Canc</value></data>
+  <data name="GestureEnter" xml:space="preserve"><value>Invio</value></data>
+  <data name="GrabberAccessHeading" xml:space="preserve"><value>Accesso al sito</value></data>
+  <data name="GrabberAccessHint" xml:space="preserve"><value>Valgono per la scansione. I file mandati a una coda usano poi le impostazioni di rete dell'app, come ogni download.</value></data>
+  <data name="GrabberAutoFinished" xml:space="preserve"><value>Grabber «{0}»: {1}</value></data>
+  <data name="GrabberBack" xml:space="preserve"><value>_Indietro</value></data>
+  <data name="GrabberClearCookies" xml:space="preserve"><value>Cancella cookie</value></data>
+  <data name="GrabberColumnLastRun" xml:space="preserve"><value>Ultima esecuzione</value></data>
+  <data name="GrabberColumnLocal" xml:space="preserve"><value>Percorso locale</value></data>
+  <data name="GrabberColumnMode" xml:space="preserve"><value>Modalità</value></data>
+  <data name="GrabberColumnNextRun" xml:space="preserve"><value>Prossima</value></data>
+  <data name="GrabberColumnProject" xml:space="preserve"><value>Progetto</value></data>
+  <data name="GrabberColumnResult" xml:space="preserve"><value>Risultato</value></data>
+  <data name="GrabberColumnSource" xml:space="preserve"><value>Pagina di origine</value></data>
+  <data name="GrabberConfirmDelete" xml:space="preserve"><value>Eliminare il progetto «{0}»? I file già scaricati o salvati non vengono cancellati.</value></data>
+  <data name="GrabberCookiesFromBrowser" xml:space="preserve"><value>{0} cookie ricevuti dal browser: permettono di vedere le pagine riservate agli utenti collegati. Sono conservati cifrati.</value></data>
+  <data name="GrabberCountMirror" xml:space="preserve"><value>{0} file · {1} visibili</value></data>
+  <data name="GrabberCurrent" xml:space="preserve"><value>Ora: {0}</value></data>
+  <data name="GrabberDelete" xml:space="preserve"><value>Elimina</value></data>
+  <data name="GrabberDeleteToolTip" xml:space="preserve"><value>Elimina il progetto (i file già salvati restano dove sono)</value></data>
+  <data name="GrabberDepthHint" xml:space="preserve"><value>Quanti passaggi di link seguire a partire dalla prima pagina: 0 = solo la pagina di partenza.</value></data>
+  <data name="GrabberDepthLabel" xml:space="preserve"><value>_Profondità</value></data>
+  <data name="GrabberDepthName" xml:space="preserve"><value>Profondità</value></data>
+  <data name="GrabberDomainsHeading" xml:space="preserve"><value>Siti da visitare</value></data>
+  <data name="GrabberDomainsHint" xml:space="preserve"><value>Uno per riga o separati da spazi, per esempio cdn.esempio.it: valgono anche i loro sottodomini.</value></data>
+  <data name="GrabberDomainsName" xml:space="preserve"><value>Domini consentiti</value></data>
+  <data name="GrabberDoneFiles" xml:space="preserve"><value>Scansione terminata:</value></data>
+  <data name="GrabberDoneMirror" xml:space="preserve"><value>Copia terminata:</value></data>
+  <data name="GrabberEdit" xml:space="preserve"><value>Modifica</value></data>
+  <data name="GrabberEditToolTip" xml:space="preserve"><value>Modifica il progetto selezionato (F2)</value></data>
+  <data name="GrabberEmptyHint" xml:space="preserve"><value>Crea un progetto con «Nuovo», oppure dal browser: tasto destro sulla pagina › «Cattura questo sito con Baton…».</value></data>
+  <data name="GrabberEmptyTitle" xml:space="preserve"><value>Nessun progetto</value></data>
+  <data name="GrabberErrorDepth" xml:space="preserve"><value>La profondità va da 0 a 20.</value></data>
+  <data name="GrabberErrorDomains" xml:space="preserve"><value>Uno dei domini consentiti non è un nome valido.</value></data>
+  <data name="GrabberErrorFolderMissing" xml:space="preserve"><value>Scegli la cartella in cui salvare la copia offline.</value></data>
+  <data name="GrabberErrorMaxFiles" xml:space="preserve"><value>Il numero massimo di file va da 1 a 200.000.</value></data>
+  <data name="GrabberErrorMaxPages" xml:space="preserve"><value>Il numero massimo di pagine va da 1 a 100.000.</value></data>
+  <data name="GrabberErrorMaxPattern" xml:space="preserve"><value>Le pagine dalla stessa forma vanno da 1 a 100.000.</value></data>
+  <data name="GrabberErrorMaxTotal" xml:space="preserve"><value>La dimensione totale massima deve essere almeno 1 MB.</value></data>
+  <data name="GrabberErrorName" xml:space="preserve"><value>Dai un nome al progetto.</value></data>
+  <data name="GrabberErrorRate" xml:space="preserve"><value>Le richieste al secondo vanno da 0,1 a 20.</value></data>
+  <data name="GrabberErrorRepeat" xml:space="preserve"><value>La ripetizione va da 0 a 24 ore.</value></data>
+  <data name="GrabberErrorSize" xml:space="preserve"><value>Le dimensioni devono essere numeri interi positivi.</value></data>
+  <data name="GrabberErrorSizeOrder" xml:space="preserve"><value>La dimensione minima supera la massima.</value></data>
+  <data name="GrabberErrorUrl" xml:space="preserve"><value>Scrivi un indirizzo http o https completo, per esempio https://www.esempio.it/.</value></data>
+  <data name="GrabberErrorUserAgent" xml:space="preserve"><value>Lo user-agent non può contenere caratteri di controllo né superare 300 caratteri.</value></data>
+  <data name="GrabberExcludeLabel" xml:space="preserve"><value>_Escludi gli indirizzi che corrispondono a (espressione regolare)</value></data>
+  <data name="GrabberExcludeName" xml:space="preserve"><value>Espressione di esclusione</value></data>
+  <data name="GrabberExtensionsLabel" xml:space="preserve"><value>Altre estensioni (separate da spa_zi)</value></data>
+  <data name="GrabberExtensionsName" xml:space="preserve"><value>Altre estensioni</value></data>
+  <data name="GrabberFilterAllStatuses" xml:space="preserve"><value>Tutti gli stati</value></data>
+  <data name="GrabberFilterLabel" xml:space="preserve"><value>C_erca nel nome, nell'indirizzo o nella pagina di origine</value></data>
+  <data name="GrabberFolderFilesHint" xml:space="preserve"><value>I file scelti nell'anteprima vengono aggiunti alla coda come download normali.</value></data>
+  <data name="GrabberFolderFilesLabel" xml:space="preserve"><value>_Cartella (vuoto = quella della categoria di ogni file)</value></data>
+  <data name="GrabberFolderMirrorHint" xml:space="preserve"><value>Dentro la cartella ogni sito ha la sua sottocartella; i nomi vengono resi validi per Windows e nessun file può finire fuori da qui.</value></data>
+  <data name="GrabberFolderMirrorLabel" xml:space="preserve"><value>_Cartella della copia offline</value></data>
+  <data name="GrabberForgetCookies" xml:space="preserve"><value>Dimentica i cookie dopo ogni esecuzione</value></data>
+  <data name="GrabberIncludeLabel" xml:space="preserve"><value>Includi solo gli indirizzi che corrispondono a (espressione _regolare)</value></data>
+  <data name="GrabberIncludeName" xml:space="preserve"><value>Espressione di inclusione</value></data>
+  <data name="GrabberLimitFiles" xml:space="preserve"><value>file</value></data>
+  <data name="GrabberLimitPages" xml:space="preserve"><value>pagine</value></data>
+  <data name="GrabberLimitSize" xml:space="preserve"><value>dimensione totale</value></data>
+  <data name="GrabberLimitsHeading" xml:space="preserve"><value>Limiti di sicurezza</value></data>
+  <data name="GrabberListName" xml:space="preserve"><value>File trovati</value></data>
+  <data name="GrabberMaxFilesLabel" xml:space="preserve"><value>Numero massimo di _file</value></data>
+  <data name="GrabberMaxFilesName" xml:space="preserve"><value>Numero massimo di file</value></data>
+  <data name="GrabberMaxPagesLabel" xml:space="preserve"><value>Numero massimo di pa_gine</value></data>
+  <data name="GrabberMaxPagesName" xml:space="preserve"><value>Numero massimo di pagine</value></data>
+  <data name="GrabberMaxPatternHint" xml:space="preserve"><value>Pagine che differiscono solo per un numero (calendario?mese=N, pagina-7.html…): oltre questo numero non vengono seguite, così un calendario infinito non blocca la scansione.</value></data>
+  <data name="GrabberMaxPatternLabel" xml:space="preserve"><value>Pagine dalla _stessa forma</value></data>
+  <data name="GrabberMaxPatternName" xml:space="preserve"><value>Pagine dalla stessa forma</value></data>
+  <data name="GrabberMaxSizeLabel" xml:space="preserve"><value>Dimensione ma_ssima (MB)</value></data>
+  <data name="GrabberMaxSizeName" xml:space="preserve"><value>Dimensione massima in MB</value></data>
+  <data name="GrabberMaxTotalLabel" xml:space="preserve"><value>Dimensione _totale massima (MB)</value></data>
+  <data name="GrabberMaxTotalName" xml:space="preserve"><value>Dimensione totale massima in MB</value></data>
+  <data name="GrabberMinSizeLabel" xml:space="preserve"><value>Dimensione mi_nima (KB)</value></data>
+  <data name="GrabberMinSizeName" xml:space="preserve"><value>Dimensione minima in KB</value></data>
+  <data name="GrabberModeFiles" xml:space="preserve"><value>Solo i file che ti servono</value></data>
+  <data name="GrabberModeFilesHint" xml:space="preserve"><value>Elenca i file che passano i filtri (per esempio tutte le immagini o tutti i PDF) con tipo, dimensione e pagina di origine; scegli quali mandare a una coda.</value></data>
+  <data name="GrabberModeFilesShort" xml:space="preserve"><value>File filtrati</value></data>
+  <data name="GrabberModeHeading" xml:space="preserve"><value>Cosa vuoi ottenere</value></data>
+  <data name="GrabberModeMirror" xml:space="preserve"><value>Copia del sito da consultare offline</value></data>
+  <data name="GrabberModeMirrorHint" xml:space="preserve"><value>Salva pagine, fogli di stile e immagini mantenendo le cartelle del sito; i link puntano ai file locali.</value></data>
+  <data name="GrabberModeMirrorShort" xml:space="preserve"><value>Copia offline</value></data>
+  <data name="GrabberNameLabel" xml:space="preserve"><value>_Nome del progetto</value></data>
+  <data name="GrabberNameName" xml:space="preserve"><value>Nome del progetto</value></data>
+  <data name="GrabberNeverRun" xml:space="preserve"><value>Mai</value></data>
+  <data name="GrabberNew" xml:space="preserve"><value>Nuovo</value></data>
+  <data name="GrabberNewToolTip" xml:space="preserve"><value>Nuovo progetto grabber (Ctrl+N)</value></data>
+  <data name="GrabberNext" xml:space="preserve"><value>_Avanti</value></data>
+  <data name="GrabberNextRun" xml:space="preserve"><value>Prossima esecuzione: {0:dddd d MMMM, HH:mm}.</value></data>
+  <data name="GrabberNoCookies" xml:space="preserve"><value>Nessun cookie: il sito viene visitato come da un utente non collegato. Per le pagine riservate crea il progetto dal browser («Cattura questo sito»).</value></data>
+  <data name="GrabberNotScheduled" xml:space="preserve"><value>Il progetto parte solo quando lo avvii tu.</value></data>
+  <data name="GrabberOnce" xml:space="preserve"><value>Una sola volta, il giorno:</value></data>
+  <data name="GrabberOpenCopy" xml:space="preserve"><value>Apri la copia _offline</value></data>
+  <data name="GrabberOpenFolder" xml:space="preserve"><value>Apri cartella</value></data>
+  <data name="GrabberOpenFolderToolTip" xml:space="preserve"><value>Apri la cartella della copia offline</value></data>
+  <data name="GrabberOtherDomains" xml:space="preserve"><value>Anche questi domini:</value></data>
+  <data name="GrabberPatternHint" xml:space="preserve"><value>Le espressioni valgono sull'indirizzo completo, senza distinguere maiuscole e minuscole. L'inclusione vale per i file, l'esclusione anche per le pagine. Esempio: \.pdf$ oppure /archivio/</value></data>
+  <data name="GrabberPatternInvalid" xml:space="preserve"><value>Espressione non valida: {0}</value></data>
+  <data name="GrabberPatternTooLong" xml:space="preserve"><value>Espressione troppo lunga (al massimo 1000 caratteri).</value></data>
+  <data name="GrabberPatternUnsupported" xml:space="preserve"><value>Espressione non ammessa: riferimenti all'indietro (come \1), lookahead e lookbehind non sono supportati, perché le espressioni non devono poter rallentare la scansione.</value></data>
+  <data name="GrabberPresetArchives" xml:space="preserve"><value>Archivi</value></data>
+  <data name="GrabberPresetAudio" xml:space="preserve"><value>Audio</value></data>
+  <data name="GrabberPresetDocuments" xml:space="preserve"><value>Documenti</value></data>
+  <data name="GrabberPresetImages" xml:space="preserve"><value>Immagini</value></data>
+  <data name="GrabberPresetVideo" xml:space="preserve"><value>Video</value></data>
+  <data name="GrabberProgressFiles" xml:space="preserve"><value>{0} pagine visitate · {1} file trovati · {2} · {3} errori · {4} esclusi da robots.txt</value></data>
+  <data name="GrabberProgressMirror" xml:space="preserve"><value>{0} pagine · {1} file salvati · {2} · {3} errori · {4} esclusi da robots.txt</value></data>
+  <data name="GrabberProgressName" xml:space="preserve"><value>Avanzamento della scansione</value></data>
+  <data name="GrabberProjectsHint" xml:space="preserve"><value>Invio avvia la scansione, F2 modifica, Canc elimina. I file già scaricati non vengono mai cancellati.</value></data>
+  <data name="GrabberProjectsName" xml:space="preserve"><value>Progetti grabber</value></data>
+  <data name="GrabberProjectsTitle" xml:space="preserve"><value>Grabber — progetti</value></data>
+  <data name="GrabberRateHint" xml:space="preserve"><value>Una cadenza bassa non affatica il sito. Se il sito risponde 429 o 503 si aspetta il tempo che indica (Retry-After); il Crawl-delay di robots.txt può rallentare ancora.</value></data>
+  <data name="GrabberRateLabel" xml:space="preserve"><value>Ric_hieste al secondo per sito</value></data>
+  <data name="GrabberRateName" xml:space="preserve"><value>Richieste al secondo per sito</value></data>
+  <data name="GrabberRepeatLabel" xml:space="preserve"><value>Ripe_ti ogni (ore)</value></data>
+  <data name="GrabberRepeatName" xml:space="preserve"><value>Ripeti ogni quante ore</value></data>
+  <data name="GrabberRepeatToolTip" xml:space="preserve"><value>Vuoto o 0 = una volta al giorno all'ora indicata</value></data>
+  <data name="GrabberRespectRobots" xml:space="preserve"><value>_Rispetta robots.txt (consigliato)</value></data>
+  <data name="GrabberRobotsConfirm" xml:space="preserve"><value>Hai scelto di ignorare robots.txt: verranno visitate anche le pagine che il sito chiede ai programmi automatici di non visitare. Continuare solo se il sito è tuo o hai il permesso del proprietario. Continuare?</value></data>
+  <data name="GrabberRobotsWarning" xml:space="preserve"><value>Le pagine che il sito chiede di non visitare verranno visitate lo stesso. Fallo solo per siti tuoi o con il permesso del proprietario: può violare le regole del sito.</value></data>
+  <data name="GrabberRun" xml:space="preserve"><value>Avvia</value></data>
+  <data name="GrabberRunHeadingFiles" xml:space="preserve"><value>File trovati</value></data>
+  <data name="GrabberRunHeadingMirror" xml:space="preserve"><value>Copia offline</value></data>
+  <data name="GrabberRunTitle" xml:space="preserve"><value>Grabber — {0}</value></data>
+  <data name="GrabberRunToolTip" xml:space="preserve"><value>Avvia la scansione del progetto selezionato e mostra l'anteprima dei file (Invio)</value></data>
+  <data name="GrabberSameDomain" xml:space="preserve"><value>Solo questo sito (con i suoi sottodomini)</value></data>
+  <data name="GrabberSaveAndRun" xml:space="preserve"><value>Salva e a_vvia</value></data>
+  <data name="GrabberSaveOnly" xml:space="preserve"><value>_Salva</value></data>
+  <data name="GrabberScheduleFilesHint" xml:space="preserve"><value>Ogni esecuzione automatica manda alla coda solo i file nuovi o modificati e segnala quelli rimossi dal sito.</value></data>
+  <data name="GrabberScheduled" xml:space="preserve"><value>_Esegui automaticamente</value></data>
+  <data name="GrabberSent" xml:space="preserve"><value>{0} file aggiunti alla coda «{1}».</value></data>
+  <data name="GrabberSitesFolder" xml:space="preserve"><value>Siti</value></data>
+  <data name="GrabberStartLabel" xml:space="preserve"><value>Ora di avvio (hh:_mm)</value></data>
+  <data name="GrabberStateManual" xml:space="preserve"><value>Manuale</value></data>
+  <data name="GrabberStateRunning" xml:space="preserve"><value>In corso</value></data>
+  <data name="GrabberStateScheduled" xml:space="preserve"><value>Pianificato</value></data>
+  <data name="GrabberStaticOnly" xml:space="preserve"><value>Viene letto solo l'HTML statico: gli script delle pagine non vengono mai eseguiti, quindi i contenuti caricati da JavaScript non vengono trovati.</value></data>
+  <data name="GrabberStatusChanged" xml:space="preserve"><value>Modificato</value></data>
+  <data name="GrabberStatusFailed" xml:space="preserve"><value>Errore</value></data>
+  <data name="GrabberStatusLabel" xml:space="preserve"><value>_Stato</value></data>
+  <data name="GrabberStatusName" xml:space="preserve"><value>Stato</value></data>
+  <data name="GrabberStatusNew" xml:space="preserve"><value>Nuovo</value></data>
+  <data name="GrabberStatusRemoved" xml:space="preserve"><value>Rimosso dal sito</value></data>
+  <data name="GrabberStatusUnchanged" xml:space="preserve"><value>Invariato</value></data>
+  <data name="GrabberStepAccess" xml:space="preserve"><value>Accesso e limiti</value></data>
+  <data name="GrabberStepAddress" xml:space="preserve"><value>Indirizzo e modalità</value></data>
+  <data name="GrabberStepCounter" xml:space="preserve"><value>Passo {0} di {1}</value></data>
+  <data name="GrabberStepDestination" xml:space="preserve"><value>Destinazione e pianificazione</value></data>
+  <data name="GrabberStepFilters" xml:space="preserve"><value>Filtri</value></data>
+  <data name="GrabberStepName" xml:space="preserve"><value>Passo {0}: {1}</value></data>
+  <data name="GrabberStepScope" xml:space="preserve"><value>Ambito</value></data>
+  <data name="GrabberStepsName" xml:space="preserve"><value>Passi della procedura</value></data>
+  <data name="GrabberStop" xml:space="preserve"><value>Ferma</value></data>
+  <data name="GrabberStripScripts" xml:space="preserve"><value>Rimuovi gli script dalla copia offline (consigliato)</value></data>
+  <data name="GrabberStripScriptsWarning" xml:space="preserve"><value>Attenzione: aprendo la copia dal disco, gli script del sito verrebbero eseguiti sul tuo computer con i permessi di un file locale. Lasciali solo per siti di cui ti fidi.</value></data>
+  <data name="GrabberSummary" xml:space="preserve"><value>{0} pagine, {1} file ({2} nuovi, {3} modificati, {4} rimossi dal sito)</value></data>
+  <data name="GrabberSummaryLimit" xml:space="preserve"><value>fermato dal limite di {0}</value></data>
+  <data name="GrabberSummaryStopped" xml:space="preserve"><value>interrotto</value></data>
+  <data name="GrabberTitle" xml:space="preserve"><value>Grabber</value></data>
+  <data name="GrabberTypesAll" xml:space="preserve"><value>Verranno elencati tutti i file che non sono pagine.</value></data>
+  <data name="GrabberTypesHeading" xml:space="preserve"><value>Tipi di file</value></data>
+  <data name="GrabberTypesMirrorAll" xml:space="preserve"><value>La copia include pagine, stili, script, immagini e tutti i file collegati.</value></data>
+  <data name="GrabberTypesMirrorSome" xml:space="preserve"><value>La copia include pagine, stili, script e immagini; dei file collegati solo: {0}</value></data>
+  <data name="GrabberTypesSome" xml:space="preserve"><value>Verranno elencati: {0}</value></data>
+  <data name="GrabberUrlLabel" xml:space="preserve"><value>In_dirizzo di partenza</value></data>
+  <data name="GrabberUrlName" xml:space="preserve"><value>Indirizzo di partenza</value></data>
+  <data name="GrabberUseCookies" xml:space="preserve"><value>Usa i _cookie del browser</value></data>
+  <data name="GrabberUseCredentials" xml:space="preserve"><value>Usa le cre_denziali salvate (Impostazioni › Credenziali)</value></data>
+  <data name="GrabberUseProxy" xml:space="preserve"><value>Usa il _proxy dell'app (Impostazioni › Rete)</value></data>
+  <data name="GrabberUserAgentLabel" xml:space="preserve"><value>_User-agent (vuoto = quello dell'app)</value></data>
+  <data name="GrabberUserAgentName" xml:space="preserve"><value>User-agent</value></data>
+  <data name="GrabberWeekly" xml:space="preserve"><value>Ogni settimana nei giorni:</value></data>
+  <data name="GrabberWizardEditTitle" xml:space="preserve"><value>Progetto grabber «{0}»</value></data>
+  <data name="GrabberWizardTitle" xml:space="preserve"><value>Nuovo progetto grabber</value></data>
+  <data name="ImportApply" xml:space="preserve"><value>Importa</value></data>
+  <data name="ImportDone" xml:space="preserve"><value>Importazione completata: {0} aggiunti, {1} sostituiti, {2} saltati.</value></data>
+  <data name="ImportDuplicate" xml:space="preserve"><value>Già presente</value></data>
+  <data name="ImportDuplicatesLabel" xml:space="preserve"><value>Elementi già presenti</value></data>
+  <data name="ImportErrorEmpty" xml:space="preserve"><value>Il file non contiene indirizzi.</value></data>
+  <data name="ImportErrorFormat" xml:space="preserve"><value>Il file non è un'esportazione di Baton (o di DownloadManager, il suo nome fino alla 1.1).</value></data>
+  <data name="ImportErrorMissing" xml:space="preserve"><value>Il file non esiste.</value></data>
+  <data name="ImportErrorTooLarge" xml:space="preserve"><value>Il file è troppo grande o contiene troppi elementi.</value></data>
+  <data name="ImportFilter" xml:space="preserve"><value>Esportazioni e liste di indirizzi (*.json;*.txt)|*.json;*.txt|Tutti i file (*.*)|*.*</value></data>
+  <data name="ImportFolderNotLocal" xml:space="preserve"><value>Cartella non ammessa: deve essere su un disco di questo computer (niente cartelle di rete \\server\… o unità di rete).</value></data>
+  <data name="ImportFolderOutsideProfile" xml:space="preserve"><value>Cartella non ammessa: sul disco di Windows sono accettate solo cartelle dentro il tuo profilo utente.</value></data>
+  <data name="ImportFolderSensitive" xml:space="preserve"><value>Cartella non ammessa: è una cartella di sistema, dei programmi, dell'avvio automatico o dei dati delle applicazioni.</value></data>
+  <data name="ImportHint" xml:space="preserve"><value>I download importati restano in pausa nella cartella della loro categoria; code e progetti arrivano senza pianificazione. Password, cookie e altri dati riservati non vengono mai esportati né importati.</value></data>
+  <data name="ImportInvalidAddress" xml:space="preserve"><value>Indirizzo non valido: non verrà importato.</value></data>
+  <data name="ImportInvalidFolder" xml:space="preserve"><value>Cartella non valida: non verrà importato.</value></data>
+  <data name="ImportInvalidItem" xml:space="preserve"><value>Dati non validi: non verrà importato.</value></data>
+  <data name="ImportKindCategory" xml:space="preserve"><value>Categoria</value></data>
+  <data name="ImportKindDownload" xml:space="preserve"><value>Download</value></data>
+  <data name="ImportKindNetwork" xml:space="preserve"><value>Rete</value></data>
+  <data name="ImportKindProject" xml:space="preserve"><value>Progetto</value></data>
+  <data name="ImportKindQueue" xml:space="preserve"><value>Coda</value></data>
+  <data name="ImportKindSettings" xml:space="preserve"><value>Impostazioni</value></data>
+  <data name="ImportModeKeepBoth" xml:space="preserve"><value>Mantieni entrambi</value></data>
+  <data name="ImportModeReplace" xml:space="preserve"><value>Sostituisci</value></data>
+  <data name="ImportModeReplaceToolTip" xml:space="preserve"><value>Categorie, code e progetti prendono i valori importati; i download già presenti non vengono mai sostituiti.</value></data>
+  <data name="ImportModeSkip" xml:space="preserve"><value>Salta</value></data>
+  <data name="ImportNetworkName" xml:space="preserve"><value>Proxy, file PAC e conferma dei download dal browser</value></data>
+  <data name="ImportNetworkNoConfirm" xml:space="preserve"><value>download dal browser senza conferma</value></data>
+  <data name="ImportNetworkPac" xml:space="preserve"><value>file PAC {0}</value></data>
+  <data name="ImportNetworkProxy" xml:space="preserve"><value>proxy {0}</value></data>
+  <data name="ImportNetworkWarning" xml:space="preserve"><value>Attenzione: da qui in poi tutto il traffico dell'app passerebbe dal proxy indicato in questo file, e la conferma dei download potrebbe essere disattivata. Spunta solo se il file viene da una fonte di cui ti fidi.</value></data>
+  <data name="ImportPacNotHttps" xml:space="preserve"><value>File PAC non ammesso: deve essere un indirizzo https o un file su questo computer (mai http o cartelle di rete).</value></data>
+  <data name="ImportQueueDetail" xml:space="preserve"><value>{0} download contemporanei</value></data>
+  <data name="ImportSettingsName" xml:space="preserve"><value>Impostazioni (senza password, programmi e indirizzo di aggiornamento)</value></data>
+  <data name="ImportSummary" xml:space="preserve"><value>{0}: {1} elementi, {2} già presenti, {3} non validi. Scegli cosa importare.</value></data>
+  <data name="ImportTitle" xml:space="preserve"><value>Importa</value></data>
+  <data name="LegacyAppRunning" xml:space="preserve"><value>DownloadManager (il nome di Baton fino alla 1.1) è ancora aperto. Chiudilo (icona nell'area di notifica › Esci) e avvia di nuovo Baton: download e impostazioni passeranno a Baton.</value></data>
+  <data name="LegendActive" xml:space="preserve"><value>Connessione attiva</value></data>
+  <data name="LegendDone" xml:space="preserve"><value>Scaricato</value></data>
+  <data name="LegendMissing" xml:space="preserve"><value>Da scaricare</value></data>
+  <data name="ListName" xml:space="preserve"><value>Elenco dei download</value></data>
+  <data name="LoginDelete" xml:space="preserve"><value>_Elimina</value></data>
+  <data name="LoginDetails" xml:space="preserve"><value>Per scaricare «{0}» (autenticazione {1}).</value></data>
+  <data name="LoginHeading" xml:space="preserve"><value>{0} chiede le credenziali</value></data>
+  <data name="LoginHostLabel" xml:space="preserve"><value>_Server (https://nome:porta; senza schema vale https)</value></data>
+  <data name="LoginHostName" xml:space="preserve"><value>Server delle credenziali</value></data>
+  <data name="LoginNew" xml:space="preserve"><value>_Nuova</value></data>
+  <data name="LoginPasswordKeep" xml:space="preserve"><value>Lascia vuoto per mantenere la password salvata</value></data>
+  <data name="LoginPasswordLabel" xml:space="preserve"><value>_Password</value></data>
+  <data name="LoginPasswordName" xml:space="preserve"><value>Password</value></data>
+  <data name="LoginPasswordRequired" xml:space="preserve"><value>Inserisci la password.</value></data>
+  <data name="LoginPlainConfirm" xml:space="preserve"><value>Ho capito: la password viaggerà in chiaro e chi è sulla stessa rete potrà leggerla</value></data>
+  <data name="LoginPlainSaveConfirm" xml:space="preserve"><value>Con {0} la password viaggia in chiaro: chi è sulla stessa rete (Wi-Fi pubblico, rete aziendale) può leggerla. Salvarla comunque per questo server?</value></data>
+  <data name="LoginProxyHeading" xml:space="preserve"><value>Il proxy {0} chiede le credenziali</value></data>
+  <data name="LoginProxyTitle" xml:space="preserve"><value>Accesso al proxy</value></data>
+  <data name="LoginRealm" xml:space="preserve"><value>Area: «{0}».</value></data>
+  <data name="LoginRemember" xml:space="preserve"><value>_Ricorda (salvate cifrate)</value></data>
+  <data name="LoginRememberToolTip" xml:space="preserve"><value>Se non selezionato, le credenziali valgono solo finché l'app resta aperta.</value></data>
+  <data name="LoginSave" xml:space="preserve"><value>Sa_lva credenziali</value></data>
+  <data name="LoginSaved" xml:space="preserve"><value>Credenziali salvate per {0}.</value></data>
+  <data name="LoginSchemeUnknown" xml:space="preserve"><value>Schema non riconosciuto: usa https://, http://, ftps://, ftpes:// o ftp:// (senza schema vale https).</value></data>
+  <data name="LoginSignIn" xml:space="preserve"><value>_Accedi</value></data>
+  <data name="LoginTitle" xml:space="preserve"><value>Accesso richiesto</value></data>
+  <data name="LoginUnencrypted" xml:space="preserve"><value>Attenzione: la connessione non è cifrata, la password viaggerà leggibile.</value></data>
+  <data name="LoginUserLabel" xml:space="preserve"><value>Nome _utente</value></data>
+  <data name="LoginUserName" xml:space="preserve"><value>Nome utente</value></data>
+  <data name="LoginWindowsAccount" xml:space="preserve"><value>Usa il mio account di _Windows (NTLM/Kerberos, per la rete aziendale)</value></data>
+  <data name="LoginWindowsAccountToolTip" xml:space="preserve"><value>L'account di Windows viene offerto solo a questo server e solo con NTLM o Negotiate, mai come password in chiaro.</value></data>
+  <data name="MediaBlockedDrm" xml:space="preserve"><value>Il video è protetto (DRM o segmenti cifrati): non può essere scaricato e Baton non aggira le protezioni.</value></data>
+  <data name="MediaBlockedLive" xml:space="preserve"><value>È una diretta: si possono scaricare solo video completi, non trasmissioni in corso.</value></data>
+  <data name="MediaBlockedTerms" xml:space="preserve"><value>Questo sito non consente di scaricare i suoi video nei termini di servizio: Baton non lo fa.</value></data>
+  <data name="MediaCannotChangeUrl" xml:space="preserve"><value>L'indirizzo di un video non si può cambiare: riaprilo dalla pagina e scaricalo di nuovo.</value></data>
+  <data name="MediaErrorPrivate" xml:space="preserve"><value>Il video chiede indirizzi di questo computer o della rete locale, ma la pagina non è su quella rete: richiesta bloccata per sicurezza.</value></data>
+  <data name="MediaErrorScheme" xml:space="preserve"><value>Indirizzo del video non supportato ({0}): sono ammessi solo http e https.</value></data>
+  <data name="MediaMuxFailed" xml:space="preserve"><value>ffmpeg non è riuscito a unire le tracce ({0}): video e audio sono stati salvati separatamente così come scaricati.</value></data>
+  <data name="MediaNoFfmpegTracks" xml:space="preserve"><value>ffmpeg non trovato: video e audio sono stati salvati in due file separati. Indica ffmpeg in Impostazioni › Generale per ottenere un unico MP4.</value></data>
+  <data name="MediaNoFfmpegTs" xml:space="preserve"><value>ffmpeg non trovato: il video è stato salvato in formato .ts (MPEG-TS), riproducibile da VLC e dai lettori più diffusi. Indica ffmpeg in Impostazioni › Generale per ottenere un MP4.</value></data>
+  <data name="MediaProbeFailed" xml:space="preserve"><value>Impossibile leggere il video: {0}</value></data>
+  <data name="MediaSingleQuality" xml:space="preserve"><value>Unica qualità</value></data>
+  <data name="MediaSubtitlesFailed" xml:space="preserve"><value>Sottotitoli non scaricati: {0}.</value></data>
+  <data name="MediaSubtitlesNoFfmpeg" xml:space="preserve"><value>ffmpeg non trovato: i sottotitoli sono stati salvati come file .vtt accanto al video invece che al suo interno.</value></data>
+  <data name="MediaUnsupported" xml:space="preserve"><value>Formato non riconosciuto ({0}).</value></data>
+  <data name="MenuCopyUrl" xml:space="preserve"><value>Copia indirizzo</value></data>
+  <data name="MenuCustomizeToolbar" xml:space="preserve"><value>Personalizza la barra degli strumenti…</value></data>
+  <data name="MenuDeleteCategory" xml:space="preserve"><value>Elimina categoria</value></data>
+  <data name="MenuDeleteQueue" xml:space="preserve"><value>Elimina coda</value></data>
+  <data name="MenuEditCategory" xml:space="preserve"><value>Modifica categoria…</value></data>
+  <data name="MenuEditQueue" xml:space="preserve"><value>Modifica coda…</value></data>
+  <data name="MenuEnqueue" xml:space="preserve"><value>Metti in coda</value></data>
+  <data name="MenuExportList" xml:space="preserve"><value>Esporta la lista dei download (JSON)…</value></data>
+  <data name="MenuExportSettings" xml:space="preserve"><value>Esporta impostazioni, categorie, code e progetti…</value></data>
+  <data name="MenuExportUrls" xml:space="preserve"><value>Esporta gli indirizzi (testo)…</value></data>
+  <data name="MenuImport" xml:space="preserve"><value>Importa…</value></data>
+  <data name="MenuMoveToQueue" xml:space="preserve"><value>Sposta nella coda</value></data>
+  <data name="MenuNewCategory" xml:space="preserve"><value>Nuova categoria…</value></data>
+  <data name="MenuNewQueue" xml:space="preserve"><value>Nuova coda…</value></data>
+  <data name="MenuOpen" xml:space="preserve"><value>Apri</value></data>
+  <data name="MenuOpenFolder" xml:space="preserve"><value>Apri cartella</value></data>
+  <data name="MenuPause" xml:space="preserve"><value>Pausa</value></data>
+  <data name="MenuProgress" xml:space="preserve"><value>Mostra avanzamento</value></data>
+  <data name="MenuProperties" xml:space="preserve"><value>Proprietà</value></data>
+  <data name="MenuQueueOrder" xml:space="preserve"><value>Ordine della coda</value></data>
+  <data name="MenuRemove" xml:space="preserve"><value>Rimuovi</value></data>
+  <data name="MenuResetColumns" xml:space="preserve"><value>Ripristina colonne</value></data>
+  <data name="MenuStart" xml:space="preserve"><value>Avvia / riprendi</value></data>
+  <data name="MenuStartQueue" xml:space="preserve"><value>Avvia coda</value></data>
+  <data name="MenuStopQueue" xml:space="preserve"><value>Ferma coda</value></data>
+  <data name="MigrationFailed" xml:space="preserve"><value>Non è stato possibile copiare i dati di DownloadManager (il nome di Baton fino alla 1.1) nella cartella di Baton: per ora Baton usa la cartella precedente, {0}, e riproverà al prossimo avvio. Nessun dato è stato perso.
+
+Dettaglio: {1}</value></data>
+  <data name="NavAll" xml:space="preserve"><value>Tutti i download</value></data>
+  <data name="NavFinished" xml:space="preserve"><value>Completati</value></data>
+  <data name="NavQueues" xml:space="preserve"><value>Code</value></data>
+  <data name="NavUnfinished" xml:space="preserve"><value>Non completati</value></data>
+  <data name="NavigationAccessibleName" xml:space="preserve"><value>{0}, {1} download</value></data>
+  <data name="NavigationName" xml:space="preserve"><value>Filtri e categorie</value></data>
+  <data name="No" xml:space="preserve"><value>No</value></data>
+  <data name="Ok" xml:space="preserve"><value>OK</value></data>
+  <data name="PacNotLocal" xml:space="preserve"><value>Il file PAC deve essere un indirizzo https (o http) oppure un file su questo computer: mai una cartella di rete (\\server\…).</value></data>
+  <data name="PacUrlLabel" xml:space="preserve"><value>Indirizzo del file PAC (http, https o percorso locale)</value></data>
+  <data name="PacUrlName" xml:space="preserve"><value>Indirizzo del file PAC</value></data>
+  <data name="PerServerLabel" xml:space="preserve"><value>Connessioni _massime per server (1–256)</value></data>
+  <data name="PickDestinationFolder" xml:space="preserve"><value>Scegli la cartella di destinazione</value></data>
+  <data name="ProgressConnections" xml:space="preserve"><value>{0} attive su {1} segmenti</value></data>
+  <data name="ProgressConnectionsLabel" xml:space="preserve"><value>Connessioni</value></data>
+  <data name="ProgressConnectionsList" xml:space="preserve"><value>Segmenti e connessioni</value></data>
+  <data name="ProgressDownloaded" xml:space="preserve"><value>Scaricati</value></data>
+  <data name="ProgressDownloadedOf" xml:space="preserve"><value>{0} di {1} ({2})</value></data>
+  <data name="ProgressMap" xml:space="preserve"><value>Mappa del file</value></data>
+  <data name="ProgressOverall" xml:space="preserve"><value>Avanzamento complessivo</value></data>
+  <data name="ProgressRemaining" xml:space="preserve"><value>Tempo rimasto</value></data>
+  <data name="ProgressResumable" xml:space="preserve"><value>Ripresa</value></data>
+  <data name="ProgressSpeed" xml:space="preserve"><value>Velocità</value></data>
+  <data name="ProgressStatus" xml:space="preserve"><value>Stato</value></data>
+  <data name="ProgressTitle" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="PropertiesAdded" xml:space="preserve"><value>Aggiunto il</value></data>
+  <data name="PropertiesCategory" xml:space="preserve"><value>_Categoria</value></data>
+  <data name="PropertiesCompleted" xml:space="preserve"><value>Completato il</value></data>
+  <data name="PropertiesDownloaded" xml:space="preserve"><value>Scaricati</value></data>
+  <data name="PropertiesETag" xml:space="preserve"><value>ETag</value></data>
+  <data name="PropertiesFolder" xml:space="preserve"><value>Cartella</value></data>
+  <data name="PropertiesLastModified" xml:space="preserve"><value>Ultima modifica</value></data>
+  <data name="PropertiesResumable" xml:space="preserve"><value>Ripresa</value></data>
+  <data name="PropertiesSize" xml:space="preserve"><value>Dimensione</value></data>
+  <data name="PropertiesStatus" xml:space="preserve"><value>Stato</value></data>
+  <data name="PropertiesTitle" xml:space="preserve"><value>Proprietà del download</value></data>
+  <data name="PropertiesType" xml:space="preserve"><value>Tipo</value></data>
+  <data name="PropertiesUrlLabel" xml:space="preserve"><value>_Indirizzo</value></data>
+  <data name="PropertiesUrlName" xml:space="preserve"><value>Indirizzo del download</value></data>
+  <data name="ProxyBypassHint" xml:space="preserve"><value>Separate da ; o spazi, per esempio: *.intranet.local; 10.*; &lt;local&gt; (nomi senza punto). localhost e 127.0.0.1 non usano mai il proxy.</value></data>
+  <data name="ProxyBypassLabel" xml:space="preserve"><value>_Eccezioni: server raggiunti senza proxy</value></data>
+  <data name="ProxyBypassName" xml:space="preserve"><value>Eccezioni del proxy</value></data>
+  <data name="ProxyHostLabel" xml:space="preserve"><value>_Server</value></data>
+  <data name="ProxyHostName" xml:space="preserve"><value>Server proxy</value></data>
+  <data name="ProxyManual" xml:space="preserve"><value>Proxy _manuale</value></data>
+  <data name="ProxyNone" xml:space="preserve"><value>_Nessun proxy</value></data>
+  <data name="ProxyPac" xml:space="preserve"><value>Configurazione automatica (file _PAC)</value></data>
+  <data name="ProxyPacFailed" xml:space="preserve"><value>(il file PAC non è stato letto: {0})</value></data>
+  <data name="ProxyPasswordLabel" xml:space="preserve"><value>Pass_word</value></data>
+  <data name="ProxyPasswordName" xml:space="preserve"><value>Password del proxy</value></data>
+  <data name="ProxyPortLabel" xml:space="preserve"><value>P_orta</value></data>
+  <data name="ProxyPortName" xml:space="preserve"><value>Porta del proxy</value></data>
+  <data name="ProxyRouteDirect" xml:space="preserve"><value>con connessione diretta</value></data>
+  <data name="ProxyRouteVia" xml:space="preserve"><value>tramite {0}</value></data>
+  <data name="ProxySystem" xml:space="preserve"><value>Usa il proxy di _sistema (impostazioni di Windows)</value></data>
+  <data name="ProxyTest" xml:space="preserve"><value>_Verifica</value></data>
+  <data name="ProxyTestFailed" xml:space="preserve"><value>Verifica non riuscita: {0}</value></data>
+  <data name="ProxyTestNeedsLogin" xml:space="preserve"><value>Il proxy chiede le credenziali ({0}): inseriscile qui sopra.</value></data>
+  <data name="ProxyTestOk" xml:space="preserve"><value>Risposta HTTP {0} in {1} ms, {2}.</value></data>
+  <data name="ProxyTestToolTip" xml:space="preserve"><value>Scarica l'indirizzo di prova con le impostazioni scritte qui, prima di salvarle</value></data>
+  <data name="ProxyTestUrlName" xml:space="preserve"><value>Indirizzo di prova</value></data>
+  <data name="ProxyTesting" xml:space="preserve"><value>Verifica in corso…</value></data>
+  <data name="ProxyTitle" xml:space="preserve"><value>Proxy</value></data>
+  <data name="ProxyTypeLabel" xml:space="preserve"><value>_Tipo</value></data>
+  <data name="ProxyTypeName" xml:space="preserve"><value>Tipo di proxy</value></data>
+  <data name="ProxyUserLabel" xml:space="preserve"><value>_Utente (facoltativo)</value></data>
+  <data name="ProxyUserName" xml:space="preserve"><value>Utente del proxy</value></data>
+  <data name="QueueAdd" xml:space="preserve"><value>Aggiungi</value></data>
+  <data name="QueueConcurrentLabel" xml:space="preserve"><value>File _simultanei (1–20)</value></data>
+  <data name="QueueConcurrentName" xml:space="preserve"><value>File simultanei</value></data>
+  <data name="QueueDateName" xml:space="preserve"><value>Data della pianificazione</value></data>
+  <data name="QueueDelete" xml:space="preserve"><value>Elimina</value></data>
+  <data name="QueueEndActionLabel" xml:space="preserve"><value>_Al termine della coda</value></data>
+  <data name="QueueEndActionName" xml:space="preserve"><value>Azione al termine della coda</value></data>
+  <data name="QueueMainHint" xml:space="preserve"><value>La coda predefinita: non può essere eliminata e accoglie i download delle code eliminate.</value></data>
+  <data name="QueueMainName" xml:space="preserve"><value>Coda principale</value></data>
+  <data name="QueueNameLabel" xml:space="preserve"><value>_Nome</value></data>
+  <data name="QueueNameName" xml:space="preserve"><value>Nome della coda</value></data>
+  <data name="QueueNewName" xml:space="preserve"><value>Nuova coda</value></data>
+  <data name="QueueNextStart" xml:space="preserve"><value>Prossimo avvio: {0:dddd d MMMM, HH:mm}</value></data>
+  <data name="QueueNoNextStart" xml:space="preserve"><value>Nessun avvio previsto nei prossimi giorni.</value></data>
+  <data name="QueueNotScheduled" xml:space="preserve"><value>La coda si avvia e si ferma solo a mano.</value></data>
+  <data name="QueueOnce" xml:space="preserve"><value>Solo il giorno:</value></data>
+  <data name="QueueQuotaLabel" xml:space="preserve"><value>_Quota in MB all'ora (0 = nessuna)</value></data>
+  <data name="QueueQuotaName" xml:space="preserve"><value>Quota in MB all'ora</value></data>
+  <data name="QueueRepeatLabel" xml:space="preserve"><value>Ri_peti ogni (minuti)</value></data>
+  <data name="QueueRepeatName" xml:space="preserve"><value>Ripeti ogni minuti</value></data>
+  <data name="QueueRepeatToolTip" xml:space="preserve"><value>Dentro la finestra pianificata la coda riparte ogni tanti minuti e ritenta i download falliti. 0 = una sola volta.</value></data>
+  <data name="QueueRetriesLabel" xml:space="preserve"><value>_Tentativi in caso di errore (0–100)</value></data>
+  <data name="QueueRetriesName" xml:space="preserve"><value>Tentativi in caso di errore</value></data>
+  <data name="QueueRetryDelayLabel" xml:space="preserve"><value>_Pausa tra i tentativi (secondi)</value></data>
+  <data name="QueueRetryDelayName" xml:space="preserve"><value>Pausa tra i tentativi in secondi</value></data>
+  <data name="QueueScheduleInvalid" xml:space="preserve"><value>Completa la pianificazione per vedere il prossimo avvio.</value></data>
+  <data name="QueueScheduled" xml:space="preserve"><value>_Pianifica l'avvio e l'arresto</value></data>
+  <data name="QueueStart" xml:space="preserve"><value>Avvia coda</value></data>
+  <data name="QueueStartLabel" xml:space="preserve"><value>_Avvio (hh:mm)</value></data>
+  <data name="QueueStartName" xml:space="preserve"><value>Ora di avvio</value></data>
+  <data name="QueueStartToolTip" xml:space="preserve"><value>Avvia la coda «{0}» (la coda selezionata nel pannello laterale, altrimenti la principale)</value></data>
+  <data name="QueueStateRunning" xml:space="preserve"><value>Attiva</value></data>
+  <data name="QueueStateScheduled" xml:space="preserve"><value>Pianificata: {0:ddd HH:mm}</value></data>
+  <data name="QueueStateStopped" xml:space="preserve"><value>Ferma</value></data>
+  <data name="QueueStop" xml:space="preserve"><value>Ferma coda</value></data>
+  <data name="QueueStopLabel" xml:space="preserve"><value>A_rresto (facoltativo)</value></data>
+  <data name="QueueStopName" xml:space="preserve"><value>Ora di arresto</value></data>
+  <data name="QueueStopTimeToolTip" xml:space="preserve"><value>Vuoto: la coda resta attiva fino a mezzanotte o finché ha download da fare. Un'ora precedente all'avvio indica il giorno dopo.</value></data>
+  <data name="QueueStopToolTip" xml:space="preserve"><value>Ferma la coda «{0}»: i download che ha avviato tornano in attesa</value></data>
+  <data name="QueueWake" xml:space="preserve"><value>_Riattiva il PC dalla sospensione o dall'ibernazione per l'avvio</value></data>
+  <data name="QueueWakeToolTip" xml:space="preserve"><value>Usa un timer di Windows. Funziona solo se nelle opzioni di risparmio energia è consentito l'uso dei timer di riattivazione.</value></data>
+  <data name="QueueWeekly" xml:space="preserve"><value>Ogni settimana nei giorni:</value></data>
+  <data name="QueuesListName" xml:space="preserve"><value>Elenco delle code</value></data>
+  <data name="QueuesTitle" xml:space="preserve"><value>Code</value></data>
+  <data name="RelocationDone" xml:space="preserve"><value>Cartelle aggiornate. File spostati: {0}.</value></data>
+  <data name="RelocationDownloadFolder" xml:space="preserve"><value>Cartella dei download</value></data>
+  <data name="RelocationMoveFiles" xml:space="preserve"><value>Spostare anche i {0} file già scaricati che si trovano in quelle cartelle del Desktop?</value></data>
+  <data name="RelocationQuestion" xml:space="preserve"><value>Alcune cartelle dei download sono sul Desktop. Vuoi spostarle nella cartella Download?
+
+{0}
+
+Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che tu non scelga di spostarli). No: tutto resta com'è. La domanda non verrà ripetuta.</value></data>
+  <data name="RelocationTitle" xml:space="preserve"><value>Download sul Desktop</value></data>
+  <data name="RemoveTitle" xml:space="preserve"><value>Rimuovi download</value></data>
+  <data name="ResumeNotSupported" xml:space="preserve"><value>No: il server non permette di riprendere</value></data>
+  <data name="Save" xml:space="preserve"><value>Salva</value></data>
+  <data name="ScanClean" xml:space="preserve"><value>Nessuna minaccia rilevata.</value></data>
+  <data name="ScanErrorNotFound" xml:space="preserve"><value>Programma antivirus non trovato.</value></data>
+  <data name="ScanErrorNotFullPath" xml:space="preserve"><value>L'antivirus deve essere indicato con il percorso completo.</value></data>
+  <data name="ScanErrorNotProgram" xml:space="preserve"><value>L'antivirus deve essere un programma (.exe).</value></data>
+  <data name="ScanErrorSelf" xml:space="preserve"><value>L'antivirus non può essere il file scaricato.</value></data>
+  <data name="ScanExitCode" xml:space="preserve"><value>codice di uscita {0}</value></data>
+  <data name="ScanFailed" xml:space="preserve"><value>Scansione non riuscita: {0}</value></data>
+  <data name="ScanFailedNoDetail" xml:space="preserve"><value>Scansione non riuscita.</value></data>
+  <data name="ScanLabel" xml:space="preserve"><value>Antivirus</value></data>
+  <data name="ScanNotRun" xml:space="preserve"><value>Non eseguita (si attiva in Impostazioni › Dopo il download).</value></data>
+  <data name="ScanThreat" xml:space="preserve"><value>Minaccia rilevata dall'antivirus. {0}</value></data>
+  <data name="ScanThreatShort" xml:space="preserve"><value>Antivirus: minaccia rilevata</value></data>
+  <data name="ScanTimedOut" xml:space="preserve"><value>La scansione non è terminata entro il tempo previsto ed è stata interrotta.</value></data>
+  <data name="SearchName" xml:space="preserve"><value>Cerca nei download</value></data>
+  <data name="SearchPlaceholder" xml:space="preserve"><value>Cerca per nome o indirizzo (Ctrl+F)</value></data>
+  <data name="SearchToolTip" xml:space="preserve"><value>Filtra l'elenco per nome del file o indirizzo. Esc per cancellare.</value></data>
+  <data name="SegmentActive" xml:space="preserve"><value>Attiva</value></data>
+  <data name="SegmentDone" xml:space="preserve"><value>Completato</value></data>
+  <data name="SegmentDownloaded" xml:space="preserve"><value>Scaricati</value></data>
+  <data name="SegmentProgress" xml:space="preserve"><value>Avanzamento</value></data>
+  <data name="SegmentRange" xml:space="preserve"><value>Intervallo</value></data>
+  <data name="SegmentState" xml:space="preserve"><value>Stato</value></data>
+  <data name="SegmentWaiting" xml:space="preserve"><value>In attesa</value></data>
+  <data name="SettingsAppearance" xml:space="preserve"><value>Aspetto</value></data>
+  <data name="SettingsCloseToTray" xml:space="preserve"><value>Chiudendo la finestra, resta _attivo nell'area di notifica</value></data>
+  <data name="SettingsConcurrent" xml:space="preserve"><value>Download _simultanei in totale, per tutte le code (1–50)</value></data>
+  <data name="SettingsConfirmBrowser" xml:space="preserve"><value>Chiedi conferma per i download inviati dall'estensione del browser</value></data>
+  <data name="SettingsConnections" xml:space="preserve"><value>_Connessioni per download (1–32)</value></data>
+  <data name="SettingsConnectionsHint" xml:space="preserve"><value>Il numero di connessioni vale per i download avviati dopo il salvataggio. Il limite di file simultanei di ogni coda si imposta in Code.</value></data>
+  <data name="SettingsDownloads" xml:space="preserve"><value>Download</value></data>
+  <data name="SettingsFfmpegFound" xml:space="preserve"><value>Verrà usato: {0}</value></data>
+  <data name="SettingsFfmpegLabel" xml:space="preserve"><value>ffmpeg, per unire audio e video in un MP4 (_vuoto = cerca nel PATH)</value></data>
+  <data name="SettingsFfmpegMissingFile" xml:space="preserve"><value>Il file indicato non esiste.</value></data>
+  <data name="SettingsFfmpegName" xml:space="preserve"><value>Percorso di ffmpeg</value></data>
+  <data name="SettingsFfmpegNone" xml:space="preserve"><value>ffmpeg non trovato nel PATH: i video verranno salvati in .ts o in tracce separate. ffmpeg non è incluso nell'app.</value></data>
+  <data name="SettingsFfmpegPick" xml:space="preserve"><value>Scegli ffmpeg.exe</value></data>
+  <data name="SettingsFolder" xml:space="preserve"><value>Cartella _predefinita dei download</value></data>
+  <data name="SettingsFolderHint" xml:space="preserve"><value>Le categorie con una cartella relativa (per esempio "Video") creano una sottocartella qui.</value></data>
+  <data name="SettingsGlobalQuota" xml:space="preserve"><value>_Quota globale in MB all'ora (0 = nessuna)</value></data>
+  <data name="SettingsHashAlgorithm" xml:space="preserve"><value>Algoritmo</value></data>
+  <data name="SettingsHashHint" xml:space="preserve"><value>Un hash atteso indicato aggiungendo il download (o nelle proprietà) viene sempre verificato, anche con questa opzione disattivata.</value></data>
+  <data name="SettingsHashOnCompletion" xml:space="preserve"><value>Calcola l'hash di ogni file completato</value></data>
+  <data name="SettingsHashTitle" xml:space="preserve"><value>Hash</value></data>
+  <data name="SettingsIntegration" xml:space="preserve"><value>Browser e notifiche</value></data>
+  <data name="SettingsNotify" xml:space="preserve"><value>Mostra una notifica di Windows quando un download è completato</value></data>
+  <data name="SettingsRestoreHint" xml:space="preserve"><value>Dopo un aggiornamento la versione precedente resta accanto al programma: se la nuova dà problemi puoi tornare indietro.</value></data>
+  <data name="SettingsRestorePrevious" xml:space="preserve"><value>Ripristina la versione precedente</value></data>
+  <data name="SettingsRestoreTitle" xml:space="preserve"><value>Versione precedente</value></data>
+  <data name="SettingsRunAtStartup" xml:space="preserve"><value>Avvia Baton con _Windows, ridotto nell'area di notifica</value></data>
+  <data name="SettingsScanCodes" xml:space="preserve"><value>Codici di uscita che indicano una minaccia (separati da virgole)</value></data>
+  <data name="SettingsScanHint" xml:space="preserve"><value>Il file scaricato non viene mai aperto né eseguito: è solo passato all'antivirus. Un controllo che supera il tempo massimo viene interrotto.</value></data>
+  <data name="SettingsScanOnCompletion" xml:space="preserve"><value>Controlla ogni file completato con l'antivirus</value></data>
+  <data name="SettingsScanTimeout" xml:space="preserve"><value>Tempo massimo (secondi)</value></data>
+  <data name="SettingsScanTitle" xml:space="preserve"><value>Antivirus</value></data>
+  <data name="SettingsScannerArguments" xml:space="preserve"><value>Parametri ({file} = file scaricato)</value></data>
+  <data name="SettingsScannerFilter" xml:space="preserve"><value>Programmi (*.exe)|*.exe</value></data>
+  <data name="SettingsScannerFound" xml:space="preserve"><value>Verrà usato: {0}</value></data>
+  <data name="SettingsScannerLabel" xml:space="preserve"><value>Programma antivirus (vuoto = Windows Defender)</value></data>
+  <data name="SettingsScannerPick" xml:space="preserve"><value>Scegli il programma antivirus</value></data>
+  <data name="SettingsScannerReset" xml:space="preserve"><value>Ripristina Windows Defender</value></data>
+  <data name="SettingsSpeedLimit" xml:space="preserve"><value>_Limite di velocità globale in KB/s (0 = nessuno)</value></data>
+  <data name="SettingsSystem" xml:space="preserve"><value>Sistema</value></data>
+  <data name="SettingsTabChecks" xml:space="preserve"><value>Dopo il download</value></data>
+  <data name="SettingsTabCredentials" xml:space="preserve"><value>Credenziali</value></data>
+  <data name="SettingsTabGeneral" xml:space="preserve"><value>Generale</value></data>
+  <data name="SettingsTabNetwork" xml:space="preserve"><value>Rete</value></data>
+  <data name="SettingsTabUpdates" xml:space="preserve"><value>Aggiornamenti</value></data>
+  <data name="SettingsTheme" xml:space="preserve"><value>Tema</value></data>
+  <data name="SettingsTitle" xml:space="preserve"><value>Impostazioni</value></data>
+  <data name="SettingsUpdateCheck" xml:space="preserve"><value>Controlla gli aggiornamenti all'avvio</value></data>
+  <data name="SettingsUpdateCheckNow" xml:space="preserve"><value>Controlla ora</value></data>
+  <data name="SettingsUpdateCurrent" xml:space="preserve"><value>Versione installata: {0}</value></data>
+  <data name="SettingsUpdateHint" xml:space="preserve"><value>Per esempio https://api.github.com/repos/UTENTE/REPOSITORY/releases/latest, oppure un file JSON con version, notes, url e sha256. Nessun aggiornamento viene scaricato senza conferma, e il programma viene sostituito solo se il suo SHA-256 corrisponde.</value></data>
+  <data name="SettingsUpdateUrl" xml:space="preserve"><value>Indirizzo degli aggiornamenti</value></data>
+  <data name="SettingsVideo" xml:space="preserve"><value>Video dal browser</value></data>
+  <data name="SpeedCustomLabel" xml:space="preserve"><value>_Limite in KB/s (0 = nessun limite)</value></data>
+  <data name="SpeedCustomName" xml:space="preserve"><value>Limite di velocità in KB/s</value></data>
+  <data name="SpeedCustomTitle" xml:space="preserve"><value>Limite di velocità</value></data>
+  <data name="SpeedLimitStatus" xml:space="preserve"><value>(limite {0} KB/s)</value></data>
+  <data name="SpeedNoLimit" xml:space="preserve"><value>Nessun limite</value></data>
+  <data name="StartupWarning" xml:space="preserve"><value>Una coda è pianificata, ma Baton non si avvia con Windows: la pianificazione funziona solo con l'app aperta (anche ridotta nell'area di notifica).</value></data>
+  <data name="StatusBar" xml:space="preserve"><value>{0} di {1} code attive  ·  {2} in download  ·  {3} in attesa  ·  {4} totali</value></data>
+  <data name="StatusCompleted" xml:space="preserve"><value>Completato</value></data>
+  <data name="StatusCompletedChecking" xml:space="preserve"><value>Completato · verifica…</value></data>
+  <data name="StatusCompletedProblem" xml:space="preserve"><value>Completato · attenzione</value></data>
+  <data name="StatusCompletedWithNote" xml:space="preserve"><value>Completato (vedi nota)</value></data>
+  <data name="StatusConnecting" xml:space="preserve"><value>Connessione…</value></data>
+  <data name="StatusDownloading" xml:space="preserve"><value>In download</value></data>
+  <data name="StatusFailed" xml:space="preserve"><value>Errore</value></data>
+  <data name="StatusPaused" xml:space="preserve"><value>In pausa</value></data>
+  <data name="StatusQueued" xml:space="preserve"><value>In coda</value></data>
+  <data name="StatusWaiting" xml:space="preserve"><value>In attesa</value></data>
+  <data name="ThemeDark" xml:space="preserve"><value>Scuro</value></data>
+  <data name="ThemeLight" xml:space="preserve"><value>Chiaro</value></data>
+  <data name="ThemeSystem" xml:space="preserve"><value>Segui il sistema</value></data>
+  <data name="TimeoutLabel" xml:space="preserve"><value>_Timeout in secondi (5–600)</value></data>
+  <data name="ToastCompletedDetails" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="ToastCompletedProblemTitle" xml:space="preserve"><value>Download completato: attenzione</value></data>
+  <data name="ToastCompletedTitle" xml:space="preserve"><value>Download completato</value></data>
+  <data name="ToastOpen" xml:space="preserve"><value>Apri</value></data>
+  <data name="ToastOpenFolder" xml:space="preserve"><value>Apri cartella</value></data>
+  <data name="ToolbarAddSeparator" xml:space="preserve"><value>Aggiungi separatore</value></data>
+  <data name="ToolbarHint" xml:space="preserve"><value>Spunta i pulsanti da mostrare e mettili nell'ordine che preferisci (Alt+Su/Giù sposta, Spazio mostra o nasconde). I pulsanti dopo lo spazio flessibile stanno a destra.</value></data>
+  <data name="ToolbarMoveDown" xml:space="preserve"><value>Sposta giù</value></data>
+  <data name="ToolbarMoveUp" xml:space="preserve"><value>Sposta su</value></data>
+  <data name="ToolbarQueue" xml:space="preserve"><value>Avvia/ferma coda</value></data>
+  <data name="ToolbarReset" xml:space="preserve"><value>Ripristina</value></data>
+  <data name="ToolbarSeparator" xml:space="preserve"><value>— separatore —</value></data>
+  <data name="ToolbarShowText" xml:space="preserve"><value>Mostra il testo sotto le icone</value></data>
+  <data name="ToolbarSmallIcons" xml:space="preserve"><value>Icone piccole</value></data>
+  <data name="ToolbarSpacer" xml:space="preserve"><value>↔ spazio flessibile (i pulsanti dopo vanno a destra)</value></data>
+  <data name="ToolbarTitle" xml:space="preserve"><value>Personalizza la barra degli strumenti</value></data>
+  <data name="TrayExit" xml:space="preserve"><value>Esci</value></data>
+  <data name="TrayHiddenHint" xml:space="preserve"><value>Baton resta attivo qui per completare download e code pianificate. Usa «Esci» nel menu per chiuderlo.</value></data>
+  <data name="TrayMenuName" xml:space="preserve"><value>Menu di Baton</value></data>
+  <data name="TrayOpen" xml:space="preserve"><value>Apri Baton</value></data>
+  <data name="TraySpeedCustom" xml:space="preserve"><value>Personalizzato…</value></data>
+  <data name="TraySpeedLimit" xml:space="preserve"><value>Limite di velocità: {0}</value></data>
+  <data name="TrayStartQueues" xml:space="preserve"><value>Avvia tutte le code</value></data>
+  <data name="TrayStatus" xml:space="preserve"><value>Baton
+{0} in download · {1} code attive
+Limite: {2}</value></data>
+  <data name="TrayStopQueues" xml:space="preserve"><value>Ferma tutte le code</value></data>
+  <data name="Unknown" xml:space="preserve"><value>Sconosciuto</value></data>
+  <data name="UpdateAvailable" xml:space="preserve"><value>È disponibile la versione {0} (installata: {1})</value></data>
+  <data name="UpdateCheckFailed" xml:space="preserve"><value>Impossibile controllare gli aggiornamenti: {0}</value></data>
+  <data name="UpdateConfirmRestore" xml:space="preserve"><value>Ripristinare la versione precedente? Il programma verrà chiuso e riaperto.</value></data>
+  <data name="UpdateConfirmRestoreLegacy" xml:space="preserve"><value>La versione precedente si chiama ancora DownloadManager: tornerà al suo posto e userà i suoi dati com'erano al passaggio a Baton (i download aggiunti dopo restano solo in Baton). Continuare?</value></data>
+  <data name="UpdateDownloading" xml:space="preserve"><value>Download dell'aggiornamento…</value></data>
+  <data name="UpdateErrorAddress" xml:space="preserve"><value>L'indirizzo degli aggiornamenti deve essere un indirizzo https.</value></data>
+  <data name="UpdateErrorBadSignature" xml:space="preserve"><value>La versione {0} non viene installata: la sua firma non è valida o non è di una chiave riconosciuta. Il file potrebbe essere stato alterato; scaricalo solo dalla pagina ufficiale.</value></data>
+  <data name="UpdateErrorHashMismatch" xml:space="preserve"><value>Il file scaricato non corrisponde al suo SHA-256: è stato eliminato.</value></data>
+  <data name="UpdateErrorNoExe" xml:space="preserve"><value>La versione non contiene il programma (.exe).</value></data>
+  <data name="UpdateErrorNoHash" xml:space="preserve"><value>La versione non indica lo SHA-256 del programma (o un indirizzo https per scaricarlo): non viene proposta.</value></data>
+  <data name="UpdateErrorNoRelease" xml:space="preserve"><value>L'indirizzo degli aggiornamenti non restituisce una versione valida.</value></data>
+  <data name="UpdateErrorNoShaAsset" xml:space="preserve"><value>La versione {1} non viene installata: la release non contiene l'allegato {0} con lo SHA-256 del programma (o non contiene un hash valido), quindi il file scaricato non si potrebbe verificare. Va aggiunto alla release su GitHub.</value></data>
+  <data name="UpdateErrorNoSignature" xml:space="preserve"><value>La versione {1} non viene installata: manca la firma dell'autore ({0}). Dalla 1.1.0 l'app installa solo aggiornamenti firmati.</value></data>
+  <data name="UpdateErrorNotProgram" xml:space="preserve"><value>Il file scaricato non è un programma Windows: è stato eliminato.</value></data>
+  <data name="UpdateErrorStatus" xml:space="preserve"><value>Il server ha risposto {0}.</value></data>
+  <data name="UpdateErrorTooLarge" xml:space="preserve"><value>La risposta del server è troppo grande.</value></data>
+  <data name="UpdateFailed" xml:space="preserve"><value>Aggiornamento non riuscito: {0}</value></data>
+  <data name="UpdateInstall" xml:space="preserve"><value>Scarica e installa</value></data>
+  <data name="UpdateLater" xml:space="preserve"><value>Più tardi</value></data>
+  <data name="UpdateNoNotes" xml:space="preserve"><value>Nessuna nota di rilascio.</value></data>
+  <data name="UpdateNoPrevious" xml:space="preserve"><value>Non c'è una versione precedente da ripristinare.</value></data>
+  <data name="UpdateNone" xml:space="preserve"><value>Nessun aggiornamento: la versione {0} è la più recente.</value></data>
+  <data name="UpdateNotInstalled" xml:space="preserve"><value>Questa copia del programma non può aggiornarsi da sola (non è la versione pubblicata in un unico file).</value></data>
+  <data name="UpdateNotes" xml:space="preserve"><value>Novità</value></data>
+  <data name="UpdateRestoreSchema" xml:space="preserve"><value>La versione precedente usa un database più vecchio di questa: ripristinarla farebbe perdere l'elenco dei download. Per tornare indietro installala a parte con una copia dei dati.</value></data>
+  <data name="UpdateRolledBack" xml:space="preserve"><value>La nuova versione non si è avviata correttamente: è stata ripristinata la versione precedente.</value></data>
+  <data name="UpdateTitle" xml:space="preserve"><value>Aggiornamento</value></data>
+  <data name="UpdateUrl" xml:space="preserve"><value>Aggiorna indirizzo</value></data>
+  <data name="UpdateUrlTitle" xml:space="preserve"><value>Aggiorna indirizzo</value></data>
+  <data name="UpdateUrlToolTip" xml:space="preserve"><value>Usa un nuovo link per lo stesso file (per esempio se quello vecchio è scaduto) mantenendo i dati già scaricati</value></data>
+  <data name="UrlCheckDateDiffers" xml:space="preserve"><value>la data di ultima modifica è diversa</value></data>
+  <data name="UrlCheckETagDiffers" xml:space="preserve"><value>l'ETag del file è diverso</value></data>
+  <data name="UrlCheckFailed" xml:space="preserve"><value>Il nuovo indirizzo non risponde: {0}</value></data>
+  <data name="UrlCheckInProgress" xml:space="preserve"><value>Verifica del nuovo indirizzo in corso…</value></data>
+  <data name="UrlCheckNoRanges" xml:space="preserve"><value>il nuovo server non permette di riprendere il download</value></data>
+  <data name="UrlCheckNothingToKeep" xml:space="preserve"><value>Non ci sono ancora dati scaricati.</value></data>
+  <data name="UrlCheckSameDate" xml:space="preserve"><value>Stessa dimensione e stessa data di ultima modifica.</value></data>
+  <data name="UrlCheckSameETag" xml:space="preserve"><value>Stessa dimensione e stesso ETag.</value></data>
+  <data name="UrlCheckSizeDiffers" xml:space="preserve"><value>la dimensione del file è diversa</value></data>
+  <data name="UrlCheckUnverifiable" xml:space="preserve"><value>il server indica la stessa dimensione ma non fornisce ETag né data di ultima modifica</value></data>
+  <data name="UrlUpdatedKept" xml:space="preserve"><value>Indirizzo aggiornato: i dati già scaricati ({0}) sono stati mantenuti.</value></data>
+  <data name="UrlUpdatedRestart" xml:space="preserve"><value>Indirizzo aggiornato: il download ripartirà da zero.</value></data>
+  <data name="UserAgentLabel" xml:space="preserve"><value>User-agent _inviato ai server</value></data>
+  <data name="UserAgentName" xml:space="preserve"><value>User-agent</value></data>
+  <data name="WaitingLogin" xml:space="preserve"><value>In attesa delle credenziali per {0}</value></data>
+  <data name="WaitingProxyLogin" xml:space="preserve"><value>In attesa delle credenziali del proxy {0}</value></data>
+  <data name="WaitingQuota" xml:space="preserve"><value>Quota oraria raggiunta: riprende verso le {0}</value></data>
+  <data name="WaitingRetry" xml:space="preserve"><value>Tentativo {0} fallito, nuovo tentativo alle {1}. Errore: {2}</value></data>
+  <data name="Yes" xml:space="preserve"><value>Sì</value></data>
+</root>

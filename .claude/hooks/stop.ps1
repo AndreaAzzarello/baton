@@ -12,7 +12,7 @@ $blockReason = $null
 # --- leftovers from trials (report only)
 $started = Join-Path $(if ($env:DM_TRIALS) { $env:DM_TRIALS } else { Join-Path $env:TEMP "dm-trials" }) "started.txt"
 $since = if (Test-Path $started) { [datetime](Get-Content $started) } else { [datetime]::MinValue }
-$apps = @(Get-CimInstance Win32_Process -Filter "Name='DownloadManager.exe'" -ErrorAction SilentlyContinue |
+$apps = @(Get-CimInstance Win32_Process -Filter "Name='Baton.exe' OR Name='DownloadManager.exe'" -ErrorAction SilentlyContinue |
   Where-Object { $_.CommandLine -like "*\bin\Debug\*" -or ($_.CommandLine -like "*--background*" -and $_.CreationDate -gt $since) })
 $site = @(Get-CimInstance Win32_Process -Filter "Name='python.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*trials*site*server.py*" })
 if ($apps.Count -or $site.Count) {
@@ -35,7 +35,7 @@ if ($changed) {
   if ($handle) {
     try {
       $begin = Get-Date
-      $out = & "C:\Program Files\dotnet\dotnet.exe" build (Join-Path $root "DownloadManager.slnx") -nologo -v q 2>&1
+      $out = & "C:\Program Files\dotnet\dotnet.exe" build (Join-Path $root "Baton.slnx") -nologo -v q 2>&1
       $seconds = [int]((Get-Date) - $begin).TotalSeconds
       if ($LASTEXITCODE -eq 0) {
         Set-Content $stamp (Get-Date -Format o)

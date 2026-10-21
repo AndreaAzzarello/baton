@@ -1,0 +1,122 @@
+<Window x:Class="Baton.App.Views.GrabberProjectsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:r="clr-namespace:Baton.Core.Resources;assembly=Baton.Core"
+        Title="{x:Static r:Strings.GrabberProjectsTitle}" Width="980" Height="520" MinWidth="680" MinHeight="360"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner" ShowInTaskbar="True" Icon="/app.ico">
+    <Window.InputBindings>
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding NewCommand}" />
+    </Window.InputBindings>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
+            <StackPanel Orientation="Horizontal">
+                <Button Style="{StaticResource ToolButton}" Command="{Binding NewCommand}" AutomationProperties.Name="{x:Static r:Strings.GrabberNew}" ToolTip="{x:Static r:Strings.GrabberNewToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE710;" Foreground="{DynamicResource AccentBrush}" /><TextBlock Text="{x:Static r:Strings.GrabberNew}" Margin="0,3,0,0" /></StackPanel>
+                </Button>
+                <Rectangle Style="{StaticResource Separator}" />
+                <Button Style="{StaticResource ToolButton}" Command="{Binding RunCommand}" AutomationProperties.Name="{x:Static r:Strings.GrabberRun}" ToolTip="{x:Static r:Strings.GrabberRunToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE768;" /><TextBlock Text="{x:Static r:Strings.GrabberRun}" Margin="0,3,0,0" /></StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding EditCommand}" AutomationProperties.Name="{x:Static r:Strings.GrabberEdit}" ToolTip="{x:Static r:Strings.GrabberEditToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE70F;" /><TextBlock Text="{x:Static r:Strings.GrabberEdit}" Margin="0,3,0,0" /></StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding OpenFolderCommand}" AutomationProperties.Name="{x:Static r:Strings.GrabberOpenFolder}" ToolTip="{x:Static r:Strings.GrabberOpenFolderToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE838;" /><TextBlock Text="{x:Static r:Strings.ActionFolder}" Margin="0,3,0,0" /></StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding DeleteCommand}" AutomationProperties.Name="{x:Static r:Strings.GrabberDelete}" ToolTip="{x:Static r:Strings.GrabberDeleteToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" /><TextBlock Text="{x:Static r:Strings.GrabberDelete}" Margin="0,3,0,0" /></StackPanel>
+                </Button>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="16,14,16,0">
+            <DataGrid x:Name="List" ItemsSource="{Binding Projects}" SelectedItem="{Binding Selected}" AutoGenerateColumns="False" IsReadOnly="True"
+                      SelectionMode="Single" SelectionUnit="FullRow" HeadersVisibility="Column" GridLinesVisibility="None" CanUserResizeRows="False"
+                      Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" RowHeight="44"
+                      AutomationProperties.Name="{x:Static r:Strings.GrabberProjectsName}" MouseDoubleClick="OnDoubleClick">
+                <DataGrid.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding RunCommand}" />
+                    <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
+                    <KeyBinding Key="F2" Command="{Binding EditCommand}" />
+                </DataGrid.InputBindings>
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+                        <Setter Property="Padding" Value="10,8,4,8" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                        <Setter Property="BorderThickness" Value="0,0,0,1" />
+                    </Style>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="BorderThickness" Value="0" />
+                        <Setter Property="Padding" Value="10,0" />
+                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="DataGridCell">
+                                    <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                                        <ContentPresenter VerticalAlignment="Center" />
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="ToolTip" Value="{Binding LastResult}" />
+                        <Setter Property="Background" Value="Transparent" />
+                        <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                        <Setter Property="AutomationProperties.ItemStatus" Value="{Binding State}" />
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource FocusBrush}" />
+                                <Setter Property="BorderThickness" Value="1" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="{x:Static r:Strings.GrabberColumnProject}" SortMemberPath="Name" Width="2*" MinWidth="200">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Url}" FontSize="11" Foreground="{DynamicResource MutedBrush}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="{x:Static r:Strings.GrabberColumnMode}" Binding="{Binding ModeText}" Width="120" />
+                    <DataGridTextColumn Header="{x:Static r:Strings.ColumnStatus}" Binding="{Binding State}" Width="110" />
+                    <DataGridTextColumn Header="{x:Static r:Strings.GrabberColumnLastRun}" Binding="{Binding LastRunText}" Width="130" />
+                    <DataGridTextColumn Header="{x:Static r:Strings.GrabberColumnResult}" Binding="{Binding LastResult}" Width="2*" MinWidth="160" />
+                    <DataGridTextColumn Header="{x:Static r:Strings.GrabberColumnNextRun}" Binding="{Binding NextText}" Width="130" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"
+                        Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE774;" FontSize="40" HorizontalAlignment="Center" Foreground="{DynamicResource EmptyGlyphBrush}" />
+                <TextBlock Text="{x:Static r:Strings.GrabberEmptyTitle}" FontSize="16" Margin="0,12,0,4" HorizontalAlignment="Center" />
+                <TextBlock Text="{x:Static r:Strings.GrabberEmptyHint}" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" TextAlignment="Center"
+                           TextWrapping="Wrap" MaxWidth="460" />
+            </StackPanel>
+        </Grid>
+
+        <DockPanel Grid.Row="2" Margin="16,12,16,16">
+            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.Close}" Style="{StaticResource DialogButton}" IsCancel="True" Click="OnClose" />
+            <TextBlock Text="{x:Static r:Strings.GrabberProjectsHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" VerticalAlignment="Center" />
+        </DockPanel>
+    </Grid>
+</Window>

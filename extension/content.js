@@ -3,8 +3,8 @@
 // button, shown when the background has seen the page load a video or audio stream.
 (() => {
   "use strict";
-  if (window.__downloadManagerContent) return;
-  window.__downloadManagerContent = true;
+  if (window.__batonContent) return;
+  window.__batonContent = true;
 
   const Rules = globalThis.DMRules;
   const t = (key, ...subs) => chrome.i18n.getMessage(key, subs.map(String)) || key;

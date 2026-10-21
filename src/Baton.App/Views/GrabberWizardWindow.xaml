@@ -1,0 +1,363 @@
+<Window x:Class="Baton.App.Views.GrabberWizardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:r="clr-namespace:Baton.Core.Resources;assembly=Baton.Core"
+        xmlns:v="clr-namespace:Baton.App.Views"
+        Title="{Binding Title}" Width="860" Height="640" MinWidth="720" MinHeight="560"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False" Icon="/app.ico">
+    <Window.Resources>
+        <v:StepVisibilityConverter x:Key="StepVisible" />
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+        <Style x:Key="FieldCaption" TargetType="Label">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,14,0,4" />
+            <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+        </Style>
+        <!-- A large choice: a radio button drawn as a card with a title and a description -->
+        <Style x:Key="ChoiceCard" TargetType="RadioButton">
+            <Setter Property="Margin" Value="0,0,0,10" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Card" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                CornerRadius="8" Padding="14,12">
+                            <DockPanel>
+                                <Border x:Name="Dot" DockPanel.Dock="Left" Width="18" Height="18" CornerRadius="9" BorderThickness="2"
+                                        BorderBrush="{DynamicResource MutedBrush}" Margin="0,1,14,0" VerticalAlignment="Top">
+                                    <Ellipse x:Name="Inner" Width="8" Height="8" Fill="{DynamicResource AccentBrush}" Visibility="Collapsed" />
+                                </Border>
+                                <ContentPresenter TextElement.Foreground="{DynamicResource TextBrush}" />
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="Card" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                                <Setter TargetName="Dot" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="Inner" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Steps: where the user is, and a way back to any earlier step -->
+        <Border Background="{DynamicResource SurfaceAltBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+            <DockPanel Margin="16,20,12,16">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4,0,0,18">
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE774;" FontSize="20" Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{x:Static r:Strings.GrabberTitle}" Style="{StaticResource SectionTitle}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding Steps}" Focusable="False" AutomationProperties.Name="{x:Static r:Strings.GrabberStepsName}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding DataContext.GoToCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"
+                                    AutomationProperties.Name="{Binding AccessibleName}" Margin="0,0,0,4" Cursor="Hand"
+                                    FocusVisualStyle="{StaticResource FocusRing}" HorizontalContentAlignment="Stretch">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Row" CornerRadius="6" Padding="8,8" Background="Transparent">
+                                            <DockPanel>
+                                                <Grid DockPanel.Dock="Left" Width="24" Height="24" Margin="0,0,10,0">
+                                                    <Ellipse x:Name="Circle" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1.5" Fill="Transparent" />
+                                                    <TextBlock x:Name="Number" Text="{Binding Number}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedBrush}" />
+                                                    <TextBlock x:Name="Check" Text="&#xE73E;" FontFamily="{StaticResource IconFont}" FontSize="11" HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center" Foreground="{DynamicResource AccentTextBrush}" Visibility="Collapsed" />
+                                                </Grid>
+                                                <TextBlock x:Name="Label" Text="{Binding Title}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                            </DockPanel>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Row" Property="Background" Value="{DynamicResource HoverBrush}" />
+                                            </Trigger>
+                                            <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                                <Setter TargetName="Circle" Property="Fill" Value="{DynamicResource AccentBrush}" />
+                                                <Setter TargetName="Circle" Property="Stroke" Value="{DynamicResource AccentBrush}" />
+                                                <Setter TargetName="Number" Property="Visibility" Value="Collapsed" />
+                                                <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                <Setter TargetName="Row" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+                                                <Setter TargetName="Circle" Property="Stroke" Value="{DynamicResource AccentBrush}" />
+                                                <Setter TargetName="Number" Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                                <Setter TargetName="Label" Property="FontWeight" Value="SemiBold" />
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </DockPanel>
+        </Border>
+
+        <DockPanel Grid.Column="1" Margin="28,22,24,18">
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                <TextBlock Text="{Binding StepCounter}" Foreground="{DynamicResource MutedBrush}" FontSize="12" />
+                <TextBlock Text="{Binding StepTitle}" FontSize="20" FontWeight="SemiBold" Margin="0,2,0,0" AutomationProperties.HeadingLevel="Level1"
+                           AutomationProperties.LiveSetting="Polite" />
+            </StackPanel>
+
+            <!-- Buttons -->
+            <DockPanel DockPanel.Dock="Bottom" Margin="0,16,0,0">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="BackButton" Content="{x:Static r:Strings.GrabberBack}" Style="{StaticResource DialogButton}" Command="{Binding BackCommand}" />
+                    <Button x:Name="NextButton" Content="{x:Static r:Strings.GrabberNext}" Style="{StaticResource PrimaryButton}" Command="{Binding NextCommand}"
+                            IsDefault="True" Visibility="{Binding IsLastStep, Converter={StaticResource StepVisible}, ConverterParameter=False}" />
+                    <Button Content="{x:Static r:Strings.GrabberSaveOnly}" Style="{StaticResource DialogButton}" Click="OnSave"
+                            Visibility="{Binding IsLastStep, Converter={StaticResource StepVisible}, ConverterParameter=True}" />
+                    <Button x:Name="RunButton" Content="{x:Static r:Strings.GrabberSaveAndRun}" Style="{StaticResource PrimaryButton}" Click="OnSaveAndRun"
+                            Visibility="{Binding IsLastStep, Converter={StaticResource StepVisible}, ConverterParameter=True}" />
+                    <Button Content="{x:Static r:Strings.Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
+                </StackPanel>
+                <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" Margin="0,0,12,0" VerticalAlignment="Center"
+                           AutomationProperties.LiveSetting="Assertive" />
+            </DockPanel>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,0,8,0">
+                <Grid>
+                    <!-- 1. Address and mode -->
+                    <StackPanel Visibility="{Binding Step, Converter={StaticResource StepVisible}, ConverterParameter=0}">
+                        <Label Content="{x:Static r:Strings.GrabberUrlLabel}" Target="{Binding ElementName=UrlBox}" Style="{StaticResource FieldCaption}" Margin="0,8,0,4" />
+                        <TextBox x:Name="UrlBox" Text="{Binding StartUrl, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberUrlName}" />
+                        <Label Content="{x:Static r:Strings.GrabberNameLabel}" Target="{Binding ElementName=NameBox}" Style="{StaticResource FieldCaption}" />
+                        <TextBox x:Name="NameBox" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberNameName}" />
+
+                        <TextBlock Text="{x:Static r:Strings.GrabberModeHeading}" Foreground="{DynamicResource MutedBrush}" Margin="0,20,0,8" />
+                        <RadioButton Style="{StaticResource ChoiceCard}" IsChecked="{Binding FilesMode}" GroupName="Mode"
+                                     AutomationProperties.Name="{x:Static r:Strings.GrabberModeFiles}" AutomationProperties.HelpText="{x:Static r:Strings.GrabberModeFilesHint}">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static r:Strings.GrabberModeFiles}" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Static r:Strings.GrabberModeFilesHint}" Style="{StaticResource Hint}" />
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton Style="{StaticResource ChoiceCard}" IsChecked="{Binding MirrorMode}" GroupName="Mode"
+                                     AutomationProperties.Name="{x:Static r:Strings.GrabberModeMirror}" AutomationProperties.HelpText="{x:Static r:Strings.GrabberModeMirrorHint}">
+                            <StackPanel>
+                                <TextBlock Text="{x:Static r:Strings.GrabberModeMirror}" FontWeight="SemiBold" />
+                                <TextBlock Text="{x:Static r:Strings.GrabberModeMirrorHint}" Style="{StaticResource Hint}" />
+                            </StackPanel>
+                        </RadioButton>
+                        <StackPanel Margin="24,4,0,0" Visibility="{Binding MirrorMode, Converter={StaticResource BoolToVisibility}}">
+                            <CheckBox Content="{x:Static r:Strings.GrabberStripScripts}" IsChecked="{Binding StripScripts}" />
+                            <TextBlock Text="{Binding StripScriptsWarning}" Style="{StaticResource ErrorText}" Margin="24,2,0,0" AutomationProperties.LiveSetting="Assertive" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <TextBlock Style="{StaticResource Glyph}" Text="&#xE8D7;" FontSize="13" Foreground="{DynamicResource MutedBrush}" Margin="0,1,8,0" VerticalAlignment="Top" />
+                            <TextBlock Text="{Binding CookieText}" Style="{StaticResource Hint}" Margin="0" MaxWidth="520" />
+                        </StackPanel>
+                        <TextBlock Text="{x:Static r:Strings.GrabberStaticOnly}" Style="{StaticResource Hint}" Margin="0,8,0,0" />
+                    </StackPanel>
+
+                    <!-- 2. Scope -->
+                    <StackPanel Visibility="{Binding Step, Converter={StaticResource StepVisible}, ConverterParameter=1}">
+                        <Label Content="{x:Static r:Strings.GrabberDepthLabel}" Target="{Binding ElementName=DepthBox}" Style="{StaticResource FieldCaption}" Margin="0,8,0,4" />
+                        <TextBox x:Name="DepthBox" Width="100" HorizontalAlignment="Left" Text="{Binding Depth, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.Name="{x:Static r:Strings.GrabberDepthName}" AutomationProperties.HelpText="{x:Static r:Strings.GrabberDepthHint}" />
+                        <TextBlock Text="{x:Static r:Strings.GrabberDepthHint}" Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="{x:Static r:Strings.GrabberDomainsHeading}" Foreground="{DynamicResource MutedBrush}" Margin="0,18,0,6" />
+                        <RadioButton Content="{x:Static r:Strings.GrabberSameDomain}" IsChecked="{Binding SameDomainOnly}" GroupName="Domains" Margin="0,2" />
+                        <RadioButton Content="{x:Static r:Strings.GrabberOtherDomains}" IsChecked="{Binding OtherDomains}" GroupName="Domains" Margin="0,2" />
+                        <TextBox Text="{Binding Domains, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding OtherDomains}" AcceptsReturn="True" Height="64"
+                                 VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Margin="24,6,0,0"
+                                 AutomationProperties.Name="{x:Static r:Strings.GrabberDomainsName}" AutomationProperties.HelpText="{x:Static r:Strings.GrabberDomainsHint}" />
+                        <TextBlock Text="{x:Static r:Strings.GrabberDomainsHint}" Style="{StaticResource Hint}" Margin="24,4,0,0" />
+
+                        <CheckBox Content="{x:Static r:Strings.GrabberRespectRobots}" IsChecked="{Binding RespectRobots}" Margin="0,18,0,0" />
+                        <Border Margin="24,8,0,0" Padding="12,10" CornerRadius="6" Background="{DynamicResource DangerSoftBrush}"
+                                Visibility="{Binding ShowRobotsWarning, Converter={StaticResource BoolToVisibility}}">
+                            <DockPanel>
+                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE7BA;" Foreground="{DynamicResource DangerBrush}" Margin="0,1,10,0" VerticalAlignment="Top" />
+                                <TextBlock Text="{x:Static r:Strings.GrabberRobotsWarning}" TextWrapping="Wrap" Foreground="{DynamicResource DangerBrush}"
+                                           AutomationProperties.LiveSetting="Assertive" />
+                            </DockPanel>
+                        </Border>
+
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <Label Content="{x:Static r:Strings.GrabberRateLabel}" Target="{Binding ElementName=RateBox}" Style="{StaticResource FieldCaption}" />
+                                <TextBox x:Name="RateBox" Text="{Binding Rate, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberRateName}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <Label Content="{x:Static r:Strings.GrabberUserAgentLabel}" Target="{Binding ElementName=AgentBox}" Style="{StaticResource FieldCaption}" />
+                                <TextBox x:Name="AgentBox" Text="{Binding UserAgent, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberUserAgentName}" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="{x:Static r:Strings.GrabberRateHint}" Style="{StaticResource Hint}" />
+                    </StackPanel>
+
+                    <!-- 3. Filters -->
+                    <StackPanel Visibility="{Binding Step, Converter={StaticResource StepVisible}, ConverterParameter=2}">
+                        <TextBlock Text="{x:Static r:Strings.GrabberTypesHeading}" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,6" />
+                        <ItemsControl ItemsSource="{Binding Presets}" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding Title}" IsChecked="{Binding IsChecked}" ToolTip="{Binding ToolTip}" Margin="0,0,18,6"
+                                              AutomationProperties.Name="{Binding Title}" AutomationProperties.HelpText="{Binding ToolTip}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Label Content="{x:Static r:Strings.GrabberExtensionsLabel}" Target="{Binding ElementName=ExtBox}" Style="{StaticResource FieldCaption}" Margin="0,6,0,4" />
+                        <TextBox x:Name="ExtBox" Text="{Binding Extensions, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberExtensionsName}" />
+                        <TextBlock Text="{Binding ExtensionsSummary}" Style="{StaticResource Hint}" AutomationProperties.LiveSetting="Polite" />
+
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <Label Content="{x:Static r:Strings.GrabberMinSizeLabel}" Target="{Binding ElementName=MinBox}" Style="{StaticResource FieldCaption}" />
+                                <TextBox x:Name="MinBox" Text="{Binding MinSizeKB, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberMinSizeName}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <Label Content="{x:Static r:Strings.GrabberMaxSizeLabel}" Target="{Binding ElementName=MaxBox}" Style="{StaticResource FieldCaption}" />
+                                <TextBox x:Name="MaxBox" Text="{Binding MaxSizeMB, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberMaxSizeName}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Label Content="{x:Static r:Strings.GrabberIncludeLabel}" Target="{Binding ElementName=IncludeBox}" Style="{StaticResource FieldCaption}" />
+                        <TextBox x:Name="IncludeBox" Text="{Binding Include, UpdateSourceTrigger=PropertyChanged, Delay=200}" FontFamily="Cascadia Mono, Consolas"
+                                 AutomationProperties.Name="{x:Static r:Strings.GrabberIncludeName}" />
+                        <TextBlock Text="{Binding IncludeError}" Style="{StaticResource ErrorText}" Margin="0,4,0,0" AutomationProperties.LiveSetting="Assertive" />
+                        <Label Content="{x:Static r:Strings.GrabberExcludeLabel}" Target="{Binding ElementName=ExcludeBox}" Style="{StaticResource FieldCaption}" />
+                        <TextBox x:Name="ExcludeBox" Text="{Binding Exclude, UpdateSourceTrigger=PropertyChanged, Delay=200}" FontFamily="Cascadia Mono, Consolas"
+                                 AutomationProperties.Name="{x:Static r:Strings.GrabberExcludeName}" />
+                        <TextBlock Text="{Binding ExcludeError}" Style="{StaticResource ErrorText}" Margin="0,4,0,0" AutomationProperties.LiveSetting="Assertive" />
+                        <TextBlock Text="{x:Static r:Strings.GrabberPatternHint}" Style="{StaticResource Hint}" Margin="0,8,0,0" />
+                    </StackPanel>
+
+                    <!-- 4. Access and limits -->
+                    <StackPanel Visibility="{Binding Step, Converter={StaticResource StepVisible}, ConverterParameter=3}">
+                        <TextBlock Text="{x:Static r:Strings.GrabberAccessHeading}" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,6" />
+                        <CheckBox Content="{x:Static r:Strings.GrabberUseCookies}" IsChecked="{Binding UseCookies}" IsEnabled="{Binding HasCookies}" Margin="0,2" />
+                        <TextBlock Text="{Binding CookieText}" Style="{StaticResource Hint}" Margin="24,0,0,6" />
+                        <DockPanel Margin="24,0,0,6">
+                            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.GrabberClearCookies}" Style="{StaticResource DialogButton}" Command="{Binding ClearCookiesCommand}" />
+                            <CheckBox Content="{x:Static r:Strings.GrabberForgetCookies}" IsChecked="{Binding ForgetCookiesAfterRun}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <CheckBox Content="{x:Static r:Strings.GrabberUseCredentials}" IsChecked="{Binding UseCredentials}" Margin="0,2" />
+                        <CheckBox Content="{x:Static r:Strings.GrabberUseProxy}" IsChecked="{Binding UseProxy}" Margin="0,2" />
+                        <TextBlock Text="{x:Static r:Strings.GrabberAccessHint}" Style="{StaticResource Hint}" />
+
+                        <TextBlock Text="{x:Static r:Strings.GrabberLimitsHeading}" Foreground="{DynamicResource MutedBrush}" Margin="0,22,0,0" />
+                        <Grid Margin="0,2,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Label Content="{x:Static r:Strings.GrabberMaxPagesLabel}" Target="{Binding ElementName=PagesBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="PagesBox" Grid.Column="1" Margin="0,4" Text="{Binding MaxPages, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberMaxPagesName}" />
+                            <Label Grid.Row="1" Content="{x:Static r:Strings.GrabberMaxFilesLabel}" Target="{Binding ElementName=FilesBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="FilesBox" Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding MaxFiles, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberMaxFilesName}" />
+                            <Label Grid.Row="2" Content="{x:Static r:Strings.GrabberMaxTotalLabel}" Target="{Binding ElementName=TotalBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="TotalBox" Grid.Row="2" Grid.Column="1" Margin="0,4" Text="{Binding MaxTotalMB, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberMaxTotalName}" />
+                            <Label Grid.Row="3" Content="{x:Static r:Strings.GrabberMaxPatternLabel}" Target="{Binding ElementName=PatternBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="PatternBox" Grid.Row="3" Grid.Column="1" Margin="0,4" Text="{Binding MaxPerPattern, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.GrabberMaxPatternName}"
+                                     ToolTip="{x:Static r:Strings.GrabberMaxPatternHint}" />
+                        </Grid>
+                        <TextBlock Text="{x:Static r:Strings.GrabberMaxPatternHint}" Style="{StaticResource Hint}" />
+                    </StackPanel>
+
+                    <!-- 5. Destination and schedule -->
+                    <StackPanel Visibility="{Binding Step, Converter={StaticResource StepVisible}, ConverterParameter=4}">
+                        <Label Content="{Binding FolderLabel}" Target="{Binding ElementName=FolderBox}" Style="{StaticResource FieldCaption}" Margin="0,8,0,4" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseCommand}" />
+                            <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.AddFolderName}"
+                                     AutomationProperties.HelpText="{Binding FolderHint}" />
+                        </DockPanel>
+                        <TextBlock Text="{Binding FolderHint}" Style="{StaticResource Hint}" />
+
+                        <Grid Margin="0,4,0,0" Visibility="{Binding ShowQueue, Converter={StaticResource BoolToVisibility}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <Label Content="{x:Static r:Strings.AddCategoryLabel}" Target="{Binding ElementName=CategoryBox}" Style="{StaticResource FieldCaption}" />
+                                <ComboBox x:Name="CategoryBox" ItemsSource="{Binding Categories}" SelectedItem="{Binding Category}" DisplayMemberPath="Name"
+                                          AutomationProperties.Name="{x:Static r:Strings.AddCategoryName}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <Label Content="{x:Static r:Strings.AddQueueLabel}" Target="{Binding ElementName=QueueBox}" Style="{StaticResource FieldCaption}" />
+                                <ComboBox x:Name="QueueBox" ItemsSource="{Binding Queues}" SelectedItem="{Binding Queue}" DisplayMemberPath="Name"
+                                          AutomationProperties.Name="{x:Static r:Strings.AddQueueName}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <CheckBox Content="{x:Static r:Strings.GrabberScheduled}" IsChecked="{Binding Scheduled}" Margin="0,22,0,6" FontWeight="SemiBold" />
+                        <StackPanel IsEnabled="{Binding Scheduled}" Margin="24,0,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel>
+                                    <Label Content="{x:Static r:Strings.GrabberStartLabel}" Target="{Binding ElementName=StartBox}" Style="{StaticResource FieldCaption}" Margin="0,4,0,4" />
+                                    <TextBox x:Name="StartBox" Width="110" Text="{Binding Start, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.QueueStartName}" />
+                                </StackPanel>
+                                <StackPanel Margin="16,0,0,0">
+                                    <Label Content="{x:Static r:Strings.GrabberRepeatLabel}" Target="{Binding ElementName=RepeatBox}" Style="{StaticResource FieldCaption}" Margin="0,4,0,4" />
+                                    <TextBox x:Name="RepeatBox" Width="110" HorizontalAlignment="Left" Text="{Binding RepeatHours, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="{x:Static r:Strings.GrabberRepeatName}" ToolTip="{x:Static r:Strings.GrabberRepeatToolTip}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <RadioButton Content="{x:Static r:Strings.GrabberWeekly}" IsChecked="{Binding Weekly}" GroupName="Schedule" Margin="0,12,0,4" />
+                            <ItemsControl ItemsSource="{Binding Days}" IsEnabled="{Binding Weekly}" Margin="24,0,0,0" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding Short}" IsChecked="{Binding IsChecked}" Margin="0,0,10,0" MinWidth="64" AutomationProperties.Name="{Binding Full}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <RadioButton Content="{x:Static r:Strings.GrabberOnce}" IsChecked="{Binding Once}" GroupName="Schedule" VerticalAlignment="Center" />
+                                <DatePicker SelectedDate="{Binding Date}" IsEnabled="{Binding Once}" Margin="12,0,0,0" Width="170" AutomationProperties.Name="{x:Static r:Strings.QueueDateName}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <TextBlock Text="{Binding SchedulePreview}" Style="{StaticResource Hint}" Margin="0,12,0,0" AutomationProperties.LiveSetting="Polite" />
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </DockPanel>
+    </Grid>
+</Window>

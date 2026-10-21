@@ -3,7 +3,7 @@ param([string]$Exe, [string]$Data, [switch]$Tray, [int]$IdleSeconds = 20)
 # scrolling, sorting and searching the list. With -Tray it only measures the memory of the app idle in the tray.
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 $A = [System.Windows.Automation.AutomationElement]
-$env:DOWNLOADMANAGER_DATA = $Data
+$env:BATON_DATA = $Data
 $watch = [Diagnostics.Stopwatch]::StartNew()
 $start = @{ FilePath = $Exe; PassThru = $true }
 if ($Tray) { $start.ArgumentList = '--tray' }

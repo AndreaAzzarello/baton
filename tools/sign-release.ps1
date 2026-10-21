@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-  Signs a DownloadManager release so the app (1.1.0 and later) accepts it as an update.
+  Signs a Baton release so the app (1.1.0 and later, called DownloadManager up to 1.1) accepts it as an update.
 .DESCRIPTION
   -NewKey creates a signing key pair (ECDSA P-256) once. The private key is kept outside the repository, in
-  %LOCALAPPDATA%\DownloadManager-signing, encrypted with DPAPI (only this Windows user can use it) or, with -Password,
+  %LOCALAPPDATA%\Baton-signing, encrypted with DPAPI (only this Windows user can use it) or, with -Password,
   with a password (a copy that can be kept offline and used on another computer). The public key is added to
-  src\DownloadManager.Core\Updates\release-keys.txt, which is built into the app: commit it and publish a version that
+  src\Baton.Core\Updates\release-keys.txt, which is built into the app: commit it and publish a version that
   contains it before signing anything with the new key.
 
   Without -NewKey the script signs a published program: it writes next to it
@@ -16,7 +16,7 @@
   Rotation: sign with the old and the new key (-Key both) while versions that know only the old one are around; a
   key is retired by removing it from release-keys.txt in a later version.
 .PARAMETER Exe
-  The program to sign (default publish\DownloadManager.exe).
+  The program to sign (default publish\Baton.exe).
 .PARAMETER Version
   The version it is published as (default: the program's own file version). It must match the release tag.
 .PARAMETER Key
@@ -24,8 +24,8 @@
 .EXAMPLE
   .\tools\sign-release.ps1 -NewKey                      # once: key protected by DPAPI
   .\tools\sign-release.ps1 -NewKey -Password            # a spare key protected by a password, to keep offline
-  .\tools\sign-release.ps1                              # signs publish\DownloadManager.exe
-  .\tools\sign-release.ps1 -Url https://example.org/DownloadManager.exe   # also writes latest.json
+  .\tools\sign-release.ps1                              # signs publish\Baton.exe
+  .\tools\sign-release.ps1 -Url https://example.org/Baton.exe   # also writes latest.json
 #>
 param(
   [switch]$NewKey,
@@ -35,12 +35,13 @@ param(
   [string[]]$Key,
   [string]$Url,
   [string]$Notes = "",
-  [string]$KeyFolder = (Join-Path $env:LOCALAPPDATA "DownloadManager-signing")
+  [string]$KeyFolder = (Join-Path $env:LOCALAPPDATA "Baton-signing")
 )
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Security
 $root = (Resolve-Path "$PSScriptRoot\..").Path
-$keyList = Join-Path $root "src\DownloadManager.Core\Updates\release-keys.txt"
+$keyList = Join-Path $root "src\Baton.Core\Updates\release-keys.txt"
+# Unchanged since the rename to Baton: the existing DPAPI keys can only be opened with this value.
 $entropy = [Text.Encoding]::UTF8.GetBytes("DownloadManager release signing key")
 $utf8 = New-Object Text.UTF8Encoding($false)
 
@@ -142,12 +143,12 @@ if ($NewKey) {
   $line = "$($file.public)  # $id, $($file.protect), created $($file.created)`n"
   [IO.File]::AppendAllText($keyList, $line, $utf8)
   Write-Host "New key $id ($($file.protect)) saved in $path" -ForegroundColor Green
-  Write-Host "Public key added to src\DownloadManager.Core\Updates\release-keys.txt: rebuild, commit and publish a version that contains it."
+  Write-Host "Public key added to src\Baton.Core\Updates\release-keys.txt: rebuild, commit and publish a version that contains it."
   if ($file.protect -eq "dpapi") { Write-Host "DPAPI ties the key to this Windows user: also make a spare key with -NewKey -Password and keep its file offline." -ForegroundColor Yellow }
   exit 0
 }
 
-if (-not $Exe) { $Exe = Join-Path $root "publish\DownloadManager.exe" }
+if (-not $Exe) { $Exe = Join-Path $root "publish\Baton.exe" }
 $Exe = (Resolve-Path $Exe).Path
 $name = [IO.Path]::GetFileName($Exe)
 if (-not $Version) {
@@ -156,9 +157,13 @@ if (-not $Version) {
 }
 if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw "Version must look like 1.1.0." }
 
-$keyFiles = @(Get-ChildItem $fullKeyFolder -Filter "*.key.json" -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName -Raw | ConvertFrom-Json })
+# Keys created before the rename stay where they are (%LOCALAPPDATA%\DownloadManager-signing): they are read from there too.
+$keyFolders = @($fullKeyFolder)
+if (-not $PSBoundParameters.ContainsKey("KeyFolder")) { $keyFolders += Join-Path $env:LOCALAPPDATA "DownloadManager-signing" }
+$keyFiles = @($keyFolders | ForEach-Object { Get-ChildItem $_ -Filter "*.key.json" -ErrorAction SilentlyContinue } |
+  ForEach-Object { Get-Content $_.FullName -Raw | ConvertFrom-Json } | Group-Object id | ForEach-Object { $_.Group[0] })
 if ($Key) { $keyFiles = @($keyFiles | Where-Object { $Key -contains $_.id }) }
-if ($keyFiles.Count -eq 0) { throw "No signing key in $fullKeyFolder (create one with -NewKey)." }
+if ($keyFiles.Count -eq 0) { throw "No signing key in $($keyFolders -join ' or ') (create one with -NewKey)." }
 $trusted = if (Test-Path $keyList) { Get-Content $keyList -Raw } else { "" }
 
 $sha = (Get-FileHash $Exe -Algorithm SHA256).Hash.ToLowerInvariant()

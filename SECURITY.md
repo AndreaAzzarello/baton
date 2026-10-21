@@ -9,9 +9,9 @@ them from the app (Settings › Updates) or from the GitHub Releases page of thi
 
 Please **do not open a public issue** for a vulnerability. Use GitHub's private reporting instead:
 **Security › Report a vulnerability** on this repository
-(https://github.com/AndreaAzzarello/DownloadManager/security/advisories/new).
+(https://github.com/AndreaAzzarello/baton/security/advisories/new).
 
-Include, if you can: the version (file properties of `DownloadManager.exe` › Details), Windows version and
+Include, if you can: the version (file properties of `Baton.exe` › Details), Windows version and
 browser, steps to reproduce, and what an attacker gains. Never include real passwords, cookies or personal files: test
 data is enough.
 

@@ -11,7 +11,7 @@ for ($i = 0; $i -lt 20 -and -not $win; $i++) {
     $wcond = New-Object System.Windows.Automation.AndCondition($cond, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window)))
     foreach ($top in $root.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
       $owner = $top.Current.ProcessId
-      if ($owner -and (Get-Process -Id $owner -ErrorAction SilentlyContinue).ProcessName -eq "DownloadManager") {
+      if ($owner -and (Get-Process -Id $owner -ErrorAction SilentlyContinue).ProcessName -in "Baton", "DownloadManager") {
         $win = $top.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $wcond)
         if ($win) { break }
       }
@@ -22,7 +22,7 @@ for ($i = 0; $i -lt 20 -and -not $win; $i++) {
 if (-not $win) {
   # Titles that change (such as "25% Â· file") are matched by substring.
   foreach ($top in $root.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
-    if ((Get-Process -Id $top.Current.ProcessId -ErrorAction SilentlyContinue).ProcessName -ne "DownloadManager") { continue }
+    if ((Get-Process -Id $top.Current.ProcessId -ErrorAction SilentlyContinue).ProcessName -notin "Baton", "DownloadManager") { continue }
     foreach ($w in @($top) + @($top.FindAll([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window))))) {
       if ($w.Current.Name -like "*$Window*") { $win = $w; break }
     }

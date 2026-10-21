@@ -1,6 +1,6 @@
 // Builds the browser extension from its single source folder (extension/) for Chromium and for Firefox:
-//   dist/chromium/  and  dist/downloadmanager-chromium-<version>.zip
-//   dist/firefox/   and  dist/downloadmanager-firefox-<version>.xpi
+//   dist/chromium/  and  dist/baton-chromium-<version>.zip
+//   dist/firefox/   and  dist/baton-firefox-<version>.xpi
 // Only the manifest differs. Usage: node tools/build-extension.mjs
 import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, statSync, copyFileSync } from "node:fs";
 import { join, relative, dirname, sep } from "node:path";
@@ -12,7 +12,7 @@ const source = join(root, "extension");
 const dist = join(root, "dist");
 
 /** Firefox's extension ID: the native host manifest for Firefox allows exactly this one. */
-export const FIREFOX_ID = "downloadmanager@extension.local";
+export const FIREFOX_ID = "baton@andreaazzarello";
 
 const base = JSON.parse(readFileSync(join(source, "manifest.json"), "utf8"));
 
@@ -121,6 +121,6 @@ function zip(entries) {
 
 mkdirSync(dist, { recursive: true });
 const version = base.version;
-writeFileSync(join(dist, `downloadmanager-chromium-${version}.zip`), zip(build("chromium", base)));
-writeFileSync(join(dist, `downloadmanager-firefox-${version}.xpi`), zip(build("firefox", firefoxManifest(base))));
+writeFileSync(join(dist, `baton-chromium-${version}.zip`), zip(build("chromium", base)));
+writeFileSync(join(dist, `baton-firefox-${version}.xpi`), zip(build("firefox", firefoxManifest(base))));
 console.log(`extension ${version}: dist/chromium, dist/firefox and their packages`);

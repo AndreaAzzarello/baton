@@ -1,23 +1,57 @@
 # Changelog
 
-Versioni di DownloadManager (app ed estensione). Formato ispirato a [Keep a Changelog](https://keepachangelog.com/it/1.1.0/);
-numerazione [SemVer](https://semver.org/lang/it/). Le date sono quelle dei commit.
+Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadManager**. Formato ispirato a
+[Keep a Changelog](https://keepachangelog.com/it/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
+quelle dei commit.
 
-## [1.1.1] — 2026-10-20
+## [1.2.0] — 2026-10-21
 
-Prima versione pubblica su GitHub.
+Prima versione pubblica, con il nuovo nome **Baton**: il testimone della staffetta, come le connessioni che si passano i
+pezzi del file nella segmentazione dinamica. Comprende la 1.1.1, mai pubblicata.
 
+**Nuovo nome e identità**
+- App `Baton.exe`, progetti `Baton.*`, estensione «Baton» con le voci «Scarica con Baton», «Scarica tutto con Baton…» e
+  «Cattura questo sito con Baton…»; user agent `Baton/1.2`.
+- Nuovo logo: tre barre (le connessioni in parallelo) che si uniscono in una sola freccia (il file). Icone dell'app e
+  delle finestre, area di notifica in versione per barra delle applicazioni chiara e scura (disegnata pixel per pixel a
+  16–32 px), estensione (anche grigia per «solo menu»), notifiche, logo del README e immagine per GitHub.
+- Colori del tema allineati al logo dove il contrasto resta ≥ 4,5:1 (accento del tema scuro, segmenti nella finestra di
+  avanzamento).
+
+**Passaggio da DownloadManager (automatico)**
+- Al primo avvio i dati di `%LOCALAPPDATA%\DownloadManager` (download, impostazioni, credenziali e certificati, progetti
+  del grabber, log, controlli in sospeso) vengono **copiati** in `%LOCALAPPDATA%\Baton`: database tramite il backup di
+  SQLite e verificato prima dell'uso, poi messo al suo posto per ultimo. La cartella vecchia non viene toccata; se la copia
+  non riesce, Baton usa la cartella vecchia, lo segnala e riprova al prossimo avvio.
+  Se DownloadManager è ancora aperto, Baton chiede di chiuderlo prima di copiare (le due app non lavorano mai insieme
+  sugli stessi download).
+- Registrazioni rinominate: host nativo `com.andreaazzarello.baton` (Chrome, Edge, Chromium, Brave, Opera, Firefox), link
+  delle notifiche `baton:` firmati, identità delle notifiche `Baton.App`. Quelle di DownloadManager vengono rimosse; la
+  voce di avvio con Windows passa a Baton solo se c'era.
+- Aggiornamento dalla 1.1: la 1.1 installa `Baton.exe` al posto di `DownloadManager.exe`; al primo avvio Baton prende il
+  suo nome, sposta la versione precedente in `Baton.exe.old` (per «Ripristina la versione precedente», che rimette la 1.1
+  come `DownloadManager.exe` con i suoi dati) e aggiorna i collegamenti su Desktop, menu Start e barra delle applicazioni.
+  Il ripristino automatico della 1.1 resta valido finché Baton non segnala di essere partito.
+- Estensione: nuovo ID per Firefox (`baton@andreaazzarello`, va reinstallata); in Chromium l'ID resta lo stesso (chiave
+  pubblica nel manifest). Esportazioni con formato `Baton`; quelle di DownloadManager si importano ancora.
+
+**Dalla 1.1.1 (mai pubblicata)**
 - **Aggiornamenti**: indirizzo predefinito le release di questo repository
-  (`https://api.github.com/repos/AndreaAzzarello/DownloadManager/releases/latest`); il controllo automatico resta
-  disattivato finché non lo attivi. Chi aveva lasciato l'indirizzo vuoto riceve quello predefinito.
+  (`https://api.github.com/repos/AndreaAzzarello/baton/releases/latest`); il controllo automatico resta disattivato
+  finché non lo attivi. Un indirizzo vuoto (o quello provvisorio della 1.1.1) diventa quello predefinito.
 - **Firma**: aggiunta la chiave pubblica di riserva `cc691630b30bf7f1` (protetta da password, conservata fuori dal PC)
-  accanto alla principale `b80f666050fcbc7d`: se la principale andasse persa, le release firmate con la riserva verranno
-  accettate dalla 1.1.1 in poi.
-- `tools/verify-release.ps1`: verifica SHA-256 e firma di una release scaricata, senza installarla.
-- Repository: licenza MIT, `THIRD-PARTY-NOTICES.md`, `SECURITY.md`, questo changelog, CI su GitHub Actions (build e test,
+  accanto alla principale `b80f666050fcbc7d`. `tools/verify-release.ps1` verifica SHA-256 e firma di una release.
+  `tools/sign-release.ps1` legge le chiavi da `%LOCALAPPDATA%\Baton-signing` e da quella di prima della rinomina.
+- Repository: licenza MIT, `THIRD-PARTY-NOTICES.md` con i testi completi in `THIRD-PARTY-LICENSES.txt` (allegato anche
+  alla release), `SECURITY.md`, questo changelog, CI su GitHub Actions (build e test,
   nessuna firma), README per GitHub con screenshot.
-- Test dell'estensione: i timer lunghi non tengono più vivo il processo di Node (da 15 s a meno di 1 s).
-- Estensione 1.1.1 (nessuna modifica funzionale).
+
+**Test**
+- Nuovi test: migrazione dei dati (anche interrotta a metà e con database danneggiato), rimozione delle vecchie
+  registrazioni (registro in memoria), schema `baton:`, aggiornamento da `DownloadManager.exe` a `Baton.exe` con
+  ripristino, collegamenti, icone, nessun testo visibile con il vecchio nome.
+- Corretti tre test instabili: timer lunghi che tenevano vivo Node (da 15 s a meno di 1 s), lettura del log mentre altri
+  test scrivono, contesto di un modulo letto un istante prima del salvataggio.
 
 ## [1.1.0] — 2026-10-19
 
@@ -91,7 +125,7 @@ Rafforzamento della sicurezza.
 - Prima versione: download segmentato con pausa e ripresa persistenti, coda, integrazione con il browser tramite native
   messaging.
 
-[1.1.1]: https://github.com/AndreaAzzarello/DownloadManager/releases/tag/v1.1.1
-[1.1.0]: https://github.com/AndreaAzzarello/DownloadManager/releases/tag/v1.1.0
-[1.0.1]: https://github.com/AndreaAzzarello/DownloadManager/releases/tag/v1.0.1
-[1.0.0]: https://github.com/AndreaAzzarello/DownloadManager/releases/tag/v1.0.0
+[1.2.0]: https://github.com/AndreaAzzarello/baton/releases/tag/v1.2.0
+[1.1.0]: https://github.com/AndreaAzzarello/baton/releases/tag/v1.1.0
+[1.0.1]: https://github.com/AndreaAzzarello/baton/releases/tag/v1.0.1
+[1.0.0]: https://github.com/AndreaAzzarello/baton/releases/tag/v1.0.0

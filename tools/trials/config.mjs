@@ -8,7 +8,7 @@ import { spawnSync } from "node:child_process";
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const WORK = process.env.DM_TRIALS || join(tmpdir(), "dm-trials");
-export const DATA = join(WORK, "data"); // DOWNLOADMANAGER_DATA of the sandboxed app
+export const DATA = join(WORK, "data"); // BATON_DATA of the sandboxed app
 export const DB = join(DATA, "downloads.db");
 export const DOWNLOADS = join(WORK, "downloads"); // the sandboxed app's download folder
 export const SITE = "http://127.0.0.1:8765";

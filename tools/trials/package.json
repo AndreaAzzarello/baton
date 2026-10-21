@@ -1,7 +1,7 @@
 {
-  "name": "downloadmanager-trials",
+  "name": "baton-trials",
   "private": true,
-  "description": "Real-browser trials of the DownloadManager extension (headless, temporary profiles). See .claude/skills/prova-reale.",
+  "description": "Real-browser trials of the Baton extension (headless, temporary profiles). See .claude/skills/prova-reale.",
   "type": "module",
   "dependencies": {
     "@puppeteer/browsers": "2.13.2",
