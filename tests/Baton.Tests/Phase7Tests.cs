@@ -377,7 +377,8 @@ public sealed class Phase7Tests
         using var process = System.Diagnostics.Process.Start(info)!;
         await process.StandardInput.WriteAsync("{ not json");
         process.StandardInput.Close();
-        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(20));
+        // Windows PowerShell can take long to start on a busy CI runner.
+        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" ? 60 : 20));
         Assert.Equal(2, process.ExitCode);
     }
 

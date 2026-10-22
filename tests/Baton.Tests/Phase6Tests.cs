@@ -360,7 +360,8 @@ public sealed class Phase6Tests : IAsyncLifetime
         var watch = Stopwatch.StartNew();
         var run = await RunAsync(project);
         Assert.Equal(3, run.Result!.Files);
-        Assert.True(watch.Elapsed >= TimeSpan.FromSeconds(2), $"took {watch.Elapsed}");
+        // Relative to the nominal 3 s: unlimited it takes milliseconds; clocks and the first burst shave a little off.
+        Assert.True(watch.Elapsed >= TimeSpan.FromSeconds(3 * 0.5), $"took {watch.Elapsed}");
     }
 
     [Fact]

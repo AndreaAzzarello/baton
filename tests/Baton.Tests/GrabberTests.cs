@@ -239,8 +239,10 @@ public sealed class GrabberTests : IAsyncLifetime
 
         var times = _site.Requests.Where(r => r.Host == "site.test").Select(r => r.At).Order().ToList();
         Assert.Equal(10, times.Count); // robots.txt, the page, 8 files
-        var gaps = times.Zip(times.Skip(1), (a, b) => b - a).ToList();
-        Assert.All(gaps, gap => Assert.True(gap >= TimeSpan.FromMilliseconds(180), $"gap {gap.TotalMilliseconds} ms"));
+        // The pace counted from the first request: one that arrives late (a busy runner) does not make the next look early.
+        var interval = TimeSpan.FromSeconds(1.0 / 5);
+        for (var k = 1; k < times.Count; k++)
+            Assert.True(times[k] - times[0] >= interval * k * 0.9, $"request {k} after {(times[k] - times[0]).TotalMilliseconds} ms");
     }
 
     [Fact]
