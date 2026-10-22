@@ -15,7 +15,7 @@ export const SITE = "http://127.0.0.1:8765";
 export const SITE_LOG = join(WORK, "site-log.jsonl");
 export const SHOTS = join(WORK, "shots");
 export const BROWSER_DL = join(WORK, "browser-downloads"); // what the browsers keep for themselves
-export const CHROMIUM_EXT = join(ROOT, "dist", "chromium");
+export const CHROMIUM_EXT = process.env.DM_CHROMIUM_EXT || join(ROOT, "dist", "chromium"); // or the extension shipped in a package
 export const FIREFOX_TRIAL_EXT = join(WORK, "ext-firefox-trial"); // dist/firefox + a line that opens check.html
 
 /** The portable Firefox downloaded by prepare.ps1 (any version), or null. */

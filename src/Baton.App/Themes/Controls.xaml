@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:l="clr-namespace:Baton.App.Services">
     <!-- Shared styles. Colours come from the palette (Light.xaml / Dark.xaml) as dynamic resources,
          so switching theme restyles open windows too. Standard controls use the Fluent theme. -->
 
@@ -178,4 +179,28 @@
     </Style>
 
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+    <!-- The extension shipped next to Baton.exe (BundledExtensionViewModel): first-run wizard and settings -->
+    <DataTemplate x:Key="BundledExtensionTemplate">
+        <StackPanel>
+            <StackPanel Visibility="{Binding IsIncluded, Converter={StaticResource BoolToVisibility}}">
+                <Label Target="{Binding ElementName=ExtensionPath}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}">
+                    <AccessText Text="{l:Loc ExtensionFolderLabel}" TextWrapping="Wrap" />
+                </Label>
+                <TextBox x:Name="ExtensionPath" Text="{Binding Folder, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                         AutomationProperties.Name="{l:Loc ExtensionFolderName}" />
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <Button Content="{l:Loc FirstRunOpenExtensionFolder}" Style="{StaticResource DialogButton}" Margin="0" Command="{Binding OpenFolderCommand}" />
+                    <Button Content="{l:Loc ExtensionCopyPath}" Style="{StaticResource DialogButton}" Command="{Binding CopyPathCommand}"
+                            AutomationProperties.Name="{l:Loc ExtensionCopyPathName}" />
+                </StackPanel>
+            </StackPanel>
+            <StackPanel Visibility="{Binding IsMissing, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Text="{l:Loc ExtensionMissing}" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" />
+                <Button Content="{l:Loc ExtensionOpenReleasePage}" Style="{StaticResource DialogButton}" Margin="0,8,0,0" HorizontalAlignment="Left"
+                        Command="{Binding OpenReleasePageCommand}" />
+            </StackPanel>
+            <TextBlock Text="{Binding FirefoxText}" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0" />
+        </StackPanel>
+    </DataTemplate>
 </ResourceDictionary>

@@ -270,15 +270,22 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="ExportListFilter" xml:space="preserve"><value>File JSON (*.json)|*.json</value></data>
   <data name="ExportTitle" xml:space="preserve"><value>Esporta</value></data>
   <data name="ExportUrlsFilter" xml:space="preserve"><value>File di testo (*.txt)|*.txt</value></data>
+  <data name="ExtensionCopyPath" xml:space="preserve"><value>Copia il _percorso</value></data>
+  <data name="ExtensionCopyPathName" xml:space="preserve"><value>Copia il percorso della cartella dell'estensione</value></data>
+  <data name="ExtensionFirefoxIncluded" xml:space="preserve"><value>Firefox: il pacchetto è accanto a Baton.exe ({0}). Non è firmato da Mozilla, quindi Firefox normale lo carica solo come componente temporaneo, fino alla chiusura; per un'installazione permanente usa Firefox Developer Edition o Nightly, oppure firmalo con le tue chiavi (vedi il README).</value></data>
+  <data name="ExtensionFirefoxMissing" xml:space="preserve"><value>Firefox: il pacchetto non è accanto a Baton.exe; scaricalo dalla pagina della release.</value></data>
+  <data name="ExtensionFolderLabel" xml:space="preserve"><value>_Cartella dell'estensione, accanto a Baton.exe (Chrome, Edge, Brave, Opera)</value></data>
+  <data name="ExtensionFolderName" xml:space="preserve"><value>Cartella dell'estensione</value></data>
+  <data name="ExtensionMissing" xml:space="preserve"><value>L'estensione non è accanto a Baton.exe (una build di sviluppo): scaricala dalla pagina della release.</value></data>
+  <data name="ExtensionOpenReleasePage" xml:space="preserve"><value>Apri la pagina della _release</value></data>
   <data name="FirstRunBrowsersTitle" xml:space="preserve"><value>Estensione per il browser</value></data>
   <data name="FirstRunCategoriesHint" xml:space="preserve"><value>Cartelle delle categorie: un nome semplice è una sottocartella di quella dei download; puoi anche indicare un percorso completo.</value></data>
-  <data name="FirstRunChromiumSteps" xml:space="preserve"><value>Apri {0} (incolla l'indirizzo nella barra), attiva la modalità sviluppatore, scegli "Carica estensione non pacchettizzata" e indica la cartella {1}.</value></data>
+  <data name="FirstRunChromiumSteps" xml:space="preserve"><value>Apri {0} (incolla l'indirizzo nella barra), attiva la modalità sviluppatore, scegli "Carica estensione non pacchettizzata" e indica la cartella dell'estensione qui sotto.</value></data>
   <data name="FirstRunConnected" xml:space="preserve"><value>Estensione collegata: ultimo contatto alle {0}.</value></data>
   <data name="FirstRunCopyPage" xml:space="preserve"><value>Copia l'indirizzo</value></data>
   <data name="FirstRunCopyPageName" xml:space="preserve"><value>Copia l'indirizzo della pagina delle estensioni di {0}</value></data>
-  <data name="FirstRunExtensionFolderUnknown" xml:space="preserve"><value>"extension" del progetto</value></data>
   <data name="FirstRunFinish" xml:space="preserve"><value>Inizia</value></data>
-  <data name="FirstRunFirefoxSteps" xml:space="preserve"><value>Installa il file .xpi firmato trascinandolo nella finestra di Firefox; per una prova senza firma apri {0} e carica il manifest.json della build per Firefox.</value></data>
+  <data name="FirstRunFirefoxSteps" xml:space="preserve"><value>Apri {0}, scegli "Carica componente aggiuntivo temporaneo" e indica il pacchetto per Firefox qui sotto.</value></data>
   <data name="FirstRunFolderTitle" xml:space="preserve"><value>Dove salvare i download</value></data>
   <data name="FirstRunIntro" xml:space="preserve"><value>Qualche scelta per iniziare. Puoi cambiarle in seguito dalle Impostazioni e dalle Categorie.</value></data>
   <data name="FirstRunNoBrowsers" xml:space="preserve"><value>Nessun browser supportato trovato (Edge, Chrome, Brave, Opera, Chromium, Firefox). Puoi installare l'estensione in seguito: vedi il README.</value></data>
@@ -606,7 +613,7 @@ Dettaglio: {1}</value></data>
   <data name="PacUrlName" xml:space="preserve"><value>Indirizzo del file PAC</value></data>
   <data name="PerServerLabel" xml:space="preserve"><value>Connessioni _massime per server (1–256)</value></data>
   <data name="PickDestinationFolder" xml:space="preserve"><value>Scegli la cartella di destinazione</value></data>
-  <data name="PortableHostQuestion" xml:space="preserve"><value>Questa è la versione portable di Baton: tiene i dati in {0} e non scrive nulla nel registro.
+  <data name="PortableHostQuestion" xml:space="preserve"><value>Questa è la versione portable di Baton: tiene i dati in {0} e scrive nel registro solo ciò che permetti.
 
 Collegare l'estensione del browser a questa copia? Baton si registra allora come host nativo dei browser (una voce per browser nel registro del tuo account di Windows), che serve all'estensione per parlare con l'app. Puoi cambiarlo in seguito in Impostazioni › Generale.</value></data>
   <data name="ProgressConnections" xml:space="preserve"><value>{0} attive su {1} segmenti</value></data>
@@ -770,7 +777,7 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsLanguageName" xml:space="preserve"><value>Lingua dell'interfaccia</value></data>
   <data name="SettingsNotify" xml:space="preserve"><value>Mostra una notifica di Windows quando un download è completato</value></data>
   <data name="SettingsPortableHost" xml:space="preserve"><value>Collega l'estensione del browser a questa copia portable (la registra come host nativo dei browser)</value></data>
-  <data name="SettingsPortableNoStartup" xml:space="preserve"><value>Non disponibile nella versione portable, che non scrive nulla nel registro.</value></data>
+  <data name="SettingsPortableStartupWarning" xml:space="preserve"><value>Versione portable: la voce di avvio punta a {0}. Se sposti o rinomini questa cartella, Baton non partirà più con Windows: disattiva e riattiva l'opzione dalla nuova posizione.</value></data>
   <data name="SettingsRestoreHint" xml:space="preserve"><value>Dopo un aggiornamento la versione precedente resta accanto al programma: se la nuova dà problemi puoi tornare indietro.</value></data>
   <data name="SettingsRestorePrevious" xml:space="preserve"><value>Ripristina la versione precedente</value></data>
   <data name="SettingsRestoreTitle" xml:space="preserve"><value>Versione precedente</value></data>

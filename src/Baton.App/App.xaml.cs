@@ -216,7 +216,7 @@ public partial class App : Application
     private static void RunFirstRun(DownloadService service, IDialogService dialogs, IShellService shell, ThemeService themes)
     {
         var wizard = new FirstRunViewModel(dialogs, shell, service.Categories, Core.Setup.BrowserDetector.Detect(),
-            FirstRunViewModel.FindExtensionFolder(AppContext.BaseDirectory), () => LastExtensionContactUtc);
+            AppContext.BaseDirectory, () => LastExtensionContactUtc, AppEnvironment.IsPortable ? Environment.ProcessPath : null);
         var settings = service.Settings;
         settings.DesktopRelocationAsked = true; // a new installation never starts on the Desktop
         service.UpdateSettings(settings);

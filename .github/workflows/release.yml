@@ -136,7 +136,7 @@ jobs:
             }
           }
           Copy-Item out\exe\Baton.exe, THIRD-PARTY-LICENSES.txt out\release\
-          node tools/build-extension.mjs
+          # dist holds the extension packages: build-packages.ps1 built them for the installer and the zip
           Copy-Item "dist\baton-chromium-$env:BATON_VERSION.zip", "dist\baton-firefox-$env:BATON_VERSION.xpi" out\release\
           Get-ChildItem out\release -File | Sort-Object Name | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)" } |
             Set-Content -Encoding ascii out\release\SHA256SUMS.txt

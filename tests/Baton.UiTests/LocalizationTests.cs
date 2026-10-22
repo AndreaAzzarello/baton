@@ -154,10 +154,10 @@ public sealed class LocalizationTests
     {
         var dialogs = System.Reflection.DispatchProxy.Create<Baton.App.Services.IDialogService, MainListCommandsTests.Fake<Baton.App.Services.IDialogService>>();
         var settings = new AppSettings { PortableBrowserHost = null };
-        var untouched = new Baton.App.ViewModels.SettingsViewModel(dialogs, settings, runAtStartup: null);
+        var untouched = new Baton.App.ViewModels.SettingsViewModel(dialogs, settings, runAtStartup: false, portableProgram: @"X:\Baton\Baton.exe");
         Assert.True(untouched.TrySave());
         Assert.Null(untouched.Result!.PortableBrowserHost); // asked again at the next start
-        var ticked = new Baton.App.ViewModels.SettingsViewModel(dialogs, settings, runAtStartup: null) { PortableBrowserHost = true };
+        var ticked = new Baton.App.ViewModels.SettingsViewModel(dialogs, settings, runAtStartup: false, portableProgram: @"X:\Baton\Baton.exe") { PortableBrowserHost = true };
         Assert.True(ticked.TrySave());
         Assert.True(ticked.Result!.PortableBrowserHost);
     });

@@ -11,6 +11,9 @@ public sealed class SystemRegistration(IUserRegistry registry, string executable
 {
     public const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     public const string RunValue = "Baton";
+
+    /// <summary>The portable copy's own start entry: it never takes the place of the installed copy's.</summary>
+    public const string PortableRunValue = "Baton portable";
     public const string TrayArgument = "--tray";
     public const string AppUserModelId = "Baton.App";
     public const string LinkScheme = NotificationLinks.Scheme;
@@ -84,15 +87,17 @@ public sealed class SystemRegistration(IUserRegistry registry, string executable
         registry.SetString($@"{scheme}\shell\open\command", null, $"\"{executable}\" \"%1\"");
     }
 
+    private string StartValue => registry is PortableUserRegistry ? PortableRunValue : RunValue;
+
     public bool StartsWithWindows =>
-        registry.GetString(RunKey, RunValue) is { } command && command.Contains(executable, StringComparison.OrdinalIgnoreCase);
+        registry.GetString(RunKey, StartValue) is { } command && command.Contains(executable, StringComparison.OrdinalIgnoreCase);
 
     public void SetStartWithWindows(bool enabled)
     {
         if (enabled)
-            registry.SetString(RunKey, RunValue, $"\"{executable}\" {TrayArgument}");
+            registry.SetString(RunKey, StartValue, $"\"{executable}\" {TrayArgument}");
         else
-            registry.DeleteValue(RunKey, RunValue);
+            registry.DeleteValue(RunKey, StartValue);
     }
 
     /// <summary>
@@ -101,7 +106,7 @@ public sealed class SystemRegistration(IUserRegistry registry, string executable
     /// </summary>
     public void RepairStartEntry()
     {
-        foreach (var name in registry.GetValueNames(RunKey).Where(n => n != RunValue && n.StartsWith(RunValue, StringComparison.OrdinalIgnoreCase)))
+        foreach (var name in registry.GetValueNames(RunKey).Where(n => n != RunValue && n != PortableRunValue && n.StartsWith(RunValue, StringComparison.OrdinalIgnoreCase)))
         {
             if (registry.GetString(RunKey, name) is { } other && other.Contains("Baton.exe", StringComparison.OrdinalIgnoreCase))
                 registry.DeleteValue(RunKey, name);

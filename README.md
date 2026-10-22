@@ -60,8 +60,9 @@ needed. Pick one:
 | **Portable** | Extract `Baton-<version>-portable.zip` anywhere (also a USB stick) and run `Baton.exe`. | in the app |
 
 The **portable** version keeps everything in the `Data` folder next to `Baton.exe` and writes nothing to the registry: it
-only asks whether to register itself for the browser extension. It cannot start with Windows and shows completed
-downloads in its notification-area icon instead of Windows notifications. Deleting `portable.flag` turns it into a normal
+only asks whether to register itself for the browser extension, and writes the start-with-Windows entry only if you turn
+it on (it then points to that folder: if you move it, turn the option off and on again). It shows completed downloads
+in its notification-area icon instead of Windows notifications. Deleting `portable.flag` turns it into a normal
 copy that uses `%LOCALAPPDATA%\Baton`.
 
 **Uninstalling** (installer, winget) removes the program, its shortcuts and what it registered for browsers, `baton:`
@@ -85,12 +86,15 @@ follow the chosen language. The browser extension follows the browser's language
 
 ## Browser extension
 
-Start Baton once first: it registers the native messaging host the extension talks to.
+The extension is included in the installer, the portable zip and Scoop: no separate download. It sits next to
+`Baton.exe` (`%LOCALAPPDATA%\Programs\Baton` once installed), and the first-run wizard and **Settings › General** show
+its full path with **Open the extension folder** and **Copy the path**. Start Baton once first: it registers the native
+messaging host the extension talks to.
 
-- **Chrome, Edge, Opera, Brave**: extract `baton-chromium-<version>.zip` from the release to a folder you will keep, open
-  `chrome://extensions` (or `edge://`, `opera://`, `brave://`), turn on **Developer mode** and choose **Load unpacked**.
-- **Firefox** (128 or later): the `.xpi` in the release is not signed by Mozilla, so regular Firefox loads it only as a
-  temporary add-on (`about:debugging#/runtime/this-firefox` › **Load Temporary Add-on**). For a permanent install, sign it
+- **Chrome, Edge, Opera, Brave**: open `chrome://extensions` (or `edge://`, `opera://`, `brave://`), turn on
+  **Developer mode**, choose **Load unpacked** and select the `extension` folder next to `Baton.exe`.
+- **Firefox** (128 or later): `baton-firefox.xpi` next to `Baton.exe` is not signed by Mozilla, so regular Firefox loads
+  it only as a temporary add-on (`about:debugging#/runtime/this-firefox` › **Load Temporary Add-on**). For a permanent install, sign it
   with your own AMO keys ([how](README.it.md#firefox-permanente-firma-non-elencata-su-addonsmozillaorg)) or use Firefox
   Developer Edition or Nightly.
 
@@ -105,8 +109,8 @@ Once SignPath signs the releases they also carry an Authenticode signature, made
 file. From a clone of this repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.1.exe"
-# OK: Baton-Setup-1.3.1.exe 1.3.1, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.2.exe"
+# OK: Baton-Setup-1.3.2.exe 1.3.2, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
 
 `SHA256SUMS.txt` lists the hashes of every file of the release, also the portable zip and the extension packages.
@@ -137,7 +141,9 @@ To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).
 - No SFTP; the grabber reads static HTML/CSS only (no JavaScript); subtitles are WebVTT only.
 - The Firefox extension must be signed by the user ([details](README.it.md#limiti-noti-known-issues), Italian).
 - Installed with Scoop, update with `scoop update baton`: the in-app updater works too, but Scoop then keeps showing the
-  older version. The portable version cannot start with Windows.
+  older version.
+- The in-app updater replaces only `Baton.exe`: the extension next to it stays at the previous version until you run the
+  new setup or extract the new zip (the protocol is backward compatible, so it keeps working).
 - An internal security audit of 1.1.0 confirmed no vulnerabilities but left **8 leads to validate**, none reproduced yet.
   Reports are welcome through [SECURITY.md](SECURITY.md).
 

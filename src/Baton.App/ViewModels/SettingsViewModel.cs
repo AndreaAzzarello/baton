@@ -41,17 +41,20 @@ public sealed class SettingsViewModel : ObservableObject
     private string? _loginMessage;
     private CertificateEntry? _selectedCertificate;
 
-    /// <param name="runAtStartup">Null for the portable copy, which cannot start with Windows.</param>
-    public SettingsViewModel(IDialogService dialogs, AppSettings current, bool? runAtStartup,
+    /// <param name="portableProgram">Baton.exe of a portable copy (its start entry would point there); null otherwise.</param>
+    /// <param name="extension">The extension shipped next to the program; null hides its section (tests).</param>
+    public SettingsViewModel(IDialogService dialogs, AppSettings current, bool runAtStartup,
         CredentialStore? credentials = null, CertificateTrust? certificates = null,
-        Func<string, Task>? checkUpdates = null, Action? restorePreviousVersion = null)
+        Func<string, Task>? checkUpdates = null, Action? restorePreviousVersion = null,
+        string? portableProgram = null, BundledExtensionViewModel? extension = null)
     {
         _dialogs = dialogs;
         _original = current.Clone();
+        PortableProgram = portableProgram;
+        Extension = extension;
         _credentials = credentials ?? new CredentialStore(null);
         _certificates = certificates ?? new CertificateTrust(null);
-        RunAtStartup = runAtStartup ?? false;
-        CanRunAtStartup = runAtStartup is not null;
+        _runAtStartup = runAtStartup;
         CloseToTray = current.CloseToTray;
         GlobalQuota = current.GlobalQuotaMBPerHour.ToString(CultureInfo.CurrentCulture);
         Connections = current.MaxConnections.ToString(CultureInfo.CurrentCulture);
@@ -167,9 +170,23 @@ public sealed class SettingsViewModel : ObservableObject
 
     public ICommand BrowseFfmpegCommand { get; }
     public bool NotifyOnCompletion { get; set; }
-    public bool RunAtStartup { get; set; }
-    public bool CanRunAtStartup { get; }
-    public bool IsPortable => !CanRunAtStartup;
+    private bool _runAtStartup;
+
+    public bool RunAtStartup
+    {
+        get => _runAtStartup;
+        set
+        {
+            if (Set(ref _runAtStartup, value))
+                OnPropertyChanged(nameof(ShowPortableStartupWarning));
+        }
+    }
+
+    public string? PortableProgram { get; }
+    public bool IsPortable => PortableProgram is not null;
+    public bool ShowPortableStartupWarning => IsPortable && RunAtStartup;
+    public string PortableStartupWarning => string.Format(CultureInfo.CurrentCulture, Strings.SettingsPortableStartupWarning, PortableProgram);
+    public BundledExtensionViewModel? Extension { get; }
 
     /// <summary>Portable copy: registered as the browsers' native messaging host (the only thing it writes to the registry).</summary>
     public bool PortableBrowserHost { get; set; }
@@ -374,7 +391,7 @@ public sealed class SettingsViewModel : ObservableObject
             result.NotifyOnCompletion = NotifyOnCompletion;
             result.Theme = Theme;
             result.Language = LanguageChoice.Value;
-            if (!CanRunAtStartup)
+            if (IsPortable)
                 result.PortableBrowserHost = PortableBrowserHost == (_original.PortableBrowserHost == true) ? _original.PortableBrowserHost : PortableBrowserHost; // untouched: not asked stays not asked
             result.CloseToTray = CloseToTray;
             result.GlobalQuotaMBPerHour = quota;

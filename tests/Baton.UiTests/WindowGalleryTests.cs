@@ -286,11 +286,14 @@ public sealed class WindowGalleryTests : IDisposable
             var categories = _service.Categories;
             var queues = _service.Queues;
             var folder = _service.Settings.DownloadFolder;
+            Directory.CreateDirectory(Path.Combine(_dir, "extension"));
+            File.WriteAllText(Path.Combine(_dir, "extension", "manifest.json"), "{}");
+            File.WriteAllText(Path.Combine(_dir, "baton-firefox.xpi"), "PK");
             var main = new MainWindow(_main, () => Task.CompletedTask, () => false);
             _main.UpdateSelection(_main.Items.Take(3));
             yield return (main, "main");
             yield return (new SettingsWindow(new SettingsViewModel(_dialogs, _service.Settings, runAtStartup: false, _service.Credentials, _service.Certificates,
-                _ => Task.CompletedTask, () => { })), "settings");
+                _ => Task.CompletedTask, () => { }, Path.Combine(_dir, "Baton.exe"), new BundledExtensionViewModel(_dir, _shell)) { RunAtStartup = true }), "settings");
             yield return (new AddDownloadWindow(new AddDownloadViewModel(_dialogs, categories, folder, "https://downloads.example.com/files/archive.zip",
                 note: Baton.Core.Resources.Strings.FromBrowserWithCookies, queues: queues)), "add");
             yield return (new CategoriesWindow(new CategoriesViewModel(_dialogs, categories, folder)), "categories");
@@ -324,7 +327,8 @@ public sealed class WindowGalleryTests : IDisposable
             yield return (new ToolbarWindow(new ToolbarViewModel("", smallIcons: false, showText: true)), "toolbar");
             yield return (new FirstRunWindow(new FirstRunViewModel(_dialogs, _shell, categories,
                 [new DetectedBrowser("Microsoft Edge", false, "msedge.exe", "edge://extensions", "Microsoft\\Edge"),
-                 new DetectedBrowser("Firefox", true, "firefox.exe", "about:debugging", "Mozilla")], _dir, () => null)), "firstrun");
+                 new DetectedBrowser("Firefox", true, "firefox.exe", "about:debugging", "Mozilla")], _dir, () => null, Path.Combine(_dir, "Baton.exe"))
+                { StartWithWindows = true }), "firstrun");
             yield return (new UpdateWindow(new UpdateViewModel(new UpdateInfo(new Version(1, 3, 0), "- English interface\n- Installer", new Uri("https://example.com/Baton.exe"), new string('0', 64), "Baton.exe"),
                 "1.2.0", (_, _) => Task.CompletedTask)), "update");
             yield return (new MessageWindow(Baton.Core.Resources.Strings.ConfirmRemove.Replace("{0}", "3"), Baton.Core.Resources.Strings.RemoveTitle, MessageKind.Question,

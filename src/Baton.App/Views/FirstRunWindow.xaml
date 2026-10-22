@@ -48,14 +48,16 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                    <Button Content="{l:Loc FirstRunOpenExtensionFolder}" Style="{StaticResource DialogButton}" Margin="0" Command="{Binding OpenExtensionFolderCommand}" />
-                    <Button Content="{l:Loc FirstRunVerify}" Style="{StaticResource DialogButton}" Command="{Binding VerifyCommand}" ToolTip="{l:Loc FirstRunVerifyToolTip}" />
-                </StackPanel>
+                <ContentControl Content="{Binding Extension}" ContentTemplate="{StaticResource BundledExtensionTemplate}" Focusable="False" Margin="0,8,0,0" />
+                <Button Content="{l:Loc FirstRunVerify}" Style="{StaticResource DialogButton}" Margin="0,8,0,0" HorizontalAlignment="Left"
+                        Command="{Binding VerifyCommand}" ToolTip="{l:Loc FirstRunVerifyToolTip}" />
                 <TextBlock Text="{Binding Connection}" Style="{StaticResource NoteText}" AutomationProperties.LiveSetting="Polite" />
 
                 <TextBlock Text="{l:Loc SettingsSystem}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
                 <CheckBox Content="{l:Loc SettingsRunAtStartup}" IsChecked="{Binding StartWithWindows}" Margin="0,2" />
+                <TextBlock Text="{Binding PortableStartupWarning}" Style="{StaticResource NoteText}" TextWrapping="Wrap" Margin="28,0,0,4"
+                           AutomationProperties.LiveSetting="Polite"
+                           Visibility="{Binding ShowPortableStartupWarning, Converter={StaticResource BoolToVisibility}}" />
                 <TextBlock Text="{l:Loc SettingsAppearance}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
                 <StackPanel Orientation="Horizontal" AutomationProperties.Name="{l:Loc SettingsTheme}">
                     <RadioButton Content="{l:Loc ThemeSystem}" IsChecked="{Binding ThemeSystem}" GroupName="Theme" Margin="0,0,20,0" />

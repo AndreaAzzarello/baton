@@ -14,6 +14,13 @@
 #ifndef OutputDir
   #define OutputDir "..\dist\installer"
 #endif
+; The browser extension shipped with the program (tools\build-packages.ps1 builds it first).
+#ifndef ExtensionDir
+  #define ExtensionDir "..\dist\chromium"
+#endif
+#ifndef FirefoxPackage
+  #define FirefoxPackage "..\dist\baton-firefox-" + AppVersion + ".xpi"
+#endif
 
 [Setup]
 ; Never change the AppId: "Installed apps", upgrades and Baton.exe (SystemRegistration.UninstallKey) rely on it.
@@ -90,10 +97,17 @@ it.KeepData=Tenere i dati di Baton (elenco dei download, impostazioni e registri
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
+[InstallDelete]
+; Files dropped from the extension in a newer version must not stay behind (the browser would load them).
+Type: filesandordirs; Name: "{app}\extension"
+
 [Files]
 Source: "{#SourceDir}\Baton.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "..\THIRD-PARTY-LICENSES.txt"; DestDir: "{app}"; Flags: ignoreversion
+; Chromium browsers load the folder ("Load unpacked"); Firefox the package. An upgrade replaces both ([InstallDelete]).
+Source: "{#ExtensionDir}\*"; DestDir: "{app}\extension"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#FirefoxPackage}"; DestDir: "{app}"; DestName: "baton-firefox.xpi"; Flags: ignoreversion
 
 [Icons]
 ; The identity of the app's notifications: the shortcut and the windows group under it.

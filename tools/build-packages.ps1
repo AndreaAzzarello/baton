@@ -8,9 +8,10 @@ powershell -File tools\build-packages.ps1 -Source C:\x -Out C:\y -Version 1.3.1
 
 The version is read from src\Baton.App\Baton.App.csproj unless given. Inno Setup's compiler is looked up in ISCC (an
 environment variable with the full path of ISCC.exe), %LOCALAPPDATA%\Programs\InnoSetup6 and Program Files.
-Outputs: Baton-Setup-<version>.exe and Baton-<version>-portable.zip (Baton.exe, portable.flag, licenses). Files inside the
-zip carry the time of SOURCE_DATE_EPOCH (seconds; the release workflow sets it to the commit's time), so the same
-Baton.exe always gives the same zip. Nothing is signed here: see docs\SIGNING.md.
+Outputs: Baton-Setup-<version>.exe and Baton-<version>-portable.zip (Baton.exe, portable.flag, licenses), both with the
+browser extension of the same version next to Baton.exe: the "extension" folder (Chromium, Load unpacked) and
+baton-firefox.xpi; node builds it first. Files inside the zip carry the time of SOURCE_DATE_EPOCH (seconds; the release
+workflow sets it to the commit's time). Nothing is signed here: see docs\SIGNING.md.
 #>
 param(
     [string]$Source,
@@ -34,14 +35,24 @@ $fileVersion = (Get-Item $exe).VersionInfo.ProductVersion
 if ($fileVersion -notlike "$Version*") { throw "Baton.exe is version $fileVersion, not $Version" }
 New-Item -ItemType Directory -Force $Out | Out-Null
 
+# The browser extension of the same version, shipped next to Baton.exe: the unpacked Chromium build as "extension"
+# (Load unpacked) and the Firefox package, so nobody needs a separate download.
+node (Join-Path $root 'tools\build-extension.mjs') | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'node tools\build-extension.mjs failed' }
+$extension = Join-Path $root 'dist\chromium'
+$firefox = Join-Path $root "dist\baton-firefox-$Version.xpi"
+$extensionVersion = (Get-Content -Raw (Join-Path $extension 'manifest.json') | ConvertFrom-Json).version
+if ($extensionVersion -ne $Version) { throw "the extension is version $extensionVersion, not $Version" }
+if (-not (Test-Path $firefox)) { throw "the Firefox package $firefox is missing" }
+
 # Portable zip
 $zipPath = Join-Path $Out "Baton-$Version-portable.zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath }
 $time = if ($env:SOURCE_DATE_EPOCH) { [DateTimeOffset]::FromUnixTimeSeconds([long]$env:SOURCE_DATE_EPOCH) } else { [DateTimeOffset](Get-Item $exe).LastWriteTimeUtc }
-$flag = "This file makes Baton portable: it keeps its data in the Data folder next to Baton.exe and writes nothing to the`r`n" +
-        "registry (only the browsers' native messaging host, if you allow it). Delete this file to use the data of the installed`r`n" +
-        "version in %LOCALAPPDATA%\Baton instead.`r`n"
-Add-Type -AssemblyName System.IO.Compression
+$flag = "This file makes Baton portable: it keeps its data in the Data folder next to Baton.exe and writes to the registry`r`n" +
+        "only what you allow (the browsers' native messaging host, start with Windows). Delete this file to use the data of the`r`n" +
+        "installed version in %LOCALAPPDATA%\Baton instead.`r`n"
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 $stream = [IO.File]::Open($zipPath, 'CreateNew')
 $zip = New-Object IO.Compression.ZipArchive($stream, [IO.Compression.ZipArchiveMode]::Create)
 try {
@@ -49,14 +60,26 @@ try {
         @{ Name = 'Baton.exe'; Bytes = [IO.File]::ReadAllBytes($exe) },
         @{ Name = 'portable.flag'; Bytes = [Text.Encoding]::UTF8.GetBytes($flag) },
         @{ Name = 'LICENSE.txt'; Bytes = [IO.File]::ReadAllBytes((Join-Path $root 'LICENSE')) },
-        @{ Name = 'THIRD-PARTY-LICENSES.txt'; Bytes = [IO.File]::ReadAllBytes((Join-Path $root 'THIRD-PARTY-LICENSES.txt')) }
+        @{ Name = 'THIRD-PARTY-LICENSES.txt'; Bytes = [IO.File]::ReadAllBytes((Join-Path $root 'THIRD-PARTY-LICENSES.txt')) },
+        @{ Name = 'baton-firefox.xpi'; Bytes = [IO.File]::ReadAllBytes($firefox) }
     )
+    # In a fixed order (by path), with forward slashes as zip entries use.
+    foreach ($file in Get-ChildItem $extension -Recurse -File | Sort-Object FullName) {
+        $entries += @{ Name = 'extension/' + $file.FullName.Substring($extension.Length + 1).Replace('\', '/'); Bytes = [IO.File]::ReadAllBytes($file.FullName) }
+    }
     foreach ($e in $entries) {
         $entry = $zip.CreateEntry($e.Name, [IO.Compression.CompressionLevel]::Optimal)
         $entry.LastWriteTime = $time
         $s = $entry.Open(); $s.Write($e.Bytes, 0, $e.Bytes.Length); $s.Dispose()
     }
 } finally { $zip.Dispose(); $stream.Dispose() }
+# Self-check: the package works on its own only with the extension inside.
+$check = [IO.Compression.ZipFile]::OpenRead($zipPath)
+try {
+    foreach ($needed in 'Baton.exe', 'portable.flag', 'baton-firefox.xpi', 'extension/manifest.json', 'extension/background.js') {
+        if (-not ($check.Entries | Where-Object FullName -eq $needed)) { throw "the portable zip lacks $needed" }
+    }
+} finally { $check.Dispose() }
 Write-Output "portable: $zipPath"
 
 if ($SkipInstaller) { return }
@@ -64,6 +87,6 @@ $iscc = @($env:ISCC, (Join-Path $env:LOCALAPPDATA 'Programs\InnoSetup6\ISCC.exe'
           (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'), (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe')) |
         Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 if (-not $iscc) { throw 'Inno Setup 6 (ISCC.exe) not found: install it or set ISCC' }
-& $iscc /Q "/DAppVersion=$Version" "/DSourceDir=$Source" "/DOutputDir=$Out" (Join-Path $root 'installer\Baton.iss')
+& $iscc /Q "/DAppVersion=$Version" "/DSourceDir=$Source" "/DOutputDir=$Out" "/DExtensionDir=$extension" "/DFirefoxPackage=$firefox" (Join-Path $root 'installer\Baton.iss')
 if ($LASTEXITCODE -ne 0) { throw "ISCC failed ($LASTEXITCODE)" }
 Write-Output "installer: $(Join-Path $Out "Baton-Setup-$Version.exe")"

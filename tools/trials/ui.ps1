@@ -70,5 +70,19 @@ switch ($Action) {
     $all = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
     foreach ($e in $all) { $c = $e.Current; if ($c.Name) { "{0,-14} {1}" -f $c.ControlType.ProgrammaticName.Replace('ControlType.', ''), $c.Name } }
   }
+  # As dump, with what a check needs: text box values, check boxes on/off, disabled controls.
+  "state"  {
+    $all = $win.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+    foreach ($e in $all) {
+      $c = $e.Current
+      $extra = ''
+      $p = $null
+      if ($e.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$p)) { $extra += " = $($p.Current.Value)" }
+      if ($e.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern, [ref]$p)) { $extra += " [$($p.Current.ToggleState)]" }
+      if (-not $c.IsEnabled) { $extra += ' [disabled]' }
+      if (-not $c.Name -and -not $extra) { continue }
+      "{0,-14} {1}{2}" -f $c.ControlType.ProgrammaticName.Replace('ControlType.', ''), $c.Name, $extra
+    }
+  }
 }
 

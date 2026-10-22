@@ -71,6 +71,45 @@ public sealed class InstallerTests : IDisposable
         registration.Unregister(browserHostOnly: true);
         Assert.All(HostKeys, key => Assert.Null(memory.GetString(key, null)));
         Assert.Equal(2, memory.Keys.Count);
+
+        // Start with Windows, only while the user turns it on or off: its own entry, pointing to this folder, beside the
+        // installed copy's, which it never touches.
+        memory.SetString(SystemRegistration.RunKey, SystemRegistration.RunValue, @"""C:\Programs\Baton\Baton.exe"" --tray");
+        portable.AllowBrowserHost = false;
+        portable.AllowStartEntry = true;
+        registration.SetStartWithWindows(true);
+        registration.RegisterBrowserHost(Folder("usb", "Baton", "Data"));
+        registration.RepairStartEntry();
+        portable.DeleteKey(SystemRegistration.RunKey); // never the whole key
+        portable.SetString(SystemRegistration.RunKey, "OtherApp", "x"); // nor another program's value
+        Assert.Contains(exe, memory.GetString(SystemRegistration.RunKey, SystemRegistration.PortableRunValue));
+        Assert.Equal(@"""C:\Programs\Baton\Baton.exe"" --tray", memory.GetString(SystemRegistration.RunKey, SystemRegistration.RunValue));
+        Assert.True(registration.StartsWithWindows);
+        Assert.True(new SystemRegistration(memory, @"C:\Programs\Baton\Baton.exe").StartsWithWindows);
+        new SystemRegistration(memory, @"C:\Programs\Baton\Baton.exe").RepairStartEntry(); // the installed copy leaves it alone
+        Assert.NotNull(memory.GetString(SystemRegistration.RunKey, SystemRegistration.PortableRunValue));
+        Assert.All(HostKeys, key => Assert.Null(memory.GetString(key, null)));
+        portable.AllowStartEntry = false;
+        registration.SetStartWithWindows(false);
+        Assert.True(registration.StartsWithWindows);
+        portable.AllowStartEntry = true;
+        registration.SetStartWithWindows(false);
+        Assert.False(registration.StartsWithWindows);
+        Assert.Equal("other.exe", memory.GetString(SystemRegistration.RunKey, "OtherApp"));
+    }
+
+    [Fact]
+    public void BundledExtension_IsFoundNextToTheProgram_OrNotAtAll()
+    {
+        var program = Folder("app");
+        Assert.Null(BundledExtension.Folder(program));
+        Assert.Null(BundledExtension.FirefoxPackage(program));
+        Directory.CreateDirectory(Path.Combine(program, "extension"));
+        Assert.Null(BundledExtension.Folder(program)); // an empty folder is not the extension
+        File.WriteAllText(Path.Combine(program, "extension", "manifest.json"), "{}");
+        File.WriteAllText(Path.Combine(program, "baton-firefox.xpi"), "PK");
+        Assert.Equal(Path.Combine(program, "extension"), BundledExtension.Folder(program));
+        Assert.Equal(Path.Combine(program, "baton-firefox.xpi"), BundledExtension.FirefoxPackage(program));
     }
 
     [Fact]

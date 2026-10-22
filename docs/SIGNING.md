@@ -66,7 +66,7 @@ same files without Authenticode, and steps 3–5 are the same.
 ## Verifying a download
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.1.exe"   # .sha256 and .sig next to it
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.2.exe"   # .sha256 and .sig next to it
 ```
 
 It checks the SHA-256, the release-key signature (version + file name + hash) and, when the file carries one, the

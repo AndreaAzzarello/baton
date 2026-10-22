@@ -4,6 +4,25 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
+## [1.3.2] — 2026-10-22
+
+Versione di correzione, emersa provando la portable su un altro PC: l'estensione è inclusa, nessun download separato.
+
+- L'installer (`{app}\extension`), lo zip portable e Scoop contengono l'estensione della stessa versione accanto a
+  `Baton.exe`: la cartella `extension` (build Chromium non pacchettizzata, «Carica estensione non pacchettizzata») e
+  `baton-firefox.xpi` (non firmato da Mozilla: in Firefox normale si carica come componente temporaneo).
+- Procedura guidata e Impostazioni › Generale mostrano il percorso completo della cartella accanto a `Baton.exe`, con
+  **Apri la cartella dell'estensione** (ora attivo) e **Copia il percorso**; indicano il pacchetto per Firefox e, in una
+  build di sviluppo senza quei file, rimandano alla pagina della release. Prima i testi parlavano della «cartella
+  extension del progetto» e il pulsante restava spento.
+- **Avvia Baton con Windows** non è preselezionato in nessuna modalità. La portable ora può attivarlo, con una voce
+  propria («Baton portable») che non prende il posto di quella della copia installata: un avviso spiega che punta a quella
+  cartella e smette di funzionare se la sposti. Nella portable il registro accetta solo quella voce, solo durante la scelta.
+- Limite noto: l'aggiornamento dall'app sostituisce solo `Baton.exe`, l'estensione accanto resta alla versione precedente
+  finché non si esegue il nuovo setup o si estrae il nuovo zip.
+- Il workflow di rilascio compila l'estensione prima dei pacchetti; `tools\build-packages.ps1` controlla che lo zip la
+  contenga.
+
 ## [1.3.1] — 2026-10-22
 
 Versione di correzione: verdetto dei controlli dopo il download sempre presente, rilascio riproducibile.

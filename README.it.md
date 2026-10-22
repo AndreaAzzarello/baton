@@ -26,7 +26,7 @@ compatibile con alcun prodotto commerciale.
 Questa è la guida completa, in italiano. Una presentazione breve in inglese è in [README.md](README.md); per contribuire
 vedi [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Versione **1.3.1** — novità in [CHANGELOG.md](CHANGELOG.md).
+Versione **1.3.2** — novità in [CHANGELOG.md](CHANGELOG.md).
 
 | Tema chiaro | Tema scuro |
 |---|---|
@@ -89,8 +89,10 @@ scaricati non vengono mai cancellati.
 **Portable**: un file `portable.flag` accanto a `Baton.exe` (è nello zip) attiva la modalità portable. I dati stanno nella
 cartella `Data` accanto all'eseguibile e l'app **non scrive nulla nel registro**, tranne l'host nativo dei browser se lo
 permetti: al primo avvio chiede se collegare l'estensione a quella copia (si cambia in Impostazioni › Generale; togliendo
-la spunta la registrazione che punta alla copia viene rimossa). Di conseguenza niente avvio con Windows (l'opzione è
-disattivata) e niente notifiche di Windows: i download completati sono annunciati dall'icona nell'area di notifica.
+la spunta la registrazione che punta alla copia viene rimossa). L'**avvio con Windows** non è mai preselezionato: se lo
+attivi, la voce di avvio («Baton portable», distinta da quella della copia installata) punta a quella cartella e un avviso ricorda che smette di funzionare se la sposti o la rinomini
+(basta disattivare e riattivare l'opzione dalla nuova posizione). Niente notifiche di Windows: i download completati sono
+annunciati dall'icona nell'area di notifica.
 Una copia portable ha un proprio canale con l'estensione e può girare insieme a una installata. Togliendo `portable.flag`
 diventa una copia normale che usa `%LOCALAPPDATA%\Baton`.
 
@@ -112,14 +114,19 @@ stessi termini dell'app. L'installer è in italiano o inglese secondo la lingua 
 
 ### Estensione del browser
 
+L'estensione è **inclusa** nell'installer, nello zip portable e in Scoop: nessun download separato. Sta accanto a
+`Baton.exe` (installata: `%LOCALAPPDATA%\Programs\Baton`): la cartella `extension` per i browser Chromium e il file
+`baton-firefox.xpi` per Firefox. La procedura guidata del primo avvio e **Impostazioni › Generale** mostrano il percorso
+completo, con **Apri la cartella dell'estensione** e **Copia il percorso**; in una build di sviluppo, senza quei file,
+rimandano alla pagina della release.
+
 1. Avvia Baton una volta (registra l'host nativo per l'utente corrente; la versione portable chiede il permesso).
-2. **Estensione** — scarica dalla release `baton-chromium-<versione>.zip` (estrailo in una cartella che non
-   sposterai) oppure usa la cartella `extension` del repository:
+2. **Estensione** — la cartella `extension` accanto a `Baton.exe`:
    - **Chrome / Brave** — `chrome://extensions` (Brave: `brave://extensions`) → attiva **Modalità sviluppatore** →
-     **Carica estensione non pacchettizzata** → la cartella estratta.
-   - **Edge** — `edge://extensions` → **Modalità sviluppatore** → **Carica decompressa** → la cartella estratta.
-   - **Opera** — `opera://extensions` → **Modalità sviluppatore** → **Carica estensione decompressa** → la cartella estratta.
-   - **Firefox** — il file `baton-firefox-<versione>.xpi` della release **non è firmato** da Mozilla: Firefox
+     **Carica estensione non pacchettizzata** → la cartella `extension`.
+   - **Edge** — `edge://extensions` → **Modalità sviluppatore** → **Carica decompressa** → la cartella `extension`.
+   - **Opera** — `opera://extensions` → **Modalità sviluppatore** → **Carica estensione decompressa** → la cartella `extension`.
+   - **Firefox** — il file `baton-firefox.xpi` accanto a `Baton.exe` **non è firmato** da Mozilla: Firefox
      normale lo accetta solo come componente temporaneo (`about:debugging#/runtime/this-firefox` → **Carica componente
      aggiuntivo temporaneo** → il file `.xpi`, rimosso alla chiusura). Per un'installazione permanente firmalo con le tue
      chiavi AMO (vedi [Firefox permanente](#firefox-permanente-firma-non-elencata-su-addonsmozillaorg)) oppure usa
@@ -153,8 +160,8 @@ anche la firma **Authenticode** (visibile in Proprietà › Firme digitali), app
 file nella stessa cartella, da una copia del repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.1.exe"
-# OK: Baton-Setup-1.3.1.exe 1.3.1, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.2.exe"
+# OK: Baton-Setup-1.3.2.exe 1.3.2, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
 
 Lo script controlla anche la firma Authenticode quando c'è (se presente deve essere valida; `-RequireAuthenticode` la
@@ -760,6 +767,10 @@ in inglese e italiano, fallisce se un testo non sta e, con `BATON_SHOTS=<cartell
 ## Limiti noti (known issues)
 
 - Protocolli: niente SFTP (SSH) né FTP tramite proxy HTTPS.
+- Estensione inclusa: l'aggiornamento dall'app sostituisce solo `Baton.exe`, quindi la cartella `extension` e
+  `baton-firefox.xpi` accanto restano alla versione precedente finché non esegui il nuovo setup o estrai il nuovo zip
+  (Scoop la aggiorna con `scoop update baton`). Il protocollo è retrocompatibile: l'estensione precedente continua a
+  funzionare, senza le novità della nuova.
 - Grabber: niente JavaScript (i contenuti generati da script non vengono trovati); un link che sembra una pagina
   (`download.php?id=7`) viene riconosciuto come file solo se rientra nella profondità; le opzioni "proxy" e "credenziali" del
   progetto valgono per la scansione, mentre i file mandati a una coda usano la rete dell'app.
@@ -772,7 +783,8 @@ in inglese e italiano, fallisce se un testo non sta e, con `BATON_SHOTS=<cartell
   lingua precedente finché non la riapri. Messaggi di errore di Windows e .NET (rete, disco) arrivano nella lingua di Windows.
 - Aggiornamenti automatici solo per l'eseguibile pubblicato in un unico file; l'aspetto della barra degli strumenti non fa
   parte dell'esportazione delle impostazioni.
-- Versione portable: niente avvio con Windows né notifiche di Windows (scriverebbero nel registro). L'installer trova una
+- Versione portable: niente notifiche di Windows (scriverebbero nel registro); l'avvio con Windows, se lo attivi, usa una
+  voce propria («Baton portable») che smette di funzionare se sposti la cartella. L'installer trova una
   copia portable solo se è registrata per i browser (non lascia altre tracce): i dati di una copia mai registrata si portano
   nella copia installata con Altro › Esporta e Altro › Importa, oppure copiando la sua cartella `Data` in
   `%LOCALAPPDATA%\Baton` prima del primo avvio. Se una copia installata e una portable autorizzata sono entrambe presenti,

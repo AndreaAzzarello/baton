@@ -34,6 +34,13 @@ $app = Start-Process "$dir\Baton.exe" -PassThru
 Start-Sleep 7
 $welcome = if ((Get-Culture).TwoLetterISOLanguageName -eq 'it') { 'Benvenuto in Baton' } else { 'Welcome to Baton' }
 & "$tools\shot.ps1" -Title $welcome -Out "$shots\portable-firstrun.png" -NoFront -ProcessId $app.Id
+# The extension shipped in the zip, as the wizard offers it; start with Windows not preselected.
+Check ((Test-Path "$dir\extension\manifest.json") -and (Test-Path "$dir\baton-firefox.xpi")) "zip: extension folder and baton-firefox.xpi"
+$state = & "$tools\ui.ps1" -Window $welcome -Action state
+Check ([bool]($state | Where-Object { $_ -match '^Edit\s+\S' -and $_ -like "*= $dir\extension" })) "wizard: full path $dir\extension, with an accessible name"
+Check ([bool]($state | Where-Object { $_ -match '^Button\s+(Apri la cartella dell''estensione|Open the extension folder)$' })) "wizard: open the extension folder is on"
+Check ([bool]($state | Where-Object { $_ -match '^Button\s+(Copia il percorso|Copy the path)' -and $_ -notmatch 'disabled' })) "wizard: copy the path is on"
+Check ([bool]($state | Where-Object { $_ -match '^CheckBox\s+.*Windows.*\[Off\]$' })) "wizard: start with Windows not selected"
 & "$tools\ui.ps1" -Window $welcome -Action invoke -Name $(if ($welcome -like 'Benvenuto*') { 'Salta' } else { 'Skip' }) | Out-Null
 Start-Sleep 4
 # The one question of the portable copy (owned by the main window).

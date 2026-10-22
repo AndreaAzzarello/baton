@@ -232,7 +232,7 @@ public sealed class MainViewModel : ObservableObject
     public IReadOnlyList<DownloadQueue> Queues => _queues;
 
     /// <summary>A schedule works only while the app runs: warn when it does not start with Windows.</summary>
-    public bool ShowStartupWarning => _startup.IsAvailable && _queues.Any(q => q.Schedule.Enabled) && !_startup.IsEnabled;
+    public bool ShowStartupWarning => !_startup.IsPortable && _queues.Any(q => q.Schedule.Enabled) && !_startup.IsEnabled;
 
     private bool IsRunning(long queueId) => _queueStatuses.FirstOrDefault(s => s.QueueId == queueId)?.State == QueueState.Running;
 
@@ -843,13 +843,14 @@ public sealed class MainViewModel : ObservableObject
 
     private void ShowSettings()
     {
-        var dialog = new SettingsViewModel(_dialogs, _service.Settings, _startup.IsAvailable ? _startup.IsEnabled : null, _service.Credentials, _service.Certificates,
+        var dialog = new SettingsViewModel(_dialogs, _service.Settings, _startup.IsEnabled, _service.Credentials, _service.Certificates,
             Updates is { } updates ? url => updates.CheckAsync(url, interactive: true) : null,
-            Updates is { } restore && UpdateService.CanRestore ? restore.RestorePrevious : null);
+            Updates is { } restore && UpdateService.CanRestore ? restore.RestorePrevious : null,
+            _startup.IsPortable ? Environment.ProcessPath : null, new BundledExtensionViewModel(AppContext.BaseDirectory, _shell));
         if (!_dialogs.ShowSettings(dialog) || dialog.Result is null)
             return;
         _service.UpdateSettings(dialog.Result);
-        if (_startup.IsAvailable && dialog.RunAtStartup != _startup.IsEnabled)
+        if (dialog.RunAtStartup != _startup.IsEnabled)
             _startup.Set(dialog.RunAtStartup);
         SettingsSaved?.Invoke(dialog.Result);
         Refresh();

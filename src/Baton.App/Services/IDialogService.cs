@@ -85,8 +85,8 @@ public interface IDialogService
 /// <summary>Whether the app starts with Windows (in the notification area).</summary>
 public interface IStartupService
 {
-    /// <summary>False for the portable copy, which writes nothing to the registry.</summary>
-    bool IsAvailable { get; }
+    /// <summary>The portable copy: its entry points into a folder that may move, so the user is warned.</summary>
+    bool IsPortable { get; }
 
     bool IsEnabled { get; }
 
@@ -95,11 +95,26 @@ public interface IStartupService
 
 public sealed class StartupService : IStartupService
 {
-    public bool IsAvailable => !AppEnvironment.IsPortable;
+    public bool IsPortable => AppEnvironment.IsPortable;
 
     public bool IsEnabled => AppEnvironment.Registration.StartsWithWindows;
 
-    public void Set(bool enabled) => AppEnvironment.Registration.SetStartWithWindows(enabled);
+    public void Set(bool enabled)
+    {
+        // The portable copy writes the start entry only now, because the user asked for it.
+        var portable = AppEnvironment.Registry as Core.Platform.PortableUserRegistry;
+        if (portable is not null)
+            portable.AllowStartEntry = true;
+        try
+        {
+            AppEnvironment.Registration.SetStartWithWindows(enabled);
+        }
+        finally
+        {
+            if (portable is not null)
+                portable.AllowStartEntry = false;
+        }
+    }
 }
 
 /// <summary>Explorer, default programs and the clipboard.</summary>

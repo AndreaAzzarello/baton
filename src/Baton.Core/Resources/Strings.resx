@@ -270,15 +270,22 @@ The app keeps working. If the problem happens again, copy the details and attach
   <data name="ExportListFilter" xml:space="preserve"><value>JSON files (*.json)|*.json</value></data>
   <data name="ExportTitle" xml:space="preserve"><value>Export</value></data>
   <data name="ExportUrlsFilter" xml:space="preserve"><value>Text files (*.txt)|*.txt</value></data>
+  <data name="ExtensionCopyPath" xml:space="preserve"><value>Copy the _path</value></data>
+  <data name="ExtensionCopyPathName" xml:space="preserve"><value>Copy the path of the extension folder</value></data>
+  <data name="ExtensionFirefoxIncluded" xml:space="preserve"><value>Firefox: the package is next to Baton.exe ({0}). It is not signed by Mozilla, so regular Firefox loads it only as a temporary add-on, until it closes; for a permanent install use Firefox Developer Edition or Nightly, or sign it with your own keys (see the README).</value></data>
+  <data name="ExtensionFirefoxMissing" xml:space="preserve"><value>Firefox: the package is not next to Baton.exe; download it from the release page.</value></data>
+  <data name="ExtensionFolderLabel" xml:space="preserve"><value>Extension _folder, next to Baton.exe (Chrome, Edge, Brave, Opera)</value></data>
+  <data name="ExtensionFolderName" xml:space="preserve"><value>Extension folder</value></data>
+  <data name="ExtensionMissing" xml:space="preserve"><value>The extension is not next to Baton.exe (a development build): download it from the release page.</value></data>
+  <data name="ExtensionOpenReleasePage" xml:space="preserve"><value>Open the _release page</value></data>
   <data name="FirstRunBrowsersTitle" xml:space="preserve"><value>Browser extension</value></data>
   <data name="FirstRunCategoriesHint" xml:space="preserve"><value>Category folders: a plain name is a subfolder of the download folder; you can also give a full path.</value></data>
-  <data name="FirstRunChromiumSteps" xml:space="preserve"><value>Open {0} (paste the address in the address bar), turn on developer mode, choose "Load unpacked" and select the folder {1}.</value></data>
+  <data name="FirstRunChromiumSteps" xml:space="preserve"><value>Open {0} (paste the address in the address bar), turn on developer mode, choose "Load unpacked" and select the extension folder shown below.</value></data>
   <data name="FirstRunConnected" xml:space="preserve"><value>Extension connected: last contact at {0}.</value></data>
   <data name="FirstRunCopyPage" xml:space="preserve"><value>Copy the address</value></data>
   <data name="FirstRunCopyPageName" xml:space="preserve"><value>Copy the address of the extensions page of {0}</value></data>
-  <data name="FirstRunExtensionFolderUnknown" xml:space="preserve"><value>"extension" of the project</value></data>
   <data name="FirstRunFinish" xml:space="preserve"><value>Get started</value></data>
-  <data name="FirstRunFirefoxSteps" xml:space="preserve"><value>Install the signed .xpi file by dragging it into the Firefox window; for an unsigned trial open {0} and load the manifest.json of the Firefox build.</value></data>
+  <data name="FirstRunFirefoxSteps" xml:space="preserve"><value>Open {0}, choose "Load Temporary Add-on" and select the Firefox package shown below.</value></data>
   <data name="FirstRunFolderTitle" xml:space="preserve"><value>Where to save downloads</value></data>
   <data name="FirstRunIntro" xml:space="preserve"><value>A few choices to get started. You can change them later in Settings and Categories.</value></data>
   <data name="FirstRunNoBrowsers" xml:space="preserve"><value>No supported browser found (Edge, Chrome, Brave, Opera, Chromium, Firefox). You can install the extension later: see the README.</value></data>
@@ -606,7 +613,7 @@ Details: {1}</value></data>
   <data name="PacUrlName" xml:space="preserve"><value>Address of the PAC file</value></data>
   <data name="PerServerLabel" xml:space="preserve"><value>_Maximum connections per server (1–256)</value></data>
   <data name="PickDestinationFolder" xml:space="preserve"><value>Choose the destination folder</value></data>
-  <data name="PortableHostQuestion" xml:space="preserve"><value>This is the portable version of Baton: it keeps its data in {0} and writes nothing to the registry.
+  <data name="PortableHostQuestion" xml:space="preserve"><value>This is the portable version of Baton: it keeps its data in {0} and writes to the registry only what you allow.
 
 Connect the browser extension to this copy? Baton then registers itself as the browsers' native messaging host (one entry per browser in the registry of your Windows account), which the extension needs to talk to the app. You can change this later in Settings › General.</value></data>
   <data name="ProgressConnections" xml:space="preserve"><value>{0} active of {1} segments</value></data>
@@ -770,7 +777,7 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="SettingsLanguageName" xml:space="preserve"><value>Language of the interface</value></data>
   <data name="SettingsNotify" xml:space="preserve"><value>Show a Windows notification when a download completes</value></data>
   <data name="SettingsPortableHost" xml:space="preserve"><value>Connect the browser extension to this portable copy (registers it as the browsers' native messaging host)</value></data>
-  <data name="SettingsPortableNoStartup" xml:space="preserve"><value>Not available in the portable version, which writes nothing to the registry.</value></data>
+  <data name="SettingsPortableStartupWarning" xml:space="preserve"><value>Portable version: the start entry points to {0}. If you move or rename this folder, Baton will no longer start with Windows: turn the option off and on again from the new place.</value></data>
   <data name="SettingsRestoreHint" xml:space="preserve"><value>After an update the previous version stays next to the program: if the new one has problems you can go back.</value></data>
   <data name="SettingsRestorePrevious" xml:space="preserve"><value>Restore the previous version</value></data>
   <data name="SettingsRestoreTitle" xml:space="preserve"><value>Previous version</value></data>
