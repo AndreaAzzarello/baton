@@ -1,5 +1,6 @@
-﻿param([string]$Title, [string]$Out, [switch]$NoFront)
+﻿param([string]$Title, [string]$Out, [switch]$NoFront, [string[]]$Process = @('Baton', 'DownloadManager'), [int]$ProcessId)
 # Captures the top-level window whose title contains $Title (PrintWindow, works even when partly covered).
+# Only windows of the named processes (-Process, e.g. an installer) or of one process (-ProcessId: never the real app).
 Add-Type -AssemblyName System.Drawing
 Add-Type @"
 using System;
@@ -33,7 +34,8 @@ public static class W {
 }
 "@
 [W]::SetProcessDPIAware() | Out-Null
-$pids = [uint32[]]@(Get-Process Baton, DownloadManager -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id })
+$pids = if ($ProcessId) { [uint32[]]@($ProcessId) } else { [uint32[]]@(Get-Process $Process -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id }) }
+if (-not $pids) { Write-Output "no process: $($Process -join ",")$ProcessId"; exit 1 }
 $h = [W]::Find($Title, $pids)
 if ($h -eq [IntPtr]::Zero) { Write-Output "window not found: $Title"; exit 1 }
 if (-not $NoFront) { [W]::SetForegroundWindow($h) | Out-Null; Start-Sleep -Milliseconds 400 }

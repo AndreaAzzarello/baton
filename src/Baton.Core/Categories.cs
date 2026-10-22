@@ -28,7 +28,19 @@ public sealed class Category
         : Path.IsPathFullyQualified(Folder) ? Folder
         : Path.Combine(defaultFolder, Folder);
 
-    public override string ToString() => Name;
+    /// <summary>The name to show: a built-in category the user never renamed follows the interface language.</summary>
+    public string DisplayName => Key switch
+    {
+        Categories.CompressedKey => UiLanguage.Follow(nameof(Resources.Strings.CategoryCompressed), Name),
+        Categories.DocumentsKey => UiLanguage.Follow(nameof(Resources.Strings.CategoryDocuments), Name),
+        Categories.MusicKey => UiLanguage.Follow(nameof(Resources.Strings.CategoryMusic), Name),
+        Categories.VideoKey => UiLanguage.Follow(nameof(Resources.Strings.CategoryVideo), Name),
+        Categories.ProgramsKey => UiLanguage.Follow(nameof(Resources.Strings.CategoryPrograms), Name),
+        Categories.GeneralKey => UiLanguage.Follow(nameof(Resources.Strings.CategoryGeneral), Name),
+        _ => Name,
+    };
+
+    public override string ToString() => DisplayName;
 
     public Category Clone()
     {

@@ -26,11 +26,11 @@ compatibile con alcun prodotto commerciale.
 Questa è la guida completa, in italiano. Una presentazione breve in inglese è in [README.md](README.md); per contribuire
 vedi [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Versione **1.2.0** — novità in [CHANGELOG.md](CHANGELOG.md).
+Versione **1.3.0** — novità in [CHANGELOG.md](CHANGELOG.md).
 
 | Tema chiaro | Tema scuro |
 |---|---|
-| ![Finestra principale nel tema chiaro](docs/screenshots/main-light.png) | ![Finestra principale nel tema scuro](docs/screenshots/main-dark.png) |
+| ![Finestra principale nel tema chiaro](docs/screenshots/main-light.it.png) | ![Finestra principale nel tema scuro](docs/screenshots/main-dark.it.png) |
 
 *Screenshot con dati di prova: tre download selezionati, riepilogo nella barra di stato.*
 
@@ -59,13 +59,61 @@ Versione **1.2.0** — novità in [CHANGELOG.md](CHANGELOG.md).
 
 ## Installazione
 
-1. Dalla pagina [Releases](https://github.com/AndreaAzzarello/baton/releases/latest) scarica
-   `Baton.exe`, `Baton.exe.sha256` e `Baton.exe.sig`, e verificali (sezione seguente).
-2. Metti `Baton.exe` in una cartella tua (per esempio `%LOCALAPPDATA%\Programs\Baton`) e avvialo: non
-   serve installazione né diritti di amministratore. Il primo avvio propone cartelle, categorie, browser e tema, e registra
-   per l'utente corrente l'host nativo usato dall'estensione. L'eseguibile non è firmato con un certificato di firma del
-   codice: SmartScreen può chiedere conferma (**Ulteriori informazioni › Esegui comunque**) dopo che hai verificato la firma.
-3. **Estensione** — scarica dalla release `baton-chromium-<versione>.zip` (estrailo in una cartella che non
+Nessuna modalità richiede diritti di amministratore. Il primo avvio propone cartelle, categorie, browser e tema.
+
+| | Come | Aggiornamenti |
+|---|---|---|
+| **Installer** (consigliato) | Dalla pagina [Releases](https://github.com/AndreaAzzarello/baton/releases/latest) scarica `Baton-Setup-<versione>.exe` (con `.sha256` e `.sig` se vuoi verificarlo) e avvialo. | dall'app, o con un setup più recente |
+| **winget** (quando il pacchetto sarà accettato) | `winget install AndreaAzzarello.Baton` | `winget upgrade AndreaAzzarello.Baton` |
+| **Scoop** | `scoop bucket add baton https://github.com/AndreaAzzarello/scoop-baton` e `scoop install baton/baton` | `scoop update baton` |
+| **Portable** | Estrai `Baton-<versione>-portable.zip` dove vuoi (anche una chiavetta) e avvia `Baton.exe`. | dall'app |
+| **Solo l'eseguibile** (come fino alla 1.2) | `Baton.exe` in una cartella tua; dati in `%LOCALAPPDATA%\Baton`. | dall'app |
+
+**Installer** (Inno Setup, inglese e italiano secondo la lingua di Windows, tema chiaro o scuro come Windows): installa per
+il solo utente in `%LOCALAPPDATA%\Programs\Baton`, crea il collegamento nel menu Start (quello sul Desktop è facoltativo) e
+la voce in **Impostazioni › App › App installate** con icona, versione ed editore. Se Baton è aperto (anche una copia
+1.2 altrove) chiede di chiuderlo. Prima di installare cerca:
+- una **copia portable** registrata per i browser con i suoi dati: propone di copiarne download e impostazioni nella copia
+  installata (casella attiva, solo se quella installata non ha ancora dati; la cartella portable resta com'è);
+- altre copie a cui puntano browser, link `baton:` o avvio con Windows: dal primo avvio puntano a quella installata, la
+  copia resta sul disco;
+- i dati di **DownloadManager 1.1**: copiati al primo avvio come descritto più sotto.
+Tutto il lavoro è fatto da `Baton.exe` (`--setup-check`, `--import-data`), lo stesso codice provato dai test.
+
+**Disinstallazione** (da App installate o `winget uninstall`): toglie programma, collegamenti, `Baton.exe.old` e, solo se
+puntano a quella copia, host nativo dei browser (Chrome, Edge, Chromium, Brave, Opera, Firefox), link `baton:`, identità
+delle notifiche e avvio con Windows (`Baton.exe --uninstall`). Chiede se **tenere i dati** (`%LOCALAPPDATA%\Baton`:
+elenco, impostazioni, log): la risposta predefinita è tenerli, e una disinstallazione silenziosa li tiene sempre. I file
+scaricati non vengono mai cancellati.
+
+**Portable**: un file `portable.flag` accanto a `Baton.exe` (è nello zip) attiva la modalità portable. I dati stanno nella
+cartella `Data` accanto all'eseguibile e l'app **non scrive nulla nel registro**, tranne l'host nativo dei browser se lo
+permetti: al primo avvio chiede se collegare l'estensione a quella copia (si cambia in Impostazioni › Generale; togliendo
+la spunta la registrazione che punta alla copia viene rimossa). Di conseguenza niente avvio con Windows (l'opzione è
+disattivata) e niente notifiche di Windows: i download completati sono annunciati dall'icona nell'area di notifica.
+Una copia portable ha un proprio canale con l'estensione e può girare insieme a una installata. Togliendo `portable.flag`
+diventa una copia normale che usa `%LOCALAPPDATA%\Baton`.
+
+**Scoop**: usa lo zip portable; la cartella `Data` è conservata da Scoop tra le versioni (`persist\baton\Data`).
+
+Finché [SignPath Foundation](https://signpath.org/) non approva il progetto per la firma gratuita del codice, i file sono
+firmati solo con la chiave della release: SmartScreen può chiedere conferma (**Ulteriori informazioni › Esegui comunque**)
+dopo che hai verificato la firma (sezione seguente). Vedi la [policy di firma del codice](docs/SIGNING.md).
+
+### Lingua dell'interfaccia
+
+L'app è in **italiano** e **inglese**. In **Automatica** (predefinita) segue la lingua di Windows: italiano se Windows è in
+italiano, inglese con qualsiasi altra lingua. Si sceglie in **Impostazioni › Generale › Lingua** (Automatica / English /
+Italiano) e vale subito, senza riavviare: finestre, menu, barra degli strumenti, area di notifica, messaggi ed errori del
+motore. Date, ore, numeri e dimensioni seguono la lingua scelta: il formato regionale di Windows se è di quella lingua
+(per esempio it-CH o en-GB), altrimenti quello abituale (it-IT, en-US). I nomi predefiniti salvati nel database (categorie
+predefinite, Coda principale) seguono la lingua finché non li rinomini. L'estensione segue la lingua del browser, con gli
+stessi termini dell'app. L'installer è in italiano o inglese secondo la lingua di Windows.
+
+### Estensione del browser
+
+1. Avvia Baton una volta (registra l'host nativo per l'utente corrente; la versione portable chiede il permesso).
+2. **Estensione** — scarica dalla release `baton-chromium-<versione>.zip` (estrailo in una cartella che non
    sposterai) oppure usa la cartella `extension` del repository:
    - **Chrome / Brave** — `chrome://extensions` (Brave: `brave://extensions`) → attiva **Modalità sviluppatore** →
      **Carica estensione non pacchettizzata** → la cartella estratta.
@@ -97,16 +145,20 @@ Estensione: in Chrome, Edge, Opera e Brave basta **ricaricarla** (l'ID non cambi
 
 ## Verificare una release
 
-Ogni release contiene l'hash SHA-256 (`Baton.exe.sha256`) e una firma ECDSA P-256 (`Baton.exe.sig`) di
+`Baton.exe` e l'installer hanno ciascuno l'hash SHA-256 (`.sha256`) e una firma ECDSA P-256 (`.sig`) di
 "versione + nome del file + SHA-256", fatta con una chiave privata che non lascia mai il PC dell'autore. Le chiavi pubbliche
 sono in [`src/Baton.Core/Updates/release-keys.txt`](src/Baton.Core/Updates/release-keys.txt):
-`b80f666050fcbc7d` (principale) e `cc691630b30bf7f1` (di riserva, dalla 1.2.0). Con i tre file nella stessa cartella, da
-una copia del repository:
+`b80f666050fcbc7d` (principale) e `cc691630b30bf7f1` (di riserva, dalla 1.2.0). Quando SignPath firmerà le release avranno
+anche la firma **Authenticode** (visibile in Proprietà › Firme digitali), apposta prima della chiave della release. Con i tre
+file nella stessa cartella, da una copia del repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton.exe" -Version 1.2.0
-# OK: Baton.exe 1.2.0, SHA-256 …, signed by b80f666050fcbc7d.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.0.exe"
+# OK: Baton-Setup-1.3.0.exe 1.3.0, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
+
+Lo script controlla anche la firma Authenticode quando c'è (se presente deve essere valida; `-RequireAuthenticode` la
+pretende). `SHA256SUMS.txt` elenca gli hash di tutti i file della release, zip e pacchetti dell'estensione compresi.
 
 Solo l'hash, senza clonare nulla: `(Get-FileHash .\Baton.exe -Algorithm SHA256).Hash` deve coincidere con il
 contenuto di `Baton.exe.sha256` (l'hash da solo prova l'integrità del download, non l'autore). L'app fa le stesse
@@ -322,7 +374,7 @@ Baton…** (l'estensione passa indirizzo, titolo e cookie del sito; mai dalle fi
 
 - **Elenco e selezione come in Esplora file**: clic, Ctrl+clic, Maiusc+clic, Ctrl+A; clic sul vuoto per deselezionare. Le
   righe selezionate hanno uno sfondo pieno ben visibile (testo con contrasto ≥ 4,5:1 nei due temi) e la barra di stato dice
-  "3 selezionati · 1,2 GB". Un clic su una riga già selezionata riduce la selezione solo al rilascio, così si possono
+  "3 selezionati · 1,2 GB di 4,8 GB" (già scaricato di dimensione totale, aggiornato mentre scarica; "?" al posto del totale, con il suggerimento *Dimensione totale sconosciuta*, se un server non ha indicato la dimensione). Un clic su una riga già selezionata riduce la selezione solo al rilascio, così si possono
   trascinare più file completati in Esplora file (il trascinamento parte oltre la distanza minima di Windows). Tasto destro,
   tasto Menu o Maiusc+F10: menu sull'intera selezione (Apri, Apri cartella, Avvia/riprendi, Pausa, Riprova, Metti in coda,
   Sposta nella coda, Cambia categoria, Copia indirizzo, Avanzamento e Proprietà con un solo download, **Rimuovi N download
@@ -375,7 +427,8 @@ Baton…** (l'estensione passa indirizzo, titolo e cookie del sito; mai dalle fi
 
 ## Dati
 
-`%LOCALAPPDATA%\Baton\downloads.db` (SQLite). Lo schema ha un numero di versione (`PRAGMA user_version`, ora 8):
+`%LOCALAPPDATA%\Baton\downloads.db` (SQLite) per la copia installata e per quella senza installer; `Data\downloads.db`
+accanto a `Baton.exe` per la versione portable. La lingua scelta è un'impostazione (`Language`), non un cambio di schema. Lo schema ha un numero di versione (`PRAGMA user_version`, ora 8):
 all'avvio i database delle versioni precedenti vengono aggiornati un passo alla volta in un'unica transazione, dopo averne
 salvato una copia accanto (`downloads.db.v<versione>.bak`). Un database creato da una versione più recente non viene modificato.
 Passando alla 3, tutti i download entrano nella Coda principale, che eredita il vecchio limite e lo stato avviata/fermata;
@@ -428,6 +481,11 @@ Poi l'eseguibile in uso diventa `Baton.exe.old`, il nuovo prende il suo posto e 
 viene messa da parte come `.failed`, la precedente torna al suo posto e si riavvia con un avviso. **Ripristina la versione
 precedente** fa lo stesso scambio a mano. Funziona solo con l'eseguibile pubblicato (un file unico).
 
+Vale allo stesso modo per la copia **installata** (la cartella `%LOCALAPPDATA%\Programs\Baton` è dell'utente; dopo
+l'aggiornamento l'app aggiorna anche la versione mostrata in App installate) e per quella **portable** (`portable.flag` e
+`Data` restano accanto al nuovo `Baton.exe`). Installata con Scoop, meglio `scoop update baton`: l'aggiornamento dall'app
+funziona, ma Scoop continuerebbe a mostrare la versione precedente.
+
 ### Pubblicare una release firmata
 
 La chiave privata non è mai nel repository: `tools\sign-release.ps1` la tiene in `%LOCALAPPDATA%\Baton-signing` (le chiavi create prima della rinomina restano in `%LOCALAPPDATA%\DownloadManager-signing` e vengono lette da lì),
@@ -439,12 +497,22 @@ AES-256 con HMAC), per una copia di riserva da conservare fuori dal PC.
    file `<id>.key.json` su un supporto esterno e toglilo dal PC (con la sua password permette di firmare anche se la chiave
    DPAPI va persa, per esempio reinstallando Windows). Ricompila e fai il commit di `release-keys.txt`: solo le versioni che
    contengono una chiave accettano le firme fatte con essa.
-2. **A ogni release**: aumenta `<Version>` in `src\Baton.App\Baton.App.csproj`, pubblica
-   (`dotnet publish … -o publish`), poi `.\tools\sign-release.ps1` scrive `publish\Baton.exe.sha256` e
-   `publish\Baton.exe.sig` (la versione è letta dall'exe; con `-Version` la si indica). Con
-   `-Url https://…/Baton.exe` scrive anche `latest.json` per un indirizzo che non sia GitHub.
-3. Su GitHub crea la release con il tag `v<versione>` e allega **i tre file**: `Baton.exe`,
-   `Baton.exe.sha256` e `Baton.exe.sig`. Il tag deve essere la stessa versione firmata.
+2. **A ogni release** (dalla 1.3; dettagli in [docs/SIGNING.md](docs/SIGNING.md)):
+   1. aumenta `<Version>` in `src\Baton.App\Baton.App.csproj` e crea il tag `v<versione>`: il workflow
+      [`release.yml`](.github/workflows/release.yml) compila `Baton.exe` in modo riproducibile (SDK fissato in
+      `global.json`), installer e zip portable, e li carica come artifact `baton-<versione>-release` con `SHA256SUMS.txt`;
+   2. con SignPath configurato (variabili del repository), **SignPath firma Authenticode** `Baton.exe` e l'installer
+      (ogni richiesta va approvata a mano); senza, gli stessi file escono senza Authenticode;
+   3. scarica l'artifact;
+   4. controlla la firma Authenticode (`Get-AuthenticodeSignature`, stato *Valid*), poi firma i file **già firmati** da
+      SignPath con la chiave della release: `.\tools\sign-release.ps1 -Exe <file> -Version <versione>` per `Baton.exe` e per
+      `Baton-Setup-<versione>.exe` (l'ordine conta: Authenticode cambia il file, e l'app verifica lo SHA-256 finale);
+   5. pubblica la release con `Baton.exe`, `Baton-Setup-<versione>.exe`, i loro `.sha256` e `.sig`, lo zip portable, i
+      pacchetti dell'estensione, `SHA256SUMS.txt` e `THIRD-PARTY-LICENSES.txt`; poi `tools\make-manifests.ps1` sui file
+      pubblicati prepara i manifest di winget e Scoop.
+   La chiave privata non va mai nella CI.
+3. Il tag deve essere la stessa versione firmata. In locale, `.\tools\build-packages.ps1` crea installer e zip da `publish`
+   (serve Inno Setup 6).
 
 **Rotazione della chiave**: crea la nuova chiave con `-NewKey` (si aggiunge all'elenco), pubblica una versione firmata con la
 vecchia che contiene entrambe, poi firma con tutte e due (`-Key <vecchia>,<nuova>`, il `.sig` ha una riga per chiave) finché
@@ -668,6 +736,10 @@ node tools/build-extension.mjs                # estensione per Chromium e Firefo
 & $dn publish src\Baton.App -c Release -r win-x64 -o publish   # exe self-contained
 .\tools\sign-firefox.ps1 -Check                                          # firma dell'estensione per Firefox (vedi sopra)
 .\tools\sign-release.ps1                                                 # firma publish\Baton.exe (vedi Aggiornamenti)
+.\tools\build-packages.ps1                                               # installer e zip portable da publish\ (Inno Setup 6)
+.\tools\make-manifests.ps1 -Setup <setup.exe> -Zip <zip>                 # manifest winget e Scoop della release
+.\tools\verify-release.ps1 -Exe <file>                                   # SHA-256, firma della release, Authenticode
+python tools\make_resx.py src [--pseudo]                                 # testi dell'app (inglese e italiano)
 powershell -File tools\trials\grab-trial.ps1 -Mode Mirror                 # prova reale del grabber (dopo prepare.ps1)
 ```
 
@@ -679,8 +751,11 @@ Con `BATON_DATA` l'app è **isolata**: registro tenuto in memoria (avvio con Win
 toccati), pipe e istanza singola separate, quindi può girare accanto all'app vera. Nei test il registro reale è proprio vietato:
 qualsiasi accesso fa fallire il test.
 
-I testi dell'interfaccia sono in `src/Baton.Core/Resources/Strings.resx`; per tradurre l'app basta aggiungere
-un file `Strings.<lingua>.resx`.
+I testi dell'interfaccia sono coppie inglese/italiano nella tabella di `tools/make_resx.py`, che genera
+`Strings.resx` (inglese, lingua neutra) e `Strings.it.resx`. `BATON_PSEUDO=1` mostra la pseudo-lingua (testi più lunghi
+del 40%, dopo `make_resx.py src --pseudo`) per trovare etichette tagliate; il test `WindowGalleryTests` apre ogni finestra
+in inglese e italiano, fallisce se un testo non sta e, con `BATON_SHOTS=<cartella>`, ne salva le immagini nei due temi.
+`Baton.exe --setup-check <file> <exe installato>`, `--import-data <cartella>` e `--uninstall` sono usati dall'installer.
 
 ## Limiti noti (known issues)
 
@@ -692,9 +767,20 @@ un file `Strings.<lingua>.resx`.
   l'allineamento standard di `X-TIMESTAMP-MAP`. DASH multi-periodo: i sottotitoli dei periodi successivi vengono spostati
   all'inizio del loro periodo; video e audio vengono uniti così come sono (se un periodo riparte da zero, il file unito può avere
   un salto). I sottotitoli che non si riescono a scaricare non fanno fallire il video: il download lo segnala nella nota.
-- L'app è solo in italiano (l'estensione in italiano e inglese); per tradurla basta un `Strings.<lingua>.resx`.
+- Lingue: italiano e inglese. Una finestra già aperta durante il cambio di lingua (diversa da principale, Impostazioni e
+  area di notifica) aggiorna le etichette ma alcuni testi calcolati (per esempio i filtri di "Scarica tutto") restano nella
+  lingua precedente finché non la riapri. Messaggi di errore di Windows e .NET (rete, disco) arrivano nella lingua di Windows.
 - Aggiornamenti automatici solo per l'eseguibile pubblicato in un unico file; l'aspetto della barra degli strumenti non fa
   parte dell'esportazione delle impostazioni.
+- Versione portable: niente avvio con Windows né notifiche di Windows (scriverebbero nel registro). L'installer trova una
+  copia portable solo se è registrata per i browser (non lascia altre tracce): i dati di una copia mai registrata si portano
+  nella copia installata con Altro › Esporta e Altro › Importa, oppure copiando la sua cartella `Data` in
+  `%LOCALAPPDATA%\Baton` prima del primo avvio. Se una copia installata e una portable autorizzata sono entrambe presenti,
+  l'host dei browser resta a quella installata finché non lo riassegni dalle Impostazioni della portable.
+  L'host nativo, unico testo «Baton non ha risposto in tempo», usa la lingua di Windows. Installer: il
+  programma di disinstallazione di Inno Setup non ha la firma Authenticode (la hanno `Baton.exe` e il setup). Due
+  compilazioni dello stesso commit danno lo stesso `Baton.exe`, e con la stessa versione di Inno Setup lo stesso installer e
+  lo stesso zip.
 - L'estensione per Firefox va firmata dall'utente con le proprie chiavi AMO (`tools\sign-firefox.ps1`).
 - **I4 — identità dell'estensione**: l'host nativo riconosce l'estensione dal suo ID, che il browser garantisce per le estensioni
   installate dallo store o firmate. L'ID di Chromium però deriva dalla `key` pubblica nel manifest e quello di Firefox si può

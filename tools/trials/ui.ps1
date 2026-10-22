@@ -55,6 +55,11 @@ function Find($n, [switch]$Item, [switch]$Button, [switch]$Value, [switch]$Toggl
 
 switch ($Action) {
   "invoke" { (Find $Name -Button).GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke(); "invoked $Name" }
+  # Win32 buttons without UI Automation's Invoke (Inno Setup's wizard): BM_CLICK to that control, no input on the desktop.
+  "click"  {
+    Add-Type -Namespace U -Name M -MemberDefinition '[DllImport("user32.dll")] public static extern IntPtr PostMessage(IntPtr h, uint m, IntPtr w, IntPtr l);'
+    [U.M]::PostMessage([IntPtr](Find $Name).Current.NativeWindowHandle, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null; "clicked $Name"
+  }
   "set"    { (Find $Name -Value).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).SetValue($Value); "set $Name" }
   "get"    { (Find $Name -Value).GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value }
   "select" { (Find $Name -Item).GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern).Select(); "selected $Name" }

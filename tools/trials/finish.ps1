@@ -34,7 +34,23 @@ $trayIcons = "HKCU:\Control Panel\NotifyIconSettings"
 $trayKeys = @(Get-ChildItem $trayIcons -ErrorAction SilentlyContinue | Where-Object {
   $path = "$($_.GetValue('ExecutablePath'))"; $path -like "*\bin\Debug\*\Baton.exe" -or $path -like "*\bin\Debug\*DownloadManager.exe" -or $path -match $needle })
 
+# Installer, winget and Scoop trials (install-trial.ps1): an "Installed apps" entry and shortcuts of a copy in the trial
+# folder, a trial Scoop in the user's PATH or configuration.
+$uninstall = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{27469723-AE14-4420-B2B4-189B8BE709AB}_is1'
+$setupEntry = @(Get-Item $uninstall -ErrorAction SilentlyContinue | Where-Object { "$($_.GetValue('InstallLocation'))" -match $needle })
+$shell = New-Object -ComObject WScript.Shell
+$links = @(foreach ($l in @((Join-Path ([Environment]::GetFolderPath('Programs')) 'Baton.lnk'), (Join-Path ([Environment]::GetFolderPath('Programs')) 'Scoop Apps\Baton.lnk'))) {
+  if ((Test-Path $l) -and $shell.CreateShortcut($l).TargetPath -match $needle) { $l } })
+$envKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment')
+$envPath = "$($envKey.GetValue('Path', '', 'DoNotExpandEnvironmentNames'))"
+$envScoop = "$($envKey.GetValue('SCOOP'))"
+$envKey.Close()
+$envTraces = @(@($envPath -split ';' | Where-Object { $_ -match $needle }) + @($envScoop | Where-Object { $_ -match $needle }))
+$scoopConfig = Join-Path $env:USERPROFILE '.config\scoop\config.json'
+$scoopConfigTrace = (Test-Path $scoopConfig) -and ((Get-Content $scoopConfig -Raw) -match $needle)
+
 "trial apps: $(@($apps).Count) | test site: $(@($site).Count) | Firefox autostart: $(@($autostart).Count) | Firefox registry values: $($mozValues.Count) | shell cache: $(@($muiValues).Count) | audio: $($audioKeys.Count) | tray icon cache: $($trayKeys.Count)"
+"installed apps entry: $($setupEntry.Count) | shortcuts: $($links.Count) | PATH/SCOOP: $($envTraces.Count) | scoop config: $([int]$scoopConfigTrace)"
 if (-not $Apply) { "(report only; run with -Apply to clean up)"; return }
 
 $apps | ForEach-Object { Stop-Process -Id $_.ProcessId -Force; "stopped app $($_.ProcessId)" }
@@ -51,5 +67,16 @@ if (Test-Path $mozilla) {
   $top = Get-Item $mozilla
   if ($top.ValueCount -eq 0 -and $top.SubKeyCount -eq 0) { Remove-Item $mozilla }
 }
+foreach ($e in $setupEntry) { Remove-Item -LiteralPath $e.PSPath -Recurse; "removed the trial's Installed apps entry" }
+foreach ($l in $links) { Remove-Item -LiteralPath $l; "removed $l" }
+if ($envTraces.Count) {
+  # Only the trial's entries go; the PATH keeps its other entries and its kind (REG_SZ or REG_EXPAND_SZ).
+  $k = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $true)
+  $kind = $k.GetValueKind('Path')
+  $k.SetValue('Path', (($envPath -split ';' | Where-Object { $_ -notmatch $needle }) -join ';'), $kind)
+  if ($envScoop -match $needle) { $k.DeleteValue('SCOOP') }
+  $k.Close(); "removed the trial Scoop from PATH/SCOOP"
+}
+if ($scoopConfigTrace) { Remove-Item $scoopConfig; "removed $scoopConfig" }
 Remove-Item "$work\started.txt" -ErrorAction SilentlyContinue   # the trial is over
 "cleaned"

@@ -4,6 +4,8 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using AngleSharp;
 using AngleSharp.Dom;
+using Baton.Core.Resources;
+using System.Globalization;
 
 namespace Baton.Core.Grabber;
 
@@ -921,7 +923,7 @@ public sealed class GrabberEngine
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            throw new TimeoutException($"No data received for {_options.RequestTimeout.TotalSeconds:0} s.");
+            throw new TimeoutException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorNoData, _options.RequestTimeout.TotalSeconds));
         }
     }
 

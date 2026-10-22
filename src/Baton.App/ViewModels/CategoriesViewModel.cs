@@ -11,7 +11,7 @@ namespace Baton.App.ViewModels;
 /// <summary>One category being edited; nothing is saved until the dialog is confirmed.</summary>
 public sealed class CategoryEditViewModel(Category category, string defaultFolder) : ObservableObject
 {
-    private string _name = category.Name;
+    private string _name = category.DisplayName;
     private string _extensions = Categories.FormatExtensions(category.Extensions);
     private string _folder = category.ResolveFolder(defaultFolder);
     private bool _folderEdited;
@@ -53,7 +53,7 @@ public sealed class CategoryEditViewModel(Category category, string defaultFolde
     public Category ToCategory(string defaultFolder)
     {
         var result = Original.Clone();
-        result.Name = Name.Trim();
+        result.Name = Name.Trim() == Original.DisplayName ? Original.Name : Name.Trim(); // a built-in name shown in another language stays as stored
         result.Extensions = Categories.ParseExtensions(Extensions);
         if (IsNew && !_folderEdited)
             result.Folder = FileNames.Sanitize(Name.Trim());

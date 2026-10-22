@@ -150,8 +150,15 @@ public sealed class Phase6Tests : IAsyncLifetime
     {
         var content = SiteResource.File(60_000, seed: 8);
         _site.Set("files.test", "/old.bin", content);
+        var first = 0;
+        void FirstCompletion(DownloadSnapshot _) => Interlocked.Increment(ref first);
+        _downloads.DownloadCompleted += FirstCompletion;
         var id = _downloads.Add("http://files.test/old.bin");
         await Finished(id);
+        // The completion event follows the snapshot: counted from here on, it would be the first download's own.
+        for (var i = 0; i < 100 && Volatile.Read(ref first) == 0; i++)
+            await Task.Delay(20);
+        _downloads.DownloadCompleted -= FirstCompletion;
         var completions = 0;
         var checks = 0;
         _downloads.DownloadCompleted += _ => Interlocked.Increment(ref completions);

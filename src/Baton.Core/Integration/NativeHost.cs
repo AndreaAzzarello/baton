@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Text.Json;
+using Baton.Core.Resources;
 
 namespace Baton.Core.Integration;
 
@@ -75,7 +76,7 @@ public static class NativeHost
             if (reply is not null)
                 return reply;
         }
-        return new ChannelReply(false, Running: false, Error: "Baton non ha risposto in tempo.");
+        return new ChannelReply(false, Running: false, Error: Strings.ErrorAppNoAnswer);
     }
 
     public static async Task<byte[]?> ReadMessageAsync(Stream input)

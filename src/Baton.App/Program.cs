@@ -12,9 +12,17 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
-        // Started by the browser extension: act as the native messaging host, without any window.
+        // Started by the browser extension: act as the native messaging host, without any window. It answers fast and does
+        // not open the database for the language: its only text (the app did not answer) follows the language of Windows.
         if (NativeHost.IsHostInvocation(args))
             return BrowserIntegration.RunHost();
+
+        // The messages shown before the app starts, and the app itself, in the chosen language.
+        Localizer.SetCulture(DownloadStore.LanguageOf(Path.Combine(App.DataDirectory, "downloads.db")));
+
+        // The installer's questions (copies found, data to import, registry clean-up when uninstalling).
+        if (SetupCommands.Run(args) is { } setupResult)
+            return setupResult;
 
         // "Register" on the extension's connection page: point the browsers at this executable again.
         if (args.Length == 1 && BrowserIntegration.IsRegisterLink(args[0]))

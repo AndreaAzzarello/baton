@@ -78,6 +78,7 @@ public partial class App : Application
         _service = new DownloadService(_store) { RecycleBin = new Core.Platform.WindowsRecycleBin() };
         var service = _service;
 
+        Localizer.Apply(service.Settings.Language);
         var themes = new ThemeService(this);
         themes.Apply(service.Settings.Theme);
 
@@ -85,7 +86,12 @@ public partial class App : Application
         _toasts.Register();
         service.DownloadCompleted += snapshot =>
         {
-            if (service.Settings.NotifyOnCompletion)
+            if (!service.Settings.NotifyOnCompletion)
+                return;
+            // The portable copy has no notification identity in the registry: the notification area icon tells instead.
+            if (AppEnvironment.IsPortable)
+                Dispatcher.InvokeAsync(() => _tray?.ShowHint(Strings.ToastCompletedTitle + ": " + snapshot.DisplayName));
+            else
                 _toasts.ShowCompleted(snapshot);
         };
 
@@ -94,7 +100,19 @@ public partial class App : Application
         _grabber = new Core.Grabber.GrabberService(service, _store);
         service.ResumePendingChecks(); // now that the notifications and the grabber listen
         _viewModel = new MainViewModel(service, _store, dialogs, shell, new StartupService(), new GrabberUi(_grabber, service, dialogs, shell));
-        _viewModel.SettingsSaved += settings => themes.Apply(settings.Theme);
+        var portableHost = service.Settings.PortableBrowserHost;
+        _viewModel.SettingsSaved += settings =>
+        {
+            themes.Apply(settings.Theme);
+            if (Localizer.Apply(settings.Language))
+                _viewModel.OnLanguageChanged();
+            // Only a change of the check box counts as the user's answer.
+            if (AppEnvironment.IsPortable && settings.PortableBrowserHost is { } allowed && allowed != portableHost)
+            {
+                portableHost = allowed;
+                ApplyPortableHost(allowed, chosenNow: true);
+            }
+        };
 
         var window = new MainWindow(_viewModel, service.ShutdownAsync, () => service.Settings.CloseToTray && _tray is not null);
         MainWindow = window;
@@ -168,9 +186,21 @@ public partial class App : Application
                 TaskScheduler.Default);
         }
 
-        BrowserIntegration.Register(DataDirectory);
-        RepairStartEntry();
-        Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, LegacyCleanup.Start); // once up: after the start mark
+        if (AppEnvironment.IsPortable)
+        {
+            // Nothing in the registry but the browsers' host, and only once the user agreed.
+            if (service.Settings.PortableBrowserHost is null)
+                Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => AskPortableHost(service, dialogs));
+            else
+                ApplyPortableHost(service.Settings.PortableBrowserHost == true);
+        }
+        else
+        {
+            BrowserIntegration.Register(DataDirectory);
+            RepairStartEntry();
+            UpdateInstalledVersion();
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, LegacyCleanup.Start); // once up: after the start mark
+        }
         if (MigrationError is { } migrationError)
         {
             Log.Error("migration", $"DownloadManager's data not copied, using {DataDirectory}: {migrationError}");
@@ -258,6 +288,58 @@ public partial class App : Application
         }
     }
 
+    /// <summary>The portable copy's one question: may it register itself as the browsers' native messaging host?</summary>
+    private static void AskPortableHost(DownloadService service, IDialogService dialogs)
+    {
+        var answer = dialogs.Ask(string.Format(CultureInfo.CurrentCulture, Strings.PortableHostQuestion, DataDirectory), Strings.AppName);
+        if (answer == Answer.Cancel)
+            return; // asked again at the next start
+        var settings = service.Settings;
+        settings.PortableBrowserHost = answer == Answer.Yes;
+        service.UpdateSettings(settings);
+        ApplyPortableHost(answer == Answer.Yes, chosenNow: true);
+    }
+
+    /// <summary>Registers this portable copy as the browsers' host, or removes the registration that points to it.</summary>
+    /// <param name="chosenNow">
+    /// The user just chose it. At a start, a host that another copy still on the disk holds (an installed Baton) stays with
+    /// it: only the user's choice takes it over, so two copies never keep taking it from each other.
+    /// </param>
+    private static void ApplyPortableHost(bool allowed, bool chosenNow = false)
+    {
+        var registry = (Core.Platform.PortableUserRegistry)AppEnvironment.Registry;
+        // Writes to the host keys are let through for this change only; the rest of the time the copy writes nothing.
+        registry.AllowBrowserHost = true;
+        try
+        {
+            if (!allowed)
+                AppEnvironment.Registration.Unregister(browserHostOnly: true);
+            else if (chosenNow || !AppEnvironment.Registration.BrowserHostHeldByAnother)
+                BrowserIntegration.Register(DataDirectory);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            Log.Error("portable", "cannot change the browser host", ex);
+        }
+        finally
+        {
+            registry.AllowBrowserHost = false;
+        }
+    }
+
+    /// <summary>After the program replaced itself with an update, "Installed apps" shows the new version.</summary>
+    private static void UpdateInstalledVersion()
+    {
+        try
+        {
+            AppEnvironment.Registration.UpdateInstalledVersion(AppVersion);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            Log.Error("setup", "cannot update the installed version", ex);
+        }
+    }
+
     /// <summary>One start entry at most, pointing at this executable (only if the user turned it on).</summary>
     private static void RepairStartEntry()
     {
@@ -291,7 +373,7 @@ public partial class App : Application
         {
             var runner = new EndActionRunner(
                 power,
-                (action, length) => Task.FromResult(dialogs.ShowCountdown(action, queue.Name, length)),
+                (action, length) => Task.FromResult(dialogs.ShowCountdown(action, queue.DisplayName, length)),
                 _service.ShutdownAsync,
                 window.ExitApp);
             if (await runner.RunAsync(queue.EndAction) && queue.EndAction == EndAction.Shutdown)
@@ -346,7 +428,7 @@ public partial class App : Application
 
             case Messages.Queues:
                 // For the extension's popup: the main queue first, as in the app.
-                var names = _service?.Queues.OrderByDescending(q => q.IsMain).Select(q => q.Name).ToList() ?? [];
+                var names = _service?.Queues.OrderByDescending(q => q.IsMain).Select(q => q.DisplayName).ToList() ?? [];
                 return new ChannelReply(true, Queues: names);
 
             case Messages.Add when message.Download is { } download:

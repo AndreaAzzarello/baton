@@ -56,7 +56,7 @@ public sealed class QueueEditViewModel : ObservableObject
     {
         Original = queue;
         _utcNow = utcNow;
-        _name = queue.Name;
+        _name = queue.DisplayName;
         _maxConcurrent = queue.MaxConcurrent.ToString(CultureInfo.CurrentCulture);
         _retryCount = queue.RetryCount.ToString(CultureInfo.CurrentCulture);
         _retryDelay = queue.RetryDelaySeconds.ToString(CultureInfo.CurrentCulture);
@@ -80,7 +80,8 @@ public sealed class QueueEditViewModel : ObservableObject
     public bool IsNew => Original.Id == 0;
     public IReadOnlyList<DayChoice> Days { get; }
 
-    public static IReadOnlyList<Choice<EndAction>> EndActions { get; } =
+    // Built at every use: the texts follow a change of language (choices compare by value).
+    public static IReadOnlyList<Choice<EndAction>> EndActions =>
         Enum.GetValues<EndAction>().Select(a => new Choice<EndAction>(a, CountdownWindow.ActionText(a))).ToList();
 
     public string Name { get => _name; set => Set(ref _name, value); }
@@ -131,7 +132,7 @@ public sealed class QueueEditViewModel : ObservableObject
     public string? TryBuild(out DownloadQueue queue)
     {
         queue = Original.Clone();
-        queue.Name = Name.Trim();
+        queue.Name = Name.Trim() == Original.DisplayName ? Original.Name : Name.Trim(); // a built-in name shown in another language stays as stored
         if (queue.Name.Length == 0)
             return Strings.ErrorQueueName;
         if (!int.TryParse(MaxConcurrent, out var max) || max is < 1 or > 20)

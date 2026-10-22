@@ -1,24 +1,24 @@
 <Window x:Class="Baton.App.Views.FirstRunWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:r="clr-namespace:Baton.Core.Resources;assembly=Baton.Core"
-        Title="{x:Static r:Strings.FirstRunTitle}" Width="680" Height="700" MinWidth="520" MinHeight="480"
+        xmlns:l="clr-namespace:Baton.App.Services"
+        Title="{l:Loc FirstRunTitle}" Width="680" Height="700" MinWidth="520" MinHeight="480"
         Style="{StaticResource AppWindow}" WindowStartupLocation="CenterScreen">
     <DockPanel Margin="20">
-        <TextBlock DockPanel.Dock="Top" Text="{x:Static r:Strings.FirstRunIntro}" TextWrapping="Wrap" Margin="0,0,0,12" />
+        <TextBlock DockPanel.Dock="Top" Text="{l:Loc FirstRunIntro}" TextWrapping="Wrap" Margin="0,0,0,12" />
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-            <Button Content="{x:Static r:Strings.FirstRunFinish}" Style="{StaticResource PrimaryButton}" Click="OnFinish" IsDefault="True" />
-            <Button Content="{x:Static r:Strings.FirstRunSkip}" Style="{StaticResource DialogButton}" IsCancel="True" ToolTip="{x:Static r:Strings.FirstRunSkipToolTip}" />
+            <Button Content="{l:Loc FirstRunFinish}" Style="{StaticResource PrimaryButton}" Click="OnFinish" IsDefault="True" />
+            <Button Content="{l:Loc FirstRunSkip}" Style="{StaticResource DialogButton}" IsCancel="True" ToolTip="{l:Loc FirstRunSkipToolTip}" />
         </StackPanel>
         <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
             <StackPanel Margin="0,0,16,0">
-                <TextBlock Text="{x:Static r:Strings.FirstRunFolderTitle}" Style="{StaticResource SectionTitle}" />
-                <Label Content="{x:Static r:Strings.SettingsFolder}" Target="{Binding ElementName=FolderBox}" Padding="0" Margin="0,6,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <TextBlock Text="{l:Loc FirstRunFolderTitle}" Style="{StaticResource SectionTitle}" />
+                <Label Content="{l:Loc SettingsFolder}" Target="{Binding ElementName=FolderBox}" Padding="0" Margin="0,6,0,4" Foreground="{DynamicResource MutedBrush}" />
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseCommand}" />
-                    <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.SettingsFolder}" />
+                    <Button DockPanel.Dock="Right" Content="{l:Loc Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseCommand}" />
+                    <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc SettingsFolder}" />
                 </DockPanel>
-                <TextBlock Text="{x:Static r:Strings.FirstRunCategoriesHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,12,0,6" />
+                <TextBlock Text="{l:Loc FirstRunCategoriesHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,12,0,6" />
                 <ItemsControl ItemsSource="{Binding Categories}" Focusable="False">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -31,16 +31,16 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <TextBlock Text="{x:Static r:Strings.FirstRunBrowsersTitle}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
-                <TextBlock Text="{x:Static r:Strings.FirstRunNoBrowsers}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"
+                <TextBlock Text="{l:Loc FirstRunBrowsersTitle}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                <TextBlock Text="{l:Loc FirstRunNoBrowsers}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"
                            Visibility="{Binding NoBrowsers, Converter={StaticResource BoolToVisibility}}" />
                 <ItemsControl ItemsSource="{Binding Browsers}" Focusable="False">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <StackPanel Margin="0,6">
                                 <DockPanel>
-                                    <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.FirstRunCopyPage}" Style="{StaticResource DialogButton}" Command="{Binding CopyPageCommand}"
-                                            AutomationProperties.Name="{Binding Name, StringFormat={x:Static r:Strings.FirstRunCopyPageName}}" />
+                                    <Button DockPanel.Dock="Right" Content="{l:Loc FirstRunCopyPage}" Style="{StaticResource DialogButton}" Command="{Binding CopyPageCommand}"
+                                            AutomationProperties.Name="{Binding CopyPageName}" />
                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 </DockPanel>
                                 <TextBlock Text="{Binding Instructions}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
@@ -49,18 +49,18 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                    <Button Content="{x:Static r:Strings.FirstRunOpenExtensionFolder}" Style="{StaticResource DialogButton}" Margin="0" Command="{Binding OpenExtensionFolderCommand}" />
-                    <Button Content="{x:Static r:Strings.FirstRunVerify}" Style="{StaticResource DialogButton}" Command="{Binding VerifyCommand}" ToolTip="{x:Static r:Strings.FirstRunVerifyToolTip}" />
+                    <Button Content="{l:Loc FirstRunOpenExtensionFolder}" Style="{StaticResource DialogButton}" Margin="0" Command="{Binding OpenExtensionFolderCommand}" />
+                    <Button Content="{l:Loc FirstRunVerify}" Style="{StaticResource DialogButton}" Command="{Binding VerifyCommand}" ToolTip="{l:Loc FirstRunVerifyToolTip}" />
                 </StackPanel>
                 <TextBlock Text="{Binding Connection}" Style="{StaticResource NoteText}" AutomationProperties.LiveSetting="Polite" />
 
-                <TextBlock Text="{x:Static r:Strings.SettingsSystem}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
-                <CheckBox Content="{x:Static r:Strings.SettingsRunAtStartup}" IsChecked="{Binding StartWithWindows}" Margin="0,2" />
-                <TextBlock Text="{x:Static r:Strings.SettingsAppearance}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
-                <StackPanel Orientation="Horizontal" AutomationProperties.Name="{x:Static r:Strings.SettingsTheme}">
-                    <RadioButton Content="{x:Static r:Strings.ThemeSystem}" IsChecked="{Binding ThemeSystem}" GroupName="Theme" Margin="0,0,20,0" />
-                    <RadioButton Content="{x:Static r:Strings.ThemeLight}" IsChecked="{Binding ThemeLight}" GroupName="Theme" Margin="0,0,20,0" />
-                    <RadioButton Content="{x:Static r:Strings.ThemeDark}" IsChecked="{Binding ThemeDark}" GroupName="Theme" />
+                <TextBlock Text="{l:Loc SettingsSystem}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                <CheckBox Content="{l:Loc SettingsRunAtStartup}" IsChecked="{Binding StartWithWindows}" Margin="0,2" />
+                <TextBlock Text="{l:Loc SettingsAppearance}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                <StackPanel Orientation="Horizontal" AutomationProperties.Name="{l:Loc SettingsTheme}">
+                    <RadioButton Content="{l:Loc ThemeSystem}" IsChecked="{Binding ThemeSystem}" GroupName="Theme" Margin="0,0,20,0" />
+                    <RadioButton Content="{l:Loc ThemeLight}" IsChecked="{Binding ThemeLight}" GroupName="Theme" Margin="0,0,20,0" />
+                    <RadioButton Content="{l:Loc ThemeDark}" IsChecked="{Binding ThemeDark}" GroupName="Theme" />
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>

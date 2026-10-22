@@ -1,7 +1,7 @@
 <Window x:Class="Baton.App.Views.LoginWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:r="clr-namespace:Baton.Core.Resources;assembly=Baton.Core"
+        xmlns:l="clr-namespace:Baton.App.Services"
         Width="460" SizeToContent="Height" ResizeMode="NoResize" Topmost="True" ShowInTaskbar="True"
         Style="{StaticResource AppWindow}" WindowStartupLocation="CenterScreen" Icon="/app.ico">
     <StackPanel Margin="22">
@@ -14,18 +14,20 @@
             </StackPanel>
         </DockPanel>
         <TextBlock x:Name="Warning" Style="{StaticResource ErrorText}" />
-        <CheckBox x:Name="PlainBox" Content="{x:Static r:Strings.LoginPlainConfirm}" Margin="0,8,0,0" Visibility="Collapsed"
-                  Checked="OnPlainChanged" Unchecked="OnPlainChanged" />
+        <CheckBox x:Name="PlainBox" Margin="0,8,0,0" Visibility="Collapsed" AutomationProperties.Name="{l:Loc LoginPlainConfirm}"
+                  Checked="OnPlainChanged" Unchecked="OnPlainChanged">
+            <TextBlock Text="{l:Loc LoginPlainConfirm}" TextWrapping="Wrap" />
+        </CheckBox>
 
-        <Label Content="{x:Static r:Strings.LoginUserLabel}" Target="{Binding ElementName=UserBox}" Padding="0" Margin="0,16,0,4" Foreground="{DynamicResource MutedBrush}" />
-        <TextBox x:Name="UserBox" AutomationProperties.Name="{x:Static r:Strings.LoginUserName}" />
-        <Label Content="{x:Static r:Strings.LoginPasswordLabel}" Target="{Binding ElementName=PasswordBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
-        <PasswordBox x:Name="PasswordBox" AutomationProperties.Name="{x:Static r:Strings.LoginPasswordName}" />
-        <CheckBox x:Name="RememberBox" Content="{x:Static r:Strings.LoginRemember}" Margin="0,12,0,0" ToolTip="{x:Static r:Strings.LoginRememberToolTip}" />
+        <Label Content="{l:Loc LoginUserLabel}" Target="{Binding ElementName=UserBox}" Padding="0" Margin="0,16,0,4" Foreground="{DynamicResource MutedBrush}" />
+        <TextBox x:Name="UserBox" AutomationProperties.Name="{l:Loc LoginUserName}" />
+        <Label Content="{l:Loc LoginPasswordLabel}" Target="{Binding ElementName=PasswordBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+        <PasswordBox x:Name="PasswordBox" AutomationProperties.Name="{l:Loc LoginPasswordName}" />
+        <CheckBox x:Name="RememberBox" Content="{l:Loc LoginRemember}" Margin="0,12,0,0" ToolTip="{l:Loc LoginRememberToolTip}" />
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,22,0,0">
-            <Button x:Name="SignInButton" Content="{x:Static r:Strings.LoginSignIn}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnOk" />
-            <Button Content="{x:Static r:Strings.Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
+            <Button x:Name="SignInButton" Content="{l:Loc LoginSignIn}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnOk" />
+            <Button Content="{l:Loc Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
         </StackPanel>
     </StackPanel>
 </Window>

@@ -5,6 +5,8 @@ using FluentFTP;
 using FluentFTP.Exceptions;
 using FluentFTP.Proxy.AsyncProxy;
 using Baton.Core.Security;
+using Baton.Core.Resources;
+using System.Globalization;
 
 namespace Baton.Core.Net;
 
@@ -97,14 +99,14 @@ public sealed class HttpTransport(HttpClient http, bool ownsClient, string url, 
         if (record.SupportsRanges)
         {
             if (response.StatusCode == HttpStatusCode.OK)
-                throw new ResourceChangedException("The server sent the whole file instead of the requested range.");
+                throw new ResourceChangedException(Strings.ErrorWholeFile);
             if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
-                throw new ResourceChangedException("The requested range no longer exists on the server.");
+                throw new ResourceChangedException(Strings.ErrorRangeGone);
             if (!response.IsSuccessStatusCode)
                 throw HttpErrors.FromResponse(response);
             var range = response.Content.Headers.ContentRange;
             if (range?.From != offset || (range.Length is { } length && length != record.TotalSize))
-                throw new ResourceChangedException("The server returned a different range than requested.");
+                throw new ResourceChangedException(Strings.ErrorRangeDiffers);
         }
         else if (!response.IsSuccessStatusCode)
         {
@@ -206,7 +208,7 @@ public sealed class FtpTransport : ITransport
         {
             var size = await client.GetFileSize(_path, -1, ct);
             if (size < 0 && !await client.FileExists(_path, ct))
-                throw new DownloadFailedException("The file does not exist on the FTP server.");
+                throw new DownloadFailedException(Strings.ErrorFtpMissing);
             DateTime? modified = null;
             if (client.HasFeature(FtpCapability.MDTM))
             {
@@ -326,11 +328,11 @@ public sealed class FtpTransport : ITransport
         };
         return code switch
         {
-            "421" => new ServerBusyException($"The FTP server refused the connection: {ex.Message}", ex),
+            "421" => new ServerBusyException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorFtpRefusedConnection, ex.Message), ex),
             "530" => new AuthenticationRequiredException(_url, false, "FTP", _url.Host, "530"),
-            "550" or "553" => new DownloadFailedException($"The FTP server refused the file: {ex.Message}", ex),
-            ['4', _, _] => new IOException($"The FTP server reported a temporary error: {ex.Message}", ex),
-            ['5', _, _] => new DownloadFailedException($"The FTP server reported an error: {ex.Message}", ex),
+            "550" or "553" => new DownloadFailedException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorFtpRefusedFile, ex.Message), ex),
+            ['4', _, _] => new IOException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorFtpTemporary, ex.Message), ex),
+            ['5', _, _] => new DownloadFailedException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorFtp, ex.Message), ex),
             _ when ex is FtpException => new IOException(ex.Message, ex),
             _ => null,
         };

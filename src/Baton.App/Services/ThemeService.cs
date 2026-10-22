@@ -12,8 +12,8 @@ namespace Baton.App.Services;
 /// </summary>
 public sealed class ThemeService
 {
-    private static readonly Uri LightPalette = new("pack://application:,,,/Themes/Light.xaml");
-    private static readonly Uri DarkPalette = new("pack://application:,,,/Themes/Dark.xaml");
+    private static readonly Uri LightPalette = new("pack://application:,,,/Baton;component/Themes/Light.xaml");
+    private static readonly Uri DarkPalette = new("pack://application:,,,/Baton;component/Themes/Dark.xaml");
 
     // The app's blue in the same steps as the Windows accent palette, so Fluent controls match the rest of the UI.
     private static readonly (Func<Color> System, Color App)[] AccentSteps =

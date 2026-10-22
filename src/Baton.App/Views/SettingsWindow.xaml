@@ -1,25 +1,25 @@
 <Window x:Class="Baton.App.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:r="clr-namespace:Baton.Core.Resources;assembly=Baton.Core"
+        xmlns:l="clr-namespace:Baton.App.Services"
         xmlns:vm="clr-namespace:Baton.App.ViewModels"
-        Title="{x:Static r:Strings.SettingsTitle}" Width="660" Height="720" MinWidth="560" MinHeight="560"
+        Title="{l:Loc SettingsTitle}" Width="660" Height="720" MinWidth="560" MinHeight="560"
         Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <DockPanel Margin="20">
         <DockPanel DockPanel.Dock="Bottom" Margin="0,16,0,0">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Content="{x:Static r:Strings.Save}" Style="{StaticResource PrimaryButton}" Click="OnSave" IsDefault="True" />
-                <Button Content="{x:Static r:Strings.Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
+                <Button Content="{l:Loc Save}" Style="{StaticResource PrimaryButton}" Click="OnSave" IsDefault="True" />
+                <Button Content="{l:Loc Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
             </StackPanel>
             <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" Margin="0" VerticalAlignment="Center" AutomationProperties.LiveSetting="Assertive" />
         </DockPanel>
 
-        <TabControl x:Name="Tabs" AutomationProperties.Name="{x:Static r:Strings.SettingsTitle}">
+        <TabControl x:Name="Tabs" AutomationProperties.Name="{l:Loc SettingsTitle}">
             <!-- General -->
-            <TabItem Header="{x:Static r:Strings.SettingsTabGeneral}">
+            <TabItem Header="{l:Loc SettingsTabGeneral}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
                     <StackPanel Margin="4,12,22,4">
-                        <TextBlock Text="{x:Static r:Strings.SettingsDownloads}" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="{l:Loc SettingsDownloads}" Style="{StaticResource SectionTitle}" />
                         <Grid Margin="0,4,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -31,63 +31,72 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <Label Content="{x:Static r:Strings.SettingsConnections}" Target="{Binding ElementName=ConnectionsBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="ConnectionsBox" Grid.Column="1" Margin="0,4" Text="{Binding Connections}" AutomationProperties.Name="{x:Static r:Strings.SettingsConnections}" />
-                            <Label Grid.Row="1" Content="{x:Static r:Strings.SettingsConcurrent}" Target="{Binding ElementName=ConcurrentBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="ConcurrentBox" Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding Concurrent}" AutomationProperties.Name="{x:Static r:Strings.SettingsConcurrent}" />
-                            <Label Grid.Row="2" Content="{x:Static r:Strings.SettingsSpeedLimit}" Target="{Binding ElementName=LimitBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="LimitBox" Grid.Row="2" Grid.Column="1" Margin="0,4" Text="{Binding SpeedLimit}" AutomationProperties.Name="{x:Static r:Strings.SettingsSpeedLimit}" />
-                            <Label Grid.Row="3" Content="{x:Static r:Strings.SettingsGlobalQuota}" Target="{Binding ElementName=QuotaBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="QuotaBox" Grid.Row="3" Grid.Column="1" Margin="0,4" Text="{Binding GlobalQuota}" AutomationProperties.Name="{x:Static r:Strings.SettingsGlobalQuota}" />
+                            <Label Content="{l:Loc SettingsConnections}" Target="{Binding ElementName=ConnectionsBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="ConnectionsBox" Grid.Column="1" Margin="0,4" Text="{Binding Connections}" AutomationProperties.Name="{l:Loc SettingsConnections}" />
+                            <Label Grid.Row="1" Content="{l:Loc SettingsConcurrent}" Target="{Binding ElementName=ConcurrentBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="ConcurrentBox" Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding Concurrent}" AutomationProperties.Name="{l:Loc SettingsConcurrent}" />
+                            <Label Grid.Row="2" Content="{l:Loc SettingsSpeedLimit}" Target="{Binding ElementName=LimitBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="LimitBox" Grid.Row="2" Grid.Column="1" Margin="0,4" Text="{Binding SpeedLimit}" AutomationProperties.Name="{l:Loc SettingsSpeedLimit}" />
+                            <Label Grid.Row="3" Content="{l:Loc SettingsGlobalQuota}" Target="{Binding ElementName=QuotaBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="QuotaBox" Grid.Row="3" Grid.Column="1" Margin="0,4" Text="{Binding GlobalQuota}" AutomationProperties.Name="{l:Loc SettingsGlobalQuota}" />
                         </Grid>
 
-                        <Label Content="{x:Static r:Strings.SettingsFolder}" Target="{Binding ElementName=FolderBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <Label Content="{l:Loc SettingsFolder}" Target="{Binding ElementName=FolderBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
                         <DockPanel>
-                            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseCommand}" />
-                            <TextBox x:Name="FolderBox" Text="{Binding Folder}" AutomationProperties.Name="{x:Static r:Strings.SettingsFolder}" />
+                            <Button DockPanel.Dock="Right" Content="{l:Loc Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseCommand}" />
+                            <TextBox x:Name="FolderBox" Text="{Binding Folder}" AutomationProperties.Name="{l:Loc SettingsFolder}" />
                         </DockPanel>
-                        <TextBlock Text="{x:Static r:Strings.SettingsFolderHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{l:Loc SettingsFolderHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
 
-                        <TextBlock Text="{x:Static r:Strings.SettingsAppearance}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
-                        <StackPanel Orientation="Horizontal" AutomationProperties.Name="{x:Static r:Strings.SettingsTheme}">
-                            <RadioButton Content="{x:Static r:Strings.ThemeSystem}" IsChecked="{Binding ThemeSystem}" GroupName="Theme" Margin="0,0,20,0" />
-                            <RadioButton Content="{x:Static r:Strings.ThemeLight}" IsChecked="{Binding ThemeLight}" GroupName="Theme" Margin="0,0,20,0" />
-                            <RadioButton Content="{x:Static r:Strings.ThemeDark}" IsChecked="{Binding ThemeDark}" GroupName="Theme" />
+                        <TextBlock Text="{l:Loc SettingsAppearance}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                        <StackPanel Orientation="Horizontal" AutomationProperties.Name="{l:Loc SettingsTheme}">
+                            <RadioButton Content="{l:Loc ThemeSystem}" IsChecked="{Binding ThemeSystem}" GroupName="Theme" Margin="0,0,20,0" />
+                            <RadioButton Content="{l:Loc ThemeLight}" IsChecked="{Binding ThemeLight}" GroupName="Theme" Margin="0,0,20,0" />
+                            <RadioButton Content="{l:Loc ThemeDark}" IsChecked="{Binding ThemeDark}" GroupName="Theme" />
                         </StackPanel>
+                        <Label Content="{l:Loc SettingsLanguage}" Target="{Binding ElementName=LanguageBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <ComboBox x:Name="LanguageBox" ItemsSource="{Binding Languages}" SelectedItem="{Binding LanguageChoice}" DisplayMemberPath="Text"
+                                  HorizontalAlignment="Left" MinWidth="240" AutomationProperties.Name="{l:Loc SettingsLanguageName}" />
 
-                        <TextBlock Text="{x:Static r:Strings.SettingsIntegration}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
-                        <CheckBox Content="{x:Static r:Strings.SettingsConfirmBrowser}" IsChecked="{Binding ConfirmBrowserDownloads}" Margin="0,2" />
-                        <CheckBox Content="{x:Static r:Strings.SettingsNotify}" IsChecked="{Binding NotifyOnCompletion}" Margin="0,2" />
+                        <TextBlock Text="{l:Loc SettingsIntegration}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                        <CheckBox Content="{l:Loc SettingsConfirmBrowser}" IsChecked="{Binding ConfirmBrowserDownloads}" Margin="0,2" />
+                        <CheckBox Content="{l:Loc SettingsNotify}" IsChecked="{Binding NotifyOnCompletion}" Margin="0,2" />
 
-                        <TextBlock Text="{x:Static r:Strings.SettingsVideo}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
-                        <Label Content="{x:Static r:Strings.SettingsFfmpegLabel}" Target="{Binding ElementName=FfmpegBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBlock Text="{l:Loc SettingsVideo}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                        <Label Content="{l:Loc SettingsFfmpegLabel}" Target="{Binding ElementName=FfmpegBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
                         <DockPanel>
-                            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseFfmpegCommand}" />
+                            <Button DockPanel.Dock="Right" Content="{l:Loc Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseFfmpegCommand}" />
                             <TextBox x:Name="FfmpegBox" Text="{Binding FfmpegPath, UpdateSourceTrigger=PropertyChanged, Delay=300}"
-                                     AutomationProperties.Name="{x:Static r:Strings.SettingsFfmpegName}" AutomationProperties.HelpText="{Binding FfmpegStatus}" />
+                                     AutomationProperties.Name="{l:Loc SettingsFfmpegName}" AutomationProperties.HelpText="{Binding FfmpegStatus}" />
                         </DockPanel>
                         <TextBlock Text="{Binding FfmpegStatus}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap"
                                    AutomationProperties.LiveSetting="Polite" />
 
-                        <TextBlock Text="{x:Static r:Strings.SettingsSystem}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
-                        <CheckBox Content="{x:Static r:Strings.SettingsRunAtStartup}" IsChecked="{Binding RunAtStartup}" Margin="0,2" />
-                        <CheckBox Content="{x:Static r:Strings.SettingsCloseToTray}" IsChecked="{Binding CloseToTray}" Margin="0,2" />
+                        <TextBlock Text="{l:Loc SettingsSystem}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                        <CheckBox Content="{l:Loc SettingsRunAtStartup}" IsChecked="{Binding RunAtStartup}" IsEnabled="{Binding CanRunAtStartup}" Margin="0,2" />
+                        <TextBlock Text="{l:Loc SettingsPortableNoStartup}" Foreground="{DynamicResource MutedBrush}" Margin="28,0,0,4" TextWrapping="Wrap"
+                                   Visibility="{Binding IsPortable, Converter={StaticResource BoolToVisibility}}" />
+                        <CheckBox Content="{l:Loc SettingsCloseToTray}" IsChecked="{Binding CloseToTray}" Margin="0,2" />
+                        <CheckBox IsChecked="{Binding PortableBrowserHost}" Margin="0,2" AutomationProperties.Name="{l:Loc SettingsPortableHost}"
+                                  Visibility="{Binding IsPortable, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{l:Loc SettingsPortableHost}" TextWrapping="Wrap" />
+                        </CheckBox>
 
-                        <TextBlock Text="{x:Static r:Strings.SettingsConnectionsHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,14,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{l:Loc SettingsConnectionsHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,14,0,0" TextWrapping="Wrap" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- Network -->
-            <TabItem Header="{x:Static r:Strings.SettingsTabNetwork}">
+            <TabItem Header="{l:Loc SettingsTabNetwork}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
                     <StackPanel Margin="4,12,22,4">
-                        <TextBlock Text="{x:Static r:Strings.ProxyTitle}" Style="{StaticResource SectionTitle}" />
-                        <StackPanel AutomationProperties.Name="{x:Static r:Strings.ProxyTitle}" Margin="0,6,0,0">
-                            <RadioButton Content="{x:Static r:Strings.ProxyNone}" IsChecked="{Binding ProxyNone}" GroupName="Proxy" Margin="0,2" />
-                            <RadioButton Content="{x:Static r:Strings.ProxySystem}" IsChecked="{Binding ProxySystem}" GroupName="Proxy" Margin="0,2" />
-                            <RadioButton Content="{x:Static r:Strings.ProxyManual}" IsChecked="{Binding ProxyManual}" GroupName="Proxy" Margin="0,2" />
-                            <RadioButton Content="{x:Static r:Strings.ProxyPac}" IsChecked="{Binding ProxyPac}" GroupName="Proxy" Margin="0,2" />
+                        <TextBlock Text="{l:Loc ProxyTitle}" Style="{StaticResource SectionTitle}" />
+                        <StackPanel AutomationProperties.Name="{l:Loc ProxyTitle}" Margin="0,6,0,0">
+                            <RadioButton Content="{l:Loc ProxyNone}" IsChecked="{Binding ProxyNone}" GroupName="Proxy" Margin="0,2" />
+                            <RadioButton Content="{l:Loc ProxySystem}" IsChecked="{Binding ProxySystem}" GroupName="Proxy" Margin="0,2" />
+                            <RadioButton Content="{l:Loc ProxyManual}" IsChecked="{Binding ProxyManual}" GroupName="Proxy" Margin="0,2" />
+                            <RadioButton Content="{l:Loc ProxyPac}" IsChecked="{Binding ProxyPac}" GroupName="Proxy" Margin="0,2" />
                         </StackPanel>
 
                         <Grid Margin="24,8,0,0" IsEnabled="{Binding ProxyManual}">
@@ -103,37 +112,37 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <Label Content="{x:Static r:Strings.ProxyTypeLabel}" Target="{Binding ElementName=TypeBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <Label Grid.Column="1" Content="{x:Static r:Strings.ProxyHostLabel}" Target="{Binding ElementName=HostBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <Label Grid.Column="3" Content="{x:Static r:Strings.ProxyPortLabel}" Target="{Binding ElementName=PortBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <Label Content="{l:Loc ProxyTypeLabel}" Target="{Binding ElementName=TypeBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <Label Grid.Column="1" Content="{l:Loc ProxyHostLabel}" Target="{Binding ElementName=HostBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <Label Grid.Column="3" Content="{l:Loc ProxyPortLabel}" Target="{Binding ElementName=PortBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
                             <ComboBox x:Name="TypeBox" Grid.Row="1" Margin="0,0,12,0" ItemsSource="{x:Static vm:SettingsViewModel.ProxyTypes}" SelectedItem="{Binding ProxyTypeChoice}"
-                                      AutomationProperties.Name="{x:Static r:Strings.ProxyTypeName}" />
-                            <TextBox x:Name="HostBox" Grid.Row="1" Grid.Column="1" Text="{Binding ProxyHost}" AutomationProperties.Name="{x:Static r:Strings.ProxyHostName}" />
-                            <TextBox x:Name="PortBox" Grid.Row="1" Grid.Column="3" Text="{Binding ProxyPort}" AutomationProperties.Name="{x:Static r:Strings.ProxyPortName}" />
-                            <Label Grid.Row="2" Content="{x:Static r:Strings.ProxyUserLabel}" Target="{Binding ElementName=ProxyUserBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <Label Grid.Row="2" Grid.Column="1" Content="{x:Static r:Strings.ProxyPasswordLabel}" Target="{Binding ElementName=ProxyPasswordBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="ProxyUserBox" Grid.Row="3" Margin="0,0,12,0" Text="{Binding ProxyUser}" AutomationProperties.Name="{x:Static r:Strings.ProxyUserName}" />
+                                      AutomationProperties.Name="{l:Loc ProxyTypeName}" />
+                            <TextBox x:Name="HostBox" Grid.Row="1" Grid.Column="1" Text="{Binding ProxyHost}" AutomationProperties.Name="{l:Loc ProxyHostName}" />
+                            <TextBox x:Name="PortBox" Grid.Row="1" Grid.Column="3" Text="{Binding ProxyPort}" AutomationProperties.Name="{l:Loc ProxyPortName}" />
+                            <Label Grid.Row="2" Content="{l:Loc ProxyUserLabel}" Target="{Binding ElementName=ProxyUserBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <Label Grid.Row="2" Grid.Column="1" Content="{l:Loc ProxyPasswordLabel}" Target="{Binding ElementName=ProxyPasswordBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="ProxyUserBox" Grid.Row="3" Margin="0,0,12,0" Text="{Binding ProxyUser}" AutomationProperties.Name="{l:Loc ProxyUserName}" />
                             <PasswordBox x:Name="ProxyPasswordBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" PasswordChanged="OnProxyPasswordChanged"
-                                         AutomationProperties.Name="{x:Static r:Strings.ProxyPasswordName}" />
+                                         AutomationProperties.Name="{l:Loc ProxyPasswordName}" />
                         </Grid>
 
                         <StackPanel Margin="24,10,0,0" IsEnabled="{Binding ProxyPac}">
-                            <Label Content="{x:Static r:Strings.PacUrlLabel}" Target="{Binding ElementName=PacBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="PacBox" Text="{Binding PacUrl}" AutomationProperties.Name="{x:Static r:Strings.PacUrlName}" />
+                            <Label Content="{l:Loc PacUrlLabel}" Target="{Binding ElementName=PacBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="PacBox" Text="{Binding PacUrl}" AutomationProperties.Name="{l:Loc PacUrlName}" />
                         </StackPanel>
 
-                        <Label Content="{x:Static r:Strings.ProxyBypassLabel}" Target="{Binding ElementName=BypassBox}" Padding="0" Margin="0,14,0,4" Foreground="{DynamicResource MutedBrush}" />
-                        <TextBox x:Name="BypassBox" Text="{Binding ProxyBypass}" AutomationProperties.Name="{x:Static r:Strings.ProxyBypassName}" />
-                        <TextBlock Text="{x:Static r:Strings.ProxyBypassHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                        <Label Content="{l:Loc ProxyBypassLabel}" Target="{Binding ElementName=BypassBox}" Padding="0" Margin="0,14,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBox x:Name="BypassBox" Text="{Binding ProxyBypass}" AutomationProperties.Name="{l:Loc ProxyBypassName}" />
+                        <TextBlock Text="{l:Loc ProxyBypassHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
 
                         <DockPanel Margin="0,14,0,0">
-                            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.ProxyTest}" Style="{StaticResource DialogButton}" Command="{Binding TestProxyCommand}"
-                                    ToolTip="{x:Static r:Strings.ProxyTestToolTip}" />
-                            <TextBox Text="{Binding TestUrl}" AutomationProperties.Name="{x:Static r:Strings.ProxyTestUrlName}" />
+                            <Button DockPanel.Dock="Right" Content="{l:Loc ProxyTest}" Style="{StaticResource DialogButton}" Command="{Binding TestProxyCommand}"
+                                    ToolTip="{l:Loc ProxyTestToolTip}" />
+                            <TextBox Text="{Binding TestUrl}" AutomationProperties.Name="{l:Loc ProxyTestUrlName}" />
                         </DockPanel>
                         <TextBlock Text="{Binding TestResult}" Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}" AutomationProperties.LiveSetting="Polite" />
 
-                        <TextBlock Text="{x:Static r:Strings.ConnectionTitle}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                        <TextBlock Text="{l:Loc ConnectionTitle}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
@@ -143,44 +152,44 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <Label Content="{x:Static r:Strings.TimeoutLabel}" Target="{Binding ElementName=TimeoutBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="TimeoutBox" Grid.Column="1" Margin="0,4" Text="{Binding TimeoutSeconds}" AutomationProperties.Name="{x:Static r:Strings.TimeoutLabel}" />
-                            <Label Grid.Row="1" Content="{x:Static r:Strings.PerServerLabel}" Target="{Binding ElementName=PerServerBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="PerServerBox" Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding MaxPerServer}" AutomationProperties.Name="{x:Static r:Strings.PerServerLabel}" />
+                            <Label Content="{l:Loc TimeoutLabel}" Target="{Binding ElementName=TimeoutBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="TimeoutBox" Grid.Column="1" Margin="0,4" Text="{Binding TimeoutSeconds}" AutomationProperties.Name="{l:Loc TimeoutLabel}" />
+                            <Label Grid.Row="1" Content="{l:Loc PerServerLabel}" Target="{Binding ElementName=PerServerBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="PerServerBox" Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding MaxPerServer}" AutomationProperties.Name="{l:Loc PerServerLabel}" />
                         </Grid>
-                        <Label Content="{x:Static r:Strings.UserAgentLabel}" Target="{Binding ElementName=AgentBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
-                        <TextBox x:Name="AgentBox" Text="{Binding UserAgent}" AutomationProperties.Name="{x:Static r:Strings.UserAgentName}" />
-                        <CheckBox Content="{x:Static r:Strings.FtpActiveMode}" IsChecked="{Binding FtpActiveMode}" Margin="0,12,0,0" ToolTip="{x:Static r:Strings.FtpActiveModeToolTip}" />
+                        <Label Content="{l:Loc UserAgentLabel}" Target="{Binding ElementName=AgentBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBox x:Name="AgentBox" Text="{Binding UserAgent}" AutomationProperties.Name="{l:Loc UserAgentName}" />
+                        <CheckBox Content="{l:Loc FtpActiveMode}" IsChecked="{Binding FtpActiveMode}" Margin="0,12,0,0" ToolTip="{l:Loc FtpActiveModeToolTip}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- After the download: hash and antivirus -->
-            <TabItem Header="{x:Static r:Strings.SettingsTabChecks}">
+            <TabItem Header="{l:Loc SettingsTabChecks}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
                     <StackPanel Margin="4,12,22,4">
-                        <TextBlock Text="{x:Static r:Strings.SettingsHashTitle}" Style="{StaticResource SectionTitle}" />
-                        <CheckBox Content="{x:Static r:Strings.SettingsHashOnCompletion}" IsChecked="{Binding ComputeHashOnCompletion}" Margin="0,6,0,0" />
+                        <TextBlock Text="{l:Loc SettingsHashTitle}" Style="{StaticResource SectionTitle}" />
+                        <CheckBox Content="{l:Loc SettingsHashOnCompletion}" IsChecked="{Binding ComputeHashOnCompletion}" Margin="0,6,0,0" />
                         <DockPanel Margin="24,8,0,0" IsEnabled="{Binding ComputeHashOnCompletion}">
-                            <Label Content="{x:Static r:Strings.SettingsHashAlgorithm}" Target="{Binding ElementName=AlgorithmBox}" VerticalAlignment="Center" Padding="0" Margin="0,0,12,0"
+                            <Label Content="{l:Loc SettingsHashAlgorithm}" Target="{Binding ElementName=AlgorithmBox}" VerticalAlignment="Center" Padding="0" Margin="0,0,12,0"
                                    Foreground="{DynamicResource MutedBrush}" />
                             <ComboBox x:Name="AlgorithmBox" Width="140" HorizontalAlignment="Left" ItemsSource="{x:Static vm:SettingsViewModel.HashAlgorithms}"
-                                      SelectedItem="{Binding HashAlgorithmChoice}" DisplayMemberPath="Text" AutomationProperties.Name="{x:Static r:Strings.SettingsHashAlgorithm}" />
+                                      SelectedItem="{Binding HashAlgorithmChoice}" DisplayMemberPath="Text" AutomationProperties.Name="{l:Loc SettingsHashAlgorithm}" />
                         </DockPanel>
-                        <TextBlock Text="{x:Static r:Strings.SettingsHashHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{l:Loc SettingsHashHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,0" TextWrapping="Wrap" />
 
-                        <TextBlock Text="{x:Static r:Strings.SettingsScanTitle}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
-                        <CheckBox Content="{x:Static r:Strings.SettingsScanOnCompletion}" IsChecked="{Binding ScanOnCompletion}" Margin="0,2" />
+                        <TextBlock Text="{l:Loc SettingsScanTitle}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                        <CheckBox Content="{l:Loc SettingsScanOnCompletion}" IsChecked="{Binding ScanOnCompletion}" Margin="0,2" />
                         <StackPanel Margin="24,8,0,0">
-                            <Label Content="{x:Static r:Strings.SettingsScannerLabel}" Target="{Binding ElementName=ScannerBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <Label Content="{l:Loc SettingsScannerLabel}" Target="{Binding ElementName=ScannerBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
                             <DockPanel>
-                                <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseScannerCommand}" />
+                                <Button DockPanel.Dock="Right" Content="{l:Loc Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseScannerCommand}" />
                                 <TextBox x:Name="ScannerBox" Text="{Binding ScannerPath, UpdateSourceTrigger=PropertyChanged, Delay=300}"
-                                         AutomationProperties.Name="{x:Static r:Strings.SettingsScannerLabel}" AutomationProperties.HelpText="{Binding ScannerStatus}" />
+                                         AutomationProperties.Name="{l:Loc SettingsScannerLabel}" AutomationProperties.HelpText="{Binding ScannerStatus}" />
                             </DockPanel>
                             <TextBlock Text="{Binding ScannerStatus}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
-                            <Label Content="{x:Static r:Strings.SettingsScannerArguments}" Target="{Binding ElementName=ScanArgsBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="ScanArgsBox" Text="{Binding ScannerArguments}" AutomationProperties.Name="{x:Static r:Strings.SettingsScannerArguments}" />
+                            <Label Content="{l:Loc SettingsScannerArguments}" Target="{Binding ElementName=ScanArgsBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="ScanArgsBox" Text="{Binding ScannerArguments}" AutomationProperties.Name="{l:Loc SettingsScannerArguments}" />
                             <Grid Margin="0,8,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -190,40 +199,40 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
-                                <Label Content="{x:Static r:Strings.SettingsScanCodes}" Target="{Binding ElementName=ScanCodesBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
-                                <TextBox x:Name="ScanCodesBox" Grid.Column="1" Margin="0,4" Text="{Binding ScanThreatCodes}" AutomationProperties.Name="{x:Static r:Strings.SettingsScanCodes}" />
-                                <Label Grid.Row="1" Content="{x:Static r:Strings.SettingsScanTimeout}" Target="{Binding ElementName=ScanTimeoutBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
-                                <TextBox x:Name="ScanTimeoutBox" Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding ScanTimeout}" AutomationProperties.Name="{x:Static r:Strings.SettingsScanTimeout}" />
+                                <Label Content="{l:Loc SettingsScanCodes}" Target="{Binding ElementName=ScanCodesBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
+                                <TextBox x:Name="ScanCodesBox" Grid.Column="1" Margin="0,4" Text="{Binding ScanThreatCodes}" AutomationProperties.Name="{l:Loc SettingsScanCodes}" />
+                                <Label Grid.Row="1" Content="{l:Loc SettingsScanTimeout}" Target="{Binding ElementName=ScanTimeoutBox}" VerticalAlignment="Center" Padding="0" Foreground="{DynamicResource MutedBrush}" />
+                                <TextBox x:Name="ScanTimeoutBox" Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding ScanTimeout}" AutomationProperties.Name="{l:Loc SettingsScanTimeout}" />
                             </Grid>
-                            <Button HorizontalAlignment="Left" Margin="0,8,0,0" Content="{x:Static r:Strings.SettingsScannerReset}" Style="{StaticResource DialogButton}" Command="{Binding ResetScannerCommand}" />
+                            <Button HorizontalAlignment="Left" Margin="0,8,0,0" Content="{l:Loc SettingsScannerReset}" Style="{StaticResource DialogButton}" Command="{Binding ResetScannerCommand}" />
                         </StackPanel>
-                        <TextBlock Text="{x:Static r:Strings.SettingsScanHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,12,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{l:Loc SettingsScanHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,12,0,0" TextWrapping="Wrap" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- Updates -->
-            <TabItem Header="{x:Static r:Strings.SettingsTabUpdates}">
+            <TabItem Header="{l:Loc SettingsTabUpdates}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
                     <StackPanel Margin="4,12,22,4">
                         <TextBlock Text="{Binding CurrentVersionText}" Margin="0,0,0,12" />
-                        <CheckBox Content="{x:Static r:Strings.SettingsUpdateCheck}" IsChecked="{Binding UpdateCheckEnabled}" Margin="0,2" />
-                        <Label Content="{x:Static r:Strings.SettingsUpdateUrl}" Target="{Binding ElementName=UpdateUrlBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <CheckBox Content="{l:Loc SettingsUpdateCheck}" IsChecked="{Binding UpdateCheckEnabled}" Margin="0,2" />
+                        <Label Content="{l:Loc SettingsUpdateUrl}" Target="{Binding ElementName=UpdateUrlBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
                         <DockPanel>
-                            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.SettingsUpdateCheckNow}" Style="{StaticResource DialogButton}" Command="{Binding CheckUpdatesCommand}" />
-                            <TextBox x:Name="UpdateUrlBox" Text="{Binding UpdateUrl}" AutomationProperties.Name="{x:Static r:Strings.SettingsUpdateUrl}" />
+                            <Button DockPanel.Dock="Right" Content="{l:Loc SettingsUpdateCheckNow}" Style="{StaticResource DialogButton}" Command="{Binding CheckUpdatesCommand}" />
+                            <TextBox x:Name="UpdateUrlBox" Text="{Binding UpdateUrl}" AutomationProperties.Name="{l:Loc SettingsUpdateUrl}" />
                         </DockPanel>
-                        <TextBlock Text="{x:Static r:Strings.SettingsUpdateHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
-                        <TextBlock Text="{x:Static r:Strings.SettingsRestoreTitle}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
-                        <TextBlock Text="{x:Static r:Strings.SettingsRestoreHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" />
-                        <Button HorizontalAlignment="Left" Margin="0,8,0,0" Content="{x:Static r:Strings.SettingsRestorePrevious}" Style="{StaticResource DialogButton}"
+                        <TextBlock Text="{l:Loc SettingsUpdateHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{l:Loc SettingsRestoreTitle}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
+                        <TextBlock Text="{l:Loc SettingsRestoreHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" />
+                        <Button HorizontalAlignment="Left" Margin="0,8,0,0" Content="{l:Loc SettingsRestorePrevious}" Style="{StaticResource DialogButton}"
                                 Command="{Binding RestorePreviousCommand}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- Logins and certificates -->
-            <TabItem Header="{x:Static r:Strings.SettingsTabCredentials}">
+            <TabItem Header="{l:Loc SettingsTabCredentials}">
                 <Grid Margin="4,12,12,4">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -234,40 +243,40 @@
                         <RowDefinition Height="110" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <TextBlock Text="{x:Static r:Strings.CredentialsHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                    <TextBlock Text="{l:Loc CredentialsHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="16" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <ListBox ItemsSource="{Binding Logins}" SelectedItem="{Binding SelectedLogin}" AutomationProperties.Name="{x:Static r:Strings.CredentialsListName}"
+                        <ListBox ItemsSource="{Binding Logins}" SelectedItem="{Binding SelectedLogin}" AutomationProperties.Name="{l:Loc CredentialsListName}"
                                  Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" />
                         <StackPanel Grid.Column="2">
-                            <Label Content="{x:Static r:Strings.LoginHostLabel}" Target="{Binding ElementName=LoginHostBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="LoginHostBox" Text="{Binding LoginHost, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.LoginHostName}" />
-                            <Label Content="{x:Static r:Strings.LoginUserLabel}" Target="{Binding ElementName=LoginUserBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="LoginUserBox" Text="{Binding LoginUser, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.LoginUserName}" />
-                            <Label Content="{x:Static r:Strings.LoginPasswordLabel}" Target="{Binding ElementName=LoginPasswordBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <PasswordBox x:Name="LoginPasswordBox" PasswordChanged="OnLoginPasswordChanged" AutomationProperties.Name="{x:Static r:Strings.LoginPasswordName}"
-                                         ToolTip="{x:Static r:Strings.LoginPasswordKeep}" />
-                            <CheckBox Content="{x:Static r:Strings.LoginWindowsAccount}" IsChecked="{Binding LoginWindowsAccount}" Margin="0,10,0,0"
-                                      ToolTip="{x:Static r:Strings.LoginWindowsAccountToolTip}" />
+                            <Label Content="{l:Loc LoginHostLabel}" Target="{Binding ElementName=LoginHostBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="LoginHostBox" Text="{Binding LoginHost, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc LoginHostName}" />
+                            <Label Content="{l:Loc LoginUserLabel}" Target="{Binding ElementName=LoginUserBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="LoginUserBox" Text="{Binding LoginUser, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc LoginUserName}" />
+                            <Label Content="{l:Loc LoginPasswordLabel}" Target="{Binding ElementName=LoginPasswordBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <PasswordBox x:Name="LoginPasswordBox" PasswordChanged="OnLoginPasswordChanged" AutomationProperties.Name="{l:Loc LoginPasswordName}"
+                                         ToolTip="{l:Loc LoginPasswordKeep}" />
+                            <CheckBox Content="{l:Loc LoginWindowsAccount}" IsChecked="{Binding LoginWindowsAccount}" Margin="0,10,0,0"
+                                      ToolTip="{l:Loc LoginWindowsAccountToolTip}" />
                             <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                                <Button Content="{x:Static r:Strings.LoginNew}" Style="{StaticResource DialogButton}" Margin="0" MinWidth="0" Command="{Binding NewLoginCommand}" />
-                                <Button Content="{x:Static r:Strings.LoginSave}" Style="{StaticResource DialogButton}" MinWidth="0" Command="{Binding SaveLoginCommand}" />
-                                <Button Content="{x:Static r:Strings.LoginDelete}" Style="{StaticResource DialogButton}" MinWidth="0" Command="{Binding DeleteLoginCommand}" />
+                                <Button Content="{l:Loc LoginNew}" Style="{StaticResource DialogButton}" Margin="0" MinWidth="0" Command="{Binding NewLoginCommand}" />
+                                <Button Content="{l:Loc LoginSave}" Style="{StaticResource DialogButton}" MinWidth="0" Command="{Binding SaveLoginCommand}" />
+                                <Button Content="{l:Loc LoginDelete}" Style="{StaticResource DialogButton}" MinWidth="0" Command="{Binding DeleteLoginCommand}" />
                             </StackPanel>
                         </StackPanel>
                     </Grid>
                     <TextBlock Grid.Row="2" Text="{Binding LoginMessage}" Style="{StaticResource NoteText}" AutomationProperties.LiveSetting="Polite" />
 
-                    <TextBlock Grid.Row="3" Text="{x:Static r:Strings.CertificatesTitle}" Style="{StaticResource SectionTitle}" Margin="0,16,0,4" />
-                    <TextBlock Grid.Row="4" Text="{x:Static r:Strings.CertificatesHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                    <TextBlock Grid.Row="3" Text="{l:Loc CertificatesTitle}" Style="{StaticResource SectionTitle}" Margin="0,16,0,4" />
+                    <TextBlock Grid.Row="4" Text="{l:Loc CertificatesHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,6" />
                     <ListBox Grid.Row="5" ItemsSource="{Binding Certificates}" SelectedItem="{Binding SelectedCertificate}" DisplayMemberPath="Text"
-                             AutomationProperties.Name="{x:Static r:Strings.CertificatesListName}"
+                             AutomationProperties.Name="{l:Loc CertificatesListName}"
                              Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" />
-                    <Button Grid.Row="6" HorizontalAlignment="Left" Margin="0,8,0,0" Content="{x:Static r:Strings.CertificateForget}" Style="{StaticResource DialogButton}"
+                    <Button Grid.Row="6" HorizontalAlignment="Left" Margin="0,8,0,0" Content="{l:Loc CertificateForget}" Style="{StaticResource DialogButton}"
                             Command="{Binding ForgetCertificateCommand}" />
                 </Grid>
             </TabItem>

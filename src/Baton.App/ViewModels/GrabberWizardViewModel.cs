@@ -152,7 +152,7 @@ public sealed class GrabberWizardViewModel : ObservableObject
         _folderChosen = project.Folder.Length > 0;
         _folder = project.Folder;
 
-        Categories = [new CategoryChoice(null, Strings.BatchCategoryAuto), .. categories.Select(c => new CategoryChoice(c, c.Name))];
+        Categories = [new CategoryChoice(null, Strings.BatchCategoryAuto), .. categories.Select(c => new CategoryChoice(c, c.DisplayName))];
         _category = Categories.FirstOrDefault(c => c.Category?.Id == project.CategoryId) ?? Categories[0];
         Queues = queues;
         _queue = queues.FirstOrDefault(q => q.Id == project.QueueId) ?? queues.FirstOrDefault(q => q.IsMain) ?? queues.FirstOrDefault();

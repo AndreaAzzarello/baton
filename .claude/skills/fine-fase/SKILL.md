@@ -20,12 +20,18 @@ Segui i passi in ordine; se uno fallisce, correggi e riparti da quel passo. Non 
 6. **Ripubblicazione** (chiude l'app dell'utente):
    - controlla che non ci siano download in corso nel DB reale (`%LOCALAPPDATA%\Baton\downloads.db`, `status=1`);
      se ci sono, chiedi all'utente;
-   - ferma solo `publish\Baton.exe`, poi
-     `dotnet publish src\Baton.App -c Release -r win-x64 -o publish`.
-7. **Riavvio e verifica** dell'app reale, senza variabili `BATON_DATA`/`DOWNLOADMANAGER_DATA`: `Start-Process publish\Baton.exe --tray`, poi
+   - pubblica dopo il commit finale (la versione nell'exe contiene l'hash del commit):
+     `dotnet publish src\Baton.App -c Release -r win-x64 -o publish -p:ContinuousIntegrationBuild=true`, firma ECDSA
+     (`sign-release.ps1`, poi `-Exe` sull'installer), `tools\build-packages.ps1`;
+   - dalla 1.3 l'app reale è installata: chiudila (icona nell'area di notifica › Esci, o ferma solo
+     `%LOCALAPPDATA%\Programs\Baton\Baton.exe`) e installa sopra il nuovo setup, senza `BATON_DATA`:
+     `Baton-Setup-<versione>.exe /VERYSILENT /SUPPRESSMSGBOXES /MERGETASKS=desktopicon`.
+7. **Riavvio e verifica** dell'app reale, senza variabili `BATON_DATA`/`DOWNLOADMANAGER_DATA`:
+   `Start-Process "$env:LOCALAPPDATA\Programs\Baton\Baton.exe" --tray`, poi
    - `user_version` del DB e numero di download invariati, backup `.v<N>.bak` presente se c'è stata migrazione;
+   - versione in App installate (`HKCU\...\Uninstall\{27469723-AE14-4420-B2B4-189B8BE709AB}_is1`) uguale a quella nuova;
    - `HKCU\Software\{Google\Chrome,Microsoft\Edge,Chromium,BraveSoftware\Brave-Browser,Mozilla}\NativeMessagingHosts\com.andreaazzarello.baton` (e nessuna `com.downloadmanager.host`)
-     e i due manifest in `%LOCALAPPDATA%\Baton` puntano a `publish\Baton.exe`;
+     e i due manifest in `%LOCALAPPDATA%\Baton` puntano all'exe installato (mai a `publish\`);
    - `HKCU\Software\Classes\baton\shell\open\command` e l'icona di `AppUserModelId\Baton.App` corretti, niente `Classes\downloadmanager`;
    - la chiave Run non ha voci Baton o DownloadManager che l'utente non ha chiesto;
    - nessun riferimento a `bin\Debug`, `dm-trials` o alla scratchpad: `reg query HKCU /s /f <testo> /d`;

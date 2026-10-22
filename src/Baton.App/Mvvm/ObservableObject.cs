@@ -6,6 +6,32 @@ namespace Baton.App.Mvvm;
 
 public abstract class ObservableObject : INotifyPropertyChanged
 {
+    // Every live view model, so a language change can refresh texts computed in code (weak: closed windows are not kept).
+    private static readonly List<WeakReference<ObservableObject>> Live = [];
+
+    protected ObservableObject()
+    {
+        lock (Live)
+        {
+            if (Live.Count > 0 && Live.Count % 4096 == 0)
+                Live.RemoveAll(r => !r.TryGetTarget(out _));
+            Live.Add(new WeakReference<ObservableObject>(this));
+        }
+    }
+
+    /// <summary>Refreshes every binding of every live view model (after a language change).</summary>
+    public static void RefreshAll()
+    {
+        List<ObservableObject> alive;
+        lock (Live)
+        {
+            Live.RemoveAll(r => !r.TryGetTarget(out _));
+            alive = [.. Live.Select(r => r.TryGetTarget(out var o) ? o : null).OfType<ObservableObject>()];
+        }
+        foreach (var item in alive)
+            item.OnPropertyChanged(string.Empty);
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null)

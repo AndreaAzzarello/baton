@@ -41,7 +41,8 @@ public sealed class SettingsViewModel : ObservableObject
     private string? _loginMessage;
     private CertificateEntry? _selectedCertificate;
 
-    public SettingsViewModel(IDialogService dialogs, AppSettings current, bool runAtStartup,
+    /// <param name="runAtStartup">Null for the portable copy, which cannot start with Windows.</param>
+    public SettingsViewModel(IDialogService dialogs, AppSettings current, bool? runAtStartup,
         CredentialStore? credentials = null, CertificateTrust? certificates = null,
         Func<string, Task>? checkUpdates = null, Action? restorePreviousVersion = null)
     {
@@ -49,7 +50,8 @@ public sealed class SettingsViewModel : ObservableObject
         _original = current.Clone();
         _credentials = credentials ?? new CredentialStore(null);
         _certificates = certificates ?? new CertificateTrust(null);
-        RunAtStartup = runAtStartup;
+        RunAtStartup = runAtStartup ?? false;
+        CanRunAtStartup = runAtStartup is not null;
         CloseToTray = current.CloseToTray;
         GlobalQuota = current.GlobalQuotaMBPerHour.ToString(CultureInfo.CurrentCulture);
         Connections = current.MaxConnections.ToString(CultureInfo.CurrentCulture);
@@ -59,6 +61,8 @@ public sealed class SettingsViewModel : ObservableObject
         ConfirmBrowserDownloads = current.ConfirmBrowserDownloads;
         NotifyOnCompletion = current.NotifyOnCompletion;
         Theme = current.Theme;
+        LanguageChoice = Languages.First(l => l.Value == current.Language);
+        PortableBrowserHost = current.PortableBrowserHost == true;
 
         _proxyMode = current.ProxyMode;
         ProxyTypeChoice = ProxyTypes.First(t => t.Value == current.ProxyType);
@@ -164,9 +168,24 @@ public sealed class SettingsViewModel : ObservableObject
     public ICommand BrowseFfmpegCommand { get; }
     public bool NotifyOnCompletion { get; set; }
     public bool RunAtStartup { get; set; }
+    public bool CanRunAtStartup { get; }
+    public bool IsPortable => !CanRunAtStartup;
+
+    /// <summary>Portable copy: registered as the browsers' native messaging host (the only thing it writes to the registry).</summary>
+    public bool PortableBrowserHost { get; set; }
     public bool CloseToTray { get; set; }
     public string GlobalQuota { get; set; }
     public AppTheme Theme { get; set; }
+
+    /// <summary>Each language by its own name, so it can be found whatever the current one.</summary>
+    public IReadOnlyList<Choice<AppLanguage>> Languages { get; } =
+    [
+        new(AppLanguage.Automatic, Strings.LanguageAutomatic),
+        new(AppLanguage.English, "English"),
+        new(AppLanguage.Italian, "Italiano"),
+    ];
+
+    public Choice<AppLanguage> LanguageChoice { get; set; }
 
     // One property per radio button keeps the XAML free of converters.
     public bool ThemeSystem { get => Theme == AppTheme.System; set { if (value) Theme = AppTheme.System; } }
@@ -354,6 +373,9 @@ public sealed class SettingsViewModel : ObservableObject
             result.FfmpegPath = FfmpegPath.Trim();
             result.NotifyOnCompletion = NotifyOnCompletion;
             result.Theme = Theme;
+            result.Language = LanguageChoice.Value;
+            if (!CanRunAtStartup)
+                result.PortableBrowserHost = PortableBrowserHost == (_original.PortableBrowserHost == true) ? _original.PortableBrowserHost : PortableBrowserHost; // untouched: not asked stays not asked
             result.CloseToTray = CloseToTray;
             result.GlobalQuotaMBPerHour = quota;
             result.ComputeHashOnCompletion = ComputeHashOnCompletion;

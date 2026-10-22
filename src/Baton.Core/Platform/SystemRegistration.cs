@@ -34,6 +34,9 @@ public sealed class SystemRegistration(IUserRegistry registry, string executable
     /// <summary>Where Firefox looks up native messaging hosts for the current user.</summary>
     public const string FirefoxHostKey = @"Software\Mozilla\NativeMessagingHosts";
 
+    /// <summary>The installer's entry in "Installed apps" (Inno Setup's AppId followed by "_is1"; see installer\Baton.iss).</summary>
+    public const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\{27469723-AE14-4420-B2B4-189B8BE709AB}_is1";
+
     public string Executable => executable;
 
     /// <summary>
@@ -130,6 +133,120 @@ public sealed class SystemRegistration(IUserRegistry registry, string executable
         }
         if (startedWithWindows)
             SetStartWithWindows(true);
+    }
+
+    /// <summary>This executable is the one the installer put in place (and "Installed apps" lists).</summary>
+    public bool IsInstalledCopy =>
+        registry.GetString(UninstallKey, "InstallLocation") is { Length: > 0 } location
+        && SamePath(location, Path.GetDirectoryName(executable) ?? "");
+
+    /// <summary>After an update the program replaced itself: "Installed apps" shows the new version.</summary>
+    public void UpdateInstalledVersion(string version)
+    {
+        if (IsInstalledCopy && registry.GetString(UninstallKey, "DisplayVersion") != version)
+            registry.SetString(UninstallKey, "DisplayVersion", version);
+    }
+
+    /// <summary>The programs this user's registrations point to: link scheme, start with Windows and browser hosts.</summary>
+    public IReadOnlyList<string> RegisteredPrograms()
+    {
+        var programs = new List<string?>
+        {
+            ProgramOf(registry.GetString($@"Software\Classes\{LinkScheme}\shell\open\command", null)),
+            ProgramOf(registry.GetString(RunKey, RunValue)),
+        };
+        foreach (var key in BrowserHostKeys.Append(FirefoxHostKey))
+            programs.Add(HostProgram($@"{key}\{NativeHost.Name}"));
+        return programs.OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    /// <summary>
+    /// Removes what points to this executable: the browsers' host (and its manifest files), and unless only the host is
+    /// asked for, the link scheme with the notification identity and the start-with-Windows entry. Whatever points to
+    /// another copy of the app stays: uninstalling one copy never breaks another.
+    /// </summary>
+    public void Unregister(bool browserHostOnly = false)
+    {
+        // All read first: the Chromium browsers share one manifest file, deleted only at the end.
+        var ours = BrowserHostKeys.Append(FirefoxHostKey).Select(k => $@"{k}\{NativeHost.Name}")
+            .Where(key => HostProgram(key) is { } program && SamePath(program, executable))
+            .Select(key => (Key: key, Manifest: registry.GetString(key, null)!))
+            .ToList();
+        foreach (var (key, _) in ours)
+            registry.DeleteKey(key);
+        foreach (var manifest in ours.Select(o => o.Manifest).Distinct(StringComparer.OrdinalIgnoreCase))
+            TryDelete(manifest);
+        if (browserHostOnly)
+            return;
+        var scheme = $@"Software\Classes\{LinkScheme}";
+        if (ProgramOf(registry.GetString($@"{scheme}\shell\open\command", null)) is { } linked && SamePath(linked, executable))
+        {
+            registry.DeleteKey(scheme);
+            registry.DeleteKey($@"Software\Classes\AppUserModelId\{AppUserModelId}");
+        }
+        if (ProgramOf(registry.GetString(RunKey, RunValue)) is { } started && SamePath(started, executable))
+            registry.DeleteValue(RunKey, RunValue);
+    }
+
+    /// <summary>The browsers' host points to another copy of the app that is still on the disk.</summary>
+    public bool BrowserHostHeldByAnother =>
+        BrowserHostKeys.Append(FirefoxHostKey).Select(k => HostProgram($@"{k}\{NativeHost.Name}"))
+            .Any(program => program is not null && !SamePath(program, executable) && File.Exists(program));
+
+    /// <summary>The program named by a host manifest ("path"), when the manifest can be read.</summary>
+    private string? HostProgram(string key)
+    {
+        if (registry.GetString(key, null) is not { Length: > 0 } manifest)
+            return null;
+        try
+        {
+            using var json = JsonDocument.Parse(File.ReadAllText(manifest));
+            return json.RootElement.TryGetProperty("path", out var path) ? path.GetString() : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The program of a command line: "C:\x\Baton.exe" --tray gives C:\x\Baton.exe.</summary>
+    public static string? ProgramOf(string? command)
+    {
+        if (string.IsNullOrWhiteSpace(command))
+            return null;
+        command = command.Trim();
+        if (command.StartsWith('"'))
+        {
+            var end = command.IndexOf('"', 1);
+            return end > 1 ? command[1..end] : null;
+        }
+        var space = command.IndexOf(' ');
+        return space < 0 ? command : command[..space];
+    }
+
+    private static bool SamePath(string a, string b)
+    {
+        try
+        {
+            return string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(a)), Path.TrimEndingDirectorySeparator(Path.GetFullPath(b)),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+    }
+
+    private static void TryDelete(string file)
+    {
+        try
+        {
+            File.Delete(file);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            // Only a leftover file in the data folder.
+        }
     }
 
     /// <summary>Back to DownloadManager (1.1): if Baton started with Windows, the old program does again, never otherwise.</summary>

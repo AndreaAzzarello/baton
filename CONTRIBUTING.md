@@ -59,11 +59,13 @@ The [full guide](README.it.md#struttura) (Italian) describes every folder.
 
 Texts are generated, never edited by hand:
 
-- **App**: keys and Italian texts live in the table inside `tools/make_resx.py`; run `python tools/make_resx.py src` to
-  regenerate `src/Baton.Core/Resources/Strings.resx` (it reports missing and unused keys).
+- **App**: `tools/make_resx.py` holds `(English, Italian)` pairs; run `python tools/make_resx.py src` to regenerate
+  `Strings.resx` (English, the neutral language) and `Strings.it.resx` (it reports missing and unused keys and stops on
+  different placeholders). In XAML use `{l:Loc Key}`, so the text follows a language change at once.
 - **Extension**: `tools/make_locales.py` holds `(English, Italian)` pairs; run `python tools/make_locales.py extension`.
-- **New app language**: add `src/Baton.Core/Resources/Strings.<lang>.resx` (for example `Strings.en.resx`) with the
-  same keys as `Strings.resx`. Translations are very welcome: the app UI is currently Italian only.
+- **Layout**: `python tools/make_resx.py src --pseudo` adds a pseudo-language 40% longer; `WindowGalleryTests` (with
+  `BATON_SHOTS=<folder>` for pictures) shows every window and fails on cut texts.
+- **New app language**: a third column in the table (and a choice in Settings › Language) is welcome: open an issue first.
 
 ## Brand
 
@@ -85,6 +87,6 @@ Grazie! Sono benvenuti segnalazioni, traduzioni, documentazione e codice.
   schema del database richiede un passo `MigrateToN` con backup.
 - **Stile**: codice e commenti in inglese, commenti sul *perché*, nomi accessibili e navigazione da tastiera per ogni
   controllo, segreti cifrati con DPAPI e mai nei log, solo codice originale e nessun riferimento ad altri prodotti.
-- **Testi**: mai a mano nei file generati. App: tabella in `tools/make_resx.py`, poi `python tools/make_resx.py src`.
-  Estensione: `tools/make_locales.py`, poi `python tools/make_locales.py extension`. Per una nuova lingua dell'app aggiungi
-  `Strings.<lingua>.resx` accanto a `Strings.resx`.
+- **Testi**: mai a mano nei file generati. App: coppie inglese/italiano in `tools/make_resx.py`, poi
+  `python tools/make_resx.py src`; in XAML `{l:Loc Chiave}`. Estensione: `tools/make_locales.py`, poi
+  `python tools/make_locales.py extension`. Per una nuova lingua dell'app apri prima una issue.

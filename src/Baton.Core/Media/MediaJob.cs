@@ -222,7 +222,7 @@ public sealed class MediaJob : IDownloadJob
                     }
                     catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                     {
-                        throw new TimeoutException($"No data received for {_options.ReadTimeout.TotalSeconds:0} s.");
+                        throw new TimeoutException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorNoData, _options.ReadTimeout.TotalSeconds));
                     }
                 }
                 if (read == 0)
@@ -255,12 +255,12 @@ public sealed class MediaJob : IDownloadJob
         if (range is not null && counted != limit)
         {
             Interlocked.Add(ref _downloaded, -counted);
-            throw new IOException("The server closed the connection early.");
+            throw new IOException(Strings.ErrorClosedEarly);
         }
         if (response.Content.Headers.ContentLength is { } expected && range is null && counted != expected)
         {
             Interlocked.Add(ref _downloaded, -counted);
-            throw new IOException("The server closed the connection early.");
+            throw new IOException(Strings.ErrorClosedEarly);
         }
         return 0; // counted bytes stay: the segment is complete
     }

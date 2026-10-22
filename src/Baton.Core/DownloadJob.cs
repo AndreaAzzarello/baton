@@ -1,6 +1,8 @@
 using System.Buffers;
 using System.Net;
 using Baton.Core.Net;
+using Baton.Core.Resources;
+using System.Globalization;
 
 namespace Baton.Core;
 
@@ -152,7 +154,7 @@ public sealed class DownloadJob : IDownloadJob
                     if (_scheduler.AllComplete || ct.IsCancellationRequested)
                         break;
                     if (connections == 1 && BytesDownloaded == before)
-                        throw new DownloadFailedException("The server refused every connection.");
+                        throw new DownloadFailedException(Strings.ErrorAllConnectionsRefused);
                     // Retired connections can leave a range nobody picked up: finish it on one connection.
                     connections = 1;
                 }
@@ -166,11 +168,11 @@ public sealed class DownloadJob : IDownloadJob
 
             ct.ThrowIfCancellationRequested();
             if (!_scheduler.AllComplete)
-                throw new DownloadFailedException("The download stopped before all data was received.");
+                throw new DownloadFailedException(Strings.ErrorIncomplete);
 
             Record.TotalSize ??= _file.Length;
             if (_file.Length != Record.TotalSize)
-                throw new DownloadFailedException($"Size mismatch: expected {Record.TotalSize} bytes, got {_file.Length}.");
+                throw new DownloadFailedException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorSizeMismatch, Record.TotalSize, _file.Length));
         }
         finally
         {
@@ -262,7 +264,7 @@ public sealed class DownloadJob : IDownloadJob
                 {
                     if (othersActive)
                         throw new RetireConnectionException();
-                    throw new DownloadFailedException($"Giving up after {limit} retries: {ex.Message}", ex);
+                    throw new DownloadFailedException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorGivingUp, limit, ex.Message), ex);
                 }
                 await Task.Delay(RetryDelay(failures), ct);
             }
@@ -333,14 +335,14 @@ public sealed class DownloadJob : IDownloadJob
                     }
                     catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                     {
-                        throw new TimeoutException($"No data received for {_options.ReadTimeout.TotalSeconds:0} s.");
+                        throw new TimeoutException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorNoData, _options.ReadTimeout.TotalSeconds));
                     }
                 }
 
                 if (read == 0)
                 {
                     if (segment.HasKnownEnd)
-                        throw new IOException("The server closed the connection early.");
+                        throw new IOException(Strings.ErrorClosedEarly);
                     _scheduler.CloseOpenEnd(segment);
                     return;
                 }

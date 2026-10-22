@@ -59,7 +59,7 @@ public sealed class MainListCommandsTests : IDisposable
         }
     }
 
-    /// <summary>Statuses 2 paused, 3 completed (with its file on the disk), 4 failed.</summary>
+    /// <summary>Statuses 2 paused, 3 completed (with its file on the disk), 4 failed; a negative size is unknown.</summary>
     private string Database(params (string Name, int Status, long Size)[] rows)
     {
         Directory.CreateDirectory(_dir);
@@ -77,7 +77,7 @@ public sealed class MainListCommandsTests : IDisposable
             insert.Parameters.AddWithValue("$url", "https://example.test/" + name);
             insert.Parameters.AddWithValue("$dir", _dir);
             insert.Parameters.AddWithValue("$name", name);
-            insert.Parameters.AddWithValue("$size", size);
+            insert.Parameters.AddWithValue("$size", size < 0 ? DBNull.Value : size);
             insert.Parameters.AddWithValue("$status", status);
             insert.Parameters.AddWithValue("$done", status == 3 ? "2026-10-21T10:05:00Z" : DBNull.Value);
             insert.ExecuteNonQuery();
@@ -94,6 +94,7 @@ public sealed class MainListCommandsTests : IDisposable
         {
             // As on the app's UI thread: what follows an await comes back here.
             SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
+            Localizer.Apply(AppLanguage.Italian); // the texts checked below
             try { test(); }
             catch (Exception ex) { failure = ex; }
         });
@@ -170,6 +171,39 @@ public sealed class MainListCommandsTests : IDisposable
         s.Vm.UpdateSelection([]);
         Assert.Equal("", s.Vm.SelectionText);
         Assert.False(s.Vm.RemoveCommand.CanExecute(null));
+    });
+
+    [Fact]
+    public void StatusBar_ShowsDownloadedOfTotal_AndAQuestionMarkWhenATotalIsUnknown() => Sta(() =>
+    {
+        var path = Database(("done.zip", 3, 3000), ("half.zip", 2, 2048), ("nosize.bin", 2, -1));
+        using (var db = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            db.Open();
+            using var progress = db.CreateCommand(); // 1 KB written of each paused one
+            progress.CommandText = """
+                INSERT INTO segments (download_id, idx, start, end_pos, written)
+                SELECT id, 0, 0, coalesce(total_size, 0) - 1, 1024 FROM downloads WHERE status = 2;
+                """;
+            progress.ExecuteNonQuery();
+        }
+        using var t = Open(path);
+
+        t.Vm.UpdateSelection(t.Items("done.zip", "half.zip"));
+        Assert.Equal($"2 selezionati  ·  {Format.Bytes(4024)} di {Format.Bytes(5048)}", t.Vm.SelectionText);
+        Assert.Null(t.Vm.SelectionToolTip);
+
+        t.Vm.UpdateSelection(t.Items("half.zip"));
+        Assert.Equal($"1 selezionato  ·  {Format.Bytes(1024)} di {Format.Bytes(2048)}", t.Vm.SelectionText);
+
+        t.Vm.UpdateSelection(t.Items("done.zip", "nosize.bin"));
+        Assert.Equal($"2 selezionati  ·  {Format.Bytes(4024)} di ?", t.Vm.SelectionText);
+        Assert.Equal("Dimensione totale sconosciuta", t.Vm.SelectionToolTip);
+
+        Localizer.Apply(AppLanguage.English);
+        Assert.Equal($"2 selected  ·  {Format.Bytes(4024)} of ?", t.Vm.SelectionText);
+        Assert.Equal("Total size unknown", t.Vm.SelectionToolTip);
+        Localizer.Apply(AppLanguage.Italian);
     });
 
     [Fact]

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SignPath artifact configuration "baton-setup" (a copy: the one in use lives in the SignPath project). The GitHub
+     artifact "unsigned-setup" is a zip holding Baton-Setup.exe (renamed without the version, so this file does not change), built from the already signed Baton.exe. -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="Baton-Setup.exe">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

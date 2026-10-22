@@ -71,6 +71,10 @@ public sealed class DownloadQueue
     public string? Key { get; set; }
 
     public string Name { get; set; } = "";
+
+    /// <summary>The name to show: the main queue, while the user has not renamed it, follows the interface language.</summary>
+    public string DisplayName => Key == MainKey ? UiLanguage.Follow(nameof(Resources.Strings.QueueMainName), Name) : Name;
+
     public int MaxConcurrent { get; set; } = 3;
 
     /// <summary>Started by the user or by the schedule, and not stopped since.</summary>
@@ -97,7 +101,7 @@ public sealed class DownloadQueue
     /// </summary>
     public bool StopsWhenDone => EndAction != EndAction.None || Schedule.Enabled;
 
-    public override string ToString() => Name;
+    public override string ToString() => DisplayName;
 
     public DownloadQueue Clone()
     {

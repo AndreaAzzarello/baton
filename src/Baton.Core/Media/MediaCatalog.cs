@@ -97,7 +97,7 @@ public static class MediaCatalog
         var first = playlist.Variants.OrderByDescending(v => v.Bandwidth).First();
         var (text, finalUrl, _) = await FetchAsync(http, first.Url.AbsoluteUri, context, guard, ct);
         if (text is null || !HlsPlaylist.LooksLikeHls(text))
-            throw new DownloadFailedException("The stream's quality playlist could not be read.");
+            throw new DownloadFailedException(Strings.ErrorStreamQualityPlaylist);
         var media = HlsPlaylist.Parse(text, finalUrl);
         if (CheckMedia(media) is { } blocked)
             return blocked;
@@ -209,7 +209,7 @@ public static class MediaCatalog
         guard ??= await UrlGuard.ForOriginAsync(context?.Referrer ?? url, ct);
         var (text, finalUrl, _) = await FetchAsync(http, url, context, guard, ct);
         if (text is null)
-            throw new DownloadFailedException("The address no longer returns a stream manifest.");
+            throw new DownloadFailedException(Strings.ErrorStreamGone);
 
         if (variantId.StartsWith("hls:", StringComparison.Ordinal) && HlsPlaylist.LooksLikeHls(text))
         {
@@ -220,7 +220,7 @@ public static class MediaCatalog
                 throw new DownloadFailedException(Strings.MediaBlockedDrm);
             var index = int.Parse(variantId[4..], CultureInfo.InvariantCulture);
             if (index < 0 || index >= playlist.Variants.Count)
-                throw new DownloadFailedException("The chosen quality is no longer offered.");
+                throw new DownloadFailedException(Strings.ErrorQualityGone);
             var variant = playlist.Variants[index];
             var video = await FetchPlaylistAsync(http, variant.Url, context, guard, ct);
             HlsPlaylist? audio = null;
@@ -261,7 +261,7 @@ public static class MediaCatalog
             if (video is not null && audio is not null && audioId is not null && manifest.Representations.FirstOrDefault(r => r.ContentType == "audio" && r.Id == audioId) is { } chosen)
                 audio = chosen;
             if (video is null && audio is null)
-                throw new DownloadFailedException("The chosen quality is no longer offered.");
+                throw new DownloadFailedException(Strings.ErrorQualityGone);
             var subtitles = (subtitleIds ?? [])
                 .Select(id => manifest.Representations.FirstOrDefault(r => r.ContentType == "text" && r.Id == id))
                 .OfType<DashRepresentation>()
@@ -275,14 +275,14 @@ public static class MediaCatalog
             return new MediaPlan("dash", tracks, manifest.Duration,
                 Estimate((video?.Bandwidth ?? 0) + (audio?.Bandwidth ?? 0), manifest.Duration), subtitles);
         }
-        throw new DownloadFailedException("The stream changed since it was added.");
+        throw new DownloadFailedException(Strings.ErrorStreamChanged);
     }
 
     private static async Task<HlsPlaylist> FetchPlaylistAsync(HttpClient http, Uri url, RequestContext? context, UrlGuard guard, CancellationToken ct)
     {
         var (text, finalUrl, _) = await FetchAsync(http, url.AbsoluteUri, context, guard, ct);
         if (text is null || !HlsPlaylist.LooksLikeHls(text))
-            throw new DownloadFailedException("A playlist of the stream could not be read.");
+            throw new DownloadFailedException(Strings.ErrorStreamPlaylist);
         var playlist = HlsPlaylist.Parse(text, finalUrl);
         if (playlist.IsEncrypted)
             throw new DownloadFailedException(Strings.MediaBlockedDrm);
@@ -388,7 +388,7 @@ public static class MediaCatalog
         if (!IsManifest(type, finalUrl))
             return (null, finalUrl, type);
         if (response.Content.Headers.ContentLength > MaxManifestBytes)
-            throw new DownloadFailedException("The stream manifest is too large.");
+            throw new DownloadFailedException(Strings.ErrorStreamTooLarge);
         await using var body = await response.Content.ReadAsStreamAsync(ct);
         var buffer = new MemoryStream();
         var chunk = new byte[81920];
@@ -397,7 +397,7 @@ public static class MediaCatalog
         {
             buffer.Write(chunk, 0, read);
             if (buffer.Length > MaxManifestBytes)
-                throw new DownloadFailedException("The stream manifest is too large.");
+                throw new DownloadFailedException(Strings.ErrorStreamTooLarge);
         }
         return (System.Text.Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length), finalUrl, type);
     }

@@ -111,7 +111,7 @@ public sealed class GrabberRunViewModel : ObservableObject
         Project = run.Project;
         IsMirror = Project.Mode == GrabberMode.Mirror;
 
-        Categories = [new CategoryChoice(null, Strings.BatchCategoryAuto), .. categories.Select(c => new CategoryChoice(c, c.Name))];
+        Categories = [new CategoryChoice(null, Strings.BatchCategoryAuto), .. categories.Select(c => new CategoryChoice(c, c.DisplayName))];
         _category = Categories.FirstOrDefault(c => c.Category?.Id == Project.CategoryId) ?? Categories[0];
         Queues = queues;
         _queue = queues.FirstOrDefault(q => q.Id == Project.QueueId) ?? queues.FirstOrDefault(q => q.IsMain) ?? queues.FirstOrDefault();
@@ -358,7 +358,7 @@ public sealed class GrabberRunViewModel : ObservableObject
         {
             var count = _service.Send(Project.Id, chosen, Queue?.Id, Category.Category?.Id, Folder, startNow);
             _sent = true;
-            _dialogs.Inform(string.Format(CultureInfo.CurrentCulture, Strings.GrabberSent, count, Queue?.Name ?? ""), Title);
+            _dialogs.Inform(string.Format(CultureInfo.CurrentCulture, Strings.GrabberSent, count, Queue?.DisplayName ?? ""), Title);
             Done?.Invoke();
         }
         catch (ArgumentException ex)

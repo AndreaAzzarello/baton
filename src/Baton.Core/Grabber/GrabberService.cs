@@ -186,7 +186,7 @@ public sealed class GrabberService : IAsyncDisposable
         lock (_lock)
         {
             var project = _projects.FirstOrDefault(p => p.Id == projectId)?.Clone()
-                          ?? throw new ArgumentException("The project no longer exists.", nameof(projectId));
+                          ?? throw new ArgumentException(Strings.ErrorProjectGone);
             if (_runs.TryGetValue(projectId, out var active) && active.Result is null)
                 return active;
             var previous = Obtainable(projectId, _store.LoadGrabberFiles(projectId));
@@ -366,13 +366,13 @@ public sealed class GrabberService : IAsyncDisposable
     /// project's cookies) and remembered, so the next synchronization sends it again only if it changes.
     /// </summary>
     public int Send(long projectId, IReadOnlyList<GrabberItem> items, long? queueId, long? categoryId, string? folder, bool startQueue) =>
-        Send(Find(projectId) ?? throw new ArgumentException("The project no longer exists.", nameof(projectId)), items, queueId, categoryId, folder, startQueue);
+        Send(Find(projectId) ?? throw new ArgumentException(Strings.ErrorProjectGone), items, queueId, categoryId, folder, startQueue);
 
     /// <summary>Sends files of a run, with the cookies the run had (they may have been forgotten since).</summary>
     public int Send(GrabberRun run, IReadOnlyList<GrabberItem> items, long? queueId, long? categoryId, string? folder, bool startQueue)
     {
         if (Find(run.Project.Id) is null)
-            throw new ArgumentException("The project no longer exists.", nameof(run));
+            throw new ArgumentException(Strings.ErrorProjectGone);
         return Send(run.Project, items, queueId, categoryId, folder, startQueue);
     }
 

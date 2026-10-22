@@ -1,9 +1,9 @@
 <Window x:Class="Baton.App.Views.QueuesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:r="clr-namespace:Baton.Core.Resources;assembly=Baton.Core"
+        xmlns:l="clr-namespace:Baton.App.Services"
         xmlns:vm="clr-namespace:Baton.App.ViewModels"
-        Title="{x:Static r:Strings.QueuesTitle}" Width="820" Height="720" MinWidth="700" MinHeight="560"
+        Title="{l:Loc QueuesTitle}" Width="820" Height="720" MinWidth="700" MinHeight="560"
         Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
     <Grid Margin="20">
         <Grid.ColumnDefinitions>
@@ -21,32 +21,32 @@
         <Border Grid.ColumnSpan="3" Margin="0,0,0,14" Padding="12,10" CornerRadius="6" Background="{DynamicResource AccentSoftBrush}"
                 Visibility="{Binding ShowStartupWarning, Converter={StaticResource BoolToVisibility}}">
             <DockPanel>
-                <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.EnableStartup}" Style="{StaticResource DialogButton}"
+                <Button DockPanel.Dock="Right" Content="{l:Loc EnableStartup}" Style="{StaticResource DialogButton}"
                         Command="{Binding EnableStartupCommand}" />
-                <TextBlock Text="{x:Static r:Strings.StartupWarning}" TextWrapping="Wrap" VerticalAlignment="Center"
+                <TextBlock Text="{l:Loc StartupWarning}" TextWrapping="Wrap" VerticalAlignment="Center"
                            AutomationProperties.LiveSetting="Polite" />
             </DockPanel>
         </Border>
 
         <DockPanel Grid.Row="1">
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,10,0,0">
-                <Button Style="{StaticResource DialogButton}" Margin="0" MinWidth="0" Command="{Binding AddCommand}" AutomationProperties.Name="{x:Static r:Strings.QueueAdd}">
-                    <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE710;" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" /><TextBlock Text="{x:Static r:Strings.QueueAdd}" /></StackPanel>
+                <Button Style="{StaticResource DialogButton}" Margin="0" MinWidth="0" Command="{Binding AddCommand}" AutomationProperties.Name="{l:Loc QueueAdd}">
+                    <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE710;" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" /><TextBlock Text="{l:Loc QueueAdd}" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource DialogButton}" MinWidth="0" Command="{Binding DeleteCommand}" AutomationProperties.Name="{x:Static r:Strings.QueueDelete}">
-                    <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" /><TextBlock Text="{x:Static r:Strings.QueueDelete}" /></StackPanel>
+                <Button Style="{StaticResource DialogButton}" MinWidth="0" Command="{Binding DeleteCommand}" AutomationProperties.Name="{l:Loc QueueDelete}">
+                    <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" /><TextBlock Text="{l:Loc QueueDelete}" /></StackPanel>
                 </Button>
             </StackPanel>
             <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" DisplayMemberPath="Name"
-                     AutomationProperties.Name="{x:Static r:Strings.QueuesListName}"
+                     AutomationProperties.Name="{l:Loc QueuesListName}"
                      Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" />
         </DockPanel>
 
         <ScrollViewer Grid.Row="1" Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
             <StackPanel DataContext="{Binding Selected}" Margin="0,0,8,0">
-                <Label Content="{x:Static r:Strings.QueueNameLabel}" Target="{Binding ElementName=NameBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
-                <TextBox x:Name="NameBox" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.QueueNameName}" />
-                <TextBlock Text="{x:Static r:Strings.QueueMainHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap"
+                <Label Content="{l:Loc QueueNameLabel}" Target="{Binding ElementName=NameBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <TextBox x:Name="NameBox" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc QueueNameName}" />
+                <TextBlock Text="{l:Loc QueueMainHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap"
                            Visibility="{Binding IsMain, Converter={StaticResource BoolToVisibility}}" />
 
                 <Grid Margin="0,8,0,0">
@@ -61,40 +61,40 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <Label Content="{x:Static r:Strings.QueueConcurrentLabel}" Target="{Binding ElementName=ConcurrentBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
-                    <TextBox x:Name="ConcurrentBox" Width="100" HorizontalAlignment="Right" Grid.Column="1" Margin="0,3" Text="{Binding MaxConcurrent, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.QueueConcurrentName}" />
-                    <Label Grid.Row="1" Content="{x:Static r:Strings.QueueRetriesLabel}" Target="{Binding ElementName=RetriesBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
-                    <TextBox x:Name="RetriesBox" Width="100" HorizontalAlignment="Right" Grid.Row="1" Grid.Column="1" Margin="0,3" Text="{Binding RetryCount, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.QueueRetriesName}" />
-                    <Label Grid.Row="2" Content="{x:Static r:Strings.QueueRetryDelayLabel}" Target="{Binding ElementName=DelayBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
-                    <TextBox x:Name="DelayBox" Width="100" HorizontalAlignment="Right" Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding RetryDelay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.QueueRetryDelayName}" />
-                    <Label Grid.Row="3" Content="{x:Static r:Strings.QueueQuotaLabel}" Target="{Binding ElementName=QuotaBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
-                    <TextBox x:Name="QuotaBox" Width="100" HorizontalAlignment="Right" Grid.Row="3" Grid.Column="1" Margin="0,3" Text="{Binding Quota, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.QueueQuotaName}" />
-                    <Label Grid.Row="4" Content="{x:Static r:Strings.QueueEndActionLabel}" Target="{Binding ElementName=EndActionBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+                    <Label Content="{l:Loc QueueConcurrentLabel}" Target="{Binding ElementName=ConcurrentBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+                    <TextBox x:Name="ConcurrentBox" Width="100" HorizontalAlignment="Right" Grid.Column="1" Margin="0,3" Text="{Binding MaxConcurrent, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc QueueConcurrentName}" />
+                    <Label Grid.Row="1" Content="{l:Loc QueueRetriesLabel}" Target="{Binding ElementName=RetriesBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+                    <TextBox x:Name="RetriesBox" Width="100" HorizontalAlignment="Right" Grid.Row="1" Grid.Column="1" Margin="0,3" Text="{Binding RetryCount, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc QueueRetriesName}" />
+                    <Label Grid.Row="2" Content="{l:Loc QueueRetryDelayLabel}" Target="{Binding ElementName=DelayBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+                    <TextBox x:Name="DelayBox" Width="100" HorizontalAlignment="Right" Grid.Row="2" Grid.Column="1" Margin="0,3" Text="{Binding RetryDelay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc QueueRetryDelayName}" />
+                    <Label Grid.Row="3" Content="{l:Loc QueueQuotaLabel}" Target="{Binding ElementName=QuotaBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+                    <TextBox x:Name="QuotaBox" Width="100" HorizontalAlignment="Right" Grid.Row="3" Grid.Column="1" Margin="0,3" Text="{Binding Quota, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc QueueQuotaName}" />
+                    <Label Grid.Row="4" Content="{l:Loc QueueEndActionLabel}" Target="{Binding ElementName=EndActionBox}" Padding="0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
                     <ComboBox x:Name="EndActionBox" Grid.Row="4" Grid.Column="1" Margin="0,3" Width="200" HorizontalAlignment="Right"
                               ItemsSource="{x:Static vm:QueueEditViewModel.EndActions}" SelectedItem="{Binding EndAction}"
-                              AutomationProperties.Name="{x:Static r:Strings.QueueEndActionName}" />
+                              AutomationProperties.Name="{l:Loc QueueEndActionName}" />
                 </Grid>
 
-                <CheckBox Content="{x:Static r:Strings.QueueScheduled}" IsChecked="{Binding Scheduled}" Margin="0,18,0,6" FontWeight="SemiBold" />
+                <CheckBox Content="{l:Loc QueueScheduled}" IsChecked="{Binding Scheduled}" Margin="0,18,0,6" FontWeight="SemiBold" />
                 <StackPanel IsEnabled="{Binding Scheduled}">
                     <StackPanel Orientation="Horizontal">
                         <StackPanel>
-                            <Label Content="{x:Static r:Strings.QueueStartLabel}" Target="{Binding ElementName=StartBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="StartBox" Width="110" Text="{Binding Start, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.QueueStartName}" />
+                            <Label Content="{l:Loc QueueStartLabel}" Target="{Binding ElementName=StartBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="StartBox" Width="110" Text="{Binding Start, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc QueueStartName}" />
                         </StackPanel>
                         <StackPanel Margin="16,0,0,0">
-                            <Label Content="{x:Static r:Strings.QueueStopLabel}" Target="{Binding ElementName=StopBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="StopBox" Width="110" Text="{Binding Stop, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.QueueStopName}"
-                                     ToolTip="{x:Static r:Strings.QueueStopTimeToolTip}" />
+                            <Label Content="{l:Loc QueueStopLabel}" Target="{Binding ElementName=StopBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="StopBox" Width="110" Text="{Binding Stop, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc QueueStopName}"
+                                     ToolTip="{l:Loc QueueStopTimeToolTip}" />
                         </StackPanel>
                         <StackPanel Margin="16,0,0,0">
-                            <Label Content="{x:Static r:Strings.QueueRepeatLabel}" Target="{Binding ElementName=RepeatBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
-                            <TextBox x:Name="RepeatBox" Width="110" Text="{Binding Repeat, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static r:Strings.QueueRepeatName}"
-                                     ToolTip="{x:Static r:Strings.QueueRepeatToolTip}" />
+                            <Label Content="{l:Loc QueueRepeatLabel}" Target="{Binding ElementName=RepeatBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
+                            <TextBox x:Name="RepeatBox" Width="110" Text="{Binding Repeat, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc QueueRepeatName}"
+                                     ToolTip="{l:Loc QueueRepeatToolTip}" />
                         </StackPanel>
                     </StackPanel>
 
-                    <RadioButton Content="{x:Static r:Strings.QueueWeekly}" IsChecked="{Binding Weekly}" GroupName="Mode" Margin="0,12,0,4" />
+                    <RadioButton Content="{l:Loc QueueWeekly}" IsChecked="{Binding Weekly}" GroupName="Mode" Margin="0,12,0,4" />
                     <ItemsControl ItemsSource="{Binding Days}" IsEnabled="{Binding Weekly}" Margin="24,0,0,0" Focusable="False">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
@@ -107,11 +107,11 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <RadioButton Content="{x:Static r:Strings.QueueOnce}" IsChecked="{Binding Once}" GroupName="Mode" VerticalAlignment="Center" />
+                        <RadioButton Content="{l:Loc QueueOnce}" IsChecked="{Binding Once}" GroupName="Mode" VerticalAlignment="Center" />
                         <DatePicker SelectedDate="{Binding Date}" IsEnabled="{Binding Once}" Margin="12,0,0,0" Width="170"
-                                    AutomationProperties.Name="{x:Static r:Strings.QueueDateName}" />
+                                    AutomationProperties.Name="{l:Loc QueueDateName}" />
                     </StackPanel>
-                    <CheckBox Content="{x:Static r:Strings.QueueWake}" IsChecked="{Binding WakeToRun}" Margin="0,12,0,0" ToolTip="{x:Static r:Strings.QueueWakeToolTip}" />
+                    <CheckBox Content="{l:Loc QueueWake}" IsChecked="{Binding WakeToRun}" Margin="0,12,0,0" ToolTip="{l:Loc QueueWakeToolTip}" />
                 </StackPanel>
                 <TextBlock Text="{Binding Preview}" Margin="0,12,0,0" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"
                            AutomationProperties.LiveSetting="Polite" />
@@ -120,8 +120,8 @@
 
         <DockPanel Grid.Row="2" Grid.ColumnSpan="3" Margin="0,16,0,0">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <Button Content="{x:Static r:Strings.Save}" Style="{StaticResource PrimaryButton}" Click="OnSave" IsDefault="True" />
-                <Button Content="{x:Static r:Strings.Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
+                <Button Content="{l:Loc Save}" Style="{StaticResource PrimaryButton}" Click="OnSave" IsDefault="True" />
+                <Button Content="{l:Loc Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
             </StackPanel>
             <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" Margin="0" VerticalAlignment="Center" AutomationProperties.LiveSetting="Assertive" />
         </DockPanel>

@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using Baton.App.Services;
 using Baton.App.ViewModels;
 using Baton.Core;
 using Baton.Core.Resources;
@@ -40,7 +41,7 @@ public partial class MainWindow : Window
         ColumnMenu.Opened += (_, _) => FillColumnMenu();
         ApplyToolbar();
         _vm.ToolbarChanged += ApplyToolbar;
-        ToolbarPanel.ContextMenu = new ContextMenu { Items = { new MenuItem { Header = Strings.MenuCustomizeToolbar, Command = _vm.CustomizeToolbarCommand } } };
+        ToolbarPanel.ContextMenu = new ContextMenu { Items = { new MenuItem { Command = _vm.CustomizeToolbarCommand }.Text(nameof(Strings.MenuCustomizeToolbar)) } };
 
         ApplyColumnLayout(_vm.LoadColumnLayout(DefaultColumns()));
         foreach (var column in Grid.Columns)
@@ -281,28 +282,33 @@ public partial class MainWindow : Window
     private ContextMenu BuildRowMenu()
     {
         var menu = new ContextMenu();
-        void Add(string header, ICommand command, string? gesture = null) =>
-            menu.Items.Add(new MenuItem { Header = header, Command = command, InputGestureText = gesture ?? "" });
+        void Add(string header, ICommand command, string? gesture = null)
+        {
+            var item = new MenuItem { Command = command }.Text(header);
+            if (gesture is not null)
+                item.Text(gesture, MenuItem.InputGestureTextProperty);
+            menu.Items.Add(item);
+        }
 
         // Every entry acts on the whole selection; entries that apply to none of it are disabled.
-        Add(Strings.MenuOpen, _vm.OpenFileCommand);
-        Add(Strings.MenuOpenFolder, _vm.OpenFolderCommand);
+        Add(nameof(Strings.MenuOpen), _vm.OpenFileCommand);
+        Add(nameof(Strings.MenuOpenFolder), _vm.OpenFolderCommand);
         menu.Items.Add(new Separator());
-        Add(Strings.MenuStart, _vm.StartCommand);
-        Add(Strings.MenuPause, _vm.PauseCommand);
-        Add(Strings.MenuRetry, _vm.RetryCommand);
-        Add(Strings.MenuEnqueue, _vm.EnqueueCommand);
-        var moveTo = new MenuItem { Header = Strings.MenuMoveToQueue };
+        Add(nameof(Strings.MenuStart), _vm.StartCommand);
+        Add(nameof(Strings.MenuPause), _vm.PauseCommand);
+        Add(nameof(Strings.MenuRetry), _vm.RetryCommand);
+        Add(nameof(Strings.MenuEnqueue), _vm.EnqueueCommand);
+        var moveTo = new MenuItem().Text(nameof(Strings.MenuMoveToQueue));
         menu.Items.Add(moveTo);
-        var category = new MenuItem { Header = Strings.MenuChangeCategory };
+        var category = new MenuItem().Text(nameof(Strings.MenuChangeCategory));
         menu.Items.Add(category);
         menu.Items.Add(new Separator());
-        Add(Strings.MenuCopyUrl, _vm.CopyUrlCommand);
-        Add(Strings.MenuProgress, _vm.ProgressCommand, Strings.GestureEnter);
-        Add(Strings.MenuProperties, _vm.PropertiesCommand, Strings.GestureAltEnter);
+        Add(nameof(Strings.MenuCopyUrl), _vm.CopyUrlCommand);
+        Add(nameof(Strings.MenuProgress), _vm.ProgressCommand, nameof(Strings.GestureEnter));
+        Add(nameof(Strings.MenuProperties), _vm.PropertiesCommand, nameof(Strings.GestureAltEnter));
         menu.Items.Add(new Separator());
-        var remove = new MenuItem { Command = _vm.RemoveCommand, InputGestureText = Strings.GestureDelete };
-        var delete = new MenuItem { Command = _vm.DeleteFilesCommand, InputGestureText = Strings.GestureShiftDelete };
+        var remove = new MenuItem { Command = _vm.RemoveCommand }.Text(nameof(Strings.GestureDelete), MenuItem.InputGestureTextProperty);
+        var delete = new MenuItem { Command = _vm.DeleteFilesCommand }.Text(nameof(Strings.GestureShiftDelete), MenuItem.InputGestureTextProperty);
         menu.Items.Add(remove);
         menu.Items.Add(delete);
         menu.Opened += (_, _) =>
@@ -315,7 +321,7 @@ public partial class MainWindow : Window
             {
                 var item = new MenuItem
                 {
-                    Header = c.Name,
+                    Header = c.DisplayName,
                     IsCheckable = true,
                     IsChecked = _vm.SelectedItems.Count > 0 && _vm.SelectedItems.All(i => i.CategoryId == c.Id),
                 };
@@ -332,7 +338,7 @@ public partial class MainWindow : Window
             {
                 var item = new MenuItem
                 {
-                    Header = queue.Name,
+                    Header = queue.DisplayName,
                     IsCheckable = true,
                     IsChecked = _vm.SelectedItems.Count > 0 && _vm.SelectedItems.All(i => i.QueueId == queue.Id),
                 };
@@ -349,15 +355,15 @@ public partial class MainWindow : Window
     private ContextMenu BuildNavigationMenu()
     {
         var menu = new ContextMenu();
-        var startQueue = new MenuItem { Header = Strings.MenuStartQueue, Command = _vm.StartQueueCommand };
-        var stopQueue = new MenuItem { Header = Strings.MenuStopQueue, Command = _vm.StopQueueCommand };
-        var editQueue = new MenuItem { Header = Strings.MenuEditQueue, Command = _vm.QueuesCommand };
-        var deleteQueue = new MenuItem { Header = Strings.MenuDeleteQueue, Command = _vm.DeleteQueueCommand };
-        var newQueue = new MenuItem { Header = Strings.MenuNewQueue, Command = _vm.NewQueueCommand };
+        var startQueue = new MenuItem { Command = _vm.StartQueueCommand }.Text(nameof(Strings.MenuStartQueue));
+        var stopQueue = new MenuItem { Command = _vm.StopQueueCommand }.Text(nameof(Strings.MenuStopQueue));
+        var editQueue = new MenuItem { Command = _vm.QueuesCommand }.Text(nameof(Strings.MenuEditQueue));
+        var deleteQueue = new MenuItem { Command = _vm.DeleteQueueCommand }.Text(nameof(Strings.MenuDeleteQueue));
+        var newQueue = new MenuItem { Command = _vm.NewQueueCommand }.Text(nameof(Strings.MenuNewQueue));
         var queueSeparator = new Separator();
-        var add = new MenuItem { Header = Strings.MenuNewCategory, Command = _vm.NewCategoryCommand };
-        var edit = new MenuItem { Header = Strings.MenuEditCategory, Command = _vm.CategoriesCommand };
-        var delete = new MenuItem { Header = Strings.MenuDeleteCategory, Command = _vm.DeleteCategoryCommand };
+        var add = new MenuItem { Command = _vm.NewCategoryCommand }.Text(nameof(Strings.MenuNewCategory));
+        var edit = new MenuItem { Command = _vm.CategoriesCommand }.Text(nameof(Strings.MenuEditCategory));
+        var delete = new MenuItem { Command = _vm.DeleteCategoryCommand }.Text(nameof(Strings.MenuDeleteCategory));
         foreach (var item in new Control[] { startQueue, stopQueue, editQueue, deleteQueue, queueSeparator, newQueue, add, edit, delete })
             menu.Items.Add(item);
         menu.Opened += (_, _) =>

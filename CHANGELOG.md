@@ -4,6 +4,52 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
+## [1.3.0] — 2026-10-21
+
+**Ready for everyone**: Baton in inglese, con installer, winget, Scoop e versione portable.
+
+**Interfaccia in inglese e italiano**
+- Tutta l'app è tradotta: finestre, menu, barra degli strumenti, area di notifica, notifiche, dialoghi, procedura guidata,
+  grabber, conto alla rovescia, testi per lo screen reader e i messaggi di errore del motore (29 che erano scritti in inglese
+  nel codice). `Strings.resx` è ora in inglese (lingua neutra) e `Strings.it.resx` in italiano, generati da un'unica tabella
+  di coppie (`tools/make_resx.py`), che si ferma se i segnaposto delle due lingue differiscono.
+- Lingua automatica dalla lingua di Windows (italiano → italiano, qualsiasi altra → inglese) o scelta in **Impostazioni ›
+  Generale › Lingua**; il cambio vale subito, senza riavvio (anche menu costruiti nel codice e pannello laterale).
+- Date, ore, numeri e dimensioni seguono la lingua scelta (formato regionale di Windows se della stessa lingua).
+- Categorie predefinite e Coda principale seguono la lingua finché non vengono rinominate.
+- Pseudo-localizzazione (`--pseudo`, `BATON_PSEUDO=1`) e test che apre ogni finestra in entrambe le lingue cercando testi
+  tagliati: corretti la conferma della password in chiaro (usciva dalla finestra) e il segnaposto della ricerca.
+
+**Barra di stato**
+- La selezione mostra il già scaricato e la dimensione totale: «3 selezionati · 1,2 GB di 4,8 GB»; con una dimensione
+  ignota il totale è «?», con il suggerimento «Dimensione totale sconosciuta». Si aggiorna mentre scarica.
+
+**Installer, pacchetti e versione portable**
+- Installer per singolo utente (Inno Setup 6, nessun diritto di amministratore) in `%LOCALAPPDATA%\Programs\Baton`, menu
+  Start e Desktop facoltativo, voce in App installate, italiano e inglese, tema chiaro o scuro come Windows.
+  Disinstallazione completa (host nativo, link `baton:`, notifiche, avvio con Windows solo se puntano a quella copia) con la
+  domanda se tenere i dati, «tieni» come scelta predefinita.
+- L'installer trova copie precedenti: importa i dati di una copia portable (con la copia sicura già usata per DownloadManager),
+  ripunta le registrazioni di altre copie, lascia la migrazione da DownloadManager al primo avvio.
+- **Versione portable** (`Baton-<versione>-portable.zip`): dati nella cartella `Data` accanto all'exe, nessuna scrittura
+  nel registro tranne l'host nativo dopo conferma; notifiche dall'icona dell'area di notifica.
+- Manifest per **winget** (`AndreaAzzarello.Baton`) e **Scoop** (`baton.json` con `checkver` e `autoupdate`), generati dai
+  file della release (`tools/make-manifests.ps1`).
+- Gli aggiornamenti dall'app funzionano per la copia installata (aggiornando anche la versione in App installate) e per
+  quella portable; restano firma, ritorno automatico e `Baton.exe.old`.
+
+**Rilascio e firma**
+- Workflow di rilascio (`release.yml`, da tag `v*`): build riproducibile (SDK fissato in `global.json`), installer, zip,
+  pacchetti dell'estensione, `SHA256SUMS.txt`; firma Authenticode con **SignPath Foundation** quando il progetto sarà
+  approvato, altrimenti gli stessi file senza. La chiave della release (ECDSA) resta sul PC dell'autore e firma i file già
+  firmati da SignPath. Policy di firma in `docs/SIGNING.md`.
+- `tools/verify-release.ps1` controlla anche la firma Authenticode, quando c'è, e verifica l'installer come `Baton.exe`.
+
+**Altro**
+- `SatelliteResourceLanguages`: solo le risorse inglesi e italiane di .NET nell'exe (da 173 a 165 MB).
+- User agent predefinito `Baton/1.3`.
+- Colonne «Aggiunto» e «Completato» più larghe (minimo 150 px anche con un layout salvato): l'orario inglese con AM/PM veniva tagliato.
+
 ## [1.2.0] — 2026-10-21
 
 Prima versione pubblica, con il nuovo nome **Baton**: il testimone della staffetta, come le connessioni che si passano i

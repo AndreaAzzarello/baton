@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Baton.Core.Resources;
 
 namespace Baton.Core.Media;
 
@@ -100,7 +101,7 @@ public static class Ffmpeg
         foreach (var arg in new[] { "-movflags", "+faststart", output })
             info.ArgumentList.Add(arg);
 
-        using var process = Process.Start(info) ?? throw new InvalidOperationException("ffmpeg could not be started.");
+        using var process = Process.Start(info) ?? throw new InvalidOperationException(Strings.ErrorFfmpegStart);
         process.StandardInput.Close();
         var errors = process.StandardError.ReadToEndAsync(ct);
         _ = process.StandardOutput.ReadToEndAsync(ct);

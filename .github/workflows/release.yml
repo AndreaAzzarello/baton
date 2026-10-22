@@ -1,0 +1,149 @@
+# Release build, started by a version tag (v1.3.0) or by hand. It builds Baton.exe reproducibly (pinned SDK in
+# global.json, ContinuousIntegrationBuild, file times from the commit), the installer and the portable zip, and uploads
+# them as one artifact. With SignPath configured, Baton.exe and the installer are signed with Authenticode by SignPath
+# Foundation on the way; without it (variables empty) the same files come out unsigned. Nothing is published here, and
+# the release key (ECDSA, tools\sign-release.ps1) never comes to CI: the author signs the downloaded files at home.
+# See docs\SIGNING.md.
+#
+# Repository settings used:
+#   secret   SIGNPATH_API_TOKEN               API token of the SignPath CI user (only when SignPath is used)
+#   variable SIGNPATH_ORGANIZATION_ID         empty = no Authenticode signing
+#   variable SIGNPATH_PROJECT_SLUG            e.g. baton
+#   variable SIGNPATH_SIGNING_POLICY_SLUG     release-signing
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read # SignPath fetches the uploaded artifacts through the run
+
+jobs:
+  release:
+    runs-on: windows-2025
+    timeout-minutes: 60
+    env:
+      SIGN: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      INNO_URL: https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe
+      INNO_SHA256: 9C73C3BAE7ED48D44112A0F48E66742C00090BDB5BEF71D9D3C056C66E97B732
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Version and build time
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content -Raw src\Baton.App\Baton.App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw "tag $env:GITHUB_REF_NAME does not match the version $version" }
+          "VERSION=$version" >> $env:GITHUB_ENV
+          # Times inside the zip come from the commit, so the same source gives the same files.
+          "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> $env:GITHUB_ENV
+
+      - name: Build (zero warnings) and test
+        run: |
+          dotnet build Baton.slnx -warnaserror
+          dotnet test Baton.slnx --no-build
+
+      - name: Publish Baton.exe (reproducible)
+        run: dotnet publish src\Baton.App -c Release -r win-x64 -o out\unsigned -p:ContinuousIntegrationBuild=true
+
+      - name: Upload Baton.exe for signing
+        id: unsigned-exe
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-exe
+          path: out/unsigned/Baton.exe
+          if-no-files-found: error
+
+      - name: Sign Baton.exe (SignPath)
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: baton-exe
+          github-artifact-id: ${{ steps.unsigned-exe.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: out/exe
+
+      - name: Without SignPath, Baton.exe stays unsigned
+        if: env.SIGN != 'true'
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force out\exe | Out-Null; Copy-Item out\unsigned\Baton.exe out\exe\
+
+      - name: Install Inno Setup 6.7.3 (checked)
+        shell: pwsh
+        run: |
+          $setup = Join-Path $env:RUNNER_TEMP 'innosetup.exe'
+          Invoke-WebRequest $env:INNO_URL -OutFile $setup
+          if ((Get-FileHash $setup -Algorithm SHA256).Hash -ne $env:INNO_SHA256) { throw 'Inno Setup: wrong SHA-256' }
+          $dir = Join-Path $env:RUNNER_TEMP 'inno'
+          Start-Process $setup -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', '/PORTABLE=1', '/NOICONS', "/DIR=`"$dir`"" -Wait
+          "ISCC=$dir\ISCC.exe" >> $env:GITHUB_ENV
+
+      - name: Installer and portable zip (from the signed Baton.exe)
+        shell: pwsh
+        run: tools\build-packages.ps1 -Source out\exe -Out out\release -Version $env:VERSION
+
+      - name: Prepare the installer for signing
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force out\tosign | Out-Null; Copy-Item "out\release\Baton-Setup-$env:VERSION.exe" out\tosign\Baton-Setup.exe
+
+      - name: Upload the installer for signing
+        id: unsigned-setup
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-setup
+          path: out/tosign/Baton-Setup.exe
+          if-no-files-found: error
+
+      - name: Sign the installer (SignPath)
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          artifact-configuration-slug: baton-setup
+          github-artifact-id: ${{ steps.unsigned-setup.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: out/setup
+
+      - name: Collect the release files
+        shell: pwsh
+        run: |
+          if ($env:SIGN -eq 'true') {
+            Copy-Item out\setup\Baton-Setup.exe "out\release\Baton-Setup-$env:VERSION.exe" -Force
+            foreach ($f in 'out\release\Baton-Setup-*.exe', 'out\exe\Baton.exe') {
+              $s = Get-AuthenticodeSignature (Resolve-Path $f)
+              if ($s.Status -ne 'Valid') { throw "$f`: Authenticode $($s.Status)" }
+              "$f signed by $($s.SignerCertificate.Subject)"
+            }
+          }
+          Copy-Item out\exe\Baton.exe, THIRD-PARTY-LICENSES.txt out\release\
+          node tools/build-extension.mjs
+          Copy-Item "dist\baton-chromium-$env:VERSION.zip", "dist\baton-firefox-$env:VERSION.xpi" out\release\
+          Get-ChildItem out\release -File | Sort-Object Name | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)" } |
+            Set-Content -Encoding ascii out\release\SHA256SUMS.txt
+          Get-Content out\release\SHA256SUMS.txt
+
+      - name: Upload the release files
+        uses: actions/upload-artifact@v7
+        with:
+          name: baton-${{ env.VERSION }}-release
+          path: out/release/
+          if-no-files-found: error

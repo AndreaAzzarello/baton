@@ -85,6 +85,9 @@ public interface IDialogService
 /// <summary>Whether the app starts with Windows (in the notification area).</summary>
 public interface IStartupService
 {
+    /// <summary>False for the portable copy, which writes nothing to the registry.</summary>
+    bool IsAvailable { get; }
+
     bool IsEnabled { get; }
 
     void Set(bool enabled);
@@ -92,6 +95,8 @@ public interface IStartupService
 
 public sealed class StartupService : IStartupService
 {
+    public bool IsAvailable => !AppEnvironment.IsPortable;
+
     public bool IsEnabled => AppEnvironment.Registration.StartsWithWindows;
 
     public void Set(bool enabled) => AppEnvironment.Registration.SetStartWithWindows(enabled);

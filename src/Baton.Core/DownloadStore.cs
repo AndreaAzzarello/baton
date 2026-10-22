@@ -1,6 +1,7 @@
 using System.Globalization;
 using Baton.Core.Security;
 using Microsoft.Data.Sqlite;
+using Baton.Core.Resources;
 
 namespace Baton.Core;
 
@@ -75,6 +76,30 @@ public sealed partial class DownloadStore : IDisposable
         return reader.Read() ? Path.Combine(reader.GetString(0), reader.GetString(1)) : null;
     }
 
+    /// <summary>
+    /// The interface language, read without opening the store, for the messages shown before the app starts (a database
+    /// that is missing, locked or damaged means automatic).
+    /// </summary>
+    public static AppLanguage LanguageOf(string databasePath)
+    {
+        if (!File.Exists(databasePath))
+            return AppLanguage.Automatic;
+        try
+        {
+            using var db = new SqliteConnection(new SqliteConnectionStringBuilder
+                { DataSource = databasePath, Mode = SqliteOpenMode.ReadOnly, Pooling = false }.ToString());
+            db.Open();
+            using var command = db.CreateCommand();
+            command.CommandText = "SELECT value FROM settings WHERE key = $k;";
+            command.Parameters.AddWithValue("$k", nameof(AppSettings.Language));
+            return UiLanguage.Parse(command.ExecuteScalar() as string);
+        }
+        catch (SqliteException)
+        {
+            return AppLanguage.Automatic;
+        }
+    }
+
     /// <summary>Copy of the database taken before an upgrade in this session; null when none was needed.</summary>
     public string? BackupPath { get; private set; }
 
@@ -91,7 +116,7 @@ public sealed partial class DownloadStore : IDisposable
     {
         var version = Version;
         if (version > SchemaVersion)
-            throw new InvalidOperationException($"The database was created by a newer version of the app (schema {version}).");
+            throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorNewerDatabase, version));
         if (version == SchemaVersion)
             return;
 
@@ -788,6 +813,8 @@ public sealed partial class DownloadStore : IDisposable
                     case nameof(AppSettings.ToolbarSmallIcons): settings.ToolbarSmallIcons = value == "1"; break;
                     case nameof(AppSettings.ToolbarShowText): settings.ToolbarShowText = value == "1"; break;
                     case nameof(AppSettings.Theme) when Enum.TryParse<AppTheme>(value, out var theme): settings.Theme = theme; break;
+                    case nameof(AppSettings.Language): settings.Language = UiLanguage.Parse(value); break;
+                    case nameof(AppSettings.PortableBrowserHost): settings.PortableBrowserHost = value switch { "1" => true, "0" => false, _ => null }; break;
                 }
             }
         }
@@ -806,6 +833,8 @@ public sealed partial class DownloadStore : IDisposable
             [nameof(AppSettings.ConfirmBrowserDownloads)] = settings.ConfirmBrowserDownloads ? "1" : "0",
             [nameof(AppSettings.NotifyOnCompletion)] = settings.NotifyOnCompletion ? "1" : "0",
             [nameof(AppSettings.Theme)] = settings.Theme.ToString(),
+            [nameof(AppSettings.Language)] = settings.Language.ToString(),
+            [nameof(AppSettings.PortableBrowserHost)] = settings.PortableBrowserHost switch { true => "1", false => "0", null => "" },
             [nameof(AppSettings.GlobalQuotaMBPerHour)] = settings.GlobalQuotaMBPerHour.ToString(CultureInfo.InvariantCulture),
             [nameof(AppSettings.CloseToTray)] = settings.CloseToTray ? "1" : "0",
             [nameof(AppSettings.ProxyMode)] = settings.ProxyMode.ToString(),

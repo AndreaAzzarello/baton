@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
+using Baton.Core.Resources;
+using System.Globalization;
 
 namespace Baton.Core;
 
@@ -70,7 +72,7 @@ internal static class HttpErrors
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            throw new TimeoutException($"The server did not answer within {timeout.TotalSeconds:0} s.");
+            throw new TimeoutException(string.Format(CultureInfo.CurrentCulture, Strings.ErrorNoAnswer, timeout.TotalSeconds));
         }
     }
 

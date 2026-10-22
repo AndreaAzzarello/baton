@@ -243,7 +243,7 @@ public sealed class AppSettings
     public int MaxConnectionsPerServer { get; set; } = 16;
     public string UserAgent { get; set; } = DefaultUserAgent;
 
-    public const string DefaultUserAgent = "Baton/1.2";
+    public const string DefaultUserAgent = "Baton/1.3";
 
     /// <summary>
     /// The default of an earlier version ("Baton/1.2", or "DownloadManager/1.0" from before the rename), saved as is: it
@@ -263,6 +263,15 @@ public sealed class AppSettings
     public bool ConfirmBrowserDownloads { get; set; } = true;
 
     public AppTheme Theme { get; set; } = AppTheme.System;
+
+    /// <summary>Language of the interface; automatic follows the language of Windows.</summary>
+    public AppLanguage Language { get; set; }
+
+    /// <summary>
+    /// Portable copy only: the user agreed (true) or refused (false) to register it as the browsers' native messaging host,
+    /// the one registry entry it may write; null until asked.
+    /// </summary>
+    public bool? PortableBrowserHost { get; set; }
 
     /// <summary>Windows notification when a download completes.</summary>
     public bool NotifyOnCompletion { get; set; } = true;

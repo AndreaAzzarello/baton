@@ -24,8 +24,9 @@ public sealed class ToastService(string dataDirectory)
     /// <summary>Repeated on every start so a moved executable keeps working.</summary>
     public void Register()
     {
-        // Windows shows notifications only for an identity registered in the real registry: none in a sandboxed run.
-        if (AppEnvironment.IsSandboxed)
+        // Windows shows notifications only for an identity registered in the real registry: none in a sandboxed run, nor in
+        // the portable copy, which writes nothing there.
+        if (AppEnvironment.IsSandboxed || AppEnvironment.IsPortable)
             return;
         try
         {

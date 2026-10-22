@@ -14,6 +14,8 @@ namespace Baton.App.Services;
 /// DOWNLOADMANAGER_DATA, the variable of the versions called DownloadManager, only serves test runs: alone it sandboxes
 /// the app like BATON_DATA (a script written for the old name never reaches the real data); next to BATON_DATA it names
 /// the old data folder that the migration copies.
+/// A portable.flag file next to Baton.exe makes the copy portable: data in the Data folder beside it, nothing written to
+/// the registry but the browsers' host, once the user agreed (<see cref="PortableUserRegistry"/>).
 /// </summary>
 public static class AppEnvironment
 {
@@ -28,12 +30,21 @@ public static class AppEnvironment
 
     public static bool IsSandboxed => CustomData is not null;
 
+    private static readonly string? ExeFolder = Path.GetDirectoryName(Environment.ProcessPath);
+
+    /// <summary>Portable copy (see <see cref="SetupCheck.PortableFlag"/>); a sandboxed test run stays a sandbox.</summary>
+    public static bool IsPortable { get; } = !IsSandboxed && ExeFolder is not null && File.Exists(Path.Combine(ExeFolder, SetupCheck.PortableFlag));
+
     /// <summary>The data folder of DownloadManager (up to 1.1), copied at the first start.</summary>
     public static string? LegacyDataDirectory { get; } = IsSandboxed
         ? Folder("BATON_DATA") is null ? null : Folder("DOWNLOADMANAGER_DATA")
-        : Path.Combine(LocalAppData, "DownloadManager");
+        : IsPortable ? null : Path.Combine(LocalAppData, "DownloadManager");
 
-    private static readonly string BatonDirectory = CustomData ?? Path.Combine(LocalAppData, "Baton");
+    private static readonly string BatonDirectory = CustomData
+        ?? (IsPortable ? Path.Combine(ExeFolder!, SetupCheck.PortableDataFolder) : Path.Combine(LocalAppData, "Baton"));
+
+    /// <summary>Where the installed app keeps its data (what the installer migrates into); in a sandboxed test run, the sandbox.</summary>
+    public static string InstalledDataDirectory => CustomData ?? Path.Combine(LocalAppData, "Baton");
 
     /// <summary>DownloadManager's data is there and has not been copied yet.</summary>
     private static bool NeedsMigration =>
@@ -46,12 +57,17 @@ public static class AppEnvironment
     /// </summary>
     public static string DataDirectory { get; private set; } = NeedsMigration ? LegacyDataDirectory! : BatonDirectory;
 
-    public static IUserRegistry Registry { get; } = IsSandboxed ? new MemoryUserRegistry() : new WindowsUserRegistry();
+    public static IUserRegistry Registry { get; } = IsSandboxed ? new MemoryUserRegistry()
+        : IsPortable ? new PortableUserRegistry(new WindowsUserRegistry())
+        : new WindowsUserRegistry();
 
     public static SystemRegistration Registration { get; } = new(Registry, Environment.ProcessPath ?? "Baton.exe");
 
-    /// <summary>The browser host always talks to the real app; a sandboxed run listens on a pipe of its own.</summary>
-    public static string PipeName { get; } = IsSandboxed
+    /// <summary>
+    /// The browser host talks to the app of its own copy: the installed one (or a 1.2 copy) on the user's pipe; a sandboxed
+    /// run, or a portable copy, on a pipe of its own data folder (so a portable copy can run next to an installed one).
+    /// </summary>
+    public static string PipeName { get; } = IsSandboxed || IsPortable
         ? AppChannel.DefaultPipeName + "." + Hash(BatonDirectory)
         : AppChannel.DefaultPipeName;
 

@@ -502,3 +502,6 @@ dist/
 dm-trials/
 tools/trials/out/
 docs/brand/out/
+
+# Pseudo-localization for layout checks (python tools/make_resx.py src --pseudo): never shipped
+Strings.qps-ploc.resx

@@ -80,7 +80,7 @@ public sealed class BatchViewModel : ObservableObject
         _extension = Extensions[0];
 
         // "Automatic": each file goes to the category its type belongs to.
-        Categories = [new CategoryChoice(null, Strings.BatchCategoryAuto), .. categories.Select(c => new CategoryChoice(c, c.Name))];
+        Categories = [new CategoryChoice(null, Strings.BatchCategoryAuto), .. categories.Select(c => new CategoryChoice(c, c.DisplayName))];
         _category = Categories[0];
         Queues = queues;
         Queue = queues.FirstOrDefault(q => q.Id == queueId) ?? queues.FirstOrDefault(q => q.IsMain) ?? queues.FirstOrDefault();

@@ -24,7 +24,11 @@ public static class LegacyData
     public const string DatabaseName = "downloads.db";
     public const string MarkerName = "migrated-to-baton.txt";
 
-    public static (MigrationOutcome Outcome, string? Error) Migrate(string? legacy, string target)
+    /// <param name="leaveNote">
+    /// Write <see cref="MarkerName"/> in the source, saying it is no longer used: true for DownloadManager's folder, false
+    /// for a portable copy's data, which that copy keeps using.
+    /// </param>
+    public static (MigrationOutcome Outcome, string? Error) Migrate(string? legacy, string target, bool leaveNote = true)
     {
         var targetDb = Path.Combine(target, DatabaseName);
         if (File.Exists(targetDb) || legacy is null || !File.Exists(Path.Combine(legacy, DatabaseName)))
@@ -61,6 +65,8 @@ public static class LegacyData
             }
             return (MigrationOutcome.Failed, ex.Message);
         }
+        if (!leaveNote)
+            return (MigrationOutcome.Migrated, null);
         try
         {
             File.WriteAllText(Path.Combine(legacy, MarkerName),

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using Jint;
+using Baton.Core.Resources;
 
 namespace Baton.Core.Net;
 
@@ -65,7 +66,7 @@ public sealed class PacScript
         _engine.Execute(Helpers);
         _engine.Execute(source);
         if (_engine.GetValue("FindProxyForURL").IsUndefined())
-            throw new FormatException("The PAC file has no FindProxyForURL function.");
+            throw new FormatException(Strings.ErrorPacFunction);
     }
 
     /// <summary>The script's answer, such as "PROXY host:8080; SOCKS5 host:1080; DIRECT".</summary>

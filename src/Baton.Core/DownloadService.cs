@@ -273,7 +273,9 @@ public sealed class DownloadService : IAsyncDisposable
             if (string.IsNullOrWhiteSpace(nameOrKey))
                 return MainQueue.Id;
             var wanted = nameOrKey.Trim();
-            return (_queues.FirstOrDefault(q => string.Equals(q.Name, wanted, StringComparison.CurrentCultureIgnoreCase))
+            // The extension lists the names as shown (a built-in name in the interface language) and may keep an older one.
+            return (_queues.FirstOrDefault(q => string.Equals(q.Name, wanted, StringComparison.CurrentCultureIgnoreCase)
+                                                || string.Equals(q.DisplayName, wanted, StringComparison.CurrentCultureIgnoreCase))
                     ?? _queues.FirstOrDefault(q => q.Key == wanted)
                     ?? MainQueue).Id;
         }
@@ -296,7 +298,7 @@ public sealed class DownloadService : IAsyncDisposable
             check = new PostCheck { HashAlgorithm = algorithm, ExpectedHash = hex };
         }
         if (!Urls.TryParseDownload(url, out var parsed))
-            throw new ArgumentException("Enter a valid http, https, ftp, ftps or ftpes address.", nameof(url));
+            throw new ArgumentException(Strings.ErrorInvalidUrl);
         // A login written in the address is kept encrypted with the download, never in the address shown.
         var (uri, user, password) = Urls.SplitLogin(parsed);
         if (user is not null)
@@ -360,9 +362,9 @@ public sealed class DownloadService : IAsyncDisposable
         bool startNow = true, long? categoryId = null, long? queueId = null)
     {
         if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
-            throw new ArgumentException("Streams must come from an http or https address.", nameof(request));
+            throw new ArgumentException(Strings.ErrorStreamScheme);
         if (string.IsNullOrEmpty(request.VariantId))
-            throw new ArgumentException("No quality chosen.", nameof(request));
+            throw new ArgumentException(Strings.ErrorNoQuality);
         if (MediaPolicy.IsRestricted(request.Url) || MediaPolicy.IsRestricted(request.PageUrl))
             throw new ArgumentException(Strings.MediaBlockedTerms, nameof(request));
 
@@ -892,7 +894,7 @@ public sealed class DownloadService : IAsyncDisposable
     public async Task<UrlCheck> CheckNewUrlAsync(long id, string newUrl, CancellationToken ct = default)
     {
         if (!Urls.TryParseDownload(newUrl, out var parsed))
-            throw new ArgumentException("Enter a valid http, https, ftp, ftps or ftpes address.", nameof(newUrl));
+            throw new ArgumentException(Strings.ErrorInvalidUrl);
         lock (_lock)
         {
             if (Find(id) is { Media: not null })
@@ -902,7 +904,7 @@ public sealed class DownloadService : IAsyncDisposable
         NetworkContext network;
         lock (_lock)
         {
-            var stored = Find(id) ?? throw new InvalidOperationException("The download no longer exists.");
+            var stored = Find(id) ?? throw new InvalidOperationException(Strings.ErrorDownloadGone);
             record = _active.TryGetValue(id, out var active) ? active.Job.Record.Clone() : stored.Clone();
             record.Status = stored.Status;
             network = _network;

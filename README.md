@@ -49,20 +49,39 @@ before they are installed, and passwords, cookies and form data are encrypted wi
 
 ## Download & install
 
-Get the latest version from **[Releases](https://github.com/AndreaAzzarello/baton/releases/latest)**. Requires Windows 10
-(1809 or later) or Windows 11, x64; the .NET runtime is included and no administrator rights are needed.
+Requires Windows 10 (1809 or later) or Windows 11, x64. The .NET runtime is included and **no administrator rights** are
+needed. Pick one:
 
-1. **Download** `Baton.exe`, `Baton.exe.sha256` and `Baton.exe.sig` into the same folder.
-2. **Verify** them (see [Verify a release](#verify-a-release)).
-3. **Run** `Baton.exe` from a folder of your own, for example `%LOCALAPPDATA%\Programs\Baton`. The first start sets up
-   folders, categories, browsers and theme.
+| | How | Updates |
+|---|---|---|
+| **Installer** (recommended) | Download `Baton-Setup-<version>.exe` from **[Releases](https://github.com/AndreaAzzarello/baton/releases/latest)** and run it. It installs for your user only in `%LOCALAPPDATA%\Programs\Baton`, with a Start menu shortcut (Desktop optional) and an entry in **Settings › Apps › Installed apps** to uninstall. | in the app, or run a newer setup |
+| **winget** (once the package is accepted) | `winget install AndreaAzzarello.Baton` | `winget upgrade AndreaAzzarello.Baton` |
+| **Scoop** | `scoop bucket add baton https://github.com/AndreaAzzarello/scoop-baton`<br>`scoop install baton/baton` | `scoop update baton` |
+| **Portable** | Extract `Baton-<version>-portable.zip` anywhere (also a USB stick) and run `Baton.exe`. | in the app |
+
+The **portable** version keeps everything in the `Data` folder next to `Baton.exe` and writes nothing to the registry: it
+only asks whether to register itself for the browser extension. It cannot start with Windows and shows completed
+downloads in its notification-area icon instead of Windows notifications. Deleting `portable.flag` turns it into a normal
+copy that uses `%LOCALAPPDATA%\Baton`.
+
+**Uninstalling** (installer, winget) removes the program, its shortcuts and what it registered for browsers, `baton:`
+links, notifications and start with Windows. It asks whether to keep your download list and settings (kept by default;
+silent uninstalls always keep them); downloaded files are never deleted.
+
+The installer finds earlier copies: data of a portable copy can be copied into the installed one, a copy that the browsers
+or start with Windows pointed to is replaced in those registrations (and left on disk), and data of DownloadManager 1.1
+is copied at the first start ([migration notes](README.it.md#da-downloadmanager-11-a-baton), Italian).
 
 > [!NOTE]
-> `Baton.exe` is not signed with a code-signing certificate, so Windows SmartScreen may warn you. After verifying the
-> release, choose **More info › Run anyway**.
+> Until [SignPath Foundation](https://signpath.org/) approves the project for free code signing, the files are signed only
+> with the project's release key, so Windows SmartScreen may warn you. After [verifying the release](#verify-a-release),
+> choose **More info › Run anyway**. See the [code signing policy](docs/SIGNING.md).
 
-Coming from DownloadManager 1.1? Baton moves your data over automatically: see
-[the migration notes](README.it.md#da-downloadmanager-11-a-baton) (Italian).
+## Language
+
+The interface is in **English** and **Italian**. By default it follows Windows (Italian for an Italian Windows, English
+for any other language); change it in **Settings › General › Language**, it applies at once. Dates, numbers and sizes
+follow the chosen language. The browser extension follows the browser's language.
 
 ## Browser extension
 
@@ -79,15 +98,18 @@ In the extension's popup, **Check connection** tells you whether the app answers
 
 ## Verify a release
 
-Every release carries a SHA-256 hash (`Baton.exe.sha256`) and an ECDSA P-256 signature (`Baton.exe.sig`) of
+`Baton.exe` and the installer each carry a SHA-256 hash (`.sha256`) and an ECDSA P-256 signature (`.sig`) of
 "version + file name + SHA-256", made with a private key that never leaves the author's PC. The public keys are in
 [`release-keys.txt`](src/Baton.Core/Updates/release-keys.txt): `b80f666050fcbc7d` (main) and `cc691630b30bf7f1` (spare).
-From a clone of this repository:
+Once SignPath signs the releases they also carry an Authenticode signature, made before the release key signs the final
+file. From a clone of this repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton.exe" -Version 1.2.0
-# OK: Baton.exe 1.2.0, SHA-256 …, signed by b80f666050fcbc7d.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.0.exe"
+# OK: Baton-Setup-1.3.0.exe 1.3.0, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
+
+`SHA256SUMS.txt` lists the hashes of every file of the release, also the portable zip and the extension packages.
 
 Hash only, without cloning: `(Get-FileHash .\Baton.exe -Algorithm SHA256).Hash` must match the content of
 `Baton.exe.sha256`. The hash proves the file is intact; the signature proves who made it. The app runs the same checks
@@ -102,7 +124,11 @@ dotnet build Baton.slnx                                          # zero warnings
 dotnet test Baton.slnx                                           # xUnit, WPF UI and extension tests
 dotnet publish src\Baton.App -c Release -r win-x64 -o publish    # self-contained Baton.exe
 node tools/build-extension.mjs                                   # dist\chromium, dist\firefox and their packages
+.\tools\build-packages.ps1                                       # installer (Inno Setup 6) and portable zip
 ```
+
+The SDK version is pinned in `global.json`, so the same commit gives the same `Baton.exe` (`-p:ContinuousIntegrationBuild=true`).
+Releases are built by [`release.yml`](.github/workflows/release.yml); the release process is in [docs/SIGNING.md](docs/SIGNING.md).
 
 To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -110,6 +136,8 @@ To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 - No SFTP; the grabber reads static HTML/CSS only (no JavaScript); subtitles are WebVTT only.
 - The Firefox extension must be signed by the user ([details](README.it.md#limiti-noti-known-issues), Italian).
+- Installed with Scoop, update with `scoop update baton`: the in-app updater works too, but Scoop then keeps showing the
+  older version. The portable version cannot start with Windows.
 - An internal security audit of 1.1.0 confirmed no vulnerabilities but left **8 leads to validate**, none reproduced yet.
   Reports are welcome through [SECURITY.md](SECURITY.md).
 
@@ -130,8 +158,9 @@ To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).
 - [CHANGELOG.md](CHANGELOG.md) · [SECURITY.md](SECURITY.md) · [CONTRIBUTING.md](CONTRIBUTING.md) ·
   [Code of conduct](CODE_OF_CONDUCT.md)
 
-The app UI is currently in Italian; the extension is in Italian and English. **Translations welcome**: add a
-`Strings.<lang>.resx` next to [`Strings.resx`](src/Baton.Core/Resources/Strings.resx) (see CONTRIBUTING).
+**Translations welcome**: the texts of the app are a table of English and Italian pairs in
+[`tools/make_resx.py`](tools/make_resx.py), those of the extension in [`tools/make_locales.py`](tools/make_locales.py)
+(see CONTRIBUTING).
 
 ## Brand and license
 

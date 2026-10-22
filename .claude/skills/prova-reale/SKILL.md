@@ -9,8 +9,9 @@ Obiettivo: verificare l'app pubblicata e l'estensione come le userebbe l'utente,
 (o `DM_TRIALS`). Regole (vedi CLAUDE.md): niente input simulato sul desktop, solo UI Automation e browser headless.
 
 ## 1. Preparazione
-1. Serve `publish\Baton.exe` aggiornato. Se l'app è cambiata, prima ripubblica (vedi skill `fine-fase`, passi
-   6–7) oppure chiedi all'utente: la ripubblicazione chiude la sua app.
+1. Serve l'app installata aggiornata (`%LOCALAPPDATA%\Programs\Baton\Baton.exe`, dalla 1.3; prima `publish\Baton.exe`): è
+   quella a cui punta l'host nativo registrato, e i browser di prova la avviano con i loro `BATON_DATA`. Se l'app è cambiata,
+   prima reinstalla (skill `fine-fase`, passi 6–7) oppure chiedi all'utente: l'installazione chiude la sua app.
 2. `powershell -NoProfile -ExecutionPolicy Bypass -File tools\trials\prepare.ps1` — opzioni: `-Ffmpeg <percorso>` per provare
    l'unione in MP4, `-SkipFirefox` se non serve. Crea dati isolati con download in `%TEMP%\dm-trials\downloads`, build
    dell'estensione, copia di prova per Firefox, Firefox portabile, dipendenze npm e sito locale (porta 8765).

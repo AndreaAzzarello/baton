@@ -2,9 +2,10 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:r="clr-namespace:Baton.Core.Resources;assembly=Baton.Core"
+        xmlns:l="clr-namespace:Baton.App.Services"
         xmlns:vm="clr-namespace:Baton.App.ViewModels"
         xmlns:c="clr-namespace:Baton.App.Controls"
-        Title="{x:Static r:Strings.AppName}" Height="640" Width="1280" MinWidth="800" MinHeight="380"
+        Title="{l:Loc AppName}" Height="640" Width="1280" MinWidth="800" MinHeight="380"
         Style="{StaticResource AppWindow}" WindowStartupLocation="CenterScreen" Icon="/app.ico"
         AllowDrop="True" DragEnter="OnDragOver" DragOver="OnDragOver" Drop="OnDrop">
     <Window.InputBindings>
@@ -26,37 +27,37 @@
         <!-- Toolbar -->
         <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="8,6">
             <DockPanel x:Name="ToolbarPanel" LastChildFill="False">
-                <Button Style="{StaticResource ToolButton}" Command="{Binding AddCommand}" Tag="add" AutomationProperties.Name="{x:Static r:Strings.ActionAdd}" ToolTip="{x:Static r:Strings.ActionAddToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE710;" Foreground="{DynamicResource AccentBrush}" /><TextBlock Text="{x:Static r:Strings.ActionAdd}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding AddCommand}" Tag="add" AutomationProperties.Name="{l:Loc ActionAdd}" ToolTip="{l:Loc ActionAddToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE710;" Foreground="{DynamicResource AccentBrush}" /><TextBlock Text="{l:Loc ActionAdd}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
                 <Rectangle Style="{StaticResource Separator}" />
-                <Button Style="{StaticResource ToolButton}" Command="{Binding StartCommand}" Tag="start" AutomationProperties.Name="{x:Static r:Strings.ActionStart}" ToolTip="{x:Static r:Strings.ActionStartToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE768;" /><TextBlock Text="{x:Static r:Strings.ActionStart}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding StartCommand}" Tag="start" AutomationProperties.Name="{l:Loc ActionStart}" ToolTip="{l:Loc ActionStartToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE768;" /><TextBlock Text="{l:Loc ActionStart}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding PauseCommand}" Tag="pause" AutomationProperties.Name="{x:Static r:Strings.ActionPause}" ToolTip="{x:Static r:Strings.ActionPauseToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE769;" /><TextBlock Text="{x:Static r:Strings.ActionPause}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding PauseCommand}" Tag="pause" AutomationProperties.Name="{l:Loc ActionPause}" ToolTip="{l:Loc ActionPauseToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE769;" /><TextBlock Text="{l:Loc ActionPause}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding EnqueueCommand}" Tag="enqueue" AutomationProperties.Name="{x:Static r:Strings.ActionEnqueue}" ToolTip="{x:Static r:Strings.ActionEnqueueToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE823;" /><TextBlock Text="{x:Static r:Strings.ActionEnqueue}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding EnqueueCommand}" Tag="enqueue" AutomationProperties.Name="{l:Loc ActionEnqueue}" ToolTip="{l:Loc ActionEnqueueToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE823;" /><TextBlock Text="{l:Loc ActionEnqueue}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding RemoveCommand}" Tag="remove" AutomationProperties.Name="{x:Static r:Strings.ActionRemove}" ToolTip="{x:Static r:Strings.ActionRemoveToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" /><TextBlock Text="{x:Static r:Strings.ActionRemove}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding RemoveCommand}" Tag="remove" AutomationProperties.Name="{l:Loc ActionRemove}" ToolTip="{l:Loc ActionRemoveToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" /><TextBlock Text="{l:Loc ActionRemove}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding DeleteFilesCommand}" Tag="deletefiles" AutomationProperties.Name="{x:Static r:Strings.ActionDeleteFiles}" ToolTip="{x:Static r:Strings.ActionDeleteFilesToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE107;" /><TextBlock Text="{x:Static r:Strings.ActionDeleteFiles}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding DeleteFilesCommand}" Tag="deletefiles" AutomationProperties.Name="{l:Loc ActionDeleteFiles}" ToolTip="{l:Loc ActionDeleteFilesToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE107;" /><TextBlock Text="{l:Loc ActionDeleteFiles}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding ProgressCommand}" Tag="progress" AutomationProperties.Name="{x:Static r:Strings.ActionProgress}" ToolTip="{x:Static r:Strings.ActionProgressToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE9D9;" /><TextBlock Text="{x:Static r:Strings.ActionProgress}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding ProgressCommand}" Tag="progress" AutomationProperties.Name="{l:Loc ActionProgress}" ToolTip="{l:Loc ActionProgressToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE9D9;" /><TextBlock Text="{l:Loc ActionProgress}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding PropertiesCommand}" Tag="properties" AutomationProperties.Name="{x:Static r:Strings.ActionProperties}" ToolTip="{x:Static r:Strings.ActionPropertiesToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE946;" /><TextBlock Text="{x:Static r:Strings.ActionProperties}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding PropertiesCommand}" Tag="properties" AutomationProperties.Name="{l:Loc ActionProperties}" ToolTip="{l:Loc ActionPropertiesToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE946;" /><TextBlock Text="{l:Loc ActionProperties}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
                 <Rectangle Style="{StaticResource Separator}" />
-                <Button Style="{StaticResource ToolButton}" Command="{Binding MoveUpCommand}" Tag="up" MinWidth="44" AutomationProperties.Name="{x:Static r:Strings.ActionUp}" ToolTip="{x:Static r:Strings.ActionUpToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74A;" /><TextBlock Text="{x:Static r:Strings.ActionUp}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding MoveUpCommand}" Tag="up" MinWidth="44" AutomationProperties.Name="{l:Loc ActionUp}" ToolTip="{l:Loc ActionUpToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74A;" /><TextBlock Text="{l:Loc ActionUp}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding MoveDownCommand}" Tag="down" MinWidth="44" AutomationProperties.Name="{x:Static r:Strings.ActionDown}" ToolTip="{x:Static r:Strings.ActionDownToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74B;" /><TextBlock Text="{x:Static r:Strings.ActionDown}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding MoveDownCommand}" Tag="down" MinWidth="44" AutomationProperties.Name="{l:Loc ActionDown}" ToolTip="{l:Loc ActionDownToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE74B;" /><TextBlock Text="{l:Loc ActionDown}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
                 <Rectangle Style="{StaticResource Separator}" />
                 <Button Style="{StaticResource ToolButton}" Command="{Binding ToggleQueueCommand}" Tag="queue" MinWidth="92"
@@ -65,23 +66,23 @@
                 </Button>
 
                 <Button x:Name="MoreButton" DockPanel.Dock="Right" Style="{StaticResource ToolButton}" Click="OnMore" MinWidth="44"
-                        AutomationProperties.Name="{x:Static r:Strings.ActionMore}" ToolTip="{x:Static r:Strings.ActionMoreToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE712;" /><TextBlock Text="{x:Static r:Strings.ActionMore}" Margin="0,3,0,0" /></StackPanel>
+                        AutomationProperties.Name="{l:Loc ActionMore}" ToolTip="{l:Loc ActionMoreToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE712;" /><TextBlock Text="{l:Loc ActionMore}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding SettingsCommand}" Tag="settings" AutomationProperties.Name="{x:Static r:Strings.ActionSettings}" ToolTip="{x:Static r:Strings.ActionSettings}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE713;" /><TextBlock Text="{x:Static r:Strings.ActionSettings}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding SettingsCommand}" Tag="settings" AutomationProperties.Name="{l:Loc ActionSettings}" ToolTip="{l:Loc ActionSettings}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE713;" /><TextBlock Text="{l:Loc ActionSettings}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding GrabberCommand}" Tag="grabber" AutomationProperties.Name="{x:Static r:Strings.ActionGrabber}" ToolTip="{x:Static r:Strings.ActionGrabberToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE774;" /><TextBlock Text="{x:Static r:Strings.ActionGrabber}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding GrabberCommand}" Tag="grabber" AutomationProperties.Name="{l:Loc ActionGrabber}" ToolTip="{l:Loc ActionGrabberToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE774;" /><TextBlock Text="{l:Loc ActionGrabber}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding QueuesCommand}" Tag="queues" AutomationProperties.Name="{x:Static r:Strings.ActionQueues}" ToolTip="{x:Static r:Strings.ActionQueuesToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE823;" /><TextBlock Text="{x:Static r:Strings.ActionQueues}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding QueuesCommand}" Tag="queues" AutomationProperties.Name="{l:Loc ActionQueues}" ToolTip="{l:Loc ActionQueuesToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE823;" /><TextBlock Text="{l:Loc ActionQueues}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding CategoriesCommand}" Tag="categories" AutomationProperties.Name="{x:Static r:Strings.ActionCategories}" ToolTip="{x:Static r:Strings.ActionCategoriesToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE8FD;" /><TextBlock Text="{x:Static r:Strings.ActionCategories}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding CategoriesCommand}" Tag="categories" AutomationProperties.Name="{l:Loc ActionCategories}" ToolTip="{l:Loc ActionCategoriesToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE8FD;" /><TextBlock Text="{l:Loc ActionCategories}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
-                <Button Style="{StaticResource ToolButton}" Command="{Binding OpenDownloadFolderCommand}" Tag="folder" AutomationProperties.Name="{x:Static r:Strings.ActionFolder}" ToolTip="{x:Static r:Strings.ActionFolderToolTip}">
-                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE838;" /><TextBlock Text="{x:Static r:Strings.ActionFolder}" Margin="0,3,0,0" /></StackPanel>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding OpenDownloadFolderCommand}" Tag="folder" AutomationProperties.Name="{l:Loc ActionFolder}" ToolTip="{l:Loc ActionFolderToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE838;" /><TextBlock Text="{l:Loc ActionFolder}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
             </DockPanel>
         </Border>
@@ -97,7 +98,7 @@
             <Border Background="{DynamicResource SurfaceAltBrush}">
                 <TreeView x:Name="NavigationTree" ItemsSource="{Binding Navigation}" Background="Transparent" BorderThickness="0" Padding="6,10"
                           AllowDrop="True" DragOver="OnTreeDragOver" Drop="OnTreeDrop"
-                          AutomationProperties.Name="{x:Static r:Strings.NavigationName}" KeyboardNavigation.TabNavigation="Once">
+                          AutomationProperties.Name="{l:Loc NavigationName}" KeyboardNavigation.TabNavigation="Once">
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
                             <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
@@ -152,22 +153,22 @@
                     <Border DockPanel.Dock="Bottom" Margin="0,10,0,0" Padding="12,8" CornerRadius="6" Background="{DynamicResource AccentSoftBrush}"
                             Visibility="{Binding ShowStartupWarning, Converter={StaticResource BoolToVisibility}}">
                         <DockPanel>
-                            <Button DockPanel.Dock="Right" Content="{x:Static r:Strings.EnableStartup}" Style="{StaticResource DialogButton}"
+                            <Button DockPanel.Dock="Right" Content="{l:Loc EnableStartup}" Style="{StaticResource DialogButton}"
                                     Command="{Binding EnableStartupCommand}" />
-                            <TextBlock Text="{x:Static r:Strings.StartupWarning}" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
+                            <TextBlock Text="{l:Loc StartupWarning}" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.LiveSetting="Polite" />
                         </DockPanel>
                     </Border>
                     <Grid DockPanel.Dock="Right" Width="280">
                         <TextBox x:Name="SearchBox" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Padding="30,6,30,6"
-                                 AutomationProperties.Name="{x:Static r:Strings.SearchName}" ToolTip="{x:Static r:Strings.SearchToolTip}">
+                                 AutomationProperties.Name="{l:Loc SearchName}" ToolTip="{l:Loc SearchToolTip}">
                             <TextBox.InputBindings>
                                 <KeyBinding Key="Escape" Command="{Binding ClearSearchCommand}" />
                             </TextBox.InputBindings>
                         </TextBox>
                         <TextBlock FontFamily="{StaticResource IconFont}" Text="&#xE721;" Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"
                                    Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False" />
-                        <TextBlock Text="{x:Static r:Strings.SearchPlaceholder}" Margin="31,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"
-                                   Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False">
+                        <TextBlock Text="{l:Loc SearchPlaceholder}" Margin="31,0,8,0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                   TextTrimming="CharacterEllipsis" Foreground="{DynamicResource MutedBrush}" IsHitTestVisible="False">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed" />
@@ -187,7 +188,7 @@
                           SelectionMode="Extended" SelectionUnit="FullRow" HeadersVisibility="Column"
                           GridLinesVisibility="None" CanUserResizeRows="False" CanUserSortColumns="True" CanUserReorderColumns="True" CanUserResizeColumns="True"
                           Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                          RowHeight="36" HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="{x:Static r:Strings.ListName}"
+                          RowHeight="36" HorizontalScrollBarVisibility="Auto" AutomationProperties.Name="{l:Loc ListName}"
                           EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                           SelectionChanged="OnSelectionChanged" Sorting="OnSorting" MouseDoubleClick="OnRowDoubleClick"
                           c:ListSelection.IsEnabled="True"
@@ -217,7 +218,7 @@
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="{x:Static r:Strings.ColumnName}" SortMemberPath="Name" Width="2*" MinWidth="180">
+                        <DataGridTemplateColumn Header="{l:Loc ColumnName}" SortMemberPath="Name" Width="2*" MinWidth="180">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
@@ -228,8 +229,8 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="{x:Static r:Strings.ColumnSize}" SortMemberPath="SizeSort" Binding="{Binding SizeText}" Width="112" />
-                        <DataGridTemplateColumn Header="{x:Static r:Strings.ColumnProgress}" SortMemberPath="Progress" Width="140">
+                        <DataGridTextColumn Header="{l:Loc ColumnSize}" SortMemberPath="SizeSort" Binding="{Binding SizeText}" Width="112" />
+                        <DataGridTemplateColumn Header="{l:Loc ColumnProgress}" SortMemberPath="Progress" Width="140">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid>
@@ -242,15 +243,15 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="{x:Static r:Strings.ColumnSpeed}" SortMemberPath="Speed" Binding="{Binding SpeedText}" Width="96" />
-                        <DataGridTextColumn Header="{x:Static r:Strings.ColumnRemaining}" SortMemberPath="RemainingSort" Binding="{Binding EtaText}" Width="128" />
-                        <DataGridTextColumn Header="{x:Static r:Strings.ColumnConnections}" SortMemberPath="Connections" Binding="{Binding ConnectionsText}" Width="78" />
-                        <DataGridTextColumn Header="{x:Static r:Strings.ColumnStatus}" SortMemberPath="StatusSort" Binding="{Binding StatusText}" Width="115" />
-                        <DataGridTextColumn Header="{x:Static r:Strings.ColumnCategory}" SortMemberPath="CategoryName" Binding="{Binding CategoryName}" Width="110" />
-                        <DataGridTextColumn Header="{x:Static r:Strings.ColumnQueue}" SortMemberPath="QueueName" Binding="{Binding QueueName}" Width="130" Visibility="Collapsed" />
-                        <DataGridTextColumn Header="{x:Static r:Strings.ColumnAdded}" SortMemberPath="AddedUtc" Binding="{Binding AddedText}" Width="130" />
-                        <DataGridTextColumn Header="{x:Static r:Strings.ColumnCompleted}" SortMemberPath="CompletedUtc" Binding="{Binding CompletedText}" Width="130" Visibility="Collapsed" />
-                        <DataGridTextColumn Header="{x:Static r:Strings.ColumnFolder}" SortMemberPath="Directory" Binding="{Binding Directory}" Width="200" Visibility="Collapsed" />
+                        <DataGridTextColumn Header="{l:Loc ColumnSpeed}" SortMemberPath="Speed" Binding="{Binding SpeedText}" Width="96" />
+                        <DataGridTextColumn Header="{l:Loc ColumnRemaining}" SortMemberPath="RemainingSort" Binding="{Binding EtaText}" Width="128" />
+                        <DataGridTextColumn Header="{l:Loc ColumnConnections}" SortMemberPath="Connections" Binding="{Binding ConnectionsText}" Width="78" />
+                        <DataGridTextColumn Header="{l:Loc ColumnStatus}" SortMemberPath="StatusSort" Binding="{Binding StatusText}" Width="115" />
+                        <DataGridTextColumn Header="{l:Loc ColumnCategory}" SortMemberPath="CategoryName" Binding="{Binding CategoryName}" Width="110" />
+                        <DataGridTextColumn Header="{l:Loc ColumnQueue}" SortMemberPath="QueueName" Binding="{Binding QueueName}" Width="130" Visibility="Collapsed" />
+                        <DataGridTextColumn Header="{l:Loc ColumnAdded}" SortMemberPath="AddedUtc" Binding="{Binding AddedText}" Width="165" MinWidth="150" />
+                        <DataGridTextColumn Header="{l:Loc ColumnCompleted}" SortMemberPath="CompletedUtc" Binding="{Binding CompletedText}" Width="165" MinWidth="150" Visibility="Collapsed" />
+                        <DataGridTextColumn Header="{l:Loc ColumnFolder}" SortMemberPath="Directory" Binding="{Binding Directory}" Width="200" Visibility="Collapsed" />
                     </DataGrid.Columns>
                 </DataGrid>
 
@@ -268,6 +269,7 @@
             <DockPanel>
                 <TextBlock Text="{Binding SpeedText}" DockPanel.Dock="Right" Foreground="{DynamicResource MutedBrush}" />
                 <TextBlock Text="{Binding SelectionText}" DockPanel.Dock="Right" Margin="0,0,24,0" Foreground="{DynamicResource TextBrush}"
+                           ToolTip="{Binding SelectionToolTip}" AutomationProperties.HelpText="{Binding SelectionToolTip}"
                            AutomationProperties.LiveSetting="Polite" />
                 <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource MutedBrush}" />
             </DockPanel>

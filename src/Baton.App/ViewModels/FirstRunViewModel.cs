@@ -13,7 +13,7 @@ namespace Baton.App.ViewModels;
 public sealed class CategoryFolderRow(Category category)
 {
     public long Id => category.Id;
-    public string Name => category.Name;
+    public string Name => category.DisplayName;
 
     /// <summary>Relative to the download folder, or a full path.</summary>
     public string Folder { get; set; } = category.Folder;
@@ -32,6 +32,8 @@ public sealed class BrowserRow(DetectedBrowser browser, string? extensionFolder,
         : string.Format(CultureInfo.CurrentCulture, Strings.FirstRunChromiumSteps, browser.ExtensionsPage, extensionFolder ?? Strings.FirstRunExtensionFolderUnknown);
 
     /// <summary>Browsers do not let other programs open their internal pages: the address is copied to paste in the address bar.</summary>
+    public string CopyPageName => string.Format(CultureInfo.CurrentCulture, Strings.FirstRunCopyPageName, Name);
+
     public ICommand CopyPageCommand { get; } = new RelayCommand(() => shell.SetClipboardText(browser.ExtensionsPage));
 
     public override string ToString() => Name;

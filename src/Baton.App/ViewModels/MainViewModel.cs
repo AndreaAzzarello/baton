@@ -232,7 +232,7 @@ public sealed class MainViewModel : ObservableObject
     public IReadOnlyList<DownloadQueue> Queues => _queues;
 
     /// <summary>A schedule works only while the app runs: warn when it does not start with Windows.</summary>
-    public bool ShowStartupWarning => _queues.Any(q => q.Schedule.Enabled) && !_startup.IsEnabled;
+    public bool ShowStartupWarning => _startup.IsAvailable && _queues.Any(q => q.Schedule.Enabled) && !_startup.IsEnabled;
 
     private bool IsRunning(long queueId) => _queueStatuses.FirstOrDefault(s => s.QueueId == queueId)?.State == QueueState.Running;
 
@@ -244,7 +244,7 @@ public sealed class MainViewModel : ObservableObject
 
     public bool QueueRunning => IsRunning(CurrentQueueId);
 
-    private string CurrentQueueName => _queues.FirstOrDefault(q => q.Id == CurrentQueueId)?.Name ?? "";
+    private string CurrentQueueName => _queues.FirstOrDefault(q => q.Id == CurrentQueueId)?.DisplayName ?? "";
 
     public string QueueText => QueueRunning ? Strings.QueueStop : Strings.QueueStart;
 
@@ -267,16 +267,43 @@ public sealed class MainViewModel : ObservableObject
     {
         _selected = selected.ToList();
         OnPropertyChanged(nameof(SelectionText));
+        OnPropertyChanged(nameof(SelectionToolTip));
         CommandManager.InvalidateRequerySuggested();
     }
 
-    /// <summary>"3 selezionati · 1,2 GB" in the status bar; empty without a selection.</summary>
-    public string SelectionText => _selected.Count switch
+    /// <summary>
+    /// "3 selected · 1.2 GB of 4.8 GB" in the status bar: downloaded so far of the total size; "?" for the total when a
+    /// server did not give the size of one of them. Empty without a selection.
+    /// </summary>
+    public string SelectionText
     {
-        0 => "",
-        1 => string.Format(CultureInfo.CurrentCulture, Strings.SelectionStatusOne, Format.Bytes(SizeOf(_selected))),
-        var n => string.Format(CultureInfo.CurrentCulture, Strings.SelectionStatus, n, Format.Bytes(SizeOf(_selected))),
-    };
+        get
+        {
+            if (_selected.Count == 0)
+                return "";
+            var downloaded = Format.Bytes(SizeOf(_selected));
+            var total = TotalOf(_selected) is { } bytes ? Format.Bytes(bytes) : "?";
+            return _selected.Count == 1
+                ? string.Format(CultureInfo.CurrentCulture, Strings.SelectionStatusOne, downloaded, total)
+                : string.Format(CultureInfo.CurrentCulture, Strings.SelectionStatus, _selected.Count, downloaded, total);
+        }
+    }
+
+    /// <summary>Explains the "?" of <see cref="SelectionText"/>; null when the total is known.</summary>
+    public string? SelectionToolTip => _selected.Count > 0 && TotalOf(_selected) is null ? Strings.SelectionTotalUnknown : null;
+
+    /// <summary>The sum of the sizes, or null when a download's size is not known (yet).</summary>
+    private static long? TotalOf(IEnumerable<DownloadItemViewModel> items)
+    {
+        long total = 0;
+        foreach (var item in items)
+        {
+            if (item.Snapshot.TotalSize is not { } size)
+                return null;
+            total += size;
+        }
+        return total;
+    }
 
     /// <summary>What the downloads take on the disk: the whole file once finished, else what was downloaded so far.</summary>
     private static long SizeOf(IEnumerable<DownloadItemViewModel> items) =>
@@ -540,7 +567,7 @@ public sealed class MainViewModel : ObservableObject
         foreach (var snap in snapshots)
         {
             var category = CategoryName(snap.CategoryId);
-            var queue = _queues.FirstOrDefault(q => q.Id == snap.QueueId)?.Name ?? "";
+            var queue = _queues.FirstOrDefault(q => q.Id == snap.QueueId)?.DisplayName ?? "";
             if (byId.TryGetValue(snap.Id, out var vm))
                 vm.Update(snap, category, queue, elapsed);
             else
@@ -576,6 +603,11 @@ public sealed class MainViewModel : ObservableObject
 
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(SpeedText));
+        if (_selected.Count > 0)
+        {
+            OnPropertyChanged(nameof(SelectionText)); // what was downloaded grows
+            OnPropertyChanged(nameof(SelectionToolTip));
+        }
         OnPropertyChanged(nameof(QueueRunning));
         OnPropertyChanged(nameof(QueueText));
         OnPropertyChanged(nameof(QueueGlyph));
@@ -592,7 +624,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(EmptyHint));
     }
 
-    private string CategoryName(long? id) => _categories.FirstOrDefault(c => c.Id == id)?.Name ?? "";
+    private string CategoryName(long? id) => _categories.FirstOrDefault(c => c.Id == id)?.DisplayName ?? "";
 
     /// <summary>"Running", "Scheduled: Mon 22:00" or "Stopped", for the side panel and the tray.</summary>
     public string QueueStateText(QueueStatus status) => status.State switch
@@ -637,7 +669,7 @@ public sealed class MainViewModel : ObservableObject
         {
             var root = new NavigationNodeViewModel(title, glyph, status, null, OnNodeSelected) { IsExpanded = expanded.Contains(status) };
             foreach (var category in _categories)
-                root.Children.Add(new NavigationNodeViewModel(category.Name, CategoryGlyph(category), status, category.Id, OnNodeSelected));
+                root.Children.Add(new NavigationNodeViewModel(category.DisplayName, CategoryGlyph(category), status, category.Id, OnNodeSelected));
             Navigation.Add(root);
         }
 
@@ -647,7 +679,7 @@ public sealed class MainViewModel : ObservableObject
             IsExpanded = queuesExpanded,
         };
         foreach (var queue in _queues)
-            queuesRoot.Children.Add(new NavigationNodeViewModel(queue.Name, "\uE71A", StatusFilter.All, null, OnNodeSelected, queue.Id));
+            queuesRoot.Children.Add(new NavigationNodeViewModel(queue.DisplayName, "\uE71A", StatusFilter.All, null, OnNodeSelected, queue.Id));
         Navigation.Add(queuesRoot);
 
         var all = Navigation.SelectMany(n => n.Children.Prepend(n)).ToList();
@@ -805,19 +837,19 @@ public sealed class MainViewModel : ObservableObject
     {
         if (_queues.FirstOrDefault(q => q.Id == id) is not { IsMain: false } queue)
             return;
-        if (_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmDeleteQueue, queue.Name), Strings.QueuesTitle))
+        if (_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmDeleteQueue, queue.DisplayName), Strings.QueuesTitle))
             _service.DeleteQueue(queue.Id);
     }
 
     private void ShowSettings()
     {
-        var dialog = new SettingsViewModel(_dialogs, _service.Settings, _startup.IsEnabled, _service.Credentials, _service.Certificates,
+        var dialog = new SettingsViewModel(_dialogs, _service.Settings, _startup.IsAvailable ? _startup.IsEnabled : null, _service.Credentials, _service.Certificates,
             Updates is { } updates ? url => updates.CheckAsync(url, interactive: true) : null,
             Updates is { } restore && UpdateService.CanRestore ? restore.RestorePrevious : null);
         if (!_dialogs.ShowSettings(dialog) || dialog.Result is null)
             return;
         _service.UpdateSettings(dialog.Result);
-        if (dialog.RunAtStartup != _startup.IsEnabled)
+        if (_startup.IsAvailable && dialog.RunAtStartup != _startup.IsEnabled)
             _startup.Set(dialog.RunAtStartup);
         SettingsSaved?.Invoke(dialog.Result);
         Refresh();
@@ -825,6 +857,13 @@ public sealed class MainViewModel : ObservableObject
 
     /// <summary>Set by the app: update checks and "restore previous version".</summary>
     public UpdateService? Updates { get; set; }
+
+    /// <summary>Texts built here (side panel, status bar, list) in the new language.</summary>
+    public void OnLanguageChanged()
+    {
+        BuildNavigation();
+        Refresh();
+    }
 
     /// <summary>Lets the app apply settings that concern the UI, such as the theme.</summary>
     public event Action<AppSettings>? SettingsSaved;
@@ -846,7 +885,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (_categories.FirstOrDefault(c => c.Id == id) is not { IsGeneral: false } category)
             return;
-        if (_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmDeleteCategory, category.Name), Strings.CategoriesTitle))
+        if (_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmDeleteCategory, category.DisplayName), Strings.CategoriesTitle))
             _service.DeleteCategory(category.Id);
     }
 
