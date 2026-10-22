@@ -4,7 +4,7 @@ Writes the winget manifests (AndreaAzzarello.Baton) and the Scoop manifest (bato
 that will be published: version and SHA-256 come from the files themselves.
 
 .EXAMPLE
-powershell -File tools\make-manifests.ps1 -Setup dist\release\Baton-Setup-1.3.0.exe -Zip dist\release\Baton-1.3.0-portable.zip
+powershell -File tools\make-manifests.ps1 -Setup dist\release\Baton-Setup-1.3.1.exe -Zip dist\release\Baton-1.3.1-portable.zip
 
 Run it on the files that are attached to the GitHub release (after the Authenticode signature, which changes the hash).
 Outputs packaging\winget\manifests\a\AndreaAzzarello\Baton\<version>\ (to copy into a fork of microsoft/winget-pkgs)

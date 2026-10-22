@@ -157,28 +157,37 @@ public sealed class Phase6Tests : IAsyncLifetime
         var seen = new List<string>();
         // Polled as fast as possible: the moment between the last checkpoint and the end of the job used to show
         // "completed" with no check pending yet (the list and the tests then read a download without its verdict).
-        for (var watch = Stopwatch.StartNew(); watch.Elapsed < TimeSpan.FromSeconds(30); )
+        DownloadSnapshot last;
+        var watch = Stopwatch.StartNew();
+        do
         {
-            var s = _downloads.GetSnapshot(id)!;
-            if (s.Status == DownloadStatus.Completed && s.Check is not { Pending: true } && s.Check?.HashMatches is null)
-                seen.Add($"{s.Check?.Pending} {s.Check?.ComputedHash}");
-            if (s.Check is { Pending: false, HashMatches: not null })
-                break;
+            last = _downloads.GetSnapshot(id)!;
+            if (last.Status == DownloadStatus.Completed && last.Check is not { Pending: true } && last.Check?.HashMatches is null)
+                seen.Add($"{last.Check?.Pending} {last.Check?.ComputedHash}");
+            await Task.Yield(); // as often as possible, without keeping the service's lock from the download
         }
+        while (last.Check is not { Pending: false, HashMatches: not null } && last.Status != DownloadStatus.Failed
+               && watch.Elapsed < TimeSpan.FromSeconds(30));
         Assert.Empty(seen);
-        Assert.True(_downloads.GetSnapshot(id)!.Check!.HashMatches);
+        Assert.True(last.Check?.HashMatches == true, $"status {last.Status}, error {last.Error}, check pending {last.Check?.Pending}");
+    }
+
+    private static string TempFile(byte[] content)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "dm-tests", $"locked-{Guid.NewGuid():N}.bin");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, content);
+        return path;
     }
 
     [Fact]
-    public async Task Hash_IsComputed_WhileAnotherProgramHasTheFileOpen()
+    public async Task Hash_IsComputed_WhileAnotherProgramReadsTheFile()
     {
-        // As an antivirus scanning a file just written: open for reading and writing, shared.
-        var path = Path.Combine(Path.GetTempPath(), "dm-tests", $"locked-{Guid.NewGuid():N}.bin");
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllBytes(path, [1, 2, 3]);
+        // As an antivirus scanning a file just written: reading it, shared with everyone.
+        var path = TempFile([1, 2, 3]);
         try
         {
-            using (new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete))
+            using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
                 Assert.Equal(Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData([1, 2, 3])),
                     await FileHash.ComputeAsync(path, "SHA256", CancellationToken.None));
         }
@@ -186,6 +195,28 @@ public sealed class Phase6Tests : IAsyncLifetime
         {
             File.Delete(path);
         }
+    }
+
+    [Fact]
+    public async Task Hash_WaitsForAWriterToLetGo_AndAMissingFileFailsAtOnce()
+    {
+        var path = TempFile([4, 5, 6]);
+        try
+        {
+            // A program holding the file for writing: never hashed meanwhile, tried again until it lets go.
+            var holder = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            var release = Task.Delay(700).ContinueWith(_ => holder.Dispose(), TaskScheduler.Default);
+            Assert.Equal(Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData([4, 5, 6])),
+                await FileHash.ComputeAsync(path, "SHA256", CancellationToken.None));
+            await release;
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+        var watch = Stopwatch.StartNew();
+        await Assert.ThrowsAsync<FileNotFoundException>(() => FileHash.ComputeAsync(path, "SHA256", CancellationToken.None));
+        Assert.True(watch.Elapsed < TimeSpan.FromMilliseconds(400), $"{watch.Elapsed}");
     }
 
     [Fact]

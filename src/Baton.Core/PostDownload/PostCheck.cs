@@ -121,7 +121,27 @@ public static class FileHash
         return true;
     }
 
-    public static async Task<string> ComputeAsync(string path, string algorithm, CancellationToken ct)
+    /// <summary>
+    /// The hash of a file. A file just written can be held for a moment by another program (an antivirus scanning it):
+    /// it is read alongside other readers, and a sharing conflict is tried again a few times before it counts. A file that
+    /// is gone fails at once.
+    /// </summary>
+    public static async Task<string> ComputeAsync(string path, string algorithm, CancellationToken ct, int attempts = 5)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await ComputeOnceAsync(path, algorithm, ct);
+            }
+            catch (IOException ex) when (attempt < attempts && ex is not (FileNotFoundException or DirectoryNotFoundException))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(500 * attempt), ct);
+            }
+        }
+    }
+
+    private static async Task<string> ComputeOnceAsync(string path, string algorithm, CancellationToken ct)
     {
         using HashAlgorithm hash = algorithm switch
         {
@@ -130,8 +150,8 @@ public static class FileHash
             "SHA256" => SHA256.Create(),
             _ => throw new ArgumentException("Unknown hash algorithm.", nameof(algorithm)),
         };
-        // Shared with whoever else has it open (an antivirus scanning the new file): this only reads.
-        await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 20,
+        // Other readers (and a deletion) are allowed, never a writer: the hash must be of bytes that stay put.
+        await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 1 << 20,
             FileOptions.Asynchronous | FileOptions.SequentialScan);
         var bytes = await hash.ComputeHashAsync(file, ct);
         return Convert.ToHexStringLower(bytes);

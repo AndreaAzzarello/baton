@@ -14,7 +14,8 @@ internal static class TestIsolation
 
     /// <summary>
     /// The engine's texts and formats in Italian, whatever the language of the machine (CI runs in English): many tests
-    /// check messages as the Italian user reads them. Tests about languages pick their culture explicitly.
+    /// check messages as the Italian user reads them. Strings.Culture wins over the thread's culture: a test about another
+    /// language reads the resources with an explicit culture (ResourceManager.GetString(key, culture)) or sets Strings.Culture.
     /// </summary>
     [ModuleInitializer]
     internal static void ItalianTexts()

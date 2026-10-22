@@ -45,7 +45,8 @@ only when the user turns on "Check for updates at startup" (off by default), to 
 ## How a release is made
 
 1. **CI builds.** A tag `v<version>` starts the release workflow: build with zero warnings, all tests, then `Baton.exe`
-   (reproducible: SDK pinned in `global.json`, `ContinuousIntegrationBuild`, the same source gives the same file).
+   (reproducible: SDK pinned in `global.json`, LF line endings, `ContinuousIntegrationBuild`: the same commit gives the
+   same `Baton.exe` byte for byte on a PC and on GitHub Actions; the installer and the zip differ between machines).
 2. **SignPath signs** `Baton.exe` with Authenticode (artifact configuration `baton-exe`); the installer and the portable
    zip are built from the signed program, then the installer is signed too (`baton-setup`). Each request waits for the
    approver. The workflow uploads everything as the artifact `baton-<version>-release`, with `SHA256SUMS.txt`.
@@ -65,7 +66,7 @@ same files without Authenticode, and steps 3–5 are the same.
 ## Verifying a download
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.0.exe"   # .sha256 and .sig next to it
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.1.exe"   # .sha256 and .sig next to it
 ```
 
 It checks the SHA-256, the release-key signature (version + file name + hash) and, when the file carries one, the

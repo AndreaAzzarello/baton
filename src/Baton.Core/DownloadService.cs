@@ -1293,19 +1293,18 @@ public sealed class DownloadService : IAsyncDisposable
                 {
                     record.Context = null; // session cookies are not kept longer than needed
                     record.Failures = 0;
-                    if (NeedsChecks(record))
-                    {
-                        // Announced as completed once the checks have an outcome.
-                        record.Check ??= new PostCheck();
-                        record.Check.Pending = true;
+                    // Announced as completed once the checks have an outcome.
+                    if (MarkChecksPendingLocked(record))
                         checks = record.Id;
-                    }
                     else
-                    {
                         completed = SnapshotLocked(record);
-                    }
                 }
-                else if (final == DownloadStatus.Failed && active.FromQueue && queue is not null && record.Failures < queue.RetryCount)
+                else if (record.Check is { Pending: true })
+                {
+                    // Marked by the last checkpoint, but the download did not end completed: no check will run.
+                    record.Check.Pending = false;
+                }
+                if (final == DownloadStatus.Failed && active.FromQueue && queue is not null && record.Failures < queue.RetryCount)
                 {
                     // The queue tries again later instead of giving up.
                     record.Failures++;
@@ -1328,6 +1327,19 @@ public sealed class DownloadService : IAsyncDisposable
             QueuesChanged?.Invoke();
         foreach (var queue in finished)
             QueueFinished?.Invoke(queue);
+    }
+
+    /// <summary>
+    /// A completed download that has checks to run is marked so before anyone can read it as completed (by the last
+    /// checkpoint, then again when the job ends); false when it has none.
+    /// </summary>
+    private bool MarkChecksPendingLocked(DownloadRecord record)
+    {
+        if (!NeedsChecks(record))
+            return false;
+        record.Check ??= new PostCheck();
+        record.Check.Pending = true;
+        return true;
     }
 
     private bool NeedsChecks(DownloadRecord record) =>
@@ -1433,21 +1445,14 @@ public sealed class DownloadService : IAsyncDisposable
         var algorithm = check.HashAlgorithm ?? (settings.ComputeHashOnCompletion ? settings.HashAlgorithm : null);
         if (algorithm is not null && check.ComputedHash is null)
         {
-            check.HashAlgorithm = algorithm;
-            // A file just written can be locked for a moment (an antivirus scanning it): a few tries before giving up.
-            for (var attempt = 1; check.ComputedHash is null; attempt++)
+            try
             {
-                try
-                {
-                    check.ComputedHash = await FileHash.ComputeAsync(path, algorithm, _lifetime.Token);
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    Log.Warning("hash", $"download {id}, attempt {attempt}: {StorageErrors.Describe(ex)}");
-                    if (attempt == 5)
-                        break;
-                    await Task.Delay(TimeSpan.FromMilliseconds(500 * attempt), _lifetime.Token);
-                }
+                check.HashAlgorithm = algorithm;
+                check.ComputedHash = await FileHash.ComputeAsync(path, algorithm, _lifetime.Token);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Log.Warning("hash", $"download {id}: {StorageErrors.Describe(ex)}");
             }
         }
         if (settings.ScanOnCompletion && check.Scan is null)
@@ -1553,11 +1558,7 @@ public sealed class DownloadService : IAsyncDisposable
                     record.Status = DownloadStatus.Completed;
                     record.CompletedUtc = snapshot.CompletedUtc;
                     // Never seen as completed without its checks: they are pending from this same instant.
-                    if (NeedsChecks(record))
-                    {
-                        record.Check ??= new PostCheck();
-                        record.Check.Pending = true;
-                    }
+                    MarkChecksPendingLocked(record);
                 }
                 _store.Update(record);
             }

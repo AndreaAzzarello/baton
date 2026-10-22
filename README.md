@@ -105,8 +105,8 @@ Once SignPath signs the releases they also carry an Authenticode signature, made
 file. From a clone of this repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.0.exe"
-# OK: Baton-Setup-1.3.0.exe 1.3.0, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.1.exe"
+# OK: Baton-Setup-1.3.1.exe 1.3.1, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
 
 `SHA256SUMS.txt` lists the hashes of every file of the release, also the portable zip and the extension packages.

@@ -4,7 +4,7 @@ Builds the installer (Inno Setup) and the portable zip from a published Baton.ex
 
 .EXAMPLE
 powershell -File tools\build-packages.ps1                       # from publish\Baton.exe into dist\release
-powershell -File tools\build-packages.ps1 -Source C:\x -Out C:\y -Version 1.3.0
+powershell -File tools\build-packages.ps1 -Source C:\x -Out C:\y -Version 1.3.1
 
 The version is read from src\Baton.App\Baton.App.csproj unless given. Inno Setup's compiler is looked up in ISCC (an
 environment variable with the full path of ISCC.exe), %LOCALAPPDATA%\Programs\InnoSetup6 and Program Files.

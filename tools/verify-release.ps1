@@ -17,7 +17,7 @@
   the browser saved it under another name, e.g. "Baton (1).exe". Its .sha256 and .sig are looked for under that name too.
 .EXAMPLE
   .\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton.exe" -Version 1.2.0
-  .\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.0.exe" -RequireAuthenticode
+  .\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.1.exe" -RequireAuthenticode
 #>
 param(
   [Parameter(Mandatory = $true)][string]$Exe,

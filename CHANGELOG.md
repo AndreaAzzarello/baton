@@ -4,10 +4,13 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
-## [Non rilasciato]
+## [1.3.1] — 2026-10-22
 
-- Verifica dell'hash a fine download: un file appena scritto e tenuto aperto per un attimo da un altro programma (per
-  esempio l'antivirus) non lascia più il controllo senza esito: il file si legge in condivisione e si riprova fino a 5 volte.
+Versione di correzione: verdetto dei controlli dopo il download sempre presente, rilascio riproducibile.
+
+- Verifica dell'hash (a fine download e con «Copia hash»): un file appena scritto e tenuto aperto per un attimo da un
+  altro programma (per esempio l'antivirus) non lascia più il controllo senza esito: si legge insieme agli altri lettori e,
+  se un programma lo sta scrivendo, si riprova fino a 5 volte (mai durante una scrittura); un file sparito fallisce subito.
 - Un download con controlli (hash o antivirus) non viene più mostrato per un istante come «Completato» prima di
   «Completato · verifica…»: chi lo leggeva in quel momento lo trovava senza verdetto.
 - `tools\build-packages.ps1` accetta cartelle relative (il workflow di rilascio si fermava).
