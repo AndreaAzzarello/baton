@@ -46,7 +46,8 @@ jobs:
         run: |
           $version = ([xml](Get-Content -Raw src\Baton.App\Baton.App.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw "tag $env:GITHUB_REF_NAME does not match the version $version" }
-          "VERSION=$version" >> $env:GITHUB_ENV
+          # Not VERSION: MSBuild reads environment variables as properties, and $(Version) would change every project.
+          "BATON_VERSION=$version" >> $env:GITHUB_ENV
           # Times inside the zip come from the commit, so the same source gives the same files.
           "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> $env:GITHUB_ENV
 
@@ -96,11 +97,11 @@ jobs:
 
       - name: Installer and portable zip (from the signed Baton.exe)
         shell: pwsh
-        run: tools\build-packages.ps1 -Source out\exe -Out out\release -Version $env:VERSION
+        run: tools\build-packages.ps1 -Source out\exe -Out out\release -Version $env:BATON_VERSION
 
       - name: Prepare the installer for signing
         shell: pwsh
-        run: New-Item -ItemType Directory -Force out\tosign | Out-Null; Copy-Item "out\release\Baton-Setup-$env:VERSION.exe" out\tosign\Baton-Setup.exe
+        run: New-Item -ItemType Directory -Force out\tosign | Out-Null; Copy-Item "out\release\Baton-Setup-$env:BATON_VERSION.exe" out\tosign\Baton-Setup.exe
 
       - name: Upload the installer for signing
         id: unsigned-setup
@@ -127,7 +128,7 @@ jobs:
         shell: pwsh
         run: |
           if ($env:SIGN -eq 'true') {
-            Copy-Item out\setup\Baton-Setup.exe "out\release\Baton-Setup-$env:VERSION.exe" -Force
+            Copy-Item out\setup\Baton-Setup.exe "out\release\Baton-Setup-$env:BATON_VERSION.exe" -Force
             foreach ($f in 'out\release\Baton-Setup-*.exe', 'out\exe\Baton.exe') {
               $s = Get-AuthenticodeSignature (Resolve-Path $f)
               if ($s.Status -ne 'Valid') { throw "$f`: Authenticode $($s.Status)" }
@@ -136,7 +137,7 @@ jobs:
           }
           Copy-Item out\exe\Baton.exe, THIRD-PARTY-LICENSES.txt out\release\
           node tools/build-extension.mjs
-          Copy-Item "dist\baton-chromium-$env:VERSION.zip", "dist\baton-firefox-$env:VERSION.xpi" out\release\
+          Copy-Item "dist\baton-chromium-$env:BATON_VERSION.zip", "dist\baton-firefox-$env:BATON_VERSION.xpi" out\release\
           Get-ChildItem out\release -File | Sort-Object Name | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)" } |
             Set-Content -Encoding ascii out\release\SHA256SUMS.txt
           Get-Content out\release\SHA256SUMS.txt
@@ -144,6 +145,6 @@ jobs:
       - name: Upload the release files
         uses: actions/upload-artifact@v7
         with:
-          name: baton-${{ env.VERSION }}-release
+          name: baton-${{ env.BATON_VERSION }}-release
           path: out/release/
           if-no-files-found: error
