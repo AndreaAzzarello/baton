@@ -778,9 +778,10 @@ in inglese e italiano, fallisce se un testo non sta e, con `BATON_SHOTS=<cartell
   `%LOCALAPPDATA%\Baton` prima del primo avvio. Se una copia installata e una portable autorizzata sono entrambe presenti,
   l'host dei browser resta a quella installata finché non lo riassegni dalle Impostazioni della portable.
   L'host nativo, unico testo «Baton non ha risposto in tempo», usa la lingua di Windows. Installer: il
-  programma di disinstallazione di Inno Setup non ha la firma Authenticode (la hanno `Baton.exe` e il setup). Due
-  compilazioni dello stesso commit danno lo stesso `Baton.exe`, e con la stessa versione di Inno Setup lo stesso installer e
-  lo stesso zip.
+  programma di disinstallazione di Inno Setup non ha la firma Authenticode (la hanno `Baton.exe` e il setup). Lo stesso
+  commit dà lo stesso `Baton.exe` byte per byte sul PC e su GitHub Actions (verificato). Installer e zip sono identici solo
+  se ricompilati sulla stessa macchina con gli stessi strumenti: tra PC e CI cambiano (la compressione dello zip dipende dalla
+  versione di PowerShell, l'installer contiene dati del momento della compilazione).
 - L'estensione per Firefox va firmata dall'utente con le proprie chiavi AMO (`tools\sign-firefox.ps1`).
 - **I4 — identità dell'estensione**: l'host nativo riconosce l'estensione dal suo ID, che il browser garantisce per le estensioni
   installate dallo store o firmate. L'ID di Chromium però deriva dalla `key` pubblica nel manifest e quello di Firefox si può

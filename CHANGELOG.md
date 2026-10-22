@@ -11,6 +11,9 @@ quelle dei commit.
 - Un download con controlli (hash o antivirus) non viene più mostrato per un istante come «Completato» prima di
   «Completato · verifica…»: chi lo leggeva in quel momento lo trovava senza verdetto.
 - `tools\build-packages.ps1` accetta cartelle relative (il workflow di rilascio si fermava).
+- Build riproducibile anche tra PC e GitHub Actions: `.gitattributes` fissa il fine riga (LF), i generatori dei testi
+  scrivono LF e il workflow non esporta più `VERSION`, che MSBuild applicava come versione a tutti i progetti. Lo stesso
+  commit dà lo stesso `Baton.exe` byte per byte (verificato); installer e zip restano diversi tra macchine.
 - Test indipendenti dalla lingua di Windows (la CI gira in inglese) e da PowerShell 7 come processo padre.
 
 ## [1.3.0] — 2026-10-21
