@@ -60,6 +60,17 @@ public sealed class PackagesTests : IDisposable
     }
 
     [Fact]
+    public void ScriptsWithAccentedText_HaveABom_SoWindowsPowerShellReadsThemAsUtf8()
+    {
+        // Without it PowerShell 5.1 reads them in the ANSI code page: "più" became "piÃ¹" in the winget manifests of 1.3.1.
+        var root = Root();
+        var broken = Directory.GetFiles(Path.Combine(root, "tools"), "*.ps1", SearchOption.AllDirectories)
+            .Where(f => File.ReadAllBytes(f) is var b && b.Any(c => c > 127) && !b.AsSpan().StartsWith((byte[])[0xEF, 0xBB, 0xBF]))
+            .Select(f => Path.GetRelativePath(root, f));
+        Assert.Empty(broken);
+    }
+
+    [Fact]
     public void TheInstaller_PutsTheExtensionInTheProgramFolder_AndClearsTheOldOne()
     {
         var script = File.ReadAllLines(Path.Combine(Root(), "installer", "Baton.iss")).Select(l => l.Trim()).ToList();

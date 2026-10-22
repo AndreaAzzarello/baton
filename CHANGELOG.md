@@ -22,6 +22,9 @@ Versione di correzione, emersa provando la portable su un altro PC: l'estensione
   finché non si esegue il nuovo setup o si estrae il nuovo zip.
 - Il workflow di rilascio compila l'estensione prima dei pacchetti; `tools\build-packages.ps1` controlla che lo zip la
   contenga.
+- Manifest winget: la descrizione italiana della 1.3.1 aveva le lettere accentate rovinate («piÃ¹»), perché
+  `tools\make-manifests.ps1` aveva perso il BOM e Windows PowerShell lo leggeva come ANSI. Un test controlla ora il BOM
+  di ogni script con testo accentato.
 
 ## [1.3.1] — 2026-10-22
 

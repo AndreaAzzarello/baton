@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
 Writes the winget manifests (AndreaAzzarello.Baton) and the Scoop manifest (baton.json) for a release, from the files
 that will be published: version and SHA-256 come from the files themselves.
@@ -121,7 +121,7 @@ $scoop = [ordered]@{
     homepage = 'https://github.com/AndreaAzzarello/baton'
     license = 'MIT'
     notes = @('Data (downloads list, settings) is kept in $persist_dir\Data.',
-              'For the browser extension, allow the browser registration when Baton asks, then see the README.')
+              'The browser extension is included: allow the browser registration when Baton asks, then load the "extension" subfolder of "scoop prefix baton" (Load unpacked; that path follows updates) or baton-firefox.xpi next to it; see the README.')
     architecture = [ordered]@{ '64bit' = [ordered]@{ url = "$BaseUrl/Baton-$version-portable.zip"; hash = $zipSha } }
     shortcuts = @(, @('Baton.exe', 'Baton'))
     persist = 'Data'
