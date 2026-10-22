@@ -4,8 +4,11 @@
   (BATON_DATA: registry in memory, own pipe and data). The update window is driven with UI Automation only.
 .EXAMPLE
   powershell -File tools\trials\check-now-trial.ps1 -Exe %TEMP%\dm-trials\v130\Baton.exe -Expect 1.3.1
+  powershell -File tools\trials\check-now-trial.ps1 -Zip Baton-1.3.2-portable.zip -Expect 1.3.3   # with the extension next to it
+  (-Zip: the folder of a portable zip without portable.flag, as the installer lays it out; from 1.3.3 the extension next to
+  Baton.exe must follow the update.)
 #>
-param([Parameter(Mandatory)][string]$Exe, [Parameter(Mandatory)][string]$Expect)
+param([string]$Exe, [string]$Zip, [Parameter(Mandatory)][string]$Expect)
 $ErrorActionPreference = 'Stop'
 $work = if ($env:DM_TRIALS) { $env:DM_TRIALS } else { Join-Path $env:TEMP 'dm-trials' }
 $base = Join-Path $work 'check-now'
@@ -14,8 +17,14 @@ function Check([bool]$ok, [string]$what) { if ($ok) { "OK   $what" } else { "FAI
 if (-not (Test-Path "$work\started.txt")) { Get-Date -Format o | Set-Content "$work\started.txt" }
 Get-Process Baton -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$base\*" } | Stop-Process -Force
 if (Test-Path $base) { Remove-Item $base -Recurse -Force }
-New-Item -ItemType Directory -Force "$base\app" | Out-Null
-Copy-Item $Exe "$base\app\Baton.exe"
+if ($Zip) {
+  Expand-Archive $Zip "$base\app"
+  Remove-Item "$base\app\portable.flag"
+} else {
+  New-Item -ItemType Directory -Force "$base\app" | Out-Null
+  Copy-Item $Exe "$base\app\Baton.exe"
+}
+function ExtensionVersion { if (Test-Path "$base\app\extension\manifest.json") { (Get-Content "$base\app\extension\manifest.json" -Raw | ConvertFrom-Json).version } else { '(none)' } }
 $env:BATON_DATA = "$base\data"
 $from = Version "$base\app\Baton.exe"
 $p = Start-Process "$base\app\Baton.exe" -ArgumentList '--tray' -PassThru; Start-Sleep 6; Stop-Process -Id $p.Id -Force; Start-Sleep 2
@@ -37,6 +46,11 @@ Start-Sleep 20 # the new version reports that it started; the previous one, wait
 Check ((Version "$base\app\Baton.exe") -eq $Expect) "Baton.exe is now $(Version "$base\app\Baton.exe")"
 Check ((Version "$base\app\Baton.exe.old") -eq $from) "Baton.exe.old is $from"
 Check (@(Get-Process Baton -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq "$base\app\Baton.exe" }).Count -eq 1) "the new version is running"
+if ($Zip) {
+  for ($i = 0; $i -lt 120 -and (ExtensionVersion) -ne $Expect; $i++) { Start-Sleep 1 }
+  Check ((ExtensionVersion) -eq $Expect) "the extension next to it is $(ExtensionVersion) (extension.old: $(if (Test-Path "$base\app\extension.old") { 'kept' } else { 'none' }))"
+  Get-ChildItem "$base\data\logs" -Filter *.log | Sort-Object LastWriteTime | Select-Object -Last 1 | ForEach-Object { Select-String -Path $_.FullName -Pattern 'extension' | Select-Object -Last 3 | ForEach-Object { "     log: $($_.Line.Trim())" } }
+}
 "SHA-256 $((Get-FileHash "$base\app\Baton.exe").Hash)"
 Get-Process Baton -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$base\*" } | Stop-Process -Force
 Remove-Item Env:BATON_DATA
