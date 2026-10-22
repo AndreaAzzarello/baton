@@ -109,9 +109,11 @@ public sealed class Phase6Tests : IAsyncLifetime
         var good = await Finished(_downloads.Add("http://files.test/good.bin", expectedHash: "sha256:" + sha));
         var bad = await Finished(_downloads.Add("http://files.test/bad.bin", expectedHash: new string('0', 64)));
 
-        Assert.True(good.Check!.HashMatches);
+        static string Why(DownloadSnapshot s) =>
+            $"status {s.Status}, error {s.Error}, file {s.FinalPath} exists {File.Exists(s.FinalPath)}, expected {s.Check?.ExpectedHash}, computed {s.Check?.ComputedHash}";
+        Assert.True(good.Check!.HashMatches, Why(good));
         Assert.Equal(sha, good.Check.ComputedHash);
-        Assert.False(bad.Check!.HashMatches);
+        Assert.True(bad.Check!.HashMatches == false, Why(bad));
         Assert.True(bad.Check.HasProblem);
         Assert.NotNull(announced); // the completion is announced with the outcome
         Assert.True(announced!.Check!.HashMatches);

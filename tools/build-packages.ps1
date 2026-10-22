@@ -25,6 +25,9 @@ if (-not $Out) { $Out = Join-Path $root 'dist\release' }
 if (-not $Version) {
     $Version = ([xml](Get-Content -Raw (Join-Path $root 'src\Baton.App\Baton.App.csproj'))).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
 }
+# Full paths: Inno Setup reads relative ones from the folder of the script (installer\), not from here.
+$Source = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Source)
+$Out = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Out)
 $exe = Join-Path $Source 'Baton.exe'
 if (-not (Test-Path $exe)) { throw "Baton.exe not found in $Source (dotnet publish src\Baton.App -c Release -r win-x64 -o publish)" }
 $fileVersion = (Get-Item $exe).VersionInfo.ProductVersion
