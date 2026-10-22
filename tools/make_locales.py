@@ -152,5 +152,5 @@ for index, lang in enumerate(["en", "it"]):
     folder = root / "_locales" / lang
     folder.mkdir(parents=True, exist_ok=True)
     data = {key: {"message": values[index]} for key, values in M.items()}
-    (folder / "messages.json").write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    (folder / "messages.json").write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
 print(len(M), "messages")

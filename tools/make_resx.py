@@ -963,7 +963,7 @@ def write(name, values):
         out.append(f'  <data name="{k}" xml:space="preserve"><value>{escape(values[k])}</value></data>')
     out.append("</root>")
     target = root / "Baton.Core" / "Resources" / name
-    target.write_text("\n".join(out) + "\n", encoding="utf-8")
+    target.write_text("\n".join(out) + "\n", encoding="utf-8", newline="\n")  # LF as in the repository (.gitattributes)
     print(f"{len(values)} strings -> {target}")
 
 write("Strings.resx", {k: en for k, (en, it) in S.items()})
