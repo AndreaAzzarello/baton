@@ -146,6 +146,25 @@ public sealed class Phase6Tests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Hash_IsComputed_WhileAnotherProgramHasTheFileOpen()
+    {
+        // As an antivirus scanning a file just written: open for reading and writing, shared.
+        var path = Path.Combine(Path.GetTempPath(), "dm-tests", $"locked-{Guid.NewGuid():N}.bin");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, [1, 2, 3]);
+        try
+        {
+            using (new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete))
+                Assert.Equal(Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData([1, 2, 3])),
+                    await FileHash.ComputeAsync(path, "SHA256", CancellationToken.None));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public async Task ExpectedHashSetOnAnOldDownload_IsChecked_WithoutANewCompletionNotice()
     {
         var content = SiteResource.File(60_000, seed: 8);

@@ -131,7 +131,8 @@ public sealed class FtpTests : IAsyncLifetime
         service.LoginRequired += _ => Interlocked.Increment(ref asked);
 
         var id = service.Add(server.Url("one.bin"));
-        await WaitUntil(() => service.GetSnapshot(id)!.Status is DownloadStatus.Completed or DownloadStatus.Failed);
+        // Refusals and retries add up: on a busy CI runner 30 s was not always enough.
+        await WaitUntil(() => service.GetSnapshot(id)!.Status is DownloadStatus.Completed or DownloadStatus.Failed, seconds: 60);
 
         Assert.Equal(DownloadStatus.Completed, service.GetSnapshot(id)!.Status);
         Assert.Equal(file.Sha256, Hash(Path.Combine(_dir, "one.bin")));

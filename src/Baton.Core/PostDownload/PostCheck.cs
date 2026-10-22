@@ -130,7 +130,9 @@ public static class FileHash
             "SHA256" => SHA256.Create(),
             _ => throw new ArgumentException("Unknown hash algorithm.", nameof(algorithm)),
         };
-        await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 20, FileOptions.Asynchronous | FileOptions.SequentialScan);
+        // Shared with whoever else has it open (an antivirus scanning the new file): this only reads.
+        await using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1 << 20,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
         var bytes = await hash.ComputeHashAsync(file, ct);
         return Convert.ToHexStringLower(bytes);
     }

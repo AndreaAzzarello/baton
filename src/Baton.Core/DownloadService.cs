@@ -1433,14 +1433,21 @@ public sealed class DownloadService : IAsyncDisposable
         var algorithm = check.HashAlgorithm ?? (settings.ComputeHashOnCompletion ? settings.HashAlgorithm : null);
         if (algorithm is not null && check.ComputedHash is null)
         {
-            try
+            check.HashAlgorithm = algorithm;
+            // A file just written can be locked for a moment (an antivirus scanning it): a few tries before giving up.
+            for (var attempt = 1; check.ComputedHash is null; attempt++)
             {
-                check.HashAlgorithm = algorithm;
-                check.ComputedHash = await FileHash.ComputeAsync(path, algorithm, _lifetime.Token);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                Log.Warning("hash", $"download {id}: {StorageErrors.Describe(ex)}");
+                try
+                {
+                    check.ComputedHash = await FileHash.ComputeAsync(path, algorithm, _lifetime.Token);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Log.Warning("hash", $"download {id}, attempt {attempt}: {StorageErrors.Describe(ex)}");
+                    if (attempt == 5)
+                        break;
+                    await Task.Delay(TimeSpan.FromMilliseconds(500 * attempt), _lifetime.Token);
+                }
             }
         }
         if (settings.ScanOnCompletion && check.Scan is null)

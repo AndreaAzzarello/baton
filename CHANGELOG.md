@@ -4,6 +4,12 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
+## [Non rilasciato]
+
+- Verifica dell'hash a fine download: un file appena scritto e tenuto aperto per un attimo da un altro programma (per
+  esempio l'antivirus) non lascia più il controllo senza esito: il file si legge in condivisione e si riprova fino a 5 volte.
+- Test indipendenti dalla lingua di Windows (la CI gira in inglese) e da PowerShell 7 come processo padre.
+
 ## [1.3.0] — 2026-10-21
 
 **Ready for everyone**: Baton in inglese, con installer, winget, Scoop e versione portable.

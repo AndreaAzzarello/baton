@@ -11,6 +11,19 @@ internal static class TestIsolation
 {
     [ModuleInitializer]
     internal static void ForbidRealRegistry() => WindowsUserRegistry.Forbidden = true;
+
+    /// <summary>
+    /// The engine's texts and formats in Italian, whatever the language of the machine (CI runs in English): many tests
+    /// check messages as the Italian user reads them. Tests about languages pick their culture explicitly.
+    /// </summary>
+    [ModuleInitializer]
+    internal static void ItalianTexts()
+    {
+        var italian = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+        System.Globalization.CultureInfo.DefaultThreadCurrentCulture = italian;
+        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = italian;
+        Baton.Core.Resources.Strings.Culture = italian;
+    }
 }
 
 /// <summary>Tests never write to the real registry, and the app's registrations behave on a registry kept in memory.</summary>

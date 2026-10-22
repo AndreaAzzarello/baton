@@ -52,6 +52,8 @@ public sealed class VerifyReleaseTests : IDisposable
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
+            // Started from PowerShell 7 (as on CI), Windows PowerShell would inherit its module path and miss Get-FileHash.
+            Environment = { ["PSModulePath"] = null },
             CreateNoWindow = true,
         };
         foreach (var arg in new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", Path.Combine(Root(), "tools", "verify-release.ps1"),
