@@ -8,6 +8,9 @@ quelle dei commit.
 
 - Verifica dell'hash a fine download: un file appena scritto e tenuto aperto per un attimo da un altro programma (per
   esempio l'antivirus) non lascia più il controllo senza esito: il file si legge in condivisione e si riprova fino a 5 volte.
+- Un download con controlli (hash o antivirus) non viene più mostrato per un istante come «Completato» prima di
+  «Completato · verifica…»: chi lo leggeva in quel momento lo trovava senza verdetto.
+- `tools\build-packages.ps1` accetta cartelle relative (il workflow di rilascio si fermava).
 - Test indipendenti dalla lingua di Windows (la CI gira in inglese) e da PowerShell 7 come processo padre.
 
 ## [1.3.0] — 2026-10-21

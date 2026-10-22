@@ -1552,6 +1552,12 @@ public sealed class DownloadService : IAsyncDisposable
                 {
                     record.Status = DownloadStatus.Completed;
                     record.CompletedUtc = snapshot.CompletedUtc;
+                    // Never seen as completed without its checks: they are pending from this same instant.
+                    if (NeedsChecks(record))
+                    {
+                        record.Check ??= new PostCheck();
+                        record.Check.Pending = true;
+                    }
                 }
                 _store.Update(record);
             }

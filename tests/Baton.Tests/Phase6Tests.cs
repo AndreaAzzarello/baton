@@ -148,6 +148,28 @@ public sealed class Phase6Tests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ACompletedDownload_IsNeverSeenWithoutItsPendingChecks()
+    {
+        var content = SiteResource.File(400_000, seed: 9);
+        _site.Set("files.test", "/watched.bin", content);
+        var sha = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(content.Body));
+        var id = _downloads.Add("http://files.test/watched.bin", expectedHash: sha);
+        var seen = new List<string>();
+        // Polled as fast as possible: the moment between the last checkpoint and the end of the job used to show
+        // "completed" with no check pending yet (the list and the tests then read a download without its verdict).
+        for (var watch = Stopwatch.StartNew(); watch.Elapsed < TimeSpan.FromSeconds(30); )
+        {
+            var s = _downloads.GetSnapshot(id)!;
+            if (s.Status == DownloadStatus.Completed && s.Check is not { Pending: true } && s.Check?.HashMatches is null)
+                seen.Add($"{s.Check?.Pending} {s.Check?.ComputedHash}");
+            if (s.Check is { Pending: false, HashMatches: not null })
+                break;
+        }
+        Assert.Empty(seen);
+        Assert.True(_downloads.GetSnapshot(id)!.Check!.HashMatches);
+    }
+
+    [Fact]
     public async Task Hash_IsComputed_WhileAnotherProgramHasTheFileOpen()
     {
         // As an antivirus scanning a file just written: open for reading and writing, shared.
