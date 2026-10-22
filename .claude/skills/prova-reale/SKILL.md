@@ -52,6 +52,17 @@ Video con lingue e sottotitoli: lo stream di esempio avanzato di Apple (`.../img
 lingue audio e sottotitoli WebVTT; `probeMedia` deve elencarli in `audioTracks` e `subtitles`, e `addMedia` con `audioId`,
 `subtitleIds` e `subtitleMode` deve produrre il video e i file `.vtt`/`.srt` accanto.
 
+Estensione aggiornata insieme all'app (dalla 1.3.3), con i file **finali** firmati (mai firmare build intermedie):
+`powershell -File tools\trials\ext-update-trial.ps1 -Build -Release dist\release-<v>` serve su 127.0.0.1:8767 una release
+come quella di GitHub (`Baton.exe` e `baton-extension-<v>.zip` con `.sha256`/`.sig`); poi `-Run installed` e `-Run portable`
+con `-From <zip portable della versione precedente> -Firefox`. La copia "installed" è la cartella dello zip senza
+`portable.flag`: non eseguire l'installer per prova accanto a quello reale (stesso AppId, scriverebbe sulla voce di
+disinstallazione reale). Nella cartella `extension` va il codice nuovo etichettato con la versione vecchia (una 1.3.2 vera
+non sa ricaricarsi). L'host di Edge e Firefox è l'app installata: deve essere già la nuova versione, altrimenti perde
+`extensionVersion` nel `hello`. Deve risultare: aggiornamento offerto e installato, estensione nuova accanto (`.old` per la
+precedente), Edge che si ricarica da solo e Verifica connessione OK, `reloadTried` = versione, avviso nel popup di
+Firefox, «Restore the previous version» che rimette exe ed estensione. Porta 8790 e simili: Windows riserva 8718–8817.
+
 Aggiornamento firmato da DownloadManager 1.1 a Baton, senza toccare `publish\` né l'app reale. Serve la 1.1.0 vera:
 `git worktree add %TEMP%\dm-trials\v110-src v1.1.0` e `dotnet publish ...\src\DownloadManager.App -c Release -r win-x64 -o
 %TEMP%\dm-trials\v110`. Poi `powershell -File tools\trials\update-trial.ps1 -Build` mette la 1.1.0 in

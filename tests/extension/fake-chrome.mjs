@@ -8,7 +8,8 @@ globalThis.setTimeout = (fn, ms, ...args) => {
   return timer;
 };
 
-export function createFakeChrome({ firefox = false, nativeReply } = {}) {
+export function createFakeChrome({ firefox = false, nativeReply, version = "0.7.0", local: initialLocal = {}, session: initialSession = {},
+  installType = "development" } = {}) {
   const listeners = {};
   const event = (name) => ({
     addListener: (fn) => {
@@ -19,8 +20,8 @@ export function createFakeChrome({ firefox = false, nativeReply } = {}) {
   const record = (name) => async (...args) => {
     calls.push([name, ...args]);
   };
-  const local = {};
-  const session = {};
+  const local = { ...initialLocal };
+  const session = { ...initialSession };
   const area = (store) => ({
     get: async (keys) => {
       if (keys === null || keys === undefined) return { ...store };
@@ -52,7 +53,8 @@ export function createFakeChrome({ firefox = false, nativeReply } = {}) {
         calls.push(["native", message]);
         return nativeReply(message);
       },
-      getManifest: () => ({ version: "0.7.0" }),
+      getManifest: () => ({ version }),
+      reload: () => calls.push(["reload"]),
       getURL: (path) => `chrome-extension://test-extension/${path}`,
     },
     storage: { local: area(local), session: area(session), onChanged: event("storage.onChanged") },
@@ -69,6 +71,7 @@ export function createFakeChrome({ firefox = false, nativeReply } = {}) {
     tabs: { onUpdated: event("tabs.onUpdated"), onRemoved: event("tabs.onRemoved"), get: async (id) => ({ id, url: "https://page.test/", incognito: false }), sendMessage: async () => {} },
     scripting: { executeScript: async () => [] },
     alarms: { create: (name, info) => calls.push(["alarm", name, info]), onAlarm: event("alarms.onAlarm") },
+    management: { getSelf: async () => ({ installType }) },
     i18n: { getMessage: (key, subs) => `${key}${subs?.length ? ":" + subs.join("|") : ""}`, getUILanguage: () => "it" },
   };
   return { chrome, listeners, calls, local, session };

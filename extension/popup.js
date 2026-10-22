@@ -1,4 +1,4 @@
-import { Rules, loadSettings, sendNative, localize, t } from "./shared.js";
+import { Rules, loadSettings, sendNative, followAppUpdate, showUpdateNotice, localize, t } from "./shared.js";
 
 localize();
 const $ = (id) => document.getElementById(id);
@@ -139,6 +139,7 @@ showQueues([], settings.queue);
 $("queue").addEventListener("change", () => save({ queue: $("queue").value }));
 try {
   const reply = await sendNative({ type: "hello" }, 5000);
+  showUpdateNotice($("updateNotice"), await followAppUpdate(reply));
   const state = Rules.connectionState(reply);
   setStatus(state, state === "running" || state === "ready" ? "ok" : "bad");
   if (state === "running" || (state === "outdated" && reply?.ok !== false)) {

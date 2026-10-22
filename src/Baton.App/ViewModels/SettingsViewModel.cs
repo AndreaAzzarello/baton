@@ -50,11 +50,10 @@ public sealed class SettingsViewModel : ObservableObject
     {
         _dialogs = dialogs;
         _original = current.Clone();
-        PortableProgram = portableProgram;
         Extension = extension;
         _credentials = credentials ?? new CredentialStore(null);
         _certificates = certificates ?? new CertificateTrust(null);
-        _runAtStartup = runAtStartup;
+        Startup = new StartWithWindowsViewModel(portableProgram, runAtStartup);
         CloseToTray = current.CloseToTray;
         GlobalQuota = current.GlobalQuotaMBPerHour.ToString(CultureInfo.CurrentCulture);
         Connections = current.MaxConnections.ToString(CultureInfo.CurrentCulture);
@@ -170,22 +169,9 @@ public sealed class SettingsViewModel : ObservableObject
 
     public ICommand BrowseFfmpegCommand { get; }
     public bool NotifyOnCompletion { get; set; }
-    private bool _runAtStartup;
-
-    public bool RunAtStartup
-    {
-        get => _runAtStartup;
-        set
-        {
-            if (Set(ref _runAtStartup, value))
-                OnPropertyChanged(nameof(ShowPortableStartupWarning));
-        }
-    }
-
-    public string? PortableProgram { get; }
-    public bool IsPortable => PortableProgram is not null;
-    public bool ShowPortableStartupWarning => IsPortable && RunAtStartup;
-    public string PortableStartupWarning => string.Format(CultureInfo.CurrentCulture, Strings.SettingsPortableStartupWarning, PortableProgram);
+    public StartWithWindowsViewModel Startup { get; }
+    public bool RunAtStartup { get => Startup.Enabled; set => Startup.Enabled = value; }
+    public bool IsPortable => Startup.PortableProgram is not null;
     public BundledExtensionViewModel? Extension { get; }
 
     /// <summary>Portable copy: registered as the browsers' native messaging host (the only thing it writes to the registry).</summary>

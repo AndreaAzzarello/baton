@@ -31,8 +31,13 @@ public static class NativeHost
         || args.Length > 1 && args[1] == FirefoxExtensionId && args[0].EndsWith(".json", StringComparison.OrdinalIgnoreCase);
 
     /// <param name="appVersion">This executable's version, reported to the extension's connection check.</param>
+    /// <param name="extensionVersion">The version of the extension folder next to it, reported with <paramref name="appVersion"/>.</param>
+    /// <param name="useAppLanguage">
+    /// Sets the language chosen in the app, called only before an error text is written: the usual answer never needs it,
+    /// and reading the setting opens the database.
+    /// </param>
     public static async Task RunAsync(Stream input, Stream output, string pipeName, Func<bool> launchApp, TimeSpan startupTimeout,
-        string? appVersion = null)
+        string? appVersion = null, string? extensionVersion = null, Action? useAppLanguage = null)
     {
         while (await ReadMessageAsync(input) is { } json)
         {
@@ -43,7 +48,7 @@ public static class NativeHost
                 // Checked here as well as in the app: an invalid message never even starts the app.
                 reply = MessageValidator.Validate(message) is { } error
                     ? new ChannelReply(false, Error: error, Protocol: Messages.ProtocolVersion)
-                    : await ForwardAsync(message, pipeName, launchApp, startupTimeout, appVersion);
+                    : await ForwardAsync(message, pipeName, launchApp, startupTimeout, appVersion, extensionVersion, useAppLanguage);
             }
             catch (JsonException)
             {
@@ -54,7 +59,7 @@ public static class NativeHost
     }
 
     public static async Task<ChannelReply> ForwardAsync(ChannelMessage message, string pipeName, Func<bool> launchApp, TimeSpan startupTimeout,
-        string? appVersion = null)
+        string? appVersion = null, string? extensionVersion = null, Action? useAppLanguage = null)
     {
         var reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromMilliseconds(500));
         if (reply is not null)
@@ -65,10 +70,13 @@ public static class NativeHost
         if (message.Type == Messages.Queues)
             return new ChannelReply(true, Running: false, Queues: []);
         if (message.Type == Messages.Hello)
-            return new ChannelReply(true, Running: false, Protocol: Messages.ProtocolVersion, AppVersion: appVersion);
+            return new ChannelReply(true, Running: false, Protocol: Messages.ProtocolVersion, AppVersion: appVersion, ExtensionVersion: extensionVersion);
 
         if (!launchApp())
-            return new ChannelReply(false, Running: false, Error: "Impossibile avviare Baton.");
+        {
+            useAppLanguage?.Invoke();
+            return new ChannelReply(false, Running: false, Error: Strings.ErrorAppNotStarted);
+        }
         var deadline = DateTime.UtcNow + startupTimeout;
         while (DateTime.UtcNow < deadline)
         {
@@ -76,6 +84,7 @@ public static class NativeHost
             if (reply is not null)
                 return reply;
         }
+        useAppLanguage?.Invoke();
         return new ChannelReply(false, Running: false, Error: Strings.ErrorAppNoAnswer);
     }
 

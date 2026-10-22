@@ -28,7 +28,7 @@ $setupSha = (Get-FileHash $Setup -Algorithm SHA256).Hash
 $zipSha = (Get-FileHash $Zip -Algorithm SHA256).Hash.ToLowerInvariant()
 $id = 'AndreaAzzarello.Baton'
 $productCode = '{27469723-AE14-4420-B2B4-189B8BE709AB}_is1'
-$schema = '1.10.0'
+$schema = '1.12.0'
 $header = "# Created with tools\make-manifests.ps1`n"
 
 $dir = Join-Path $Out "winget\manifests\a\AndreaAzzarello\Baton\$version"

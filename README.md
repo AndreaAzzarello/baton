@@ -32,6 +32,7 @@ when one finishes its range it takes over half of the largest range still left (
 connection busy until the end. Baton is open source (MIT), written from scratch, and has **no telemetry**: it talks only to
 the servers you download from and, when you enable or ask for an update check, to this repository's releases. Updates are **signed** and verified
 before they are installed, and passwords, cookies and form data are encrypted with Windows DPAPI, never written in clear.
+Details in [PRIVACY.md](PRIVACY.md).
 
 ## Features
 
@@ -98,19 +99,22 @@ messaging host the extension talks to.
   with your own AMO keys ([how](README.it.md#firefox-permanente-firma-non-elencata-su-addonsmozillaorg)) or use Firefox
   Developer Edition or Nightly.
 
-In the extension's popup, **Check connection** tells you whether the app answers.
+In the extension's popup, **Check connection** tells you whether the app answers. When the app updates itself (from
+1.3.3), it also installs the signed extension of the same version in that folder, keeping the previous one for
+**Restore previous version**, and Chromium browsers reload it on their own; if one keeps the old version, its popup
+says to reload it from `chrome://extensions`.
 
 ## Verify a release
 
-`Baton.exe` and the installer each carry a SHA-256 hash (`.sha256`) and an ECDSA P-256 signature (`.sig`) of
+`Baton.exe`, the installer and the extension's package `baton-extension-<version>.zip` each carry a SHA-256 hash (`.sha256`) and an ECDSA P-256 signature (`.sig`) of
 "version + file name + SHA-256", made with a private key that never leaves the author's PC. The public keys are in
 [`release-keys.txt`](src/Baton.Core/Updates/release-keys.txt): `b80f666050fcbc7d` (main) and `cc691630b30bf7f1` (spare).
 Once SignPath signs the releases they also carry an Authenticode signature, made before the release key signs the final
 file. From a clone of this repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.2.exe"
-# OK: Baton-Setup-1.3.2.exe 1.3.2, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.3.exe"
+# OK: Baton-Setup-1.3.3.exe 1.3.3, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
 
 `SHA256SUMS.txt` lists the hashes of every file of the release, also the portable zip and the extension packages.
@@ -142,8 +146,9 @@ To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).
 - The Firefox extension must be signed by the user ([details](README.it.md#limiti-noti-known-issues), Italian).
 - Installed with Scoop, update with `scoop update baton`: the in-app updater works too, but Scoop then keeps showing the
   older version.
-- The in-app updater replaces only `Baton.exe`: the extension next to it stays at the previous version until you run the
-  new setup or extract the new zip (the protocol is backward compatible, so it keeps working).
+- From 1.3.3 the in-app updater also replaces the extension next to `Baton.exe`. Chromium browsers reload it by
+  themselves; Firefox keeps a temporary add-on as it was loaded, so load the new `baton-firefox.xpi` (its popup says so).
+  Updates made by 1.3.2 or earlier replaced only `Baton.exe`: 1.3.3 fetches its own signed extension once it starts.
 - An internal security audit of 1.1.0 confirmed no vulnerabilities but left **8 leads to validate**, none reproduced yet.
   Reports are welcome through [SECURITY.md](SECURITY.md).
 
@@ -158,11 +163,20 @@ To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).
 | L7 | A scheduled file grab may save server-chosen types (such as `.exe`) | Nothing is executed; check scheduled projects' folders |
 | L8 | Imported settings with a relative category folder could target the Startup folder | Import only your own files; nothing is preselected |
 
+## Roadmap
+
+- **Now (1.3.x)**: the browser extension updated together with the app; winget and code signing (SignPath Foundation).
+- **Next, 1.4 "Automation"**: command line (`baton add …`), local API, an MCP server for AI agents, automatic rules, clipboard monitor.
+- **Then, 1.5 "AI, optional and privacy-first"**: natural-language commands and smarter grabber filters, off by default, your own API key.
+- **Exploring**: Metalink, archive extraction, duplicates, browser stores, more languages, a cross-platform 2.x.
+
+Details in [ROADMAP.md](ROADMAP.md); ideas and votes in [Discussions](https://github.com/AndreaAzzarello/baton/discussions/categories/ideas).
+
 ## Documentation
 
 - **[Full guide (Italian)](README.it.md)**: every feature, settings, data, performance, troubleshooting.
-- [CHANGELOG.md](CHANGELOG.md) · [SECURITY.md](SECURITY.md) · [CONTRIBUTING.md](CONTRIBUTING.md) ·
-  [Code of conduct](CODE_OF_CONDUCT.md)
+- [CHANGELOG.md](CHANGELOG.md) · [ROADMAP.md](ROADMAP.md) · [PRIVACY.md](PRIVACY.md) · [SECURITY.md](SECURITY.md) ·
+  [CONTRIBUTING.md](CONTRIBUTING.md) · [Code of conduct](CODE_OF_CONDUCT.md)
 
 **Translations welcome**: the texts of the app are a table of English and Italian pairs in
 [`tools/make_resx.py`](tools/make_resx.py), those of the extension in [`tools/make_locales.py`](tools/make_locales.py)

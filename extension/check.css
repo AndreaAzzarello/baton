@@ -20,6 +20,7 @@ h2 { margin: 0 0 6px; font-size: 16px; }
 .result.bad { border-left-color: var(--bad); }
 .result.bad h2 { color: var(--bad); }
 .result p { margin: 0 0 8px; }
+.result .notice { padding: 8px 12px; border-radius: 6px; background: var(--bg); border: 1px solid var(--border); }
 ol { margin: 8px 0 12px; padding-left: 20px; }
 li { margin: 4px 0; }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }

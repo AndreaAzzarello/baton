@@ -48,7 +48,6 @@ public sealed class FirstRunViewModel : ObservableObject
     private readonly Func<DateTime?> _lastExtensionContact;
     private string _folder;
     private string? _connection;
-    private bool _startWithWindows;
 
     /// <param name="programFolder">The folder of Baton.exe, where the extension is shipped.</param>
     /// <param name="portableProgram">Baton.exe of a portable copy (its start entry would point there); null otherwise.</param>
@@ -61,7 +60,7 @@ public sealed class FirstRunViewModel : ObservableObject
         Categories = categories.Where(c => !c.IsGeneral).Select(c => new CategoryFolderRow(c)).ToList();
         Browsers = browsers.Select(b => new BrowserRow(b, shell)).ToList();
         Extension = new BundledExtensionViewModel(programFolder, shell);
-        PortableProgram = portableProgram;
+        Startup = new StartWithWindowsViewModel(portableProgram, enabled: false); // never preselected: the user turns it on
         BrowseCommand = new RelayCommand(() =>
         {
             if (_dialogs.PickFolder(Strings.SettingsFolder, Directory.Exists(Folder) ? Folder : null) is { } picked)
@@ -76,20 +75,8 @@ public sealed class FirstRunViewModel : ObservableObject
     public bool NoBrowsers => Browsers.Count == 0;
     public BundledExtensionViewModel Extension { get; }
 
-    /// <summary>Never preselected: the user turns it on.</summary>
-    public bool StartWithWindows
-    {
-        get => _startWithWindows;
-        set
-        {
-            if (Set(ref _startWithWindows, value))
-                OnPropertyChanged(nameof(ShowPortableStartupWarning));
-        }
-    }
-
-    public string? PortableProgram { get; }
-    public bool ShowPortableStartupWarning => PortableProgram is not null && StartWithWindows;
-    public string PortableStartupWarning => string.Format(CultureInfo.CurrentCulture, Strings.SettingsPortableStartupWarning, PortableProgram);
+    public StartWithWindowsViewModel Startup { get; }
+    public bool StartWithWindows { get => Startup.Enabled; set => Startup.Enabled = value; }
     public AppTheme Theme { get; set; } = AppTheme.System;
     public bool ThemeSystem { get => Theme == AppTheme.System; set { if (value) Theme = AppTheme.System; } }
     public bool ThemeLight { get => Theme == AppTheme.Light; set { if (value) Theme = AppTheme.Light; } }

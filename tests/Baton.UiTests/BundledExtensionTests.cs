@@ -84,17 +84,18 @@ public sealed class BundledExtensionTests : IDisposable
         var portable = new FirstRunViewModel(dialogs, shell, [], [], Path.GetDirectoryName(portableExe)!, () => null, portableExe);
         Assert.False(installed.StartWithWindows);
         Assert.False(portable.StartWithWindows);
-        Assert.False(portable.ShowPortableStartupWarning);
-        installed.StartWithWindows = portable.StartWithWindows = true;
-        Assert.False(installed.ShowPortableStartupWarning);
-        Assert.True(portable.ShowPortableStartupWarning);
-        Assert.Contains(portableExe, portable.PortableStartupWarning);
+        Assert.False(portable.Startup.ShowPortableWarning);
+        installed.Startup.Enabled = portable.Startup.Enabled = true;
+        Assert.True(installed.StartWithWindows);
+        Assert.False(installed.Startup.ShowPortableWarning);
+        Assert.True(portable.Startup.ShowPortableWarning);
+        Assert.Contains(portableExe, portable.Startup.PortableWarning);
 
         var settings = new SettingsViewModel(dialogs, new AppSettings(), runAtStartup: false, portableProgram: portableExe);
         Assert.False(settings.RunAtStartup);
-        Assert.False(settings.ShowPortableStartupWarning);
+        Assert.False(settings.Startup.ShowPortableWarning);
         settings.RunAtStartup = true;
-        Assert.True(settings.ShowPortableStartupWarning);
-        Assert.False(new SettingsViewModel(dialogs, new AppSettings(), runAtStartup: true) { RunAtStartup = true }.ShowPortableStartupWarning);
+        Assert.True(settings.Startup.ShowPortableWarning);
+        Assert.False(new SettingsViewModel(dialogs, new AppSettings(), runAtStartup: true) { RunAtStartup = true }.Startup.ShowPortableWarning);
     }
 }

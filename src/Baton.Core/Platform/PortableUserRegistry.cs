@@ -17,6 +17,26 @@ public sealed class PortableUserRegistry(IUserRegistry inner) : IUserRegistry
     /// <summary>The user is turning start with Windows on or off: the portable copy's own "Run" value may be written meanwhile.</summary>
     public bool AllowStartEntry { get; set; }
 
+    /// <summary>
+    /// Lets the chosen writes through until the returned scope is disposed (a "using" block), so the permission never
+    /// outlives the change the user asked for. A registry that is not the portable one needs no permission.
+    /// </summary>
+    public static IDisposable Allow(IUserRegistry registry, bool browserHost = false, bool startEntry = false)
+    {
+        if (registry is not PortableUserRegistry portable)
+            return new Scope(() => { });
+        // What was allowed before comes back at the end, so a scope inside another one does not end the outer one early.
+        var (host, start) = (portable.AllowBrowserHost, portable.AllowStartEntry);
+        portable.AllowBrowserHost |= browserHost;
+        portable.AllowStartEntry |= startEntry;
+        return new Scope(() => (portable.AllowBrowserHost, portable.AllowStartEntry) = (host, start));
+    }
+
+    private sealed class Scope(Action end) : IDisposable
+    {
+        public void Dispose() => end();
+    }
+
     /// <summary>Writes dropped so far (for tests and the log).</summary>
     public int Refused => _refused;
 

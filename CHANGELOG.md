@@ -4,6 +4,43 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
+## [1.3.3] — 2026-10-22
+
+L'estensione si aggiorna insieme all'app; manifest winget allo schema 1.12, privacy e roadmap pubbliche.
+
+- **Pacchetto dell'estensione firmato** in ogni release: `baton-extension-<versione>.zip` (la cartella `extension` per
+  Chromium e `baton-firefox.xpi`) con `.sha256` e `.sig`, lo stesso schema di firma di `Baton.exe` («versione + nome del
+  file + SHA-256»). `sign-release.ps1` e `verify-release.ps1` lo gestiscono (versione letta dal nome, niente Authenticode
+  per uno zip); `build-packages.ps1` lo crea con gli stessi file dello zip portable.
+- **Aggiornamento dall'app**: prima dello scambio scarica il pacchetto, ne verifica hash e firma, lo estrae in
+  `extension.new` accanto al programma (solo `extension/…` e l'xpi; rifiutati percorsi fuori dalla cartella, nomi
+  assoluti o con `..`, collegamenti simbolici, file doppi, più di 2000 voci o più di 128 MB estratti, contati durante la
+  scrittura) e controlla che `manifest.json` abbia la versione della nuova app. Poi cartella e xpi in uso diventano
+  `extension.old` e `baton-firefox.xpi.old`; uno scambio interrotto rimette i precedenti. Se il pacchetto manca, la firma
+  non è valida o la cartella non si può scrivere, il programma si aggiorna e l'estensione no, con un avviso che spiega
+  perché e come aggiornarla. Vale per la copia installata e per la portable.
+- **Ripristina la versione precedente** (e il guardiano, se la nuova versione non parte) rimette anche `extension.old`,
+  solo se è della versione ripristinata.
+- **Dalla 1.3.2**: quella versione aggiorna solo `Baton.exe`; al primo avvio la 1.3.3 trova la cartella `extension` più
+  vecchia e installa da sé il pacchetto firmato della propria versione (release `v1.3.3`). L'app contatta le release solo
+  dopo un aggiornamento e con il controllo degli aggiornamenti.
+- **Ricaricamento nei browser Chromium**: la risposta a `hello` contiene la versione della cartella su disco
+  (`extensionVersion`); se l'app è più recente e la cartella è già aggiornata, l'estensione chiama
+  `chrome.runtime.reload()` una volta per versione (al risveglio, al massimo ogni 15 minuti, o aprendo popup e verifica
+  della connessione). Se dopo il ricaricamento la versione non cambia non riprova, e il popup dice di ricaricarla da
+  `chrome://extensions`. In Firefox il popup spiega come caricare il nuovo `baton-firefox.xpi`.
+- L'installer toglie anche `extension.old`, `extension.new` e `baton-firefox.xpi.old` alla disinstallazione.
+- Il messaggio dell'host nativo «Baton non ha risposto in tempo» (e «Impossibile avviare Baton», prima scritto in
+  italiano nel codice) usa la lingua scelta nell'app, letta solo quando serve un testo d'errore.
+- Il testo sul pacchetto per Firefox e l'avviso di «Avvia con Windows» nella portable seguono il cambio di lingua a
+  finestra aperta. «Avvia con Windows» della procedura guidata e delle impostazioni è un solo modello condiviso, e la
+  finestra di permesso del registro della portable è un unico blocco `using` (prima due copie della stessa logica).
+- Finestre di avanzamento, proprietà e certificato: un valore su due righe non sposta più il valore accanto rispetto
+  alla sua etichetta.
+- Manifest winget allo schema 1.12.0 (verificati con `winget validate`); un test controlla schema, hash e testo italiano.
+- `PRIVACY.md` (nessuna telemetria, con chi parla l'app, dati solo in locale, segreti con DPAPI, nulla a terzi) e
+  `ROADMAP.md`; GitHub Discussions attive. GIF del README in inglese, quella italiana in `README.it.md`.
+
 ## [1.3.2] — 2026-10-22
 
 Versione di correzione, emersa provando la portable su un altro PC: l'estensione è inclusa, nessun download separato.

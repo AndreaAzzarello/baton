@@ -1,6 +1,6 @@
 // Background of the extension: a non-persistent service worker (Chromium) or event page (Firefox). It wakes up only
 // for browser events, never polls, and keeps what it must remember in chrome.storage.session.
-import { Rules, HOST, IS_FIREFOX, loadSettings, sendNative, cookiesFor, toAppCookie, t } from "./shared.js";
+import { Rules, HOST, IS_FIREFOX, loadSettings, sendNative, cookiesFor, toAppCookie, appUpdateDecision, t } from "./shared.js";
 
 const MENU_LINK = "dm-link";
 const MENU_MEDIA = "dm-media";
@@ -27,6 +27,57 @@ chrome.runtime.onStartup.addListener(setup);
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.mode) updateIcon();
 });
+
+// ---------------------------------------------------------------- the app's updates
+
+// When the background wakes up (at most every 15 minutes) it asks the app its version, without ever starting it: after
+// the app updated itself, the folder this extension was loaded from may hold the new version, and one reload loads it.
+// Firefox keeps a temporary add-on as loaded: its popup explains instead.
+const APP_CHECK_MS = 15 * 60_000;
+if (!IS_FIREFOX) checkAppVersion();
+
+async function checkAppVersion() {
+  const { appCheckedAt = 0 } = await chrome.storage.session.get("appCheckedAt");
+  if (Date.now() - appCheckedAt < APP_CHECK_MS) return;
+  await chrome.storage.session.set({ appCheckedAt: Date.now() });
+  try {
+    await followAppUpdate(await sendNative({ type: "hello" }, 5000));
+  } catch {
+    // No host or no answer: nothing to follow.
+  }
+}
+
+// Work that a reload would cut short: a download being handed over (the browser's copy is cancelled only once the app has
+// it), a menu command, a message from the popup or a page. A reload waits until none is left.
+let busy = 0;
+let reloadTarget = null;
+
+async function busyWhile(work) {
+  busy++;
+  try {
+    return await work();
+  } finally {
+    busy--;
+    if (!busy && reloadTarget) reloadNow();
+  }
+}
+
+/** The decision for a "hello" reply (from here, the popup or the check page); a reload happens when nothing is in progress. */
+async function followAppUpdate(reply) {
+  const decision = await appUpdateDecision(reply);
+  if (decision.action === "reload") {
+    reloadTarget = decision.target;
+    if (!busy) await reloadNow();
+  }
+  return decision;
+}
+
+async function reloadNow() {
+  const target = reloadTarget;
+  reloadTarget = null;
+  await chrome.storage.local.set({ reloadTried: target }); // remembered across the reload: one try per version
+  chrome.runtime.reload();
+}
 
 function setup() {
   chrome.contextMenus.removeAll(() => {
@@ -87,13 +138,13 @@ if (!IS_FIREFOX) {
   // (suggest is not called yet) while the app is asked; only once the app has it is the browser's copy cancelled.
   // If the app does not answer, suggest() lets the browser carry on: nothing is lost, nothing is downloaded twice.
   chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
-    interceptChromium(item, suggest);
+    busyWhile(() => interceptChromium(item, suggest));
     return true; // suggest is called asynchronously
   });
 } else {
   // Firefox has no onDeterminingFilename: the download is paused as soon as it is created, then cancelled and its
   // partial file removed once the app has it, or resumed if the app does not answer.
-  chrome.downloads.onCreated.addListener(interceptFirefox);
+  chrome.downloads.onCreated.addListener((item) => busyWhile(() => interceptFirefox(item)));
 }
 
 async function interceptChromium(item, suggest) {
@@ -274,7 +325,7 @@ async function findPost(url) {
 
 // ---------------------------------------------------------------- context menu
 
-chrome.contextMenus.onClicked.addListener((info, tab) => onMenuClicked(info, tab));
+chrome.contextMenus.onClicked.addListener((info, tab) => busyWhile(() => onMenuClicked(info, tab)));
 
 // The same handler, reachable from the extension's own DevTools console (and automated tests, which cannot open a
 // context menu). Only the extension's own pages can reach its service worker's globals.
@@ -438,6 +489,12 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   if (sender.id !== chrome.runtime.id) return false;
   // The popup names the tab it asks about (also when popup.html is opened as a page, in a tab of its own).
   const fromPopup = typeof sender.url === "string" && sender.url.startsWith(chrome.runtime.getURL("popup.html"));
+  const fromCheck = typeof sender.url === "string" && sender.url.startsWith(chrome.runtime.getURL("check.html"));
+  if (message?.type === "appUpdate") {
+    if (!fromPopup && !fromCheck) return false;
+    followAppUpdate(message.reply).then(reply, () => reply(null));
+    return true;
+  }
   let tab;
   if (fromPopup) {
     if (!POPUP_MEDIA_MESSAGES.includes(message?.type) || !Number.isInteger(message.tabId)) return false;
@@ -447,7 +504,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   } else {
     return false;
   }
-  tab.then((t) => handleContentMessage(message, t, sender))
+  busyWhile(() => tab.then((t) => handleContentMessage(message, t, sender)))
     .then(reply)
     .catch((error) => reply({ ok: false, error: error.message }));
   return true; // answered asynchronously

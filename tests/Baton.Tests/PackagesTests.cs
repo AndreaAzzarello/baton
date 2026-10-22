@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Security.Cryptography;
 
 namespace Baton.Tests;
 
@@ -57,6 +58,68 @@ public sealed class PackagesTests : IDisposable
         var chromium = Path.Combine(root, "dist", "chromium");
         foreach (var file in Directory.GetFiles(chromium, "*", SearchOption.AllDirectories))
             Assert.Contains("extension/" + Path.GetRelativePath(chromium, file).Replace('\\', '/'), names);
+
+        // The updater's package: the same extension files, and accepted as they are by the app (from 1.3.3).
+        var package = Directory.GetFiles(_dir, "baton-extension-*.zip").Single();
+        using (var extension = ZipFile.OpenRead(package))
+            Assert.Equal(names.Where(n => n.StartsWith("extension/") || n == "baton-firefox.xpi").Order(), extension.Entries.Select(e => e.FullName).Order());
+        var version = Core.Updates.UpdateChecker.ParseVersion(Path.GetFileNameWithoutExtension(package))!;
+        var program = Path.Combine(_dir, "program");
+        Directory.CreateDirectory(program);
+        Core.Updates.ExtensionPackage.Stage(package, program, version);
+        Core.Updates.ExtensionPackage.Swap(program);
+        Assert.Equal(version, Core.Updates.ExtensionPackage.VersionIn(program));
+        Assert.True(File.Exists(Path.Combine(program, "baton-firefox.xpi")));
+    }
+
+    [Fact]
+    public async Task WingetManifests_UseSchema112_AndKeepTheItalianText_ScoopTheZipHash()
+    {
+        Directory.CreateDirectory(_dir);
+        var setup = Path.Combine(_dir, "Baton-Setup-9.8.7.exe");
+        var zip = Path.Combine(_dir, "Baton-9.8.7-portable.zip");
+        File.WriteAllText(setup, "setup");
+        File.WriteAllText(zip, "zip");
+        var info = new ProcessStartInfo("powershell.exe")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            Environment = { ["PSModulePath"] = null },
+            CreateNoWindow = true,
+        };
+        foreach (var arg in new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", Path.Combine(Root(), "tools", "make-manifests.ps1"),
+                     "-Setup", setup, "-Zip", zip, "-Out", Path.Combine(_dir, "out"), "-ReleaseDate", "2026-10-22" })
+            info.ArgumentList.Add(arg);
+        using var process = Process.Start(info)!;
+        var output = process.StandardOutput.ReadToEndAsync();
+        var errors = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        Assert.True(process.ExitCode == 0, await output + errors);
+
+        var folder = Path.Combine(_dir, "out", "winget", "manifests", "a", "AndreaAzzarello", "Baton", "9.8.7");
+        var files = new Dictionary<string, string>
+        {
+            ["AndreaAzzarello.Baton.yaml"] = "version",
+            ["AndreaAzzarello.Baton.installer.yaml"] = "installer",
+            ["AndreaAzzarello.Baton.locale.en-US.yaml"] = "defaultLocale",
+            ["AndreaAzzarello.Baton.locale.it-IT.yaml"] = "locale",
+        };
+        Assert.Equal(files.Keys.Order(), Directory.GetFiles(folder).Select(Path.GetFileName).Order());
+        foreach (var (name, type) in files)
+        {
+            var text = File.ReadAllText(Path.Combine(folder, name));
+            Assert.Contains($"# yaml-language-server: $schema=https://aka.ms/winget-manifest.{type}.1.12.0.schema.json", text);
+            Assert.Contains("ManifestVersion: 1.12.0", text);
+            Assert.DoesNotContain("\r", text);
+        }
+        var installer = File.ReadAllText(Path.Combine(folder, "AndreaAzzarello.Baton.installer.yaml"));
+        Assert.Contains("InstallerUrl: https://github.com/AndreaAzzarello/baton/releases/download/v9.8.7/Baton-Setup-9.8.7.exe", installer);
+        Assert.Contains("InstallerSha256: " + Convert.ToHexString(SHA256.HashData("setup"u8)), installer);
+        Assert.Contains("più segmenti", File.ReadAllText(Path.Combine(folder, "AndreaAzzarello.Baton.locale.it-IT.yaml")));
+        var scoop = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "out", "scoop", "baton.json"))).RootElement;
+        Assert.Equal("9.8.7", scoop.GetProperty("version").GetString());
+        Assert.Equal(Convert.ToHexStringLower(SHA256.HashData("zip"u8)), scoop.GetProperty("architecture").GetProperty("64bit").GetProperty("hash").GetString());
     }
 
     [Fact]

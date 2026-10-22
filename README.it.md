@@ -26,7 +26,7 @@ compatibile con alcun prodotto commerciale.
 Questa è la guida completa, in italiano. Una presentazione breve in inglese è in [README.md](README.md); per contribuire
 vedi [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Versione **1.3.2** — novità in [CHANGELOG.md](CHANGELOG.md).
+Versione **1.3.3** — novità in [CHANGELOG.md](CHANGELOG.md).
 
 | Tema chiaro | Tema scuro |
 |---|---|
@@ -34,7 +34,7 @@ Versione **1.3.2** — novità in [CHANGELOG.md](CHANGELOG.md).
 
 *Screenshot con dati di prova: tre download selezionati, riepilogo nella barra di stato.*
 
-<p align="center"><img src="docs/screenshots/demo.gif" width="560" alt="Aggiunta di un download: la finestra di avanzamento mostra otto connessioni sui segmenti del file, poi pausa e ripresa"></p>
+<p align="center"><img src="docs/screenshots/demo.it.gif" width="560" alt="Aggiunta di un download: la finestra di avanzamento mostra otto connessioni sui segmenti del file, poi pausa e ripresa"></p>
 
 ## Funzioni principali
 
@@ -160,8 +160,8 @@ anche la firma **Authenticode** (visibile in Proprietà › Firme digitali), app
 file nella stessa cartella, da una copia del repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.2.exe"
-# OK: Baton-Setup-1.3.2.exe 1.3.2, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.3.exe"
+# OK: Baton-Setup-1.3.3.exe 1.3.3, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
 
 Lo script controlla anche la firma Authenticode quando c'è (se presente deve essere valida; `-RequireAuthenticode` la
@@ -193,6 +193,7 @@ verifiche, firma compresa, prima di installare un aggiornamento. Le build della 
 | `.github/workflows/ci.yml` | CI su GitHub Actions: build senza avvisi, test e build dell'estensione su Windows (nessuna firma) |
 | `docs/screenshots` | Screenshot e GIF dei README, fatti con dati di prova |
 | `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `.github/ISSUE_TEMPLATE`, `.github/PULL_REQUEST_TEMPLATE.md` | Come contribuire, codice di condotta, modelli per segnalazioni e pull request |
+| `ROADMAP.md`, `PRIVACY.md` | Direzione del progetto (senza date) e dati: nessuna telemetria, con chi parla l'app, cosa resta sul computer |
 | `docs/brand` | Brand kit ufficiale (`kit/`: SVG, PNG, icone Windows e browser) e `brand.mjs`, che ne ricava le misure mancanti, le icone grigie dell'estensione e l'immagine per GitHub; `tools/make_icons.py` compone `app.ico` |
 | `tools/make_resx.py`, `tools/make_locales.py` | Generatori dei testi: `Strings.resx` dell'app e `_locales` dell'estensione (la tabella è nello script) |
 | `CLAUDE.md`, `.claude/` | Regole del progetto per Claude Code, hook (guardia su registro e Desktop, controlli dell'estensione, build incrementale) e skill `prova-reale`, `fine-fase`, `stringhe` |
@@ -488,6 +489,27 @@ Poi l'eseguibile in uso diventa `Baton.exe.old`, il nuovo prende il suo posto e 
 viene messa da parte come `.failed`, la precedente torna al suo posto e si riavvia con un avviso. **Ripristina la versione
 precedente** fa lo stesso scambio a mano. Funziona solo con l'eseguibile pubblicato (un file unico).
 
+**L'estensione accanto al programma** (dalla 1.3.3) segue l'aggiornamento. Ogni release contiene
+`baton-extension-<versione>.zip` (la cartella `extension` per Chromium e `baton-firefox.xpi`) con il suo `.sha256` e il
+suo `.sig`, firmato come l'eseguibile ("versione + nome del file + SHA-256"). Prima di toccare qualcosa l'app lo scarica,
+ne verifica hash e firma, lo estrae in `extension.new` accanto al programma (solo file `extension/…` e l'xpi: niente
+percorsi fuori dalla cartella, collegamenti o archivi troppo grandi) e controlla che `manifest.json` abbia la versione
+della nuova app; poi, insieme all'eseguibile, la cartella e l'xpi in uso diventano `extension.old` e
+`baton-firefox.xpi.old` e quelli nuovi prendono il loro posto. **Ripristina la versione precedente**, e il guardiano se la
+nuova versione non parte, rimettono anche l'estensione della versione ripristinata. Se il pacchetto manca, la firma non è
+valida o la cartella non si può scrivere, il programma si aggiorna lo stesso e l'estensione resta com'era, con un avviso
+che lo spiega. Gli aggiornamenti fatti dalla 1.3.2 o precedenti sostituivano solo `Baton.exe`: al primo avvio dopo
+l'aggiornamento la 1.3.3 trova la cartella più vecchia e installa il pacchetto firmato della propria versione (lo stesso
+avviso se non ci riesce). Queste sono le sole volte, oltre al controllo degli aggiornamenti, in cui l'app contatta le
+release.
+
+Nei browser Chromium l'estensione chiede all'app la sua versione quando si risveglia (al massimo ogni 15 minuti, senza mai
+avviarla) e quando apri il popup o la verifica della connessione: se l'app è più recente e la cartella su disco contiene
+già la nuova versione, si ricarica da sola (`chrome.runtime.reload()`) una volta. Se dopo il ricaricamento la versione è
+ancora quella vecchia (il browser l'ha caricata da un'altra cartella) non riprova, e il popup dice di ricaricarla da
+`chrome://extensions`. Firefox tiene il componente temporaneo come è stato caricato: il popup spiega come caricare il nuovo
+`baton-firefox.xpi`.
+
 Vale allo stesso modo per la copia **installata** (la cartella `%LOCALAPPDATA%\Programs\Baton` è dell'utente; dopo
 l'aggiornamento l'app aggiorna anche la versione mostrata in App installate) e per quella **portable** (`portable.flag` e
 `Data` restano accanto al nuovo `Baton.exe`). Installata con Scoop, meglio `scoop update baton`: l'aggiornamento dall'app
@@ -767,10 +789,10 @@ in inglese e italiano, fallisce se un testo non sta e, con `BATON_SHOTS=<cartell
 ## Limiti noti (known issues)
 
 - Protocolli: niente SFTP (SSH) né FTP tramite proxy HTTPS.
-- Estensione inclusa: l'aggiornamento dall'app sostituisce solo `Baton.exe`, quindi la cartella `extension` e
-  `baton-firefox.xpi` accanto restano alla versione precedente finché non esegui il nuovo setup o estrai il nuovo zip
-  (Scoop la aggiorna con `scoop update baton`). Il protocollo è retrocompatibile: l'estensione precedente continua a
-  funzionare, senza le novità della nuova.
+- Estensione inclusa: dalla 1.3.3 l'aggiornamento dall'app sostituisce anche la cartella `extension` e
+  `baton-firefox.xpi` (vedi [Aggiornamenti](#aggiornamenti)). Firefox però tiene il componente temporaneo come è stato
+  caricato: va ricaricato a mano il nuovo `baton-firefox.xpi` (il popup lo ricorda). Gli aggiornamenti fatti dalla 1.3.2 o
+  precedenti sostituivano solo `Baton.exe`: la 1.3.3, appena avviata, scarica da sé la propria estensione firmata.
 - Grabber: niente JavaScript (i contenuti generati da script non vengono trovati); un link che sembra una pagina
   (`download.php?id=7`) viene riconosciuto come file solo se rientra nella profondità; le opzioni "proxy" e "credenziali" del
   progetto valgono per la scansione, mentre i file mandati a una coda usano la rete dell'app.
@@ -835,12 +857,22 @@ Restano aperte finché un test non le conferma o le esclude; le segnalazioni son
   versione, sistema ed eccezione senza dati riservati.
 - **Database**: prima di ogni aggiornamento di schema ne resta una copia `downloads.db.v<N>.bak` accanto all'originale.
 
+## Roadmap
+
+- **Ora (1.3.x)**: l'estensione aggiornata insieme all'app; winget e firma del codice (SignPath Foundation).
+- **Poi, 1.4 "Automation"**: riga di comando (`baton add …`), API locale, server MCP per gli agenti AI, regole automatiche, monitor degli appunti.
+- **Quindi, 1.5 "AI, opzionale e rispettosa della privacy"**: comandi in linguaggio naturale e filtri del grabber assistiti, spenta all'inizio, con la tua chiave API.
+- **Da valutare**: Metalink, estrazione degli archivi, duplicati, store dei browser, altre lingue, una 2.x multipiattaforma.
+
+Dettagli in [ROADMAP.md](ROADMAP.md) (con un riassunto in italiano); idee e voti nelle [Discussions](https://github.com/AndreaAzzarello/baton/discussions/categories/ideas).
+
 ## Sicurezza
 
 Le vulnerabilità vanno segnalate in privato, non con una issue pubblica: vedi [SECURITY.md](SECURITY.md) (GitHub ›
 **Security › Report a vulnerability**). Principi del progetto: segreti (password, cookie, campi dei moduli) cifrati con
 DPAPI e mai nei log; ogni messaggio del browser validato due volte; aggiornamenti solo https, con hash e firma; grabber senza
-esecuzione di script; nessuna telemetria.
+esecuzione di script; nessuna telemetria. Quali dati restano sul computer e con chi parla Baton: [PRIVACY.md](PRIVACY.md)
+(sezione in italiano in fondo).
 
 ## Brand
 

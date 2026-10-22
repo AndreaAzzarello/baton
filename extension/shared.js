@@ -30,6 +30,29 @@ export async function sendNative(message, timeoutMs = Rules.APP_TIMEOUT_MS) {
 }
 
 /**
+ * What an update of the app means for this extension (see Rules.reloadDecision). Only an unpacked extension (loaded from
+ * a folder, "development") is reloaded: one from a store updates through the store. The reload itself is the
+ * background's: it waits for downloads being handed over.
+ */
+export async function appUpdateDecision(reply) {
+  const { reloadTried } = await chrome.storage.local.get("reloadTried");
+  const self = await chrome.management?.getSelf?.().catch(() => null);
+  return Rules.reloadDecision({ own: chrome.runtime.getManifest().version, reply, tried: reloadTried, firefox: IS_FIREFOX,
+    unpacked: self ? self.installType === "development" : true });
+}
+
+/** The popup and the check page pass their "hello" reply to the background, which reloads if needed; the decision, for the notice. */
+export async function followAppUpdate(reply) {
+  return (await chrome.runtime.sendMessage({ type: "appUpdate", reply }).catch(() => null)) ?? (await appUpdateDecision(reply));
+}
+
+/** The popup's and the check page's notice for a "manual" or "firefox" decision; hidden otherwise. */
+export function showUpdateNotice(element, decision) {
+  element.hidden = decision.action !== "manual" && decision.action !== "firefox";
+  if (!element.hidden) element.textContent = t(decision.action === "manual" ? "updateReloadManual" : "updateFirefox", decision.target);
+}
+
+/**
  * The cookies the browser would send to `url` for this kind of request, in the app's format: SameSite is honoured
  * against `initiator` (the page that started it), as the browser would. An unknown initiator (a page that hides its
  * referrer) counts as another site: SameSite=Strict cookies are never handed over on a guess. Never for private windows.

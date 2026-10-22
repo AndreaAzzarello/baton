@@ -46,6 +46,11 @@ public static class Localizer
         return true;
     }
 
+    /// <summary>The language saved in the settings, read without opening the store (automatic when there is none).</summary>
+    public static void UseSavedLanguage() => UseSavedLanguage(System.IO.Path.Combine(AppEnvironment.DataDirectory, "downloads.db"));
+
+    public static void UseSavedLanguage(string databasePath) => SetCulture(DownloadStore.LanguageOf(databasePath));
+
     /// <summary>
     /// <see cref="SetCulture"/>, then the windows: at the first call the default of every new window, later the texts and
     /// formats of the open ones. Returns false when nothing changed.

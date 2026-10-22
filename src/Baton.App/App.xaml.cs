@@ -178,6 +178,8 @@ public partial class App : Application
             Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, UpdateService.MarkStarted);
             if (e.Args.Contains(UpdateService.RolledBackArgument))
                 Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => dialogs.ShowError(Strings.UpdateRolledBack, Strings.UpdateTitle));
+            else // once committed: an update made by 1.3.2 or earlier left the extension next to the program at its old version
+                Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => updates.RepairExtensionAsync(service.Settings.UpdateUrl, interactive: false));
         }
         else if (service.Settings.UpdateCheckEnabled)
         {
@@ -307,9 +309,8 @@ public partial class App : Application
     /// </param>
     private static void ApplyPortableHost(bool allowed, bool chosenNow = false)
     {
-        var registry = (Core.Platform.PortableUserRegistry)AppEnvironment.Registry;
         // Writes to the host keys are let through for this change only; the rest of the time the copy writes nothing.
-        registry.AllowBrowserHost = true;
+        using var _ = Core.Platform.PortableUserRegistry.Allow(AppEnvironment.Registry, browserHost: true);
         try
         {
             if (!allowed)
@@ -320,10 +321,6 @@ public partial class App : Application
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
             Log.Error("portable", "cannot change the browser host", ex);
-        }
-        finally
-        {
-            registry.AllowBrowserHost = false;
         }
     }
 
@@ -420,7 +417,7 @@ public partial class App : Application
 
             case Messages.Hello:
                 LastExtensionContactUtc = DateTime.UtcNow;
-                return new ChannelReply(true, Protocol: Messages.ProtocolVersion, AppVersion: AppVersion);
+                return new ChannelReply(true, Protocol: Messages.ProtocolVersion, AppVersion: AppVersion, ExtensionVersion: BundledExtensionVersion);
 
             case Messages.Activate:
                 _ = Dispatcher.InvokeAsync(() => (MainWindow as MainWindow)?.BringToFront());
@@ -472,6 +469,9 @@ public partial class App : Application
         Dispatcher.InvokeAsync(() => action((MainWindow as MainWindow)?.IsClosing == true));
 
     /// <summary>The app's version, e.g. "1.0.0", reported to the extension's connection check.</summary>
+    /// <summary>The version of the extension folder next to the program, read again at every hello (an update may have just replaced it).</summary>
+    public static string? BundledExtensionVersion => Core.Updates.ExtensionPackage.VersionIn(AppContext.BaseDirectory)?.ToString(3);
+
     public static string AppVersion => typeof(App).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "?";
 
     /// <summary>

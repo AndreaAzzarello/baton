@@ -1,5 +1,5 @@
 // "Check connection": is the native host registered for this browser, and does the app speak this extension's protocol?
-import { Rules, IS_FIREFOX, sendNative, localize, t } from "./shared.js";
+import { Rules, IS_FIREFOX, sendNative, followAppUpdate, showUpdateNotice, localize, t } from "./shared.js";
 
 localize();
 const $ = (id) => document.getElementById(id);
@@ -21,6 +21,7 @@ async function check() {
     error = e;
   }
   const state = Rules.connectionState(reply, error);
+  showUpdateNotice($("updateNotice"), reply ? await followAppUpdate(reply) : { action: "none" });
   $("host").textContent = state === "missing" || state === "forbidden" ? t("checkHostMissing") : t("checkHostFound");
   $("app").textContent = reply?.protocol
     ? t("checkAppValue", reply.appVersion ?? "?", reply.protocol, reply.running === false ? t("checkAppStopped") : t("checkAppRunning"))

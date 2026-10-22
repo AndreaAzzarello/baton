@@ -74,10 +74,7 @@
                                    AutomationProperties.LiveSetting="Polite" />
 
                         <TextBlock Text="{l:Loc SettingsSystem}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
-                        <CheckBox Content="{l:Loc SettingsRunAtStartup}" IsChecked="{Binding RunAtStartup}" Margin="0,2" />
-                        <TextBlock Text="{Binding PortableStartupWarning}" Style="{StaticResource NoteText}" Margin="28,0,0,4" TextWrapping="Wrap"
-                                   AutomationProperties.LiveSetting="Polite"
-                                   Visibility="{Binding ShowPortableStartupWarning, Converter={StaticResource BoolToVisibility}}" />
+                        <ContentControl Content="{Binding Startup}" ContentTemplate="{StaticResource StartWithWindowsTemplate}" Focusable="False" />
                         <CheckBox Content="{l:Loc SettingsCloseToTray}" IsChecked="{Binding CloseToTray}" Margin="0,2" />
                         <CheckBox IsChecked="{Binding PortableBrowserHost}" Margin="0,2" AutomationProperties.Name="{l:Loc SettingsPortableHost}"
                                   Visibility="{Binding IsPortable, Converter={StaticResource BoolToVisibility}}">

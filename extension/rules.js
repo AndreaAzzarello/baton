@@ -269,6 +269,38 @@
     return reply.running === false ? "ready" : "running";
   }
 
+  /** Compares "1.3.2"-style versions: negative, 0 or positive; anything unreadable counts as 0.0.0. */
+  function compareVersions(a, b) {
+    const parts = (v) => String(v ?? "").split(".").map((n) => Number.parseInt(n, 10) || 0);
+    const [x, y] = [parts(a), parts(b)];
+    for (let i = 0; i < Math.max(x.length, y.length, 3); i++) {
+      const d = (x[i] ?? 0) - (y[i] ?? 0);
+      if (d) return d;
+    }
+    return 0;
+  }
+
+  /**
+   * After the app updated itself (and the extension folder next to it, from 1.3.3), what this older extension does
+   * with the reply to "hello":
+   *  "reload"  — Chromium, the folder on disk is newer: chrome.runtime.reload() loads it; remember `target` first.
+   *  "manual"  — Chromium, a reload to `target` was already tried and the version did not change (the browser loads
+   *              the extension from elsewhere): never again, the popup says to reload it from chrome://extensions.
+   *  "firefox" — Firefox keeps a temporary add-on as it was loaded: the popup explains how to load the new one.
+   *  "none"    — nothing to do (up to date, older app, or the folder on disk is not newer).
+   * `tried` is the target of the last reload, kept across reloads; a target newer than `tried` gets one try of its own.
+   * `unpacked` is false for an extension installed from a store, which the store updates: nothing to do then.
+   */
+  function reloadDecision({ own, reply, tried, firefox, unpacked = true }) {
+    const app = reply?.ok ? reply.appVersion : null;
+    if (!app || compareVersions(app, own) <= 0) return { action: "none" };
+    if (firefox) return { action: "firefox", target: app };
+    if (!unpacked) return { action: "none" };
+    const disk = reply.extensionVersion;
+    if (!disk || compareVersions(disk, own) <= 0) return { action: "none" };
+    return tried && compareVersions(tried, disk) >= 0 ? { action: "manual", target: disk } : { action: "reload", target: disk };
+  }
+
   /** "Capture this site": the page address the app may crawl (http or https only, without the fragment), else null. */
   function grabTarget(url) {
     try {
@@ -383,6 +415,8 @@
     encodeForm,
     classifyMedia,
     connectionState,
+    compareVersions,
+    reloadDecision,
     formatSize,
     grabTarget,
     mediaChoice,

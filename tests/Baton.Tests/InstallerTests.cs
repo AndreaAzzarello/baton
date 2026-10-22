@@ -99,6 +99,21 @@ public sealed class InstallerTests : IDisposable
     }
 
     [Fact]
+    public void PortablePermission_LastsForItsScope_AndAnInnerScopeDoesNotEndTheOuterOne()
+    {
+        var portable = new PortableUserRegistry(new MemoryUserRegistry());
+        using (PortableUserRegistry.Allow(portable, browserHost: true))
+        {
+            using (PortableUserRegistry.Allow(portable, browserHost: true, startEntry: true))
+                Assert.True(portable.AllowBrowserHost && portable.AllowStartEntry);
+            Assert.True(portable.AllowBrowserHost); // still within the outer change
+            Assert.False(portable.AllowStartEntry);
+        }
+        Assert.False(portable.AllowBrowserHost || portable.AllowStartEntry);
+        PortableUserRegistry.Allow(new MemoryUserRegistry(), startEntry: true).Dispose(); // the installed copy needs no permission
+    }
+
+    [Fact]
     public void BundledExtension_IsFoundNextToTheProgram_OrNotAtAll()
     {
         var program = Folder("app");

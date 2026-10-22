@@ -25,6 +25,10 @@ in `tools/`. Out of scope: vulnerabilities of third-party sites, of ffmpeg or of
 attacks that already need administrator rights or a malicious extension the user loaded in developer mode (see [Known
 issues](README.md#known-issues)).
 
+## Privacy
+
+What Baton stores, where, and which servers it talks to: [PRIVACY.md](PRIVACY.md) (no telemetry).
+
 ## Known open leads
 
 The README lists, under [Known issues](README.md#known-issues), the limits and the unconfirmed leads of the latest internal security audit.

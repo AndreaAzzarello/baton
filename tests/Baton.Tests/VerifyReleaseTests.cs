@@ -92,6 +92,20 @@ public sealed class VerifyReleaseTests : IDisposable
     }
 
     [Fact]
+    public void ExtensionPackage_IsVerifiedByHashAndSignature_WithoutAuthenticode()
+    {
+        var zip = Release("baton-extension-1.3.0.zip", Encoding.UTF8.GetBytes("PK\u0005\u0006 an archive"));
+        var (code, output) = Verify(zip, requireAuthenticode: true); // a zip carries no Authenticode: never required
+        Assert.True(code == 0, output);
+        Assert.Contains("OK: baton-extension-1.3.0.zip 1.3.0", output);
+
+        File.AppendAllText(zip, "tampered");
+        var (refused, message) = Verify(zip);
+        Assert.NotEqual(0, refused);
+        Assert.Contains("SHA-256 mismatch", message);
+    }
+
+    [Fact]
     public void ChangedAfterTheAuthenticodeSignature_IsRefused_EvenWithAValidReleaseKeySignature()
     {
         // What a tampered download looks like if someone also re-signed it with a stolen release key.

@@ -199,6 +199,7 @@ Running downloads are stopped and their partial data deleted. Files can be resto
   <data name="EndActionSleep" xml:space="preserve"><value>Sleep</value></data>
   <data name="ErrorAllConnectionsRefused" xml:space="preserve"><value>The server refused every connection.</value></data>
   <data name="ErrorAppNoAnswer" xml:space="preserve"><value>Baton did not answer in time.</value></data>
+  <data name="ErrorAppNotStarted" xml:space="preserve"><value>Baton could not be started.</value></data>
   <data name="ErrorCategoryDuplicate" xml:space="preserve"><value>A category called "{0}" already exists.</value></data>
   <data name="ErrorCategoryFolder" xml:space="preserve"><value>The folder of the category "{0}" must be a full path.</value></data>
   <data name="ErrorCategoryName" xml:space="preserve"><value>Every category needs a name.</value></data>
@@ -278,6 +279,18 @@ The app keeps working. If the problem happens again, copy the details and attach
   <data name="ExtensionFolderName" xml:space="preserve"><value>Extension folder</value></data>
   <data name="ExtensionMissing" xml:space="preserve"><value>The extension is not next to Baton.exe (a development build): download it from the release page.</value></data>
   <data name="ExtensionOpenReleasePage" xml:space="preserve"><value>Open the _release page</value></data>
+  <data name="ExtensionUpdateBadSignature" xml:space="preserve"><value>the signature of {0} is not valid or not made by a known key; the file may have been tampered with.</value></data>
+  <data name="ExtensionUpdateFailed" xml:space="preserve"><value>Baton {0} is installed, but the browser extension next to it was not updated: {1}
+
+The extension you have keeps working. To update it, run the {0} installer or extract baton-extension-{0}.zip from the release page.</value></data>
+  <data name="ExtensionUpdateFiles" xml:space="preserve"><value>the extension's files could not be replaced ({0}).</value></data>
+  <data name="ExtensionUpdateHashMismatch" xml:space="preserve"><value>the downloaded {0} does not match its SHA-256: it was deleted.</value></data>
+  <data name="ExtensionUpdateInvalid" xml:space="preserve"><value>the package is not a valid extension package ({0}).</value></data>
+  <data name="ExtensionUpdateNoHash" xml:space="preserve"><value>the release does not give the SHA-256 of {0}.</value></data>
+  <data name="ExtensionUpdateNoPackage" xml:space="preserve"><value>the release does not contain the signed extension package {0}.</value></data>
+  <data name="ExtensionUpdateNoSignature" xml:space="preserve"><value>the author's signature of {0} is missing.</value></data>
+  <data name="ExtensionUpdateNotWritable" xml:space="preserve"><value>the folder {0} cannot be written ({1}).</value></data>
+  <data name="ExtensionUpdateWrongVersion" xml:space="preserve"><value>the package holds version {0} of the extension instead of {1}.</value></data>
   <data name="FirstRunBrowsersTitle" xml:space="preserve"><value>Browser extension</value></data>
   <data name="FirstRunCategoriesHint" xml:space="preserve"><value>Category folders: a plain name is a subfolder of the download folder; you can also give a full path.</value></data>
   <data name="FirstRunChromiumSteps" xml:space="preserve"><value>Open {0} (paste the address in the address bar), turn on developer mode, choose "Load unpacked" and select the extension folder shown below.</value></data>

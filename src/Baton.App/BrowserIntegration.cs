@@ -36,7 +36,8 @@ internal static class BrowserIntegration
             // A cold start gets 12 s: the extension gives up after 15 s and lets the browser keep the download, so the host
             // must have given up first, or the app could still receive a download the browser is also fetching.
             // The pipe of the real app; a sandboxed test run (DOWNLOADMANAGER_DATA inherited from the browser) uses its own.
-            NativeHost.RunAsync(input, output, AppEnvironment.PipeName, LaunchApp, TimeSpan.FromSeconds(12), App.AppVersion).GetAwaiter().GetResult();
+            NativeHost.RunAsync(input, output, AppEnvironment.PipeName, LaunchApp, TimeSpan.FromSeconds(12), App.AppVersion,
+                App.BundledExtensionVersion, Localizer.UseSavedLanguage).GetAwaiter().GetResult();
             return 0;
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException)

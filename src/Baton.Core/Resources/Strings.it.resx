@@ -199,6 +199,7 @@ I download in corso vengono fermati e i dati parziali eliminati. Dal Cestino i f
   <data name="EndActionSleep" xml:space="preserve"><value>Sospendi</value></data>
   <data name="ErrorAllConnectionsRefused" xml:space="preserve"><value>Il server ha rifiutato tutte le connessioni.</value></data>
   <data name="ErrorAppNoAnswer" xml:space="preserve"><value>Baton non ha risposto in tempo.</value></data>
+  <data name="ErrorAppNotStarted" xml:space="preserve"><value>Impossibile avviare Baton.</value></data>
   <data name="ErrorCategoryDuplicate" xml:space="preserve"><value>Esiste già una categoria chiamata "{0}".</value></data>
   <data name="ErrorCategoryFolder" xml:space="preserve"><value>La cartella della categoria "{0}" deve essere un percorso completo.</value></data>
   <data name="ErrorCategoryName" xml:space="preserve"><value>Ogni categoria deve avere un nome.</value></data>
@@ -278,6 +279,18 @@ L'app continua a funzionare. Se il problema si ripete, copia i dettagli e allega
   <data name="ExtensionFolderName" xml:space="preserve"><value>Cartella dell'estensione</value></data>
   <data name="ExtensionMissing" xml:space="preserve"><value>L'estensione non è accanto a Baton.exe (una build di sviluppo): scaricala dalla pagina della release.</value></data>
   <data name="ExtensionOpenReleasePage" xml:space="preserve"><value>Apri la pagina della _release</value></data>
+  <data name="ExtensionUpdateBadSignature" xml:space="preserve"><value>la firma di {0} non è valida o non è di una chiave riconosciuta; il file potrebbe essere stato alterato.</value></data>
+  <data name="ExtensionUpdateFailed" xml:space="preserve"><value>Baton {0} è installato, ma l'estensione del browser accanto al programma non è stata aggiornata: {1}
+
+L'estensione che hai continua a funzionare. Per aggiornarla esegui l'installer della {0} o estrai baton-extension-{0}.zip dalla pagina della release.</value></data>
+  <data name="ExtensionUpdateFiles" xml:space="preserve"><value>non è stato possibile sostituire i file dell'estensione ({0}).</value></data>
+  <data name="ExtensionUpdateHashMismatch" xml:space="preserve"><value>il file {0} scaricato non corrisponde al suo SHA-256: è stato eliminato.</value></data>
+  <data name="ExtensionUpdateInvalid" xml:space="preserve"><value>il pacchetto non è un pacchetto valido dell'estensione ({0}).</value></data>
+  <data name="ExtensionUpdateNoHash" xml:space="preserve"><value>la release non indica lo SHA-256 di {0}.</value></data>
+  <data name="ExtensionUpdateNoPackage" xml:space="preserve"><value>la release non contiene il pacchetto firmato dell'estensione {0}.</value></data>
+  <data name="ExtensionUpdateNoSignature" xml:space="preserve"><value>manca la firma dell'autore di {0}.</value></data>
+  <data name="ExtensionUpdateNotWritable" xml:space="preserve"><value>non è possibile scrivere nella cartella {0} ({1}).</value></data>
+  <data name="ExtensionUpdateWrongVersion" xml:space="preserve"><value>il pacchetto contiene la versione {0} dell'estensione invece della {1}.</value></data>
   <data name="FirstRunBrowsersTitle" xml:space="preserve"><value>Estensione per il browser</value></data>
   <data name="FirstRunCategoriesHint" xml:space="preserve"><value>Cartelle delle categorie: un nome semplice è una sottocartella di quella dei download; puoi anche indicare un percorso completo.</value></data>
   <data name="FirstRunChromiumSteps" xml:space="preserve"><value>Apri {0} (incolla l'indirizzo nella barra), attiva la modalità sviluppatore, scegli "Carica estensione non pacchettizzata" e indica la cartella dell'estensione qui sotto.</value></data>

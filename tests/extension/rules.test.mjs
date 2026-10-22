@@ -226,3 +226,24 @@ test("video panel: kept off the players' controls, its place remembered for each
   positions = R.rememberPosition(positions, "site10.test", { right: 1, bottom: 2 });
   assert.deepEqual(positions["site10.test"], { right: 1, bottom: 2 });
 });
+
+test("app updates: one reload when the folder on disk is newer, then never again; Firefox explains", () => {
+  const reply = (appVersion, extensionVersion) => ({ ok: true, protocol: 3, appVersion, extensionVersion });
+  assert.ok(R.compareVersions("1.3.10", "1.3.9") > 0);
+  assert.equal(R.compareVersions("1.3", "1.3.0"), 0);
+  assert.ok(R.compareVersions(undefined, "0.0.1") < 0);
+  const decide = (over) => R.reloadDecision({ own: "1.3.2", tried: undefined, firefox: false, ...over });
+  assert.deepEqual(decide({ reply: reply("1.3.3", "1.3.3") }), { action: "reload", target: "1.3.3" });
+  // Tried already, still 1.3.2: the browser loads the extension from another folder.
+  assert.deepEqual(decide({ reply: reply("1.3.3", "1.3.3"), tried: "1.3.3" }), { action: "manual", target: "1.3.3" });
+  // A newer version on disk gets one try of its own.
+  assert.deepEqual(decide({ reply: reply("1.3.4", "1.3.4"), tried: "1.3.3" }), { action: "reload", target: "1.3.4" });
+  // Nothing to do: same version, an app older than the extension, a folder not updated, an app before 1.3.3, an error.
+  for (const r of [reply("1.3.2", "1.3.2"), reply("1.3.1", "1.3.1"), reply("1.3.3", "1.3.2"), reply("1.3.3", undefined),
+                   { ok: false, appVersion: "9.9.9", extensionVersion: "9.9.9" }, null]) {
+    assert.deepEqual(decide({ reply: r }), { action: "none" }, JSON.stringify(r));
+  }
+  assert.deepEqual(decide({ reply: reply("1.3.3", "1.3.3"), unpacked: false }), { action: "none" }); // a store updates it
+  assert.deepEqual(decide({ reply: reply("1.3.3", "1.3.2"), firefox: true }), { action: "firefox", target: "1.3.3" });
+  assert.deepEqual(decide({ reply: reply("1.3.2", "1.3.2"), firefox: true }), { action: "none" });
+});

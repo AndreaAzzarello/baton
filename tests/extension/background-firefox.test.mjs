@@ -15,6 +15,12 @@ test("onDeterminingFilename is not used in Firefox", () => {
   assert.equal(fake.listeners["downloads.onCreated"].length, 1);
 });
 
+test("Firefox never asks the app's version at start nor reloads: a temporary add-on stays as loaded", async () => {
+  await settle();
+  assert.equal(fake.calls.filter((c) => c[0] === "native" && c[1].type === "hello").length, 0);
+  assert.equal(fake.calls.filter((c) => c[0] === "reload").length, 0);
+});
+
 const created = fake.listeners["downloads.onCreated"]?.[0];
 const download = { id: 9, url: "https://files.test/big.iso", filename: "C:\\dl\\big.iso", mime: "application/x-iso9660-image",
   totalBytes: -1, startTime: new Date().toISOString(), incognito: false };

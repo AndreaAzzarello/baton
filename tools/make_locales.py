@@ -145,6 +145,11 @@ M = {
  "checkStepChromium": ("Opera, Brave and Chromium use Chrome's registration; restart the browser if it was open during the registration.",
                        "Opera, Brave e Chromium usano la registrazione di Chrome; riavvia il browser se era aperto durante la registrazione."),
  "checkStepRetry": ("Then press “Check again”.", "Poi premi «Verifica di nuovo»."),
+ # After the app updated itself
+ "updateReloadManual": ("Baton updated the extension to $1, but the browser still runs the previous version. Reload it from chrome://extensions (or edge://extensions); if you loaded it from another folder, load the \"extension\" folder next to Baton.exe instead.",
+                        "Baton ha aggiornato l'estensione alla $1, ma il browser usa ancora la versione precedente. Ricaricala da chrome://extensions (o edge://extensions); se l'avevi caricata da un'altra cartella, carica invece la cartella \"extension\" accanto a Baton.exe."),
+ "updateFirefox": ("Baton $1 is installed: load the new baton-firefox.xpi from the Baton folder (about:debugging › This Firefox › Load Temporary Add-on), or install the new signed version.",
+                   "Baton $1 è installato: carica il nuovo baton-firefox.xpi dalla cartella di Baton (about:debugging › Questo Firefox › Carica componente aggiuntivo temporaneo), o installa la nuova versione firmata."),
 }
 
 root = pathlib.Path(sys.argv[1])

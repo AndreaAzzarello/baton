@@ -10,7 +10,8 @@ The version is read from src\Baton.App\Baton.App.csproj unless given. Inno Setup
 environment variable with the full path of ISCC.exe), %LOCALAPPDATA%\Programs\InnoSetup6 and Program Files.
 Outputs: Baton-Setup-<version>.exe and Baton-<version>-portable.zip (Baton.exe, portable.flag, licenses), both with the
 browser extension of the same version next to Baton.exe: the "extension" folder (Chromium, Load unpacked) and
-baton-firefox.xpi; node builds it first. Files inside the zip carry the time of SOURCE_DATE_EPOCH (seconds; the release
+baton-firefox.xpi; node builds it first. Also baton-extension-<version>.zip, the same "extension" folder and xpi for the
+app's updater (sign it like Baton.exe). Files inside the zips carry the time of SOURCE_DATE_EPOCH (seconds; the release
 workflow sets it to the commit's time). Nothing is signed here: see docs\SIGNING.md.
 #>
 param(
@@ -53,34 +54,49 @@ $flag = "This file makes Baton portable: it keeps its data in the Data folder ne
         "only what you allow (the browsers' native messaging host, start with Windows). Delete this file to use the data of the`r`n" +
         "installed version in %LOCALAPPDATA%\Baton instead.`r`n"
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
-$stream = [IO.File]::Open($zipPath, 'CreateNew')
-$zip = New-Object IO.Compression.ZipArchive($stream, [IO.Compression.ZipArchiveMode]::Create)
-try {
-    $entries = @(
-        @{ Name = 'Baton.exe'; Bytes = [IO.File]::ReadAllBytes($exe) },
-        @{ Name = 'portable.flag'; Bytes = [Text.Encoding]::UTF8.GetBytes($flag) },
-        @{ Name = 'LICENSE.txt'; Bytes = [IO.File]::ReadAllBytes((Join-Path $root 'LICENSE')) },
-        @{ Name = 'THIRD-PARTY-LICENSES.txt'; Bytes = [IO.File]::ReadAllBytes((Join-Path $root 'THIRD-PARTY-LICENSES.txt')) },
-        @{ Name = 'baton-firefox.xpi'; Bytes = [IO.File]::ReadAllBytes($firefox) }
-    )
-    # In a fixed order (by path), with forward slashes as zip entries use.
-    foreach ($file in Get-ChildItem $extension -Recurse -File | Sort-Object FullName) {
-        $entries += @{ Name = 'extension/' + $file.FullName.Substring($extension.Length + 1).Replace('\', '/'); Bytes = [IO.File]::ReadAllBytes($file.FullName) }
-    }
-    foreach ($e in $entries) {
-        $entry = $zip.CreateEntry($e.Name, [IO.Compression.CompressionLevel]::Optimal)
-        $entry.LastWriteTime = $time
-        $s = $entry.Open(); $s.Write($e.Bytes, 0, $e.Bytes.Length); $s.Dispose()
-    }
-} finally { $zip.Dispose(); $stream.Dispose() }
-# Self-check: the package works on its own only with the extension inside.
-$check = [IO.Compression.ZipFile]::OpenRead($zipPath)
-try {
-    foreach ($needed in 'Baton.exe', 'portable.flag', 'baton-firefox.xpi', 'extension/manifest.json', 'extension/background.js') {
-        if (-not ($check.Entries | Where-Object FullName -eq $needed)) { throw "the portable zip lacks $needed" }
-    }
-} finally { $check.Dispose() }
+
+# Writes a zip with the entries in the given order and fixed times, then checks that it holds the files it needs.
+function Write-Zip([string]$path, $entries, [string[]]$needed) {
+    if (Test-Path $path) { Remove-Item $path }
+    $stream = [IO.File]::Open($path, 'CreateNew')
+    $zip = New-Object IO.Compression.ZipArchive($stream, [IO.Compression.ZipArchiveMode]::Create)
+    try {
+        foreach ($e in $entries) {
+            $entry = $zip.CreateEntry($e.Name, [IO.Compression.CompressionLevel]::Optimal)
+            $entry.LastWriteTime = $time
+            $s = $entry.Open(); $s.Write($e.Bytes, 0, $e.Bytes.Length); $s.Dispose()
+        }
+    } finally { $zip.Dispose(); $stream.Dispose() }
+    $check = [IO.Compression.ZipFile]::OpenRead($path)
+    try {
+        foreach ($n in $needed) {
+            if (-not ($check.Entries | Where-Object FullName -eq $n)) { throw "$([IO.Path]::GetFileName($path)) lacks $n" }
+        }
+    } finally { $check.Dispose() }
+}
+
+# The extension as it sits next to Baton.exe: the Firefox package, then the folder in a fixed order (by path), with
+# forward slashes as zip entries use.
+$extensionEntries = @(@{ Name = 'baton-firefox.xpi'; Bytes = [IO.File]::ReadAllBytes($firefox) })
+foreach ($file in Get-ChildItem $extension -Recurse -File | Sort-Object FullName) {
+    $extensionEntries += @{ Name = 'extension/' + $file.FullName.Substring($extension.Length + 1).Replace('\', '/'); Bytes = [IO.File]::ReadAllBytes($file.FullName) }
+}
+$extensionNeeded = 'baton-firefox.xpi', 'extension/manifest.json', 'extension/background.js'
+
+$entries = @(
+    @{ Name = 'Baton.exe'; Bytes = [IO.File]::ReadAllBytes($exe) },
+    @{ Name = 'portable.flag'; Bytes = [Text.Encoding]::UTF8.GetBytes($flag) },
+    @{ Name = 'LICENSE.txt'; Bytes = [IO.File]::ReadAllBytes((Join-Path $root 'LICENSE')) },
+    @{ Name = 'THIRD-PARTY-LICENSES.txt'; Bytes = [IO.File]::ReadAllBytes((Join-Path $root 'THIRD-PARTY-LICENSES.txt')) }
+) + $extensionEntries
+# The package works on its own only with the extension inside.
+Write-Zip $zipPath $entries (@('Baton.exe', 'portable.flag') + $extensionNeeded)
 Write-Output "portable: $zipPath"
+
+# The extension's package for the app's updater (from 1.3.3): the same files, signed like Baton.exe (sign-release.ps1).
+$packagePath = Join-Path $Out "baton-extension-$Version.zip"
+Write-Zip $packagePath $extensionEntries $extensionNeeded
+Write-Output "extension: $packagePath"
 
 if ($SkipInstaller) { return }
 $iscc = @($env:ISCC, (Join-Path $env:LOCALAPPDATA 'Programs\InnoSetup6\ISCC.exe'),

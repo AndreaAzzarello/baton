@@ -102,18 +102,8 @@ public sealed class StartupService : IStartupService
     public void Set(bool enabled)
     {
         // The portable copy writes the start entry only now, because the user asked for it.
-        var portable = AppEnvironment.Registry as Core.Platform.PortableUserRegistry;
-        if (portable is not null)
-            portable.AllowStartEntry = true;
-        try
-        {
+        using (Core.Platform.PortableUserRegistry.Allow(AppEnvironment.Registry, startEntry: true))
             AppEnvironment.Registration.SetStartWithWindows(enabled);
-        }
-        finally
-        {
-            if (portable is not null)
-                portable.AllowStartEntry = false;
-        }
     }
 }
 

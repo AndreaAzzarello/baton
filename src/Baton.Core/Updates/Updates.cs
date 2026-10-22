@@ -5,8 +5,8 @@ using System.Text.RegularExpressions;
 
 namespace Baton.Core.Updates;
 
-/// <summary>A newer version found at the update address.</summary>
-public sealed record UpdateInfo(Version Version, string Notes, Uri Download, string Sha256, string Name);
+/// <summary>A newer version found at the update address; <paramref name="Extension"/> is null for a release without the extension's package (before 1.3.3).</summary>
+public sealed record UpdateInfo(Version Version, string Notes, Uri Download, string Sha256, string Name, ExtensionAsset? Extension = null);
 
 public sealed class UpdateException(string message, Exception? inner = null, bool unverifiable = false) : Exception(message, inner)
 {
@@ -37,22 +37,93 @@ public static partial class UpdateChecker
     {
         keys ??= UpdateSignature.Trusted;
         var url = Allowed(address) ?? throw new UpdateException(Resources.Strings.UpdateErrorAddress);
-        var text = await GetTextAsync(http, url, MaxManifestBytes, ct);
-        JsonElement root;
-        try
-        {
-            root = JsonDocument.Parse(text).RootElement;
-        }
-        catch (JsonException ex)
-        {
-            throw new UpdateException(Resources.Strings.UpdateErrorNoRelease, ex);
-        }
+        var root = ParseRelease(await GetTextAsync(http, url, MaxManifestBytes, ct));
         var gitHub = root.TryGetProperty("tag_name", out _);
         // The version first: a release that is not newer is never reported, whatever it lacks.
         var version = ParseVersion(Text(root, gitHub ? "tag_name" : "version")) ?? throw new UpdateException(Resources.Strings.UpdateErrorNoRelease);
         if (version <= Normalize(current))
             return null;
-        return gitHub ? await FromGitHubAsync(http, root, version, keys, ct) : FromManifest(root, url, version, keys);
+        var update = gitHub ? await FromGitHubAsync(http, root, version, keys, ct) : FromManifest(root, url, version, keys);
+        return update with { Extension = await ExtensionOfAsync(http, root, gitHub, url, version, ct) };
+    }
+
+    /// <summary>
+    /// The extension's package of the release of <paramref name="version"/> itself, for a program that finds an older
+    /// extension next to it (an update made by 1.3.2 or earlier replaced only Baton.exe). A GitHub "latest" address is
+    /// turned into that version's tag; any other address counts only when it describes that very version. Null when the
+    /// release has no package.
+    /// </summary>
+    public static async Task<ExtensionAsset?> ExtensionOfAsync(HttpClient http, string address, Version version, CancellationToken ct)
+    {
+        version = Normalize(version);
+        var url = ReleaseAddressFor(Allowed(address) ?? throw new UpdateException(Resources.Strings.UpdateErrorAddress), version);
+        var root = ParseRelease(await GetTextAsync(http, url, MaxManifestBytes, ct));
+        var gitHub = root.TryGetProperty("tag_name", out _);
+        return ParseVersion(Text(root, gitHub ? "tag_name" : "version")) == version ? await ExtensionOfAsync(http, root, gitHub, url, version, ct) : null;
+    }
+
+    /// <summary>The release as a JSON object; anything else (not JSON, a list, a number) is not a release.</summary>
+    private static JsonElement ParseRelease(string text)
+    {
+        try
+        {
+            var root = JsonDocument.Parse(text).RootElement;
+            return root.ValueKind == JsonValueKind.Object ? root : throw new UpdateException(Resources.Strings.UpdateErrorNoRelease);
+        }
+        catch (JsonException ex)
+        {
+            throw new UpdateException(Resources.Strings.UpdateErrorNoRelease, ex);
+        }
+    }
+
+    /// <summary>GitHub's ".../releases/latest" becomes ".../releases/tags/v&lt;version&gt;"; any other address stays as it is.</summary>
+    public static Uri ReleaseAddressFor(Uri address, Version version)
+    {
+        const string latest = "/releases/latest";
+        return address.Host.Equals("api.github.com", StringComparison.OrdinalIgnoreCase) && address.AbsolutePath.EndsWith(latest, StringComparison.OrdinalIgnoreCase)
+            ? new Uri(address, address.AbsolutePath[..^latest.Length] + "/releases/tags/v" + Normalize(version).ToString(3))
+            : address;
+    }
+
+    private static async Task<ExtensionAsset?> ExtensionOfAsync(HttpClient http, JsonElement root, bool gitHub, Uri baseUrl, Version version, CancellationToken ct)
+    {
+        var name = ExtensionPackage.NameFor(version);
+        if (!gitHub)
+        {
+            if (!root.TryGetProperty("extension", out var package) || package.ValueKind != JsonValueKind.Object)
+                return null;
+            var link = Text(package, "url") is { } u && Uri.TryCreate(baseUrl, u, out var resolved) ? Allowed(resolved.AbsoluteUri) : null;
+            return new ExtensionAsset(name, link,
+                Text(package, "sha256")?.Trim().ToLowerInvariant(), Text(package, "signature"));
+        }
+        var assets = Assets(root);
+        var zip = assets.FirstOrDefault(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (zip.Url is null)
+            return null;
+        var shaText = await AssetTextAsync(http, assets, name + ".sha256", 4 * 1024, ct);
+        return new ExtensionAsset(name, Allowed(zip.Url), shaText is null ? null : ShaFromAsset(shaText, name),
+            await AssetTextAsync(http, assets, name + ".sig", MaxSignatureBytes, ct));
+    }
+
+    private static List<(string Name, string? Url)> Assets(JsonElement root) =>
+        root.TryGetProperty("assets", out var list) && list.ValueKind == JsonValueKind.Array
+            ? list.EnumerateArray().Select(a => (Name: Text(a, "name") ?? "", Url: Text(a, "browser_download_url"))).ToList()
+            : [];
+
+    /// <summary>The text of a small release asset, or null when it is missing or not readable.</summary>
+    private static async Task<string?> AssetTextAsync(HttpClient http, List<(string Name, string? Url)> assets, string name, int limit, CancellationToken ct)
+    {
+        var asset = assets.FirstOrDefault(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (asset.Url is null || Allowed(asset.Url) is not { } url)
+            return null;
+        try
+        {
+            return await GetTextAsync(http, url, limit, ct);
+        }
+        catch (Exception ex) when (ex is UpdateException or HttpRequestException)
+        {
+            return null; // listed but not readable: as unverifiable as a missing one
+        }
     }
 
     private static UpdateInfo FromManifest(JsonElement root, Uri baseUrl, Version version, IReadOnlyList<ReleaseKey> keys)
@@ -81,9 +152,7 @@ public static partial class UpdateChecker
         CancellationToken ct)
     {
         var notes = Text(root, "body") ?? "";
-        var assets = root.TryGetProperty("assets", out var list) && list.ValueKind == JsonValueKind.Array
-            ? list.EnumerateArray().Select(a => (Name: Text(a, "name") ?? "", Url: Text(a, "browser_download_url"))).ToList()
-            : [];
+        var assets = Assets(root);
         var exe = assets.FirstOrDefault(a => a.Name.Equals(ExeName, StringComparison.OrdinalIgnoreCase));
         if (exe.Url is null)
             exe = assets.FirstOrDefault(a => a.Name.Equals(LegacyExeName, StringComparison.OrdinalIgnoreCase));
@@ -93,48 +162,26 @@ public static partial class UpdateChecker
             throw new UpdateException(Resources.Strings.UpdateErrorNoExe);
 
         // The hash comes only from the "<exe>.sha256" asset.
-        var shaAsset = assets.FirstOrDefault(a => a.Name.Equals(exe.Name + ".sha256", StringComparison.OrdinalIgnoreCase));
-        string? sha = null;
-        if (shaAsset.Url is not null && Allowed(shaAsset.Url) is { } shaUrl)
-        {
-            try
-            {
-                sha = ShaFromAsset(await GetTextAsync(http, shaUrl, 4 * 1024, ct), exe.Name);
-            }
-            catch (Exception ex) when (ex is UpdateException or HttpRequestException)
-            {
-                // Listed but not readable: as unverifiable as a missing one.
-            }
-        }
+        var sha = await AssetTextAsync(http, assets, exe.Name + ".sha256", 4 * 1024, ct) is { } shaText ? ShaFromAsset(shaText, exe.Name) : null;
         if (sha is null)
             throw new UpdateException(string.Format(CultureInfo.CurrentCulture, Resources.Strings.UpdateErrorNoShaAsset, exe.Name + ".sha256", version.ToString(3)),
                 unverifiable: true);
 
-        var sigAsset = assets.FirstOrDefault(a => a.Name.Equals(exe.Name + ".sig", StringComparison.OrdinalIgnoreCase));
-        string? signatures = null;
-        if (sigAsset.Url is not null && Allowed(sigAsset.Url) is { } sigUrl)
-        {
-            try
-            {
-                signatures = await GetTextAsync(http, sigUrl, MaxSignatureBytes, ct);
-            }
-            catch (Exception ex) when (ex is UpdateException or HttpRequestException)
-            {
-                // Listed but not readable: the same as a missing signature.
-            }
-        }
+        var signatures = await AssetTextAsync(http, assets, exe.Name + ".sig", MaxSignatureBytes, ct);
         CheckSignature(signatures, exe.Name + ".sig", version, exe.Name, sha, keys);
         return new UpdateInfo(version, notes, download, sha, exe.Name);
     }
 
     /// <summary>
     /// The hash in a ".sha256" file as the usual tools write it: "hash  name" (sha256sum), "SHA256 (name) = hash" (BSD),
-    /// certutil's output, or the bare hash from PowerShell. Null when there is none, or when the file names another program.
+    /// certutil's output, or the bare hash from PowerShell. Null when there is none, or when the file names another file of
+    /// the same kind (another program for a ".exe", another package for a ".zip").
     /// </summary>
     public static string? ShaFromAsset(string text, string exeName)
     {
         var tokens = text.Split((char[])[' ', '\t', '\r', '\n', '(', ')', '=', '*', ':'], StringSplitOptions.RemoveEmptyEntries);
-        if (tokens.Any(t => t.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && !t.Equals(exeName, StringComparison.OrdinalIgnoreCase)))
+        var kind = Path.GetExtension(exeName);
+        if (tokens.Any(t => t.EndsWith(kind, StringComparison.OrdinalIgnoreCase) && !t.Equals(exeName, StringComparison.OrdinalIgnoreCase)))
             return null;
         return tokens.FirstOrDefault(IsSha256)?.ToLowerInvariant();
     }

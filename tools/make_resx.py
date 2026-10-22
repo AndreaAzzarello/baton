@@ -929,6 +929,18 @@ S = {
  "ErrorPacFunction": ("The PAC file has no FindProxyForURL function.", "Il file PAC non contiene la funzione FindProxyForURL."),
  "ErrorProjectGone": ("The project no longer exists.", "Il progetto non esiste più."),
  "ErrorAppNoAnswer": ("Baton did not answer in time.", "Baton non ha risposto in tempo."),
+ "ErrorAppNotStarted": ("Baton could not be started.", "Impossibile avviare Baton."),
+ # The extension next to Baton.exe, updated with the program (1.3.3)
+ "ExtensionUpdateFailed": ("Baton {0} is installed, but the browser extension next to it was not updated: {1}\n\nThe extension you have keeps working. To update it, run the {0} installer or extract baton-extension-{0}.zip from the release page.", "Baton {0} è installato, ma l'estensione del browser accanto al programma non è stata aggiornata: {1}\n\nL'estensione che hai continua a funzionare. Per aggiornarla esegui l'installer della {0} o estrai baton-extension-{0}.zip dalla pagina della release."),
+ "ExtensionUpdateNoPackage": ("the release does not contain the signed extension package {0}.", "la release non contiene il pacchetto firmato dell'estensione {0}."),
+ "ExtensionUpdateNoHash": ("the release does not give the SHA-256 of {0}.", "la release non indica lo SHA-256 di {0}."),
+ "ExtensionUpdateNoSignature": ("the author's signature of {0} is missing.", "manca la firma dell'autore di {0}."),
+ "ExtensionUpdateBadSignature": ("the signature of {0} is not valid or not made by a known key; the file may have been tampered with.", "la firma di {0} non è valida o non è di una chiave riconosciuta; il file potrebbe essere stato alterato."),
+ "ExtensionUpdateHashMismatch": ("the downloaded {0} does not match its SHA-256: it was deleted.", "il file {0} scaricato non corrisponde al suo SHA-256: è stato eliminato."),
+ "ExtensionUpdateWrongVersion": ("the package holds version {0} of the extension instead of {1}.", "il pacchetto contiene la versione {0} dell'estensione invece della {1}."),
+ "ExtensionUpdateInvalid": ("the package is not a valid extension package ({0}).", "il pacchetto non è un pacchetto valido dell'estensione ({0})."),
+ "ExtensionUpdateFiles": ("the extension's files could not be replaced ({0}).", "non è stato possibile sostituire i file dell'estensione ({0})."),
+ "ExtensionUpdateNotWritable": ("the folder {0} cannot be written ({1}).", "non è possibile scrivere nella cartella {0} ({1})."),
  "MediaSubtitlesNoFfmpeg": ("ffmpeg not found: the subtitles were saved as .vtt files next to the video instead of inside it.", "ffmpeg non trovato: i sottotitoli sono stati salvati come file .vtt accanto al video invece che al suo interno."),
 }
 

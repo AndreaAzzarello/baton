@@ -434,6 +434,25 @@ public sealed class NetworkTests : IAsyncLifetime
         await server;
     }
 
+    [Fact]
+    public async Task Host_ReportsTheExtensionOnDisk_AndTakesTheAppsLanguageOnlyForAnErrorText()
+    {
+        var pipe = "dm-test-" + Guid.NewGuid().ToString("N");
+        var languageReads = 0;
+        void UseAppLanguage() => languageReads++;
+        var hello = await NativeHost.ForwardAsync(new ChannelMessage(Messages.Hello), pipe, () => throw new InvalidOperationException("must not launch"),
+            TimeSpan.FromSeconds(1), "1.3.3", "1.3.3", UseAppLanguage);
+        Assert.Equal(("1.3.3", "1.3.3", false), (hello.AppVersion, hello.ExtensionVersion, hello.Running));
+        Assert.Contains("\"extensionVersion\":\"1.3.3\"", JsonSerializer.Serialize(hello, Messages.Json));
+        Assert.Equal(0, languageReads); // the usual answers never open the database for the language
+
+        var notStarted = await NativeHost.ForwardAsync(new ChannelMessage(Messages.Add), pipe, () => false, TimeSpan.FromSeconds(1), useAppLanguage: UseAppLanguage);
+        Assert.Equal(Baton.Core.Resources.Strings.ErrorAppNotStarted, notStarted.Error);
+        var silent = await NativeHost.ForwardAsync(new ChannelMessage(Messages.Add), pipe, () => true, TimeSpan.FromMilliseconds(300), useAppLanguage: UseAppLanguage);
+        Assert.Equal(Baton.Core.Resources.Strings.ErrorAppNoAnswer, silent.Error);
+        Assert.Equal(2, languageReads);
+    }
+
     private void AssertNowhereInDatabase(string secret)
     {
         using var db = new SqliteConnection($"Data Source={DbPath};Pooling=False");

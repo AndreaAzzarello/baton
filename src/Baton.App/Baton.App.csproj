@@ -15,7 +15,7 @@
     <AssemblyName>Baton</AssemblyName>
     <RootNamespace>Baton.App</RootNamespace>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>1.3.2</Version>
+    <Version>1.3.3</Version>
     <Product>Baton</Product>
     <Description>Baton - a fast segmented download manager for Windows</Description>
     <Copyright>Copyright (c) 2026 Andrea Azzarello</Copyright>

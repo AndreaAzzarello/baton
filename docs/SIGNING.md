@@ -11,7 +11,7 @@ Windows SmartScreen may warn on first run.*
 | --- | --- | --- |
 | `Baton.exe` | Authenticode | SignPath Foundation, through SignPath.io |
 | `Baton-Setup-<version>.exe` (installer) | Authenticode | SignPath Foundation, through SignPath.io |
-| `Baton.exe`, `Baton-Setup-<version>.exe` | release key (ECDSA P-256), files `.sha256` and `.sig` | the author, on the author's own PC |
+| `Baton.exe`, `Baton-Setup-<version>.exe`, `baton-extension-<version>.zip` | release key (ECDSA P-256), files `.sha256` and `.sig` | the author, on the author's own PC |
 
 - Only binaries built from this repository, [github.com/AndreaAzzarello/baton](https://github.com/AndreaAzzarello/baton),
   are signed: Baton's own code, built by [`.github/workflows/release.yml`](../.github/workflows/release.yml) on GitHub-hosted
@@ -53,8 +53,9 @@ only when the user turns on "Check for updates at startup" (off by default), to 
 3. **The author downloads** that artifact.
 4. **Checks the Authenticode signatures** (`Get-AuthenticodeSignature`, status *Valid*, signer SignPath Foundation), then
    signs the **already signed** files with the release key: `tools\sign-release.ps1 -Exe <file> -Version <version>` for
-   `Baton.exe` and for the installer. The order matters: Authenticode changes the file, and the release key signs its
-   final SHA-256 (the one the app's updater checks).
+   `Baton.exe`, for the installer and for the extension's package `baton-extension-<version>.zip` (from 1.3.3 the app's
+   updater installs it next to `Baton.exe` only with a valid signature). The order matters: Authenticode changes the file,
+   and the release key signs its final SHA-256 (the one the app's updater checks).
 5. **Publishes** the GitHub release with those files.
 
 The private release key never leaves the author's PC and never reaches CI (it is encrypted with Windows DPAPI in
@@ -66,7 +67,7 @@ same files without Authenticode, and steps 3–5 are the same.
 ## Verifying a download
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.2.exe"   # .sha256 and .sig next to it
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.3.exe"   # .sha256 and .sig next to it
 ```
 
 It checks the SHA-256, the release-key signature (version + file name + hash) and, when the file carries one, the

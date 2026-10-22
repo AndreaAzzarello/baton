@@ -6,7 +6,8 @@
   Needs Baton.exe with Baton.exe.sha256 and Baton.exe.sig next to it (the three release
   assets). The signature must be valid for "version + file name + SHA-256" with one of the public keys in
   src\Baton.Core\Updates\release-keys.txt (or the list given with -KeyList). Nothing is installed or run.
-  Works the same for the installer (Baton-Setup-<version>.exe with its .sha256 and .sig).
+  Works the same for the installer (Baton-Setup-<version>.exe with its .sha256 and .sig) and for the extension's
+  package (baton-extension-<version>.zip, whose version is read from its name; no Authenticode for a zip).
   Authenticode (from 1.3, once SignPath Foundation signs the releases): a file that carries a signature must have a valid
   one, which Windows checks up to a trusted root; the signer is shown. A file without one passes (releases signed only
   with the release key), unless -RequireAuthenticode is given.
@@ -33,7 +34,10 @@ $name = if ($Name) { $Name } else { [IO.Path]::GetFileName($Exe) }
 $folder = [IO.Path]::GetDirectoryName($Exe)
 $shaFile = if (Test-Path "$Exe.sha256") { "$Exe.sha256" } else { Join-Path $folder "$name.sha256" }
 $sigFile = if (Test-Path "$Exe.sig") { "$Exe.sig" } else { Join-Path $folder "$name.sig" }
-if (-not $Version) {
+$program = [IO.Path]::GetExtension($name) -eq '.exe'
+if (-not $Version -and $name -match '^baton-extension-(\d+\.\d+\.\d+)\.zip$') {
+  $Version = $Matches[1]
+} elseif (-not $Version) {
   $v = [Version][Diagnostics.FileVersionInfo]::GetVersionInfo($Exe).FileVersion
   $Version = "$($v.Major).$($v.Minor).$([Math]::Max(0, $v.Build))"
 }
@@ -70,9 +74,14 @@ foreach ($line in Get-Content $sigFile) {
 }
 if ($valid.Count -eq 0) { throw "No valid signature of $name $Version by a known key: do not install it." }
 
-# Authenticode: added by SignPath before the release key signs, so the SHA-256 above already covers it.
-$authenticode = Get-AuthenticodeSignature -LiteralPath $Exe
+# Authenticode: added by SignPath before the release key signs, so the SHA-256 above already covers it. Programs only:
+# the extension's package is a zip, covered by the release key alone.
 $signer = "no Authenticode signature"
+if (-not $program) {
+  Write-Host "OK: $name $Version, SHA-256 $sha, signed by $($valid -join ', ')." -ForegroundColor Green
+  return
+}
+$authenticode = Get-AuthenticodeSignature -LiteralPath $Exe
 switch ($authenticode.Status) {
   'Valid' { $signer = "Authenticode: $($authenticode.SignerCertificate.Subject)" }
   'NotSigned' { if ($RequireAuthenticode) { throw "$name has no Authenticode signature." } }

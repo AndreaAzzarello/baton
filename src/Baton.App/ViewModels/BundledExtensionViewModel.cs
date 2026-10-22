@@ -11,7 +11,7 @@ namespace Baton.App.ViewModels;
 /// The extension shipped next to Baton.exe, as the first-run wizard and the settings show it: the full path of the folder
 /// to load in Chromium browsers, the Firefox package, or, in a development build without them, the release page.
 /// </summary>
-public sealed class BundledExtensionViewModel
+public sealed class BundledExtensionViewModel : ObservableObject // FirefoxText follows a language change (RefreshAll)
 {
     public BundledExtensionViewModel(string programFolder, IShellService shell)
     {

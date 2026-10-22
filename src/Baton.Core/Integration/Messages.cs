@@ -100,6 +100,10 @@ public sealed record ChannelMessage(
 /// <param name="Queues">For "queues": the names of the app's queues, the main one first (added in 0.5).</param>
 /// <param name="Protocol">The protocol version the app speaks (2 from 0.6; absent from older apps, which speak 1).</param>
 /// <param name="AppVersion">The app's version, for the extension's connection check.</param>
+/// <param name="ExtensionVersion">
+/// For "hello" (from 1.3.3): the version of the extension folder next to Baton.exe, so an older extension loaded from it
+/// knows that reloading would bring it up to date.
+/// </param>
 public sealed record ChannelReply(
     bool Ok,
     bool Running = true,
@@ -107,7 +111,8 @@ public sealed record ChannelReply(
     List<string>? Queues = null,
     int? Protocol = null,
     string? AppVersion = null,
-    MediaInfoReply? Media = null);
+    MediaInfoReply? Media = null,
+    string? ExtensionVersion = null);
 
 public static class Messages
 {

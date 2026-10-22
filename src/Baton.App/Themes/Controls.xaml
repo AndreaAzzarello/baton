@@ -28,7 +28,8 @@
     <Style x:Key="ValueText" TargetType="TextBlock">
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="Margin" Value="0,3" />
-        <Setter Property="VerticalAlignment" Value="Center" />
+        <!-- Top, like the labels next to it: a value that wraps in the other column must not push this one off its label. -->
+        <Setter Property="VerticalAlignment" Value="Top" />
     </Style>
 
     <Style x:Key="SectionTitle" TargetType="TextBlock">
@@ -181,6 +182,16 @@
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
     <!-- The extension shipped next to Baton.exe (BundledExtensionViewModel): first-run wizard and settings -->
+    <!-- "Start with Windows" in the wizard and the settings (StartWithWindowsViewModel). -->
+    <DataTemplate x:Key="StartWithWindowsTemplate">
+        <StackPanel>
+            <CheckBox Content="{l:Loc SettingsRunAtStartup}" IsChecked="{Binding Enabled}" Margin="0,2" />
+            <TextBlock Text="{Binding PortableWarning}" Style="{StaticResource NoteText}" TextWrapping="Wrap" Margin="28,0,0,4"
+                       AutomationProperties.LiveSetting="Polite"
+                       Visibility="{Binding ShowPortableWarning, Converter={StaticResource BoolToVisibility}}" />
+        </StackPanel>
+    </DataTemplate>
+
     <DataTemplate x:Key="BundledExtensionTemplate">
         <StackPanel>
             <StackPanel Visibility="{Binding IsIncluded, Converter={StaticResource BoolToVisibility}}">

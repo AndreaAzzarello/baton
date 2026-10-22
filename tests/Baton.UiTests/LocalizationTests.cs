@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using Baton.App;
@@ -129,6 +130,60 @@ public sealed class LocalizationTests
 
         Assert.False(Localizer.Apply(AppLanguage.English)); // nothing to do
         GC.KeepAlive(probe);
+    });
+
+    [Fact]
+    public void TextsComputedForTheWizardAndSettings_FollowALiveLanguageChange() => Sta(() =>
+    {
+        Localizer.Apply(AppLanguage.Italian);
+        var program = Path.Combine(Path.GetTempPath(), "dm-tests", "lang-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(program, "extension"));
+        File.WriteAllText(Path.Combine(program, "extension", "manifest.json"), "{}");
+        File.WriteAllText(Path.Combine(program, "baton-firefox.xpi"), "");
+        try
+        {
+            var shell = System.Reflection.DispatchProxy.Create<IShellService, MainListCommandsTests.Fake<IShellService>>();
+            var extension = new Baton.App.ViewModels.BundledExtensionViewModel(program, shell);
+            var startup = new Baton.App.ViewModels.StartWithWindowsViewModel(Path.Combine(program, "Baton.exe"), enabled: true);
+            var refreshed = new List<object>();
+            extension.PropertyChanged += (sender, e) => { if (e.PropertyName == string.Empty) refreshed.Add(sender!); };
+            startup.PropertyChanged += (sender, e) => { if (e.PropertyName == string.Empty) refreshed.Add(sender!); };
+            var before = (extension.FirefoxText, startup.PortableWarning);
+
+            Assert.True(Localizer.Apply(AppLanguage.English));
+            Assert.Equal([extension, startup], refreshed); // their bindings are read again
+            Assert.NotEqual(before.FirefoxText, extension.FirefoxText);
+            Assert.NotEqual(before.PortableWarning, startup.PortableWarning);
+            Assert.Equal(string.Format(CultureInfo.CurrentCulture, Strings.ResourceManager.GetString(nameof(Strings.ExtensionFirefoxIncluded), English)!,
+                Path.Combine(program, "baton-firefox.xpi")), extension.FirefoxText);
+        }
+        finally
+        {
+            Directory.Delete(program, recursive: true);
+        }
+    });
+
+    [Fact]
+    public void BrowserHostErrors_UseTheLanguageChosenInTheApp_NotThatOfWindows() => Sta(() =>
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "dm-tests", "host-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        var db = Path.Combine(folder, "downloads.db");
+        try
+        {
+            foreach (var (choice, expected) in new[] { (AppLanguage.English, "Baton did not answer in time."), (AppLanguage.Italian, "Baton non ha risposto in tempo.") })
+            {
+                using (var store = new DownloadStore(db))
+                    store.SaveSettings(new AppSettings { Language = choice });
+                Localizer.UseSavedLanguage(db);
+                Assert.Equal(expected, Strings.ErrorAppNoAnswer);
+            }
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            Directory.Delete(folder, recursive: true);
+        }
     });
 
     [Fact]

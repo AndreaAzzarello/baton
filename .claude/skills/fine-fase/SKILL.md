@@ -22,7 +22,7 @@ Segui i passi in ordine; se uno fallisce, correggi e riparti da quel passo. Non 
      se ci sono, chiedi all'utente;
    - pubblica dopo il commit finale (la versione nell'exe contiene l'hash del commit):
      `dotnet publish src\Baton.App -c Release -r win-x64 -o publish -p:ContinuousIntegrationBuild=true`, firma ECDSA
-     (`sign-release.ps1`, poi `-Exe` sull'installer), `tools\build-packages.ps1`;
+     (`sign-release.ps1`, poi `-Exe` sull'installer e su `baton-extension-<versione>.zip`, dalla 1.3.3), `tools\build-packages.ps1`;
    - dalla 1.3 l'app reale è installata: chiudila (icona nell'area di notifica › Esci, o ferma solo
      `%LOCALAPPDATA%\Programs\Baton\Baton.exe`) e installa sopra il nuovo setup, senza `BATON_DATA`:
      `Baton-Setup-<versione>.exe /VERYSILENT /SUPPRESSMSGBOXES /MERGETASKS=desktopicon`.

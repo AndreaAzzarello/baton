@@ -100,6 +100,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [InstallDelete]
 ; Files dropped from the extension in a newer version must not stay behind (the browser would load them).
 Type: filesandordirs; Name: "{app}\extension"
+; A package the app's updater had begun to unpack (it starts over from scratch anyway).
+Type: filesandordirs; Name: "{app}\extension.new"
 
 [Files]
 Source: "{#SourceDir}\Baton.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -125,6 +127,13 @@ Filename: "{app}\Baton.exe"; Parameters: "--uninstall"; Flags: runhidden waitunt
 ; Left by the app's own updates (the previous version, kept for "restore previous version").
 Type: files; Name: "{app}\Baton.exe.old"
 Type: files; Name: "{app}\Baton.exe.failed"
+Type: filesandordirs; Name: "{app}\extension.old"
+Type: filesandordirs; Name: "{app}\extension.new"
+Type: filesandordirs; Name: "{app}\extension.failed"
+Type: files; Name: "{app}\baton-firefox.xpi.old"
+; The extension as the app's updater put it in place: not in the installer's own list of files.
+Type: filesandordirs; Name: "{app}\extension"
+Type: files; Name: "{app}\baton-firefox.xpi"
 Type: dirifempty; Name: "{app}"
 
 [Code]

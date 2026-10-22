@@ -355,5 +355,11 @@
   },
   "checkStepRetry": {
     "message": "Poi premi «Verifica di nuovo»."
+  },
+  "updateReloadManual": {
+    "message": "Baton ha aggiornato l'estensione alla $1, ma il browser usa ancora la versione precedente. Ricaricala da chrome://extensions (o edge://extensions); se l'avevi caricata da un'altra cartella, carica invece la cartella \"extension\" accanto a Baton.exe."
+  },
+  "updateFirefox": {
+    "message": "Baton $1 è installato: carica il nuovo baton-firefox.xpi dalla cartella di Baton (about:debugging › Questo Firefox › Carica componente aggiuntivo temporaneo), o installa la nuova versione firmata."
   }
 }

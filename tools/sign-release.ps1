@@ -16,9 +16,11 @@
   Rotation: sign with the old and the new key (-Key both) while versions that know only the old one are around; a
   key is retired by removing it from release-keys.txt in a later version.
 .PARAMETER Exe
-  The program to sign (default publish\Baton.exe).
+  The file to sign (default publish\Baton.exe): Baton.exe, the installer, or the extension's package
+  baton-extension-<version>.zip (from 1.3.3 the app's updater installs it next to Baton.exe only with a valid signature).
 .PARAMETER Version
-  The version it is published as (default: the program's own file version). It must match the release tag.
+  The version it is published as (default: the program's own file version, or the version in the package's name). It
+  must match the release tag.
 .PARAMETER Key
   The ids of the keys to sign with (default: every key in the key folder).
 .EXAMPLE
@@ -151,7 +153,9 @@ if ($NewKey) {
 if (-not $Exe) { $Exe = Join-Path $root "publish\Baton.exe" }
 $Exe = (Resolve-Path $Exe).Path
 $name = [IO.Path]::GetFileName($Exe)
-if (-not $Version) {
+if (-not $Version -and $name -match '^baton-extension-(\d+\.\d+\.\d+)\.zip$') {
+  $Version = $Matches[1] # the extension's package carries its version in its name only
+} elseif (-not $Version) {
   $v = [Version][Diagnostics.FileVersionInfo]::GetVersionInfo($Exe).FileVersion
   $Version = "$($v.Major).$($v.Minor).$([Math]::Max(0, $v.Build))"
 }

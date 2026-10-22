@@ -355,5 +355,11 @@
   },
   "checkStepRetry": {
     "message": "Then press “Check again”."
+  },
+  "updateReloadManual": {
+    "message": "Baton updated the extension to $1, but the browser still runs the previous version. Reload it from chrome://extensions (or edge://extensions); if you loaded it from another folder, load the \"extension\" folder next to Baton.exe instead."
+  },
+  "updateFirefox": {
+    "message": "Baton $1 is installed: load the new baton-firefox.xpi from the Baton folder (about:debugging › This Firefox › Load Temporary Add-on), or install the new signed version."
   }
 }

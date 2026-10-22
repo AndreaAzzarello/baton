@@ -5,14 +5,16 @@ using System.Net.Http;
 using Baton.App.ViewModels;
 using Baton.Core;
 using Baton.Core.Resources;
+using Baton.Core.Setup;
 using Baton.Core.Updates;
 
 namespace Baton.App.Services;
 
 /// <summary>
 /// The app's side of updates: checks the configured address, shows the notes, and after the user confirms downloads,
-/// verifies and installs the new version (see <see cref="UpdateInstaller"/>); also "restore previous version".
-/// Only the published single executable updates itself: a development build has its program in separate files.
+/// verifies and installs the new version (see <see cref="UpdateInstaller"/>) together with the browser extension next to
+/// it (see <see cref="ExtensionPackage"/>); also "restore previous version". Only the published single executable updates
+/// itself: a development build has its program in separate files.
 /// </summary>
 public sealed class UpdateService(DownloadService service, IDialogService dialogs, Action exit)
 {
@@ -75,6 +77,7 @@ public sealed class UpdateService(DownloadService service, IDialogService dialog
         }
         if (update is null)
         {
+            await RepairExtensionAsync(address, interactive);
             if (interactive)
                 dialogs.Inform(string.Format(CultureInfo.CurrentCulture, Strings.UpdateNone, App.AppVersion), Strings.UpdateTitle);
             return;
@@ -110,20 +113,113 @@ public sealed class UpdateService(DownloadService service, IDialogService dialog
             http.Timeout = Timeout.InfiniteTimeSpan; // a large file on a slow line; closing the window cancels it
             verified = await UpdateInstaller.DownloadAsync(http, update, Folder, progress, ct);
         }
-        File.WriteAllText(PreviousSchemaPath, DownloadStore.SchemaVersion.ToString(CultureInfo.InvariantCulture));
-        UpdateInstaller.Swap(verified, exe);
+        // The extension is made ready before anything changes; a problem with it never stops the program's update.
+        // One at a time: a repair still running shares the staging folder.
+        await ExtensionLock.WaitAsync(ct);
         try
         {
-            // The previous version watches the new one and puts itself back if the new one does not start.
-            StartDetached(UpdateInstaller.BackupOf(exe), UpdateInstaller.WatchArgument, Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
+            var extensionReady = false;
+            if (BundledExtension.Folder(ProgramFolder(exe)) is not null)
+            {
+                using var http = service.Network.CreateHttpClient();
+                extensionReady = await PrepareExtensionAsync(http, update, exe, ct);
+            }
+            File.WriteAllText(PreviousSchemaPath, DownloadStore.SchemaVersion.ToString(CultureInfo.InvariantCulture));
+            UpdateInstaller.Swap(verified, exe);
+            if (extensionReady)
+            {
+                try
+                {
+                    ExtensionPackage.Swap(ProgramFolder(exe));
+                    Log.Info("update", "extension updated next to the program");
+                }
+                catch (UpdateException ex)
+                {
+                    Log.Warning("update", $"extension not swapped: {ex.Message}"); // the new version tries again once started
+                }
+            }
+            try
+            {
+                // The previous version watches the new one and puts itself back if the new one does not start.
+                StartDetached(UpdateInstaller.BackupOf(exe), UpdateInstaller.WatchArgument, Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
+            }
+            catch
+            {
+                UpdateInstaller.Restore(exe);
+                RestoreExtension(exe, Version.Parse(App.AppVersion)); // this version keeps running: its extension comes back too
+                throw;
+            }
         }
-        catch
+        finally
         {
-            UpdateInstaller.Restore(exe);
-            throw;
+            ExtensionLock.Release();
         }
         Log.Info("update", $"installing {update.Version}");
         exit();
+    }
+
+    private static string ProgramFolder(string exe) => Path.GetDirectoryName(exe)!;
+
+    /// <summary>The extension next to the program is changed by one update or repair at a time.</summary>
+    private static readonly SemaphoreSlim ExtensionLock = new(1, 1);
+
+    /// <summary>The extension's package staged next to the program; a problem is logged and leaves it as it is.</summary>
+    private static async Task<bool> PrepareExtensionAsync(HttpClient http, UpdateInfo update, string exe, CancellationToken ct)
+    {
+        try
+        {
+            await ExtensionPackage.PrepareAsync(http, update.Extension, update.Version, ProgramFolder(exe), Folder, ct);
+            return true;
+        }
+        catch (Exception ex) when (ex is UpdateException or HttpRequestException or IOException or UnauthorizedAccessException)
+        {
+            // The new version tries again once started, and says why if it cannot (RepairExtensionAsync).
+            Log.Warning("update", $"extension {update.Version.ToString(3)} not prepared: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// An update made by 1.3.2 or earlier replaced only Baton.exe: an older extension folder next to this version gets the
+    /// signed package of this very version. Run after an update and with the update checks (the only times the app
+    /// contacts the update address); outside <paramref name="interactive"/> a failure is reported once.
+    /// </summary>
+    public async Task RepairExtensionAsync(string address, bool interactive)
+    {
+        if (InstalledExe is not { } exe || address.Trim().Length == 0 || !await ExtensionLock.WaitAsync(0))
+            return; // a repair or an update is already at work on it
+        try
+        {
+            using var http = service.Network.CreateHttpClient();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+            if (await ExtensionPackage.RepairAsync(http, address.Trim(), Version.Parse(App.AppVersion), ProgramFolder(exe), Folder, timeout.Token))
+                Log.Info("update", $"extension {App.AppVersion} installed next to the program");
+        }
+        catch (Exception ex) when (ex is UpdateException or HttpRequestException or OperationCanceledException or IOException or UnauthorizedAccessException)
+        {
+            Log.Warning("update", $"extension not updated: {ex.Message}");
+            var message = string.Format(CultureInfo.CurrentCulture, Strings.ExtensionUpdateFailed, App.AppVersion, ex.Message);
+            if (interactive || FirstReport(message))
+                dialogs.ShowError(message, Strings.UpdateTitle);
+        }
+        finally
+        {
+            ExtensionLock.Release();
+        }
+    }
+
+    /// <summary>The ".old" extension comes back with the program it belongs to; a problem is only logged.</summary>
+    private static void RestoreExtension(string exe, Version restoredVersion)
+    {
+        try
+        {
+            if (ExtensionPackage.Restore(ProgramFolder(exe), restoredVersion))
+                Log.Info("update", $"extension {restoredVersion.ToString(3)} restored");
+        }
+        catch (UpdateException ex)
+        {
+            Log.Warning("update", $"extension not restored: {ex.Message}");
+        }
     }
 
     public void RestorePrevious()
@@ -146,7 +242,9 @@ public sealed class UpdateService(DownloadService service, IDialogService dialog
             : exe;
         if (!dialogs.Confirm(restored == exe ? Strings.UpdateConfirmRestore : Strings.UpdateConfirmRestoreLegacy, Strings.UpdateTitle))
             return;
+        var restoredVersion = UpdateInstaller.VersionOf(UpdateInstaller.BackupOf(exe));
         UpdateInstaller.Restore(exe, restored == exe ? null : restored);
+        RestoreExtension(exe, restoredVersion);
         if (restored != exe)
             AppEnvironment.Registration.RestoreLegacyStartEntry(restored);
         Log.Info("update", "previous version restored");
@@ -184,6 +282,7 @@ public sealed class UpdateService(DownloadService service, IDialogService dialog
             path =>
             {
                 RestoreDatabase();
+                RestoreExtension(path, UpdateInstaller.VersionOf(path));
                 StartDetached(path, UpdateInstaller.UpdatedArgument, RolledBackArgument).Dispose();
             }).GetAwaiter().GetResult();
         Log.Info("update", ok ? "new version started" : "new version did not start: previous version restored");
