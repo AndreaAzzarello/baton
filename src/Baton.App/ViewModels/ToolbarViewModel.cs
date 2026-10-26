@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Baton.App.Mvvm;
 using Baton.Core;
@@ -70,6 +70,7 @@ public sealed class ToolbarViewModel : ObservableObject
         "enqueue" => Strings.ActionEnqueue,
         "remove" => Strings.ActionRemove,
         "deletefiles" => Strings.ActionDeleteFiles,
+        "clearcompleted" => Strings.ActionClearCompleted,
         "progress" => Strings.ActionProgress,
         "properties" => Strings.ActionProperties,
         "up" => Strings.ActionUp,

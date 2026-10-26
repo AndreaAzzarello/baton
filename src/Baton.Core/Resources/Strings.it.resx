@@ -8,6 +8,9 @@
   <data name="ActionAddToolTip" xml:space="preserve"><value>Aggiungi un download (Ctrl+N). Se negli appunti c'è un link, viene già inserito.</value></data>
   <data name="ActionCategories" xml:space="preserve"><value>Categorie</value></data>
   <data name="ActionCategoriesToolTip" xml:space="preserve"><value>Gestisci categorie, estensioni e cartelle</value></data>
+  <data name="ActionClearCompleted" xml:space="preserve"><value>Rimuovi completati</value></data>
+  <data name="ActionClearCompletedMenu" xml:space="preserve"><value>Rimuovi tutti i completati…</value></data>
+  <data name="ActionClearCompletedToolTip" xml:space="preserve"><value>Rimuovi dalla lista tutti i download completati (Ctrl+Maiusc+Canc); i file restano sul disco</value></data>
   <data name="ActionDeleteFiles" xml:space="preserve"><value>Elimina dal disco</value></data>
   <data name="ActionDeleteFilesToolTip" xml:space="preserve"><value>Rimuove i download selezionati dalla lista e sposta i loro file nel Cestino (Maiusc+Canc)</value></data>
   <data name="ActionDown" xml:space="preserve"><value>Giù</value></data>
@@ -38,6 +41,8 @@
   <data name="ActionUpToolTip" xml:space="preserve"><value>Sposta su nella coda (solo con l'ordine della coda)</value></data>
   <data name="AddCategoryLabel" xml:space="preserve"><value>C_ategoria</value></data>
   <data name="AddCategoryName" xml:space="preserve"><value>Categoria</value></data>
+  <data name="AddFolderChangeCategory" xml:space="preserve"><value>Cambiala</value></data>
+  <data name="AddFolderFromCategory" xml:space="preserve"><value>Cartella della categoria {0}, al posto della cartella predefinita.</value></data>
   <data name="AddFolderLabel" xml:space="preserve"><value>_Salva nella cartella</value></data>
   <data name="AddFolderName" xml:space="preserve"><value>Cartella di destinazione</value></data>
   <data name="AddHashHint" xml:space="preserve"><value>Se lo indichi, a fine download il file viene verificato.</value></data>
@@ -150,6 +155,15 @@ Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></da
   <data name="CheckResultLabel" xml:space="preserve"><value>Esito</value></data>
   <data name="CheckRunning" xml:space="preserve"><value>Verifica in corso…</value></data>
   <data name="CheckVerify" xml:space="preserve"><value>_Verifica</value></data>
+  <data name="ClearCompletedAll" xml:space="preserve"><value>_Tutti i download completati</value></data>
+  <data name="ClearCompletedConfirm" xml:space="preserve"><value>Rimuovi</value></data>
+  <data name="ClearCompletedNone" xml:space="preserve"><value>Non ci sono download completati da rimuovere. Quelli con controlli ancora in corso (hash, antivirus) restano nella lista.</value></data>
+  <data name="ClearCompletedOnlyScope" xml:space="preserve"><value>Solo in {0}</value></data>
+  <data name="ClearCompletedRecycle" xml:space="preserve"><value>Sposta anche i file nel _Cestino</value></data>
+  <data name="ClearCompletedScopeName" xml:space="preserve"><value>Quali download</value></data>
+  <data name="ClearCompletedSummary" xml:space="preserve"><value>{0} download completati verranno rimossi dalla lista. I file restano sul disco.</value></data>
+  <data name="ClearCompletedSummaryRecycle" xml:space="preserve"><value>{0} download completati verranno rimossi dalla lista e i loro file ({1}) andranno nel Cestino.</value></data>
+  <data name="ClearCompletedTitle" xml:space="preserve"><value>Rimuovi i completati</value></data>
   <data name="Close" xml:space="preserve"><value>Chiudi</value></data>
   <data name="ClosingTitle" xml:space="preserve"><value>Baton — salvataggio in corso…</value></data>
   <data name="ColumnAdded" xml:space="preserve"><value>Aggiunto</value></data>
@@ -203,6 +217,7 @@ I download in corso vengono fermati e i dati parziali eliminati. Dal Cestino i f
   <data name="ErrorCategoryDuplicate" xml:space="preserve"><value>Esiste già una categoria chiamata "{0}".</value></data>
   <data name="ErrorCategoryFolder" xml:space="preserve"><value>La cartella della categoria "{0}" deve essere un percorso completo.</value></data>
   <data name="ErrorCategoryName" xml:space="preserve"><value>Ogni categoria deve avere un nome.</value></data>
+  <data name="ErrorClearCompletedDays" xml:space="preserve"><value>I giorni per rimuovere i download completati devono essere tra 1 e 365.</value></data>
   <data name="ErrorClosedEarly" xml:space="preserve"><value>Il server ha chiuso la connessione prima del previsto.</value></data>
   <data name="ErrorConcurrentRange" xml:space="preserve"><value>I download simultanei in totale devono essere un numero tra 1 e 50.</value></data>
   <data name="ErrorConnectionsRange" xml:space="preserve"><value>Le connessioni per download devono essere un numero tra 1 e 32.</value></data>
@@ -320,6 +335,7 @@ L'estensione che hai continua a funzionare. Per aggiornarla esegui l'installer d
   <data name="FtpActiveMode" xml:space="preserve"><value>FTP in modalità _attiva (il server apre la connessione dati)</value></data>
   <data name="FtpActiveModeToolTip" xml:space="preserve"><value>La modalità passiva, predefinita, funziona quasi sempre; quella attiva serve solo con alcuni server e spesso è bloccata dal firewall.</value></data>
   <data name="GestureAltEnter" xml:space="preserve"><value>Alt+Invio</value></data>
+  <data name="GestureCtrlShiftDelete" xml:space="preserve"><value>Ctrl+Maiusc+Canc</value></data>
   <data name="GestureDelete" xml:space="preserve"><value>Canc</value></data>
   <data name="GestureEnter" xml:space="preserve"><value>Invio</value></data>
   <data name="GestureShiftDelete" xml:space="preserve"><value>Maiusc+Canc</value></data>
@@ -766,6 +782,10 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SelectionStatusOne" xml:space="preserve"><value>1 selezionato  ·  {0} di {1}</value></data>
   <data name="SelectionTotalUnknown" xml:space="preserve"><value>Dimensione totale sconosciuta</value></data>
   <data name="SettingsAppearance" xml:space="preserve"><value>Aspetto</value></data>
+  <data name="SettingsCategorySubfolders" xml:space="preserve"><value>Usa _sottocartelle per categoria</value></data>
+  <data name="SettingsClearCompleted" xml:space="preserve"><value>Rimuovi dalla lista i download completati da più di</value></data>
+  <data name="SettingsClearCompletedDays" xml:space="preserve"><value>giorni (i file restano)</value></data>
+  <data name="SettingsClearCompletedDaysName" xml:space="preserve"><value>Giorni dopo i quali i download completati escono dalla lista</value></data>
   <data name="SettingsCloseToTray" xml:space="preserve"><value>Chiudendo la finestra, resta _attivo nell'area di notifica</value></data>
   <data name="SettingsConcurrent" xml:space="preserve"><value>Download _simultanei in totale, per tutte le code (1–50)</value></data>
   <data name="SettingsConfirmBrowser" xml:space="preserve"><value>Chiedi conferma per i download inviati dall'estensione del browser</value></data>
@@ -779,7 +799,7 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsFfmpegNone" xml:space="preserve"><value>ffmpeg non trovato nel PATH: i video verranno salvati in .ts o in tracce separate. ffmpeg non è incluso nell'app.</value></data>
   <data name="SettingsFfmpegPick" xml:space="preserve"><value>Scegli ffmpeg.exe</value></data>
   <data name="SettingsFolder" xml:space="preserve"><value>Cartella _predefinita dei download</value></data>
-  <data name="SettingsFolderHint" xml:space="preserve"><value>Le categorie con una cartella relativa (per esempio "Video") creano una sottocartella qui.</value></data>
+  <data name="SettingsFolderHint" xml:space="preserve"><value>Con le sottocartelle, le categorie con una cartella relativa (per esempio "Video") ne creano una qui; senza, i loro file finiscono direttamente qui. Una categoria con una cartella completa sua usa sempre quella.</value></data>
   <data name="SettingsGlobalQuota" xml:space="preserve"><value>_Quota globale in MB all'ora (0 = nessuna)</value></data>
   <data name="SettingsHashAlgorithm" xml:space="preserve"><value>Algoritmo</value></data>
   <data name="SettingsHashHint" xml:space="preserve"><value>Un hash atteso indicato aggiungendo il download (o nelle proprietà) viene sempre verificato, anche con questa opzione disattivata.</value></data>
@@ -789,8 +809,10 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsLanguage" xml:space="preserve"><value>_Lingua</value></data>
   <data name="SettingsLanguageName" xml:space="preserve"><value>Lingua dell'interfaccia</value></data>
   <data name="SettingsNotify" xml:space="preserve"><value>Mostra una notifica di Windows quando un download è completato</value></data>
+  <data name="SettingsOverridingCategories" xml:space="preserve"><value>Queste categorie usano una cartella propria al posto di quella predefinita:</value></data>
   <data name="SettingsPortableHost" xml:space="preserve"><value>Collega l'estensione del browser a questa copia portable (la registra come host nativo dei browser)</value></data>
   <data name="SettingsPortableStartupWarning" xml:space="preserve"><value>Versione portable: la voce di avvio punta a {0}. Se sposti o rinomini questa cartella, Baton non partirà più con Windows: disattiva e riattiva l'opzione dalla nuova posizione.</value></data>
+  <data name="SettingsResetCategoryFolders" xml:space="preserve"><value>Riporta tutte alla cartella predefinita</value></data>
   <data name="SettingsRestoreHint" xml:space="preserve"><value>Dopo un aggiornamento la versione precedente resta accanto al programma: se la nuova dà problemi puoi tornare indietro.</value></data>
   <data name="SettingsRestorePrevious" xml:space="preserve"><value>Ripristina la versione precedente</value></data>
   <data name="SettingsRestoreTitle" xml:space="preserve"><value>Versione precedente</value></data>

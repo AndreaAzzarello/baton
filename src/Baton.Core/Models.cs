@@ -1,4 +1,4 @@
-using Baton.Core.PostDownload;
+﻿using Baton.Core.PostDownload;
 
 namespace Baton.Core;
 
@@ -205,6 +205,12 @@ public sealed class AppSettings
     public int MaxConcurrentDownloads { get; set; } = 10;
     public long SpeedLimitKBps { get; set; }
     public string DownloadFolder { get; set; } = KnownFolders.Downloads;
+
+    /// <summary>Categories with a relative folder ("Video") get a subfolder of the download folder; off, everything lands in it.</summary>
+    public bool CategorySubfolders { get; set; } = true;
+
+    /// <summary>Completed downloads older than this many days leave the list by themselves (files stay); 0 = never.</summary>
+    public int ClearCompletedAfterDays { get; set; }
 
     /// <summary>Until version 0.3 the state of the only queue; now the main queue keeps it (read during the upgrade).</summary>
     public bool QueueRunning { get; set; } = true;

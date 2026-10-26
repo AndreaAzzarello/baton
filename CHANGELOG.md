@@ -4,6 +4,29 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
+## [1.3.4] — 2026-10-26
+
+La cartella predefinita scelta dall'utente vale sempre; nuova pulizia della cronologia.
+
+- **Corretto: cartella predefinita ignorata dai download dell'estensione.** Causa: la proposta della Fase 6 di spostare le
+  cartelle fuori dal Desktop, se accettata, aveva scritto nelle categorie predefinite una cartella **assoluta**
+  (`Download\DownloadManager`); una cartella assoluta di categoria vince sulla predefinita, e il dialogo di conferma non lo
+  diceva. Tornando a scegliere il Desktop come cartella predefinita, zip, pdf, video ecc. andavano ancora lì; solo i file
+  senza categoria rispettavano la scelta. Il Desktop non viene mai sostituito in silenzio: la proposta resta una tantum.
+- **Una sola regola** (`Category.ResolveFolder`) per aggiunta manuale, estensione, "Scarica tutto", video, grabber e
+  import, con le impostazioni correnti (le modifiche valgono subito).
+- **Usa sottocartelle per categoria** (Impostazioni › Generale, attiva): disattivata, i file vanno direttamente nella
+  cartella predefinita, tranne le categorie con una cartella assoluta.
+- Il dialogo di aggiunta/conferma mostra «Cartella della categoria X, al posto della cartella predefinita» con il link
+  **Cambiala** (editor delle categorie su quella categoria). In Impostazioni, sotto la cartella predefinita, l'elenco delle
+  categorie che la scavalcano e **Riporta tutte alla cartella predefinita**.
+- **Rimuovi tutti i completati** (Ctrl+Maiusc+Canc, menu Altro, pulsante della barra, menu del nodo Completati): solo i
+  completati senza controlli in corso; file intatti o, a scelta, nel Cestino (con numero e dimensione nella conferma);
+  "solo in questa categoria/coda" o "tutti". Pulizia automatica facoltativa dopo 1–365 giorni (orologio iniettabile nei
+  test). Le notifiche dei download rimossi spariscono dal Centro notifiche; il grabber non ripropone i file rimossi.
+- Sviluppo: il guard degli hook riconosce la cartella del progetto dove si trova (spostata in `Desktop\App\Baton`);
+  nuove prove reali `folder-trial.mjs` (Edge) e `clear-trial.ps1`.
+
 ## [1.3.3] — 2026-10-22
 
 L'estensione si aggiorna insieme all'app; manifest winget allo schema 1.12, privacy e roadmap pubbliche.

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -59,7 +59,10 @@ public sealed class SettingsViewModel : ObservableObject
         Connections = current.MaxConnections.ToString(CultureInfo.CurrentCulture);
         Concurrent = current.MaxConcurrentDownloads.ToString(CultureInfo.CurrentCulture);
         SpeedLimit = current.SpeedLimitKBps.ToString(CultureInfo.CurrentCulture);
-        Folder = current.DownloadFolder;
+        _folder = current.DownloadFolder;
+        CategorySubfolders = current.CategorySubfolders;
+        ClearCompletedEnabled = current.ClearCompletedAfterDays > 0;
+        ClearCompletedDays = (current.ClearCompletedAfterDays > 0 ? current.ClearCompletedAfterDays : 30).ToString(CultureInfo.CurrentCulture);
         ConfirmBrowserDownloads = current.ConfirmBrowserDownloads;
         NotifyOnCompletion = current.NotifyOnCompletion;
         Theme = current.Theme;
@@ -93,10 +96,15 @@ public sealed class SettingsViewModel : ObservableObject
         BrowseCommand = new RelayCommand(() =>
         {
             if (_dialogs.PickFolder(Strings.SettingsFolder, Directory.Exists(Folder) ? Folder : null) is { } picked)
-            {
                 Folder = picked;
-                OnPropertyChanged(nameof(Folder));
-            }
+        });
+        ResetCategoryFoldersCommand = new RelayCommand(() =>
+        {
+            if (ResetCategories is null)
+                return;
+            Categories = ResetCategories(Folder.Trim());
+            OnPropertyChanged(nameof(OverridingCategories));
+            OnPropertyChanged(nameof(HasOverridingCategories));
         });
         BrowseFfmpegCommand = new RelayCommand(() =>
         {
@@ -146,7 +154,41 @@ public sealed class SettingsViewModel : ObservableObject
     public string Connections { get; set; }
     public string Concurrent { get; set; }
     public string SpeedLimit { get; set; }
-    public string Folder { get; set; }
+    private string _folder;
+
+    public string Folder
+    {
+        get => _folder;
+        set
+        {
+            if (!Set(ref _folder, value ?? ""))
+                return;
+            OnPropertyChanged(nameof(OverridingCategories));
+            OnPropertyChanged(nameof(HasOverridingCategories));
+        }
+    }
+
+    public bool CategorySubfolders { get; set; }
+
+    /// <summary>The categories, to list those whose own absolute folder takes their downloads away from <see cref="Folder"/>.</summary>
+    public IReadOnlyList<Category> Categories { get; set; } = [];
+
+    /// <summary>Set by the main window: brings those categories back under the default folder right away (like logins, not on "Save").</summary>
+    /// <remarks>Given the default folder as typed, so it resets exactly the categories listed.</remarks>
+    public Func<string, IReadOnlyList<Category>>? ResetCategories { get; init; }
+
+    public ICommand ResetCategoryFoldersCommand { get; }
+
+    /// <summary>"Video: D:\Films" lines, or "" when every category follows the default folder.</summary>
+    public string OverridingCategories => string.Join(Environment.NewLine,
+        Categories.Where(c => Folder.Trim().Length > 0 && c.OverridesDefault(Folder.Trim())).Select(c => $"{c.DisplayName}: {c.Folder}"));
+
+    public bool HasOverridingCategories => OverridingCategories.Length > 0;
+
+    public bool ClearCompletedEnabled { get; set; }
+
+    /// <summary>Days after which completed downloads leave the list by themselves, 1 to 365.</summary>
+    public string ClearCompletedDays { get; set; }
     public bool ConfirmBrowserDownloads { get; set; }
 
     private string _ffmpegPath;
@@ -354,6 +396,9 @@ public sealed class SettingsViewModel : ObservableObject
             Error = Strings.ErrorSpeedLimit;
         else if (!Path.IsPathFullyQualified(Folder.Trim()))
             Error = Strings.ErrorFolderNotAbsolute;
+        else if (ClearCompletedEnabled && (!int.TryParse(ClearCompletedDays, NumberStyles.Integer, CultureInfo.CurrentCulture, out var clearDays)
+                 || clearDays is < 1 or > 365))
+            Error = Strings.ErrorClearCompletedDays;
         else if (BuildNetwork(out var network) is { } networkError)
             Error = networkError;
         else if (!int.TryParse(ScanTimeout, out var scanTimeout) || scanTimeout is < 10 or > 3600)
@@ -372,6 +417,8 @@ public sealed class SettingsViewModel : ObservableObject
             result.MaxConcurrentDownloads = concurrent;
             result.SpeedLimitKBps = limit;
             result.DownloadFolder = Folder.Trim();
+            result.CategorySubfolders = CategorySubfolders;
+            result.ClearCompletedAfterDays = ClearCompletedEnabled ? int.Parse(ClearCompletedDays, CultureInfo.CurrentCulture) : 0;
             result.ConfirmBrowserDownloads = ConfirmBrowserDownloads;
             result.FfmpegPath = FfmpegPath.Trim();
             result.NotifyOnCompletion = NotifyOnCompletion;

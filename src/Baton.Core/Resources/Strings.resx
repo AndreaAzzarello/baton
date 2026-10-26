@@ -8,6 +8,9 @@
   <data name="ActionAddToolTip" xml:space="preserve"><value>Add a download (Ctrl+N). A link on the clipboard is filled in for you.</value></data>
   <data name="ActionCategories" xml:space="preserve"><value>Categories</value></data>
   <data name="ActionCategoriesToolTip" xml:space="preserve"><value>Manage categories, extensions and folders</value></data>
+  <data name="ActionClearCompleted" xml:space="preserve"><value>Clear completed</value></data>
+  <data name="ActionClearCompletedMenu" xml:space="preserve"><value>Clear completed…</value></data>
+  <data name="ActionClearCompletedToolTip" xml:space="preserve"><value>Remove all completed downloads from the list (Ctrl+Shift+Del); the files stay on the disk</value></data>
   <data name="ActionDeleteFiles" xml:space="preserve"><value>Delete from disk</value></data>
   <data name="ActionDeleteFilesToolTip" xml:space="preserve"><value>Removes the selected downloads from the list and moves their files to the Recycle Bin (Shift+Del)</value></data>
   <data name="ActionDown" xml:space="preserve"><value>Down</value></data>
@@ -38,6 +41,8 @@
   <data name="ActionUpToolTip" xml:space="preserve"><value>Move up in the queue (only when sorted by queue order)</value></data>
   <data name="AddCategoryLabel" xml:space="preserve"><value>Ca_tegory</value></data>
   <data name="AddCategoryName" xml:space="preserve"><value>Category</value></data>
+  <data name="AddFolderChangeCategory" xml:space="preserve"><value>Change it</value></data>
+  <data name="AddFolderFromCategory" xml:space="preserve"><value>Folder of the {0} category, instead of the default folder.</value></data>
   <data name="AddFolderLabel" xml:space="preserve"><value>_Save in folder</value></data>
   <data name="AddFolderName" xml:space="preserve"><value>Destination folder</value></data>
   <data name="AddHashHint" xml:space="preserve"><value>When given, the file is checked at the end of the download.</value></data>
@@ -150,6 +155,15 @@ Use the new address anyway and restart the download from scratch?</value></data>
   <data name="CheckResultLabel" xml:space="preserve"><value>Result</value></data>
   <data name="CheckRunning" xml:space="preserve"><value>Checking…</value></data>
   <data name="CheckVerify" xml:space="preserve"><value>_Verify</value></data>
+  <data name="ClearCompletedAll" xml:space="preserve"><value>_All completed downloads</value></data>
+  <data name="ClearCompletedConfirm" xml:space="preserve"><value>Remove</value></data>
+  <data name="ClearCompletedNone" xml:space="preserve"><value>There are no completed downloads to remove. Downloads whose checks (hash, antivirus) are still running stay in the list.</value></data>
+  <data name="ClearCompletedOnlyScope" xml:space="preserve"><value>Only in {0}</value></data>
+  <data name="ClearCompletedRecycle" xml:space="preserve"><value>Also move the files to the _Recycle Bin</value></data>
+  <data name="ClearCompletedScopeName" xml:space="preserve"><value>Which downloads</value></data>
+  <data name="ClearCompletedSummary" xml:space="preserve"><value>{0} completed downloads will leave the list. Their files stay on the disk.</value></data>
+  <data name="ClearCompletedSummaryRecycle" xml:space="preserve"><value>{0} completed downloads will leave the list and their files ({1}) will go to the Recycle Bin.</value></data>
+  <data name="ClearCompletedTitle" xml:space="preserve"><value>Clear completed</value></data>
   <data name="Close" xml:space="preserve"><value>Close</value></data>
   <data name="ClosingTitle" xml:space="preserve"><value>Baton — saving…</value></data>
   <data name="ColumnAdded" xml:space="preserve"><value>Added</value></data>
@@ -203,6 +217,7 @@ Running downloads are stopped and their partial data deleted. Files can be resto
   <data name="ErrorCategoryDuplicate" xml:space="preserve"><value>A category called "{0}" already exists.</value></data>
   <data name="ErrorCategoryFolder" xml:space="preserve"><value>The folder of the category "{0}" must be a full path.</value></data>
   <data name="ErrorCategoryName" xml:space="preserve"><value>Every category needs a name.</value></data>
+  <data name="ErrorClearCompletedDays" xml:space="preserve"><value>The days for removing completed downloads must be between 1 and 365.</value></data>
   <data name="ErrorClosedEarly" xml:space="preserve"><value>The server closed the connection early.</value></data>
   <data name="ErrorConcurrentRange" xml:space="preserve"><value>Simultaneous downloads in total must be a number between 1 and 50.</value></data>
   <data name="ErrorConnectionsRange" xml:space="preserve"><value>Connections per download must be a number between 1 and 32.</value></data>
@@ -320,6 +335,7 @@ The extension you have keeps working. To update it, run the {0} installer or ext
   <data name="FtpActiveMode" xml:space="preserve"><value>FTP in _active mode (the server opens the data connection)</value></data>
   <data name="FtpActiveModeToolTip" xml:space="preserve"><value>Passive mode, the default, almost always works; active mode is needed only with some servers and is often blocked by firewalls.</value></data>
   <data name="GestureAltEnter" xml:space="preserve"><value>Alt+Enter</value></data>
+  <data name="GestureCtrlShiftDelete" xml:space="preserve"><value>Ctrl+Shift+Del</value></data>
   <data name="GestureDelete" xml:space="preserve"><value>Del</value></data>
   <data name="GestureEnter" xml:space="preserve"><value>Enter</value></data>
   <data name="GestureShiftDelete" xml:space="preserve"><value>Shift+Del</value></data>
@@ -766,6 +782,10 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="SelectionStatusOne" xml:space="preserve"><value>1 selected  ·  {0} of {1}</value></data>
   <data name="SelectionTotalUnknown" xml:space="preserve"><value>Total size unknown</value></data>
   <data name="SettingsAppearance" xml:space="preserve"><value>Appearance</value></data>
+  <data name="SettingsCategorySubfolders" xml:space="preserve"><value>Use _subfolders for categories</value></data>
+  <data name="SettingsClearCompleted" xml:space="preserve"><value>Remove from the list the downloads completed more than</value></data>
+  <data name="SettingsClearCompletedDays" xml:space="preserve"><value>days ago (the files stay)</value></data>
+  <data name="SettingsClearCompletedDaysName" xml:space="preserve"><value>Days after which completed downloads leave the list</value></data>
   <data name="SettingsCloseToTray" xml:space="preserve"><value>Closing the window keeps it running in the notification _area</value></data>
   <data name="SettingsConcurrent" xml:space="preserve"><value>_Simultaneous downloads in total, across all queues (1–50)</value></data>
   <data name="SettingsConfirmBrowser" xml:space="preserve"><value>Ask for confirmation for downloads sent by the browser extension</value></data>
@@ -779,7 +799,7 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="SettingsFfmpegNone" xml:space="preserve"><value>ffmpeg not found in PATH: videos will be saved as .ts or as separate tracks. ffmpeg is not included in the app.</value></data>
   <data name="SettingsFfmpegPick" xml:space="preserve"><value>Choose ffmpeg.exe</value></data>
   <data name="SettingsFolder" xml:space="preserve"><value>_Default download folder</value></data>
-  <data name="SettingsFolderHint" xml:space="preserve"><value>Categories with a relative folder (for example "Video") create a subfolder here.</value></data>
+  <data name="SettingsFolderHint" xml:space="preserve"><value>With subfolders, categories with a relative folder (for example "Video") get a subfolder here; without, their files land here directly. A category with a full folder of its own always uses it.</value></data>
   <data name="SettingsGlobalQuota" xml:space="preserve"><value>Global _quota in MB per hour (0 = none)</value></data>
   <data name="SettingsHashAlgorithm" xml:space="preserve"><value>Algorithm</value></data>
   <data name="SettingsHashHint" xml:space="preserve"><value>An expected hash given when adding the download (or in its properties) is always checked, even with this option off.</value></data>
@@ -789,8 +809,10 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="SettingsLanguage" xml:space="preserve"><value>_Language</value></data>
   <data name="SettingsLanguageName" xml:space="preserve"><value>Language of the interface</value></data>
   <data name="SettingsNotify" xml:space="preserve"><value>Show a Windows notification when a download completes</value></data>
+  <data name="SettingsOverridingCategories" xml:space="preserve"><value>These categories use a folder of their own instead of the default folder:</value></data>
   <data name="SettingsPortableHost" xml:space="preserve"><value>Connect the browser extension to this portable copy (registers it as the browsers' native messaging host)</value></data>
   <data name="SettingsPortableStartupWarning" xml:space="preserve"><value>Portable version: the start entry points to {0}. If you move or rename this folder, Baton will no longer start with Windows: turn the option off and on again from the new place.</value></data>
+  <data name="SettingsResetCategoryFolders" xml:space="preserve"><value>Bring them all back to the default folder</value></data>
   <data name="SettingsRestoreHint" xml:space="preserve"><value>After an update the previous version stays next to the program: if the new one has problems you can go back.</value></data>
   <data name="SettingsRestorePrevious" xml:space="preserve"><value>Restore the previous version</value></data>
   <data name="SettingsRestoreTitle" xml:space="preserve"><value>Previous version</value></data>

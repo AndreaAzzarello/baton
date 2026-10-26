@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net;
 using Baton.Core.Integration;
 using Baton.Core.Media;
@@ -184,6 +184,9 @@ public sealed class DownloadService : IAsyncDisposable
         }
     }
 
+    /// <summary>Raised with the ids of the completed downloads that "Clear completed" (or the automatic clean-up) removed from the list.</summary>
+    public event Action<IReadOnlyList<long>>? CompletedCleared;
+
     /// <summary>Raised when categories are added, changed or removed.</summary>
     public event Action? CategoriesChanged;
 
@@ -311,7 +314,7 @@ public sealed class DownloadService : IAsyncDisposable
             var record = new DownloadRecord
             {
                 Url = uri.AbsoluteUri,
-                Directory = string.IsNullOrWhiteSpace(directory) ? category.ResolveFolder(_settings.DownloadFolder) : directory,
+                Directory = string.IsNullOrWhiteSpace(directory) ? category.ResolveFolder(_settings) : directory,
                 FileName = name,
                 Status = startNow ? DownloadStatus.Paused : DownloadStatus.Queued,
                 SortOrder = NextSortOrder(),
@@ -376,7 +379,7 @@ public sealed class DownloadService : IAsyncDisposable
             var record = new DownloadRecord
             {
                 Url = uri.AbsoluteUri,
-                Directory = string.IsNullOrWhiteSpace(directory) ? category.ResolveFolder(_settings.DownloadFolder) : directory,
+                Directory = string.IsNullOrWhiteSpace(directory) ? category.ResolveFolder(_settings) : directory,
                 FileName = name,
                 Status = startNow ? DownloadStatus.Paused : DownloadStatus.Queued,
                 SortOrder = NextSortOrder(),
@@ -441,7 +444,7 @@ public sealed class DownloadService : IAsyncDisposable
             var record = new DownloadRecord
             {
                 Url = uri.AbsoluteUri,
-                Directory = category.ResolveFolder(_settings.DownloadFolder),
+                Directory = category.ResolveFolder(_settings),
                 FileName = name,
                 Status = DownloadStatus.Paused,
                 SortOrder = NextSortOrder(),
@@ -625,6 +628,107 @@ public sealed class DownloadService : IAsyncDisposable
         return recycle is null || await Task.Run(() => RecycleBin.Recycle(recycle));
     }
 
+    /// <summary>
+    /// The completed downloads "Clear completed" would remove, optionally only those of one category or queue. Never one
+    /// still running, or whose hash or antivirus check has not finished.
+    /// </summary>
+    public IReadOnlyList<DownloadSnapshot> CompletedToClear(long? categoryId = null, long? queueId = null)
+    {
+        lock (_lock)
+            return ClearableLocked(categoryId, queueId).Select(SnapshotLocked).ToList();
+    }
+
+    /// <summary>
+    /// Removes the completed downloads of <see cref="CompletedToClear"/> from the list. The files stay where they are, or
+    /// with <paramref name="recycleFiles"/> go to the Recycle Bin. Returns how many left the list and the files that
+    /// could not be recycled (still on the disk). With <paramref name="only"/>, just those of them (the ones the confirmation
+    /// counted: a download that completes while it is open stays).
+    /// </summary>
+    public async Task<(int Removed, IReadOnlyList<string> FilesKept)> ClearCompletedAsync(long? categoryId = null, long? queueId = null, bool recycleFiles = false,
+        IReadOnlyCollection<long>? only = null)
+    {
+        var recycle = new List<string>();
+        List<long> ids;
+        lock (_lock)
+        {
+            var records = ClearableLocked(categoryId, queueId).Where(r => only is null || only.Contains(r.Id)).ToList();
+            RemoveCompletedLocked(records);
+            foreach (var record in records)
+            {
+                if (recycleFiles && record.FinalPath is { } path && File.Exists(path))
+                    recycle.Add(path);
+            }
+            ids = records.Select(r => r.Id).ToList();
+        }
+        if (ids.Count > 0)
+        {
+            Log.Info("clear", $"removed {ids.Count} completed downloads from the list, {recycle.Count} files to the Recycle Bin");
+            CompletedCleared?.Invoke(ids);
+        }
+        // Outside the lock: the shell can take a moment.
+        var kept = new List<string>();
+        foreach (var path in recycle)
+        {
+            if (!await Task.Run(() => RecycleBin.Recycle(path)))
+                kept.Add(path);
+        }
+        return (ids.Count, kept);
+    }
+
+    private IEnumerable<DownloadRecord> ClearableLocked(long? categoryId, long? queueId) =>
+        _items.Where(r => IsClearable(r) && (categoryId is null || r.CategoryId == categoryId) && (queueId is null || r.QueueId == queueId));
+
+    private bool IsClearable(DownloadRecord record) =>
+        record.Status == DownloadStatus.Completed && !_active.ContainsKey(record.Id) && record.Check is not { Pending: true };
+
+    private void RemoveCompletedLocked(IReadOnlyList<DownloadRecord> records)
+    {
+        if (records.Count == 0)
+            return;
+        var ids = records.Select(r => r.Id).ToHashSet();
+        _items.RemoveAll(r => ids.Contains(r.Id));
+        _store.Delete(ids);
+    }
+
+    private DateTime _lastAutoClear = DateTime.MinValue;
+
+    /// <summary>The optional automatic clean-up, at most once an hour: completed downloads older than the setting leave the list, files stay.</summary>
+    private List<long> AutoClearLocked(DateTime now)
+    {
+        if (_settings.ClearCompletedAfterDays <= 0 || now - _lastAutoClear < TimeSpan.FromHours(1))
+            return [];
+        _lastAutoClear = now;
+        var limit = now - TimeSpan.FromDays(_settings.ClearCompletedAfterDays);
+        var old = _items.Where(r => IsClearable(r) && (r.CompletedUtc ?? r.AddedUtc) < limit).ToList();
+        RemoveCompletedLocked(old);
+        if (old.Count > 0)
+            Log.Info("clear", $"removed {old.Count} completed downloads older than {_settings.ClearCompletedAfterDays} days from the list");
+        return old.Select(r => r.Id).ToList();
+    }
+
+    /// <summary>
+    /// Brings every category whose absolute folder overrides <paramref name="defaultFolder"/> (the saved default folder when
+    /// null) back under the default folder: its subfolder as it came, or its name for a category the user created.
+    /// Returns how many changed.
+    /// </summary>
+    public int ResetCategoryFolders(string? defaultFolder = null)
+    {
+        var changed = 0;
+        lock (_lock)
+        {
+            var folder = defaultFolder ?? _settings.DownloadFolder;
+            foreach (var category in _categories.Where(c => c.OverridesDefault(folder)))
+            {
+                category.Folder = Core.Categories.DefaultFolderOf(category);
+                _store.SaveCategory(category);
+                changed++;
+            }
+        }
+        if (changed > 0)
+            CategoriesChanged?.Invoke();
+        return changed;
+    }
+
     /// <summary>Moves a download up (negative) or down (positive) among the downloads of its own queue.</summary>
     public void Move(long id, int delta)
     {
@@ -680,6 +784,8 @@ public sealed class DownloadService : IAsyncDisposable
             _settings.TimeoutSeconds = Math.Clamp(settings.TimeoutSeconds, 5, 600);
             _settings.MaxConnectionsPerServer = Math.Clamp(settings.MaxConnectionsPerServer, 1, 256);
             _settings.ProxyPort = Math.Clamp(settings.ProxyPort, 1, 65535);
+            _settings.ClearCompletedAfterDays = Math.Clamp(settings.ClearCompletedAfterDays, 0, 365);
+            _lastAutoClear = DateTime.MinValue; // a new limit applies at the next tick
             _settings.QueueRunning = queueRunning;
             _limiter.BytesPerSecond = _settings.SpeedLimitKBps * 1024;
             _store.SaveSettings(_settings);
@@ -975,6 +1081,7 @@ public sealed class DownloadService : IAsyncDisposable
     {
         var finished = new List<DownloadQueue>();
         var queuesChanged = false;
+        List<long> cleared;
         lock (_lock)
         {
             if (_pumpSuspended)
@@ -982,6 +1089,7 @@ public sealed class DownloadService : IAsyncDisposable
             var now = _clock.UtcNow;
             foreach (var active in _active.Values)
                 CountBytes(active, now);
+            cleared = AutoClearLocked(now);
 
             foreach (var queue in _queues.ToList())
             {
@@ -1032,6 +1140,8 @@ public sealed class DownloadService : IAsyncDisposable
             QueuesChanged?.Invoke();
         foreach (var queue in finished)
             QueueFinished?.Invoke(queue);
+        if (cleared.Count > 0)
+            CompletedCleared?.Invoke(cleared);
     }
 
     /// <summary>
@@ -1539,8 +1649,8 @@ public sealed class DownloadService : IAsyncDisposable
             var guessed = _categories.FirstOrDefault(c => c.Id == record.CategoryId);
             var category = Core.Categories.Match(_categories, record.FileName, probe.ContentType);
             // The folder follows the category only if it was the guessed category's folder, not one the user chose.
-            if (guessed is null || SamePath(record.Directory, guessed.ResolveFolder(_settings.DownloadFolder)))
-                record.Directory = category.ResolveFolder(_settings.DownloadFolder);
+            if (guessed is null || Core.Categories.SameFolder(record.Directory, guessed.ResolveFolder(_settings)))
+                record.Directory = category.ResolveFolder(_settings);
             record.CategoryId = category.Id;
             record.AutoCategory = false;
         }
@@ -1631,10 +1741,6 @@ public sealed class DownloadService : IAsyncDisposable
         lock (_lock)
             return _network.Proxy.Resolve(target) ?? target;
     }
-
-    private static bool SamePath(string a, string b) =>
-        string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(a)), Path.TrimEndingDirectorySeparator(Path.GetFullPath(b)),
-            StringComparison.OrdinalIgnoreCase);
 
     private static string DisplayNameFromUrl(string url) =>
         Uri.TryCreate(url, UriKind.Absolute, out var uri) ? FileNames.Sanitize(FileNames.FromUrl(uri)) : url;

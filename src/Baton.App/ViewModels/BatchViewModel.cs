@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -50,7 +50,7 @@ public sealed record ExtensionFilter(string? Extension, string Label);
 public sealed class BatchViewModel : ObservableObject
 {
     private readonly IDialogService _dialogs;
-    private readonly string _defaultFolder;
+    private readonly AppSettings _settings;
     private string _filterText = "";
     private ExtensionFilter _extension;
     private int _kind; // 0 all, 1 links, 2 images
@@ -58,11 +58,11 @@ public sealed class BatchViewModel : ObservableObject
     private string _folder = "";
     private bool _folderChosen;
 
-    public BatchViewModel(BatchRequest request, IDialogService dialogs, IReadOnlyList<Category> categories, string defaultFolder,
+    public BatchViewModel(BatchRequest request, IDialogService dialogs, IReadOnlyList<Category> categories, AppSettings settings,
         IReadOnlyList<DownloadQueue> queues, long queueId)
     {
         _dialogs = dialogs;
-        _defaultFolder = defaultFolder;
+        _settings = settings;
         Request = request;
         PageTitle = string.IsNullOrWhiteSpace(request.PageTitle) ? request.PageUrl : request.PageTitle.Trim();
         Items = new ObservableCollection<BatchItemViewModel>(BatchLinks.Build(request.Items)
@@ -148,7 +148,7 @@ public sealed class BatchViewModel : ObservableObject
                 return;
             if (!_folderChosen)
             {
-                _folder = value.Category?.ResolveFolder(_defaultFolder) ?? "";
+                _folder = value.Category?.ResolveFolder(_settings) ?? "";
                 OnPropertyChanged(nameof(Folder));
             }
         }

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Net.Security;
 using System.Windows;
@@ -292,10 +292,17 @@ public sealed class WindowGalleryTests : IDisposable
             var main = new MainWindow(_main, () => Task.CompletedTask, () => false);
             _main.UpdateSelection(_main.Items.Take(3));
             yield return (main, "main");
+            // A category with a folder of its own: the add dialog and the settings say so.
+            var own = categories.Select(c => c.Clone()).ToList();
+            own.First(c => c.Key == Categories.VideoKey).Folder = Path.Combine(_dir, "Films");
             yield return (new SettingsWindow(new SettingsViewModel(_dialogs, _service.Settings, runAtStartup: false, _service.Credentials, _service.Certificates,
-                _ => Task.CompletedTask, () => { }, Path.Combine(_dir, "Baton.exe"), new BundledExtensionViewModel(_dir, _shell)) { RunAtStartup = true }), "settings");
-            yield return (new AddDownloadWindow(new AddDownloadViewModel(_dialogs, categories, folder, "https://downloads.example.com/files/archive.zip",
+                _ => Task.CompletedTask, () => { }, Path.Combine(_dir, "Baton.exe"), new BundledExtensionViewModel(_dir, _shell)) { RunAtStartup = true, Categories = own }), "settings");
+            yield return (new AddDownloadWindow(new AddDownloadViewModel(_dialogs, categories, _service.Settings, "https://downloads.example.com/files/archive.zip",
                 note: Baton.Core.Resources.Strings.FromBrowserWithCookies, queues: queues)), "add");
+            yield return (new AddDownloadWindow(new AddDownloadViewModel(_dialogs, own, _service.Settings, "https://downloads.example.com/files/holiday.mp4",
+                queues: queues) { EditCategory = _ => null }), "add-category-folder");
+            yield return (new ClearCompletedWindow(new ClearCompletedViewModel(_service.CompletedToClear, categories[0].Id, null, categories[0].DisplayName)
+                { MoveToRecycleBin = true }), "clear-completed");
             yield return (new CategoriesWindow(new CategoriesViewModel(_dialogs, categories, folder)), "categories");
             yield return (new QueuesWindow(new QueuesViewModel(_dialogs, queues, () => DateTime.UtcNow, startupEnabled: false, () => { })), "queues");
             yield return (new CountdownWindow(EndAction.Shutdown, queues[0].DisplayName, TimeSpan.FromSeconds(60)), "countdown");
@@ -309,7 +316,7 @@ public sealed class WindowGalleryTests : IDisposable
             yield return (new ProgressWindow(new ProgressViewModel(_main.Items.First(i => i.Status == DownloadStatus.Paused), _service, _shell)), "progress");
             yield return (new BatchWindow(new BatchViewModel(new BatchRequest("https://www.example.com/gallery", "Gallery",
                 [new BatchItem("https://www.example.com/a.zip", "Archive", "link"), new BatchItem("https://www.example.com/photo.jpg", "Photo", "image"),
-                 new BatchItem("https://www.example.com/manual.pdf", "Manual", "link")]), _dialogs, categories, folder, queues, queues[0].Id)), "batch");
+                 new BatchItem("https://www.example.com/manual.pdf", "Manual", "link")]), _dialogs, categories, _service.Settings, queues, queues[0].Id)), "batch");
             yield return (new GrabberProjectsWindow(new GrabberProjectsViewModel(new GrabberUi(new GrabberService(_service, _store), _service, _dialogs, _shell), _dialogs, _shell)), "grabber-projects");
             var wizard = new GrabberWizardViewModel(_dialogs, new GrabberProject { Name = "Example", StartUrl = "https://www.example.com/" }, categories, queues, folder, () => DateTime.UtcNow);
             for (var step = 0; step < 5; step++)

@@ -26,7 +26,7 @@ compatibile con alcun prodotto commerciale.
 Questa è la guida completa, in italiano. Una presentazione breve in inglese è in [README.md](README.md); per contribuire
 vedi [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Versione **1.3.3** — novità in [CHANGELOG.md](CHANGELOG.md).
+Versione **1.3.4** — novità in [CHANGELOG.md](CHANGELOG.md).
 
 | Tema chiaro | Tema scuro |
 |---|---|
@@ -160,8 +160,8 @@ anche la firma **Authenticode** (visibile in Proprietà › Firme digitali), app
 file nella stessa cartella, da una copia del repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.3.exe"
-# OK: Baton-Setup-1.3.3.exe 1.3.3, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.4.exe"
+# OK: Baton-Setup-1.3.4.exe 1.3.4, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
 
 Lo script controlla anche la firma Authenticode quando c'è (se presente deve essere valida; `-RequireAuthenticode` la
@@ -225,6 +225,16 @@ Compressi, Documenti, Musica, Video, Programmi e Generale, ognuna con estensioni
   La scelta fatta dall'indirizzo viene confermata quando il server comunica nome e tipo reali, prima di scrivere dati.
 - Le cartelle predefinite sono relative (`Video`, `Compressi`…): diventano sottocartelle della cartella predefinita dei download
   e la seguono se la cambi. Una cartella scelta con Sfoglia è assoluta.
+- **La cartella predefinita scelta da te vale sempre**, anche se è il Desktop. Con **Usa sottocartelle per categoria**
+  (Impostazioni › Generale, attiva per impostazione) un file Video va in `<cartella predefinita>\Video`; disattivandola,
+  tutti i file vanno direttamente nella cartella predefinita. Fa eccezione solo una categoria con una **cartella assoluta
+  sua**: il dialogo di conferma lo dice («Cartella della categoria Video, al posto della cartella predefinita», con il link
+  **Cambiala**), e in Impostazioni, sotto la cartella predefinita, sono elencate le categorie che la scavalcano con il
+  pulsante **Riporta tutte alla cartella predefinita** (applicato subito). Aggiunta manuale, estensione, "Scarica tutto",
+  video e grabber usano la stessa regola; le modifiche valgono dal download successivo, senza riavviare.
+- La proposta di spostare le cartelle fuori dal Desktop (installazioni precedenti alla 1.0) compare una volta sola ed è
+  solo un suggerimento: se l'avevi accettata, le categorie hanno una cartella assoluta in `Download\DownloadManager` (o
+  `Download\Baton`) e ora lo vedi nelle Impostazioni.
 - Se nel dialogo di aggiunta cambi cartella a mano, quella cartella vale anche se la categoria cambia.
 - Eliminando una categoria i suoi download passano a Generale; i file non vengono spostati.
 
@@ -392,6 +402,14 @@ Baton…** (l'estensione passa indirizzo, titolo e cookie del sito; mai dalle fi
   dopo una conferma con numero e dimensione totale: mai eliminati definitivamente. Dove il Cestino non c'è (unità di rete,
   molte chiavette) i file restano dove sono e l'app lo dice. Lo stesso comportamento del mouse vale nelle finestre "Scarica
   tutto" e anteprima del grabber.
+- **Rimuovi tutti i completati** (Ctrl+Maiusc+Canc, menu **Altro** o pulsante aggiungibile alla barra, tasto destro sul
+  nodo **Completati**): toglie dalla lista solo i download completati, mai quelli in corso, in pausa, in coda o con hash e
+  antivirus ancora in corso. I file restano dove sono, a meno di spuntare **Sposta anche i file nel Cestino** nella
+  conferma, che dice quanti download e, con il Cestino, quanti dati. Con una categoria o una coda selezionata chiede
+  **Solo in …** oppure **Tutti i download completati**. Le notifiche di quei download spariscono dal Centro notifiche; per
+  il grabber un file rimosso dalla lista resta "ottenuto" e non viene riproposto. In Impostazioni › Generale c'è anche la
+  pulizia automatica: **Rimuovi dalla lista i download completati da più di N giorni** (1–365, disattivata per
+  impostazione; i file restano), controllata ogni ora.
 - **Barra degli strumenti personalizzabile**: **Altro** › *Personalizza la barra degli strumenti…* (o tasto destro sulla
   barra): pulsanti visibili, ordine (Alt+Su/Giù), separatori, spazio flessibile che divide sinistra e destra, icone piccole o
   grandi, testo sì/no. Salvato tra una sessione e l'altra; *Ripristina* torna alla barra predefinita.
@@ -430,7 +448,8 @@ Baton…** (l'estensione passa indirizzo, titolo e cookie del sito; mai dalle fi
   I pulsanti usano link `baton:` firmati (HMAC) con una chiave dell'utente, che coprono anche l'ID del download e una
   scadenza di 7 giorni: una pagina web non può usarli per aprire file, e un link vecchio o di un altro download non vale.
 - **Aggiungi / conferma dal browser**: scelta di categoria e coda; *Scarica ora* avvia subito, *Aggiungi alla coda* aspetta il turno.
-- **Tastiera**: Ctrl+G grabber, Ctrl+N aggiungi, Ctrl+V incolla link, Ctrl+F cerca, Canc rimuovi, Invio avanzamento, Alt+Invio proprietà.
+- **Tastiera**: Ctrl+G grabber, Ctrl+N aggiungi, Ctrl+V incolla link, Ctrl+F cerca, Canc rimuovi, Ctrl+Maiusc+Canc rimuovi tutti i
+  completati, Invio avanzamento, Alt+Invio proprietà.
   Tutti i controlli hanno un nome leggibile dagli screen reader.
 
 ## Dati

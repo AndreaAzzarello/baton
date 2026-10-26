@@ -343,6 +343,26 @@ public sealed class Phase6Tests : IAsyncLifetime
         _ = broken;
     }
 
+    [Fact]
+    public async Task Grabber_UsesTheSameFolderRule_AndAFileClearedFromTheListStaysObtained()
+    {
+        _site.Page("/", """<a href="/kept.zip">a</a>""");
+        _site.Set("site.test", "/kept.zip", SiteResource.File(5000, etag: "\"kept\""));
+        var project = FilesProject();
+        Assert.Equal(1, _grabber.Send(project.Id, (await RunAsync(project)).Items.ToList(), null, null, null, startQueue: false));
+        var id = _downloads.GetSnapshots().Single().Id;
+        var compressed = _downloads.Categories.Single(c => c.Key == Categories.CompressedKey);
+        Assert.Equal(compressed.ResolveFolder(_downloads.Settings), _downloads.GetSnapshot(id)!.Directory);
+
+        _downloads.Start(id);
+        Assert.Equal(DownloadStatus.Completed, (await Finished(id)).Status);
+        Assert.Equal(1, (await _downloads.ClearCompletedAsync()).Removed);
+
+        var again = await RunAsync(project);
+        Assert.Equal(GrabberItemStatus.Unchanged, again.Items.Single(i => i.Url.EndsWith("/kept.zip")).Status); // not offered again
+        Assert.True(_grabber.Files(project.Id)["http://site.test/kept.zip"].Obtained);
+    }
+
     // ------------------------------------------------------------------ grabber: speed limit and cookies
 
     [Fact]

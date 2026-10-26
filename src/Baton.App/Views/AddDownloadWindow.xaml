@@ -1,4 +1,4 @@
-<Window x:Class="Baton.App.Views.AddDownloadWindow"
+﻿<Window x:Class="Baton.App.Views.AddDownloadWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:l="clr-namespace:Baton.App.Services"
@@ -35,6 +35,12 @@
             <Button DockPanel.Dock="Right" Content="{l:Loc Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseCommand}" />
             <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc AddFolderName}" />
         </DockPanel>
+        <TextBlock Margin="0,4,0,0" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
+                   Visibility="{Binding HasFolderSource, Converter={StaticResource BoolToVisibility}}">
+            <Run Text="{Binding FolderSource, Mode=OneWay}" />
+            <Hyperlink Command="{Binding EditCategoryFolderCommand}" Foreground="{DynamicResource AccentBrush}"
+                       AutomationProperties.Name="{l:Loc AddFolderChangeCategory}"><Run Text="{l:Loc AddFolderChangeCategory}" /></Hyperlink>
+        </TextBlock>
 
         <Label Content="{l:Loc AddHashLabel}" Target="{Binding ElementName=HashBox}" Padding="0" Margin="0,12,0,4" Foreground="{DynamicResource MutedBrush}" />
         <TextBox x:Name="HashBox" Text="{Binding ExpectedHash, UpdateSourceTrigger=PropertyChanged}" FontFamily="Cascadia Mono, Consolas"

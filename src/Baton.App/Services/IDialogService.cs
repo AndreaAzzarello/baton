@@ -1,4 +1,4 @@
-using Baton.App.ViewModels;
+﻿using Baton.App.ViewModels;
 
 namespace Baton.App.Services;
 
@@ -77,6 +77,8 @@ public interface IDialogService
 
     /// <summary>"Customize toolbar"; true when the user saved.</summary>
     bool ShowToolbar(ToolbarViewModel viewModel);
+
+    bool ShowClearCompleted(ClearCompletedViewModel viewModel);
 
     /// <summary>The first-run wizard; null when the user skipped it.</summary>
     Core.Setup.FirstRunChoices? ShowFirstRun(FirstRunViewModel viewModel);

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
@@ -94,6 +94,7 @@ public partial class App : Application
             else
                 _toasts.ShowCompleted(snapshot);
         };
+        service.CompletedCleared += ids => _toasts.Remove(ids);
 
         var shell = new ShellService();
         var dialogs = new DialogService(() => service, shell);

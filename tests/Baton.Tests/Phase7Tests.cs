@@ -382,6 +382,32 @@ public sealed class Phase7Tests
         Assert.Equal(2, process.ExitCode);
     }
 
+    [Theory]
+    [InlineData(@"Remove-Item {root}\dist -Recurse -Force", 0)]
+    [InlineData("rm -rf '{slash}/dist'", 0)]
+    [InlineData(@"Remove-Item {root}\..\elsewhere -Recurse", 2)]
+    [InlineData(@"Remove-Item {root}\src\..\..\elsewhere -Recurse", 2)]
+    [InlineData(@"Remove-Item {root}.bak -Recurse", 2)]
+    [InlineData(@"Remove-Item C:\Users\user\Desktop\notes.txt", 2)]
+    public async Task GuardHook_AllowsDeletingInsideTheProjectWhereverItIs_NeverOnTheDesktop(string command, int expected)
+    {
+        // The project moved (Desktop\DownloadManager, then Desktop\App\Baton\DownloadManager): the guard follows its own folder.
+        var root = new DirectoryInfo(AppContext.BaseDirectory);
+        while (!File.Exists(Path.Combine(root.FullName, "Baton.slnx")))
+            root = root.Parent!;
+        var text = command.Replace("{root}", root.FullName).Replace("{slash}", root.FullName.Replace('\\', '/'));
+        var info = new System.Diagnostics.ProcessStartInfo("powershell.exe",
+            $"-NoProfile -ExecutionPolicy Bypass -File \"{Path.Combine(root.FullName, ".claude", "hooks", "guard.ps1")}\"")
+        {
+            RedirectStandardInput = true, RedirectStandardError = true, RedirectStandardOutput = true, UseShellExecute = false,
+        };
+        using var process = System.Diagnostics.Process.Start(info)!;
+        await process.StandardInput.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { tool_name = "Bash", tool_input = new { command = text } }));
+        process.StandardInput.Close();
+        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" ? 60 : 20));
+        Assert.Equal(expected, process.ExitCode);
+    }
+
     // ------------------------------------------------------------------ I2: the app's pipe
 
     [Fact]

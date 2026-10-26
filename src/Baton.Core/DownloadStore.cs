@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Baton.Core.Security;
 using Microsoft.Data.Sqlite;
 using Baton.Core.Resources;
@@ -650,6 +650,23 @@ public sealed partial class DownloadStore : IDisposable
         }
     }
 
+    /// <summary>Several downloads at once, in one transaction ("Clear completed").</summary>
+    public void Delete(IReadOnlyCollection<long> ids)
+    {
+        lock (_lock)
+        {
+            using var tx = _db.BeginTransaction();
+            using var cmd = Command("DELETE FROM downloads WHERE id = $id;", tx);
+            var id = cmd.Parameters.Add("$id", SqliteType.Integer);
+            foreach (var value in ids)
+            {
+                id.Value = value;
+                cmd.ExecuteNonQuery();
+            }
+            tx.Commit();
+        }
+    }
+
     public List<DownloadRecord> LoadAll()
     {
         lock (_lock)
@@ -779,6 +796,9 @@ public sealed partial class DownloadStore : IDisposable
                     case nameof(AppSettings.MaxConcurrentDownloads): settings.MaxConcurrentDownloads = int.Parse(value, CultureInfo.InvariantCulture); break;
                     case nameof(AppSettings.SpeedLimitKBps): settings.SpeedLimitKBps = long.Parse(value, CultureInfo.InvariantCulture); break;
                     case nameof(AppSettings.DownloadFolder): settings.DownloadFolder = value; break;
+                    case nameof(AppSettings.CategorySubfolders): settings.CategorySubfolders = value != "0"; break;
+                    case nameof(AppSettings.ClearCompletedAfterDays) when int.TryParse(value, CultureInfo.InvariantCulture, out var days):
+                        settings.ClearCompletedAfterDays = Math.Clamp(days, 0, 365); break;
                     case nameof(AppSettings.QueueRunning): settings.QueueRunning = value == "1"; break;
                     case nameof(AppSettings.ConfirmBrowserDownloads): settings.ConfirmBrowserDownloads = value == "1"; break;
                     case nameof(AppSettings.NotifyOnCompletion): settings.NotifyOnCompletion = value == "1"; break;
@@ -829,6 +849,8 @@ public sealed partial class DownloadStore : IDisposable
             [nameof(AppSettings.MaxConcurrentDownloads)] = settings.MaxConcurrentDownloads.ToString(CultureInfo.InvariantCulture),
             [nameof(AppSettings.SpeedLimitKBps)] = settings.SpeedLimitKBps.ToString(CultureInfo.InvariantCulture),
             [nameof(AppSettings.DownloadFolder)] = settings.DownloadFolder,
+            [nameof(AppSettings.CategorySubfolders)] = settings.CategorySubfolders ? "1" : "0",
+            [nameof(AppSettings.ClearCompletedAfterDays)] = settings.ClearCompletedAfterDays.ToString(CultureInfo.InvariantCulture),
             [nameof(AppSettings.QueueRunning)] = settings.QueueRunning ? "1" : "0",
             [nameof(AppSettings.ConfirmBrowserDownloads)] = settings.ConfirmBrowserDownloads ? "1" : "0",
             [nameof(AppSettings.NotifyOnCompletion)] = settings.NotifyOnCompletion ? "1" : "0",

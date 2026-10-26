@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -265,7 +265,7 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>Less frequent actions: export and import.</summary>
+    /// <summary>Less frequent actions: export and import, and "Clear completed" while it is not on the toolbar.</summary>
     private void OnMore(object sender, RoutedEventArgs e)
     {
         var menu = new ContextMenu { PlacementTarget = MoreButton, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
@@ -275,6 +275,11 @@ public partial class MainWindow : Window
         menu.Items.Add(new Separator());
         menu.Items.Add(new MenuItem { Header = Strings.MenuImport, Command = _vm.ImportCommand });
         menu.Items.Add(new Separator());
+        if (!ToolbarPanel.Children.Contains(_toolbarButtons!["clearcompleted"]))
+        {
+            menu.Items.Add(new MenuItem { Header = Strings.ActionClearCompletedMenu, Command = _vm.ClearCompletedCommand, InputGestureText = Strings.GestureCtrlShiftDelete });
+            menu.Items.Add(new Separator());
+        }
         menu.Items.Add(new MenuItem { Header = Strings.MenuCustomizeToolbar, Command = _vm.CustomizeToolbarCommand });
         menu.IsOpen = true;
     }
@@ -364,7 +369,10 @@ public partial class MainWindow : Window
         var add = new MenuItem { Command = _vm.NewCategoryCommand }.Text(nameof(Strings.MenuNewCategory));
         var edit = new MenuItem { Command = _vm.CategoriesCommand }.Text(nameof(Strings.MenuEditCategory));
         var delete = new MenuItem { Command = _vm.DeleteCategoryCommand }.Text(nameof(Strings.MenuDeleteCategory));
-        foreach (var item in new Control[] { startQueue, stopQueue, editQueue, deleteQueue, queueSeparator, newQueue, add, edit, delete })
+        var clearSeparator = new Separator();
+        var clear = new MenuItem { Command = _vm.ClearCompletedCommand }.Text(nameof(Strings.ActionClearCompletedMenu))
+            .Text(nameof(Strings.GestureCtrlShiftDelete), MenuItem.InputGestureTextProperty);
+        foreach (var item in new Control[] { startQueue, stopQueue, editQueue, deleteQueue, queueSeparator, newQueue, add, edit, delete, clearSeparator, clear })
             menu.Items.Add(item);
         menu.Opened += (_, _) =>
         {
@@ -379,6 +387,9 @@ public partial class MainWindow : Window
             add.Visibility = Show(!queueArea);
             edit.CommandParameter = delete.CommandParameter = node?.CategoryId;
             edit.Visibility = delete.Visibility = Show(node?.IsCategory == true);
+            // On "Completed" and its categories: clears there (the dialog still offers "all").
+            clear.CommandParameter = node;
+            clear.Visibility = clearSeparator.Visibility = Show(node is { Status: StatusFilter.Finished } && !queueArea);
         };
         return menu;
     }

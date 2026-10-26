@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using Baton.App.ViewModels;
 using Baton.App.Views;
 using Baton.Core;
@@ -220,6 +220,8 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
     public bool ShowImport(ImportViewModel viewModel) => new ImportWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
 
     public bool ShowToolbar(ToolbarViewModel viewModel) => new ToolbarWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
+
+    public bool ShowClearCompleted(ClearCompletedViewModel viewModel) => new ClearCompletedWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
 
     public Core.Setup.FirstRunChoices? ShowFirstRun(FirstRunViewModel viewModel)
     {

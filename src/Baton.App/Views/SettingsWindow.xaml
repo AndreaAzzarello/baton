@@ -1,4 +1,4 @@
-<Window x:Class="Baton.App.Views.SettingsWindow"
+﻿<Window x:Class="Baton.App.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:l="clr-namespace:Baton.App.Services"
@@ -46,7 +46,18 @@
                             <Button DockPanel.Dock="Right" Content="{l:Loc Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseCommand}" />
                             <TextBox x:Name="FolderBox" Text="{Binding Folder}" AutomationProperties.Name="{l:Loc SettingsFolder}" />
                         </DockPanel>
-                        <TextBlock Text="{l:Loc SettingsFolderHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                        <CheckBox Content="{l:Loc SettingsCategorySubfolders}" IsChecked="{Binding CategorySubfolders}" Margin="0,8,0,2" />
+                        <TextBlock Text="{l:Loc SettingsFolderHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                        <Border Visibility="{Binding HasOverridingCategories, Converter={StaticResource BoolToVisibility}}" Margin="0,10,0,0" Padding="10"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4">
+                            <StackPanel>
+                                <TextBlock Text="{l:Loc SettingsOverridingCategories}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding OverridingCategories}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                           AutomationProperties.Name="{l:Loc SettingsOverridingCategories}" />
+                                <Button Content="{l:Loc SettingsResetCategoryFolders}" Style="{StaticResource DialogButton}" HorizontalAlignment="Left"
+                                        Margin="0,8,0,0" Command="{Binding ResetCategoryFoldersCommand}" />
+                            </StackPanel>
+                        </Border>
 
                         <TextBlock Text="{l:Loc SettingsAppearance}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
                         <StackPanel Orientation="Horizontal" AutomationProperties.Name="{l:Loc SettingsTheme}">
@@ -76,6 +87,12 @@
                         <TextBlock Text="{l:Loc SettingsSystem}" Style="{StaticResource SectionTitle}" Margin="0,20,0,4" />
                         <ContentControl Content="{Binding Startup}" ContentTemplate="{StaticResource StartWithWindowsTemplate}" Focusable="False" />
                         <CheckBox Content="{l:Loc SettingsCloseToTray}" IsChecked="{Binding CloseToTray}" Margin="0,2" />
+                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                            <CheckBox x:Name="ClearCompletedBox" Content="{l:Loc SettingsClearCompleted}" IsChecked="{Binding ClearCompletedEnabled}" VerticalAlignment="Center" />
+                            <TextBox Text="{Binding ClearCompletedDays}" Width="56" Margin="8,0" IsEnabled="{Binding IsChecked, ElementName=ClearCompletedBox}"
+                                     AutomationProperties.Name="{l:Loc SettingsClearCompletedDaysName}" />
+                            <TextBlock Text="{l:Loc SettingsClearCompletedDays}" VerticalAlignment="Center" />
+                        </StackPanel>
                         <CheckBox IsChecked="{Binding PortableBrowserHost}" Margin="0,2" AutomationProperties.Name="{l:Loc SettingsPortableHost}"
                                   Visibility="{Binding IsPortable, Converter={StaticResource BoolToVisibility}}">
                             <TextBlock Text="{l:Loc SettingsPortableHost}" TextWrapping="Wrap" />

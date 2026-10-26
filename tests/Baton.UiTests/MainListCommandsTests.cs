@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 using System.Windows.Threading;
 using Baton.App;
@@ -31,9 +31,14 @@ public sealed class MainListCommandsTests : IDisposable
         public List<(string Method, object?[] Args)> Calls { get; } = [];
         public bool ConfirmAnswer { get; set; } = true;
 
+        /// <summary>Answers by method name, before the defaults (e.g. a dialog the user confirms).</summary>
+        public Dictionary<string, Func<object?[], object?>> Answers { get; } = [];
+
         protected override object? Invoke(MethodInfo? method, object?[]? args)
         {
             Calls.Add((method!.Name, args ?? []));
+            if (Answers.TryGetValue(method.Name, out var answer))
+                return answer(args ?? []);
             if (method.Name == "Confirm")
                 return ConfirmAnswer;
             var type = method.ReturnType;
@@ -261,5 +266,97 @@ public sealed class MainListCommandsTests : IDisposable
         var target = s.Vm.Categories.First(c => c.Name == "Video").Id;
         s.Vm.ChangeCategory(s.Items("a.zip", "b.pdf", "c.mp3").Select(i => i.Id).ToList(), target);
         Assert.All(s.Service.GetSnapshots(), snap => Assert.Equal(target, snap.CategoryId));
+    });
+
+    [Fact]
+    public void FromTheBrowser_TheConfirmationProposesTheDefaultFolder_AndNamesACategoryThatOverridesIt() => Sta(() =>
+    {
+        using var s = Open(Database());
+        var desktop = Path.Combine(_dir, "Desktop");
+        AddDownloadViewModel Received(string file)
+        {
+            s.Vm.ReceiveFromBrowser(new Baton.Core.Integration.BrowserDownload($"https://example.test/{file}"), closing: false);
+            return (AddDownloadViewModel)s.Dialogs.Calls.Last(c => c.Method == nameof(IDialogService.ShowAddDownload)).Args[0]!;
+        }
+        foreach (var subfolders in new[] { true, false })
+        {
+            var settings = s.Service.Settings;
+            settings.DownloadFolder = desktop;
+            settings.CategorySubfolders = subfolders;
+            s.Service.UpdateSettings(settings); // applies at once, no restart
+            foreach (var file in new[] { "a.zip", "b.pdf", "c.mp4", "report" })
+            {
+                var dialog = Received(file);
+                var category = Categories.MatchUrl(s.Service.Categories, $"https://example.test/{file}");
+                Assert.Equal(subfolders && category.Folder.Length > 0 ? Path.Combine(desktop, category.Folder) : desktop, dialog.Folder);
+                Assert.Null(dialog.FolderSource);
+            }
+        }
+
+        var video = s.Service.Categories.Single(c => c.Key == Categories.VideoKey);
+        video.Folder = Path.Combine(_dir, "Films");
+        s.Service.SaveCategory(video);
+        var own = Received("film.mp4");
+        Assert.Equal(Path.Combine(_dir, "Films"), own.Folder);
+        Assert.Equal("Cartella della categoria Video, al posto della cartella predefinita.", own.FolderSource);
+        Assert.True(own.EditCategoryFolderCommand.CanExecute(null));
+        own.Folder = desktop; // chosen by hand: no longer the category's
+        Assert.Null(own.FolderSource);
+
+        // "Download all" with a category chosen: the same rule.
+        var batch = new BatchViewModel(new Baton.Core.Integration.BatchRequest("https://example.test/", "Page", [new("https://example.test/x.mp4", "x", "link")]),
+            (IDialogService)(object)s.Dialogs, s.Service.Categories, s.Service.Settings, s.Service.Queues, s.Service.MainQueueId);
+        batch.Category = batch.Categories.Single(c => c.Category?.Key == Categories.VideoKey);
+        Assert.Equal(Path.Combine(_dir, "Films"), batch.Folder);
+    });
+
+    [Fact]
+    public void ClearCompleted_RemovesTheCompletedOnes_FilesStayUnlessTheRecycleBinIsTicked() => Sta(() =>
+    {
+        using var s = Open(Database(("a.zip", 3, 1000), ("b.zip", 2, 0), ("c.zip", 4, 0), ("d.zip", 3, 3000)));
+        ClearCompletedViewModel? shown = null;
+        s.Dialogs.Answers[nameof(IDialogService.ShowClearCompleted)] = args =>
+        {
+            shown = (ClearCompletedViewModel)args[0]!;
+            return true;
+        };
+        s.Vm.ClearCompletedCommand.Execute(null);
+        Pump(() => s.Vm.Items.Count == 2);
+        Assert.False(shown!.HasScope); // "All" is selected in the side panel
+        Assert.Equal("2 download completati verranno rimossi dalla lista. I file restano sul disco.", shown.Summary);
+        Assert.Equal(["b.zip", "c.zip"], s.Vm.Items.Select(i => i.Name).Order());
+        Assert.True(File.Exists(Path.Combine(_dir, "a.zip")) && File.Exists(Path.Combine(_dir, "d.zip")));
+        Assert.Empty(s.Bin.Received);
+    });
+
+    [Fact]
+    public void ClearCompleted_ToTheRecycleBin_SaysHowMuch() => Sta(() =>
+    {
+        using var s = Open(Database(("a.zip", 3, 1000), ("d.zip", 3, 3000), ("b.zip", 2, 0)));
+        s.Dialogs.Answers[nameof(IDialogService.ShowClearCompleted)] = args =>
+        {
+            var dialog = (ClearCompletedViewModel)args[0]!;
+            dialog.MoveToRecycleBin = true;
+            Assert.Equal($"2 download completati verranno rimossi dalla lista e i loro file ({Format.Bytes(4000).Replace(' ', ' ')}) andranno nel Cestino.", dialog.Summary);
+            return true;
+        };
+        s.Vm.ClearCompletedCommand.Execute(null);
+        Pump(() => s.Bin.Received.Count == 2 && s.Vm.Items.Count == 1); // the list refreshes after the last file
+        Assert.Equal(["b.zip"], s.Vm.Items.Select(i => i.Name));
+    });
+
+    [Fact]
+    public void ClearCompletedDialog_AsksOnlyHereOrAll_WhenACategoryOrQueueIsSelected() => Sta(() =>
+    {
+        var asked = new List<(long?, long?)>();
+        var dialog = new ClearCompletedViewModel((c, q) => { asked.Add((c, q)); return []; }, 7, null, "Video");
+        Assert.True(dialog.HasScope && dialog.OnlyScope);
+        Assert.Equal("Solo in Video", dialog.OnlyScopeText);
+        Assert.Equal((7L, (long?)null), dialog.Scope);
+        Assert.False(dialog.CanConfirm);
+        dialog.AllScope = true;
+        Assert.Equal(((long?)null, (long?)null), dialog.Scope);
+        Assert.Equal([(7L, (long?)null), (null, null)], asked);
+        Assert.False(new ClearCompletedViewModel((_, _) => [], null, null, null).MoveToRecycleBin); // never ticked by default
     });
 }

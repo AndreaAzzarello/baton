@@ -1,4 +1,4 @@
-namespace Baton.Core;
+﻿namespace Baton.Core;
 
 /// <summary>A group of file types with its own destination folder.</summary>
 public sealed class Category
@@ -23,10 +23,23 @@ public sealed class Category
 
     public bool IsGeneral => Key == Categories.GeneralKey;
 
-    public string ResolveFolder(string defaultFolder) =>
+    /// <summary>
+    /// Where a new download of this category goes: the one rule used by every entry point (add dialog, browser, "Download
+    /// all", streams, files sent by the grabber; an offline copy has its own folder under the default one). Without <see cref="AppSettings.CategorySubfolders"/> relative folders collapse into the
+    /// default folder; an absolute folder always wins, because the user set it on purpose.
+    /// </summary>
+    public string ResolveFolder(AppSettings settings) => ResolveFolder(settings.DownloadFolder, settings.CategorySubfolders);
+
+    /// <summary>The same rule with the folder and the option given; the category editor shows folders with subfolders on.</summary>
+    public string ResolveFolder(string defaultFolder, bool subfolders = true) =>
         string.IsNullOrWhiteSpace(Folder) ? defaultFolder
         : Path.IsPathFullyQualified(Folder) ? Folder
-        : Path.Combine(defaultFolder, Folder);
+        : subfolders ? Path.Combine(defaultFolder, Folder)
+        : defaultFolder;
+
+    /// <summary>An absolute folder of its own, other than the default folder: it takes downloads away from the default.</summary>
+    public bool OverridesDefault(string defaultFolder) =>
+        Path.IsPathFullyQualified(Folder) && !Categories.SameFolder(Folder, defaultFolder);
 
     /// <summary>The name to show: a built-in category the user never renamed follows the interface language.</summary>
     public string DisplayName => Key switch
@@ -70,6 +83,24 @@ public static class Categories
         // The fallback: no extensions of its own, files land in the default folder.
         new Category { Key = GeneralKey, Name = Resources.Strings.CategoryGeneral, Folder = "", SortOrder = 5 },
     ];
+
+    /// <summary>The folder a category had out of the box, relative to the default folder (its name, "" for the general one).</summary>
+    public static string DefaultFolderOf(Category category) =>
+        category.Key is { } key && Defaults().FirstOrDefault(d => d.Key == key) is { } builtin ? builtin.Folder
+        : FileNames.Sanitize(category.Name.Trim());
+
+    public static bool SameFolder(string a, string b)
+    {
+        try
+        {
+            return string.Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(a)), Path.TrimEndingDirectorySeparator(Path.GetFullPath(b)),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception e) when (e is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+    }
 
     private static Category Builtin(string key, string name, string extensions, int order) =>
         new() { Key = key, Name = name, Extensions = ParseExtensions(extensions), Folder = name, SortOrder = order };

@@ -38,13 +38,16 @@ Details in [PRIVACY.md](PRIVACY.md).
 
 - **Segmented downloads** with up to 32 connections (8 by default), dynamic segmentation, pause and resume (also after a restart).
 - **Queues and scheduling**: named queues, days and hours, hourly quotas, wake timers, end-of-queue actions.
-- **Categories** with their own folders; light, dark and system themes; notification-area icon.
+- **Categories** with their own folders: your default folder always wins (even the Desktop), with optional subfolders per
+  category; a category with a folder of its own is shown as such. Light, dark and system themes; notification-area icon.
 - **HTTP/HTTPS, FTP/FTPS**, proxies (system, HTTP, SOCKS5, PAC) and authentication (Basic, Digest, NTLM, Negotiate).
 - **HLS and DASH video** with quality, audio language and subtitles; merged into MP4 if you install ffmpeg.
 - **Site grabber**: filtered files or an offline copy of static pages, respecting robots.txt, with sync and scheduling.
 - **Browser integration** for Chrome, Edge, Opera, Brave and Firefox: captured downloads, context menu, forms (POST),
   "Download all", and a video button that can be closed, minimized or kept in the extension's menu.
 - **File Explorer-style list**: multiple selection, drag files out, Del to remove, Shift+Del to send files to the Recycle Bin.
+- **Clear completed** (Ctrl+Shift+Del): removes finished downloads from the list, files kept unless you tick the Recycle
+  Bin; optionally by itself after N days.
 - **After the download**: optional hash check and antivirus scan.
 - **Signed updates** (ECDSA P-256) with automatic rollback; settings export and import.
 
@@ -113,8 +116,8 @@ Once SignPath signs the releases they also carry an Authenticode signature, made
 file. From a clone of this repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.3.exe"
-# OK: Baton-Setup-1.3.3.exe 1.3.3, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.4.exe"
+# OK: Baton-Setup-1.3.4.exe 1.3.4, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
 
 `SHA256SUMS.txt` lists the hashes of every file of the release, also the portable zip and the extension packages.

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
@@ -66,6 +66,7 @@ public sealed class MainViewModel : ObservableObject
         EnqueueCommand = new RelayCommand(Enqueue, () => _selected.Any(i => i.Status is DownloadStatus.Paused or DownloadStatus.Failed));
         RemoveCommand = new RelayCommand(Remove, () => _selected.Count > 0);
         DeleteFilesCommand = new RelayCommand(DeleteFiles, () => _selected.Count > 0);
+        ClearCompletedCommand = new RelayCommand(p => ClearCompleted(p as NavigationNodeViewModel ?? _selectedNode));
         RetryCommand = new RelayCommand(Retry, () => _selected.Any(i => i.Status == DownloadStatus.Failed));
         MoveUpCommand = new RelayCommand(() => Move(-1), () => _selected.Count == 1 && IsQueueOrder);
         MoveDownCommand = new RelayCommand(() => Move(1), () => _selected.Count == 1 && IsQueueOrder);
@@ -122,6 +123,9 @@ public sealed class MainViewModel : ObservableObject
     public ICommand PauseCommand { get; }
     public ICommand EnqueueCommand { get; }
     public ICommand RemoveCommand { get; }
+
+    /// <summary>"Clear completed": for the side panel node given (the selected one by default), see <see cref="ClearCompleted"/>.</summary>
+    public ICommand ClearCompletedCommand { get; }
     public ICommand DeleteFilesCommand { get; }
     public ICommand RetryCommand { get; }
     public ICommand MoveUpCommand { get; }
@@ -468,11 +472,12 @@ public sealed class MainViewModel : ObservableObject
                 Urls.SiteOf(next.Referrer) ?? Strings.Unknown, Urls.SiteOf(next.Url) ?? next.Url)
             : context.IsPost ? Strings.FromBrowserForm
             : next.Cookies is { Count: > 0 } ? Strings.FromBrowserWithCookies : Strings.FromBrowser;
-        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, next.Url, fileName, note,
+        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings, next.Url, fileName, note,
             _service.Queues, queueId)
         {
             // A form's address only makes sense with the form's data.
             UrlReadOnly = context.IsPost,
+            EditCategory = EditCategoryFolder,
         };
         if (_dialogs.ShowAddDownload(dialog, standalone: true))
             Submit(dialog, context);
@@ -508,10 +513,11 @@ public sealed class MainViewModel : ObservableObject
             var audio = media.AudioId is { Length: > 0 } id ? string.Format(CultureInfo.CurrentCulture, Strings.FromBrowserMediaAudio, Readable(id)) : "";
             note += " " + string.Join(" ", new[] { audio, subtitles }.Where(s => s.Length > 0));
         }
-        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, media.Url, fileName, note,
+        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings, media.Url, fileName, note,
             _service.Queues, queueId)
         {
             UrlReadOnly = true, // the manifest of the quality chosen in the page
+            EditCategory = EditCategoryFolder,
         };
         if (!_dialogs.ShowAddDownload(dialog, standalone: true))
             return;
@@ -529,7 +535,7 @@ public sealed class MainViewModel : ObservableObject
     private void HandleBatch(BatchRequest batch)
     {
         var queueId = _service.ResolveQueue(batch.Queue);
-        var dialog = new BatchViewModel(batch, _dialogs, _service.Categories, _service.Settings.DownloadFolder, _service.Queues, queueId);
+        var dialog = new BatchViewModel(batch, _dialogs, _service.Categories, _service.Settings, _service.Queues, queueId);
         if (dialog.Items.Count == 0)
         {
             _dialogs.Inform(Strings.BatchNothing, Strings.BatchTitle);
@@ -732,8 +738,8 @@ public sealed class MainViewModel : ObservableObject
 
     private void ShowAddDialog(string? url)
     {
-        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, url,
-            queues: _service.Queues, queueId: CurrentQueueId);
+        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings, url,
+            queues: _service.Queues, queueId: CurrentQueueId) { EditCategory = EditCategoryFolder };
         if (_dialogs.ShowAddDownload(dialog, standalone: false))
             Submit(dialog, null);
     }
@@ -802,6 +808,35 @@ public sealed class MainViewModel : ObservableObject
             _dialogs.ShowError(string.Format(CultureInfo.CurrentCulture, Strings.DeleteKeptOnDisk, kept.Count, string.Join("\n", kept.Take(10))), Strings.DeleteTitle);
     }
 
+    /// <summary>
+    /// Removes the completed downloads from the list (Ctrl+Shift+Del, the toolbar, the "Completed" node): files stay on the
+    /// disk unless the user ticks the Recycle Bin. With a category or queue selected it asks: only there, or all.
+    /// </summary>
+    private async void ClearCompleted(NavigationNodeViewModel node)
+    {
+        var scope = node.IsCategory || node.IsQueue ? node.Title : null;
+        var dialog = new ClearCompletedViewModel(_service.CompletedToClear, node.CategoryId, node.QueueId, scope);
+        if (!_dialogs.ShowClearCompleted(dialog))
+            return;
+        var (categoryId, queueId) = dialog.Scope;
+        IReadOnlyList<string> kept;
+        try
+        {
+            (_, kept) = await _service.ClearCompletedAsync(categoryId, queueId, dialog.MoveToRecycleBin, dialog.Ids);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Microsoft.Data.Sqlite.SqliteException or System.Runtime.InteropServices.COMException)
+        {
+            _dialogs.ShowError(ex.Message, Strings.ClearCompletedTitle);
+            return;
+        }
+        finally
+        {
+            Refresh();
+        }
+        if (kept.Count > 0)
+            _dialogs.ShowError(string.Format(CultureInfo.CurrentCulture, Strings.DeleteKeptOnDisk, kept.Count, string.Join("\n", kept.Take(10))), Strings.ClearCompletedTitle);
+    }
+
     private void Move(int delta)
     {
         _service.Move(_selected[0].Id, delta);
@@ -846,7 +881,15 @@ public sealed class MainViewModel : ObservableObject
         var dialog = new SettingsViewModel(_dialogs, _service.Settings, _startup.IsEnabled, _service.Credentials, _service.Certificates,
             Updates is { } updates ? url => updates.CheckAsync(url, interactive: true) : null,
             Updates is { } restore && UpdateService.CanRestore ? restore.RestorePrevious : null,
-            _startup.IsPortable ? Environment.ProcessPath : null, new BundledExtensionViewModel(AppContext.BaseDirectory, _shell));
+            _startup.IsPortable ? Environment.ProcessPath : null, new BundledExtensionViewModel(AppContext.BaseDirectory, _shell))
+        {
+            Categories = _service.Categories,
+            ResetCategories = folder =>
+            {
+                _service.ResetCategoryFolders(folder);
+                return _service.Categories;
+            },
+        };
         if (!_dialogs.ShowSettings(dialog) || dialog.Result is null)
             return;
         _service.UpdateSettings(dialog.Result);
@@ -869,18 +912,23 @@ public sealed class MainViewModel : ObservableObject
     /// <summary>Lets the app apply settings that concern the UI, such as the theme.</summary>
     public event Action<AppSettings>? SettingsSaved;
 
-    private void ShowCategories(long? selectId, bool addNew)
+    private bool ShowCategories(long? selectId, bool addNew)
     {
         var dialog = new CategoriesViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, selectId);
         if (addNew)
             dialog.AddCommand.Execute(null);
         if (!_dialogs.ShowCategories(dialog))
-            return;
+            return false;
         foreach (var deleted in dialog.Deleted)
             _service.DeleteCategory(deleted.Id);
         foreach (var changed in dialog.Changed)
             _service.SaveCategory(changed);
+        return true;
     }
+
+    /// <summary>The add dialog's "change" link: the category editor on that category, then its folder as saved.</summary>
+    private string? EditCategoryFolder(Category category) =>
+        ShowCategories(category.Id, addNew: false) ? _service.Categories.FirstOrDefault(c => c.Id == category.Id)?.Folder : null;
 
     private void DeleteCategory(long? id)
     {

@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using Baton.Core;
@@ -55,6 +55,23 @@ public sealed class ToastService(string dataDirectory)
         catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or IOException or UnauthorizedAccessException)
         {
             // Notifications turned off in Windows, or Focus Assist: nothing to do.
+        }
+    }
+
+    /// <summary>Takes the notifications of downloads no longer in the list out of the notification centre.</summary>
+    public void Remove(IEnumerable<long> downloadIds)
+    {
+        if (!_registered)
+            return;
+        try
+        {
+            var history = ToastNotificationManager.History;
+            foreach (var id in downloadIds)
+                history.Remove(id.ToString(), "", AppUserModelId);
+        }
+        catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or ArgumentException or UnauthorizedAccessException)
+        {
+            // Notifications turned off in Windows: there is nothing to take back.
         }
     }
 

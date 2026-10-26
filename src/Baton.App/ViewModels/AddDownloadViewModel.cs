@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Windows.Input;
 using Baton.App.Mvvm;
@@ -15,7 +15,7 @@ namespace Baton.App.ViewModels;
 public sealed class AddDownloadViewModel : ObservableObject
 {
     private readonly IDialogService _dialogs;
-    private readonly string _defaultFolder;
+    private readonly AppSettings _settings;
     private string _url;
     private string _folder = "";
     private string _fileName;
@@ -25,13 +25,13 @@ public sealed class AddDownloadViewModel : ObservableObject
     private bool _updatingFolder;
     private string? _error;
 
-    public AddDownloadViewModel(IDialogService dialogs, IReadOnlyList<Category> categories, string defaultFolder,
+    public AddDownloadViewModel(IDialogService dialogs, IReadOnlyList<Category> categories, AppSettings settings,
         string? url, string? fileName = null, string? note = null, IReadOnlyList<DownloadQueue>? queues = null, long? queueId = null)
     {
         Queues = queues ?? [];
         Queue = Queues.FirstOrDefault(q => q.Id == queueId) ?? Queues.FirstOrDefault(q => q.IsMain) ?? Queues.FirstOrDefault();
         _dialogs = dialogs;
-        _defaultFolder = defaultFolder;
+        _settings = settings;
         Categories = categories;
         _url = url ?? "";
         _fileName = fileName ?? "";
@@ -40,6 +40,7 @@ public sealed class AddDownloadViewModel : ObservableObject
         SetFolderFromCategory();
         Validate();
         BrowseCommand = new RelayCommand(Browse);
+        EditCategoryFolderCommand = new RelayCommand(EditCategoryFolder, () => EditCategory is not null);
     }
 
     public IReadOnlyList<Category> Categories { get; }
@@ -55,6 +56,21 @@ public sealed class AddDownloadViewModel : ObservableObject
     public bool UrlReadOnly { get; init; }
 
     public ICommand BrowseCommand { get; }
+
+    /// <summary>Set by the main window: opens the category editor on this category, returns its folder once saved (null if cancelled).</summary>
+    public Func<Category, string?>? EditCategory { get; init; }
+
+    public ICommand EditCategoryFolderCommand { get; }
+
+    /// <summary>
+    /// "Folder of the Video category" when the folder comes from a category with an absolute folder of its own instead of
+    /// the default folder, so that choice is never silent; null otherwise.
+    /// </summary>
+    public string? FolderSource => !_folderChosen && Category.OverridesDefault(_settings.DownloadFolder)
+        ? string.Format(CultureInfo.CurrentCulture, Strings.AddFolderFromCategory, Category.DisplayName)
+        : null;
+
+    public bool HasFolderSource => FolderSource is not null;
 
     public string Url
     {
@@ -100,6 +116,8 @@ public sealed class AddDownloadViewModel : ObservableObject
                 return;
             if (!_updatingFolder)
                 _folderChosen = true;
+            OnPropertyChanged(nameof(FolderSource));
+            OnPropertyChanged(nameof(HasFolderSource));
             Validate();
         }
     }
@@ -162,8 +180,19 @@ public sealed class AddDownloadViewModel : ObservableObject
     private void SetFolderFromCategory()
     {
         _updatingFolder = true;
-        Folder = Category.ResolveFolder(_defaultFolder);
+        Folder = Category.ResolveFolder(_settings);
         _updatingFolder = false;
+        OnPropertyChanged(nameof(FolderSource));
+        OnPropertyChanged(nameof(HasFolderSource));
+    }
+
+    private void EditCategoryFolder()
+    {
+        if (EditCategory?.Invoke(Category) is not { } folder)
+            return;
+        Category.Folder = folder; // the dialog's own copy, so the folder shown follows the saved one
+        if (!_folderChosen)
+            SetFolderFromCategory();
     }
 
     private void Browse()

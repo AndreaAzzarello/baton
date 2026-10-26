@@ -1,4 +1,4 @@
-namespace Baton.Core;
+﻿namespace Baton.Core;
 
 /// <summary>
 /// The order of the main window's toolbar buttons, stored as ids separated by commas ("|" = separator, "~" = the gap
@@ -10,7 +10,7 @@ public static class ToolbarLayout
     public const string Spacer = "~";
 
     public static readonly string[] Buttons =
-        ["add", "start", "pause", "enqueue", "remove", "deletefiles", "progress", "properties", "up", "down", "queue", "folder", "categories", "queues", "grabber", "settings"];
+        ["add", "start", "pause", "enqueue", "remove", "deletefiles", "clearcompleted", "progress", "properties", "up", "down", "queue", "folder", "categories", "queues", "grabber", "settings"];
 
     public const string Default = "add,|,start,pause,enqueue,remove,progress,properties,|,up,down,|,queue,~,folder,categories,queues,grabber,settings";
 

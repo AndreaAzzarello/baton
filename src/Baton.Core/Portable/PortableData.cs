@@ -34,6 +34,8 @@ public sealed class ExportedSettings
     public int MaxConcurrentDownloads { get; set; }
     public long SpeedLimitKBps { get; set; }
     public string DownloadFolder { get; set; } = "";
+    public bool? CategorySubfolders { get; set; }
+    public int? ClearCompletedAfterDays { get; set; }
     public long GlobalQuotaMBPerHour { get; set; }
     public bool CloseToTray { get; set; }
     public ProxyMode ProxyMode { get; set; }
@@ -128,7 +130,8 @@ public static class PortableData
         Settings = new ExportedSettings
         {
             MaxConnections = settings.MaxConnections, MaxConcurrentDownloads = settings.MaxConcurrentDownloads, SpeedLimitKBps = settings.SpeedLimitKBps,
-            DownloadFolder = settings.DownloadFolder, GlobalQuotaMBPerHour = settings.GlobalQuotaMBPerHour, CloseToTray = settings.CloseToTray,
+            DownloadFolder = settings.DownloadFolder, CategorySubfolders = settings.CategorySubfolders,
+            ClearCompletedAfterDays = settings.ClearCompletedAfterDays, GlobalQuotaMBPerHour = settings.GlobalQuotaMBPerHour, CloseToTray = settings.CloseToTray,
             ProxyMode = settings.ProxyMode, ProxyType = settings.ProxyType, ProxyHost = settings.ProxyHost, ProxyPort = settings.ProxyPort,
             ProxyUser = settings.ProxyUser, ProxyBypass = settings.ProxyBypass, PacUrl = settings.PacUrl, FtpActiveMode = settings.FtpActiveMode,
             TimeoutSeconds = settings.TimeoutSeconds, MaxConnectionsPerServer = settings.MaxConnectionsPerServer, UserAgent = settings.UserAgent,

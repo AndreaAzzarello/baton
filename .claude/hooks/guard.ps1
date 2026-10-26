@@ -31,10 +31,18 @@ if ($command -match $writesRegistry) {
   }
 }
 
-# Deleting on the Desktop, except inside the project folder (Desktop\DownloadManager\...).
+# Deleting on the Desktop, except inside the project folder (wherever it is: the paths of this checkout are taken out
+# first, in Windows, forward-slash and Git Bash form, as a whole folder name; never when the command has ".." segments).
 $deletes = '(?i)(^|[\s;&|(])(Remove-Item|ri|rm|rmdir|rd|del|erase)\b|\[(System\.)?IO\.(File|Directory)\]::Delete'
-$desktopOutsideProject = '(?i)(Desktop|GetFolderPath\(\s*.Desktop.\s*\))(?![\\/]+DownloadManager([\\/"''\s]|$))'
-if ($command -match $deletes -and $command -match $desktopOutsideProject) {
+$root = Split-Path (Split-Path $PSScriptRoot)
+$outside = $command
+if ($command -notmatch '(^|[\\/])\.\.([\\/]|$)') {
+  foreach ($form in $root, ($root -replace '\\', '/'), ('/' + $root.Substring(0, 1).ToLower() + ($root.Substring(2) -replace '\\', '/'))) {
+    $outside = [regex]::Replace($outside, [regex]::Escape($form) + '(?=[\\/"''\s;|&)]|$)', '<project>', 'IgnoreCase')
+  }
+}
+$desktopOutsideProject = '(?i)Desktop|GetFolderPath\(\s*.Desktop.\s*\)'
+if ($command -match $deletes -and $outside -match $desktopOutsideProject) {
   Block "cancellazione sul Desktop dell'utente. Le prove scrivono solo nella cartella di lavoro (%TEMP%\dm-trials); i file sul Desktop vanno rimossi solo dall'utente, o dopo una sua conferma esplicita."
 }
 exit 0

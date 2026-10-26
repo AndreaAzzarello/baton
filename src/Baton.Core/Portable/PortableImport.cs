@@ -297,6 +297,8 @@ public static class PortableImport
         result.MaxConcurrentDownloads = Math.Clamp(s.MaxConcurrentDownloads, 1, 50);
         result.SpeedLimitKBps = Math.Max(0, s.SpeedLimitKBps);
         result.DownloadFolder = SafePaths.CheckImportedFolder(s.DownloadFolder ?? "") is null ? s.DownloadFolder! : current.DownloadFolder;
+        result.CategorySubfolders = s.CategorySubfolders ?? current.CategorySubfolders;
+        result.ClearCompletedAfterDays = Math.Clamp(s.ClearCompletedAfterDays ?? current.ClearCompletedAfterDays, 0, 365);
         result.GlobalQuotaMBPerHour = Math.Max(0, s.GlobalQuotaMBPerHour);
         result.CloseToTray = s.CloseToTray;
         result.FtpActiveMode = s.FtpActiveMode;
