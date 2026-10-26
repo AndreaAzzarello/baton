@@ -26,7 +26,7 @@ compatibile con alcun prodotto commerciale.
 Questa è la guida completa, in italiano. Una presentazione breve in inglese è in [README.md](README.md); per contribuire
 vedi [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Versione **1.3.5** — novità in [CHANGELOG.md](CHANGELOG.md).
+Versione **1.3.6** — novità in [CHANGELOG.md](CHANGELOG.md).
 
 | Tema chiaro | Tema scuro |
 |---|---|
@@ -160,8 +160,8 @@ anche la firma **Authenticode** (visibile in Proprietà › Firme digitali), app
 file nella stessa cartella, da una copia del repository:
 
 ```powershell
-.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.5.exe"
-# OK: Baton-Setup-1.3.5.exe 1.3.5, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
+.\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.6.exe"
+# OK: Baton-Setup-1.3.6.exe 1.3.6, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
 
 Lo script controlla anche la firma Authenticode quando c'è (se presente deve essere valida; `-RequireAuthenticode` la
@@ -406,7 +406,8 @@ Baton…** (l'estensione passa indirizzo, titolo e cookie del sito; mai dalle fi
   nodo **Completati**): toglie dalla lista solo i download completati, mai quelli in corso, in pausa, in coda o con hash e
   antivirus ancora in corso. I file restano dove sono, a meno di spuntare **Sposta anche i file nel Cestino** nella
   conferma, che dice quanti download e, con il Cestino, quanti dati. Con una categoria o una coda selezionata chiede
-  **Solo in …** oppure **Tutti i download completati**. Le notifiche di quei download spariscono dal Centro notifiche; per
+  **Solo in …** oppure **Tutti i download completati**. Le notifiche di quei download spariscono dal Centro notifiche (quelle mostrate dalla 1.3.6 in poi:
+  Windows non permette di togliere una per una quelle delle versioni precedenti); per
   il grabber un file rimosso dalla lista resta "ottenuto" e non viene riproposto. In Impostazioni › Generale c'è anche la
   pulizia automatica: **Rimuovi dalla lista i download completati da più di N giorni** (1–365, disattivata per
   impostazione; i file restano), controllata ogni ora.

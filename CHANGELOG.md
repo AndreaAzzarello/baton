@@ -4,6 +4,15 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
+## [1.3.6] — 2026-10-26
+
+- **Corretto: le notifiche dei download tolti con «Rimuovi tutti i completati» restavano nel Centro notifiche.** Windows
+  non permette a un'app non pacchettizzata di togliere una per una le notifiche senza gruppo (`History.Remove` rifiuta il
+  gruppo vuoto, e l'errore veniva ignorato). Ora le notifiche di download completato hanno il gruppo `downloads` e
+  vengono tolte davvero (verificato con l'identità registrata di Baton). Quelle già mostrate dalle versioni precedenti
+  non hanno gruppo: restano finché non le chiudi tu.
+- Test: `PackagesTests` usa il `Baton.exe` della versione del progetto, non una build Release più vecchia rimasta in `bin`.
+
 ## [1.3.5] — 2026-10-26
 
 Le novità della 1.3.4, che non ha una release: il tag `v1.3.4` è pubblico ma la sua build in CI si è fermata su un test

@@ -29,7 +29,10 @@ public sealed class PackagesTests : IDisposable
     public async Task ThePortableZip_HasTheExtensionFolder_AndTheFirefoxPackage()
     {
         var root = Root();
+        // The newest build of the project's version: a Release build left by an earlier version must not be picked.
+        var projectVersion = System.Xml.Linq.XDocument.Load(Path.Combine(root, "src", "Baton.App", "Baton.App.csproj")).Descendants("Version").First().Value;
         var exe = Directory.GetFiles(Path.Combine(root, "src", "Baton.App", "bin"), "Baton.exe", SearchOption.AllDirectories)
+            .Where(f => FileVersionInfo.GetVersionInfo(f).ProductVersion?.StartsWith(projectVersion + "+", StringComparison.Ordinal) == true)
             .OrderByDescending(File.GetLastWriteTimeUtc).First();
         var info = new ProcessStartInfo("powershell.exe")
         {

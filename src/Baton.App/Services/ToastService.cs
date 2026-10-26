@@ -14,6 +14,9 @@ public sealed class ToastService(string dataDirectory)
 {
     public const string AppUserModelId = "Baton.App";
 
+    // A notification without a group cannot be taken back one by one outside a packaged app (History.Remove rejects "").
+    private const string Group = "downloads";
+
     private NotificationLinks? _links;
     private bool _registered;
 
@@ -50,7 +53,7 @@ public sealed class ToastService(string dataDirectory)
         {
             var xml = new Windows.Data.Xml.Dom.XmlDocument();
             xml.LoadXml(CompletionToast.Build(download, Format.Bytes(download.TotalSize ?? download.Downloaded), Links));
-            ToastNotificationManager.CreateToastNotifier(AppUserModelId).Show(new ToastNotification(xml) { Tag = download.Id.ToString() });
+            ToastNotificationManager.CreateToastNotifier(AppUserModelId).Show(new ToastNotification(xml) { Tag = download.Id.ToString(), Group = Group });
         }
         catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or IOException or UnauthorizedAccessException)
         {
@@ -67,7 +70,7 @@ public sealed class ToastService(string dataDirectory)
         {
             var history = ToastNotificationManager.History;
             foreach (var id in downloadIds)
-                history.Remove(id.ToString(), "", AppUserModelId);
+                history.Remove(id.ToString(), Group, AppUserModelId);
         }
         catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or ArgumentException or UnauthorizedAccessException)
         {
