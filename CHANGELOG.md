@@ -4,7 +4,14 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
-## [1.3.4] — 2026-10-26
+## [1.3.5] — 2026-10-26
+
+Le novità della 1.3.4, che non ha una release: il tag `v1.3.4` è pubblico ma la sua build in CI si è fermata su un test
+nuovo che dava per scontato il repository dentro un "Desktop" (sul runner è `D:\a\...`). I tag pubblicati non si
+spostano, quindi la stessa versione esce come 1.3.5, con il test corretto (esegue una copia del guard da un progetto
+di prova su un Desktop) e `finish.ps1` che toglie anche l'icona della tray di `publish\Baton.exe` lasciata dalle prove.
+
+## [1.3.4] — 2026-10-26 (tag senza release)
 
 La cartella predefinita scelta dall'utente vale sempre; nuova pulizia della cronologia.
 
