@@ -392,20 +392,31 @@ public sealed class Phase7Tests
     public async Task GuardHook_AllowsDeletingInsideTheProjectWhereverItIs_NeverOnTheDesktop(string command, int expected)
     {
         // The project moved (Desktop\DownloadManager, then Desktop\App\Baton\DownloadManager): the guard follows its own folder.
-        var root = new DirectoryInfo(AppContext.BaseDirectory);
-        while (!File.Exists(Path.Combine(root.FullName, "Baton.slnx")))
-            root = root.Parent!;
-        var text = command.Replace("{root}", root.FullName).Replace("{slash}", root.FullName.Replace('\\', '/'));
-        var info = new System.Diagnostics.ProcessStartInfo("powershell.exe",
-            $"-NoProfile -ExecutionPolicy Bypass -File \"{Path.Combine(root.FullName, ".claude", "hooks", "guard.ps1")}\"")
+        // A copy of it runs from a project on a "Desktop", so the cases hold wherever the repository is (CI: D:\a\...).
+        var repo = new DirectoryInfo(AppContext.BaseDirectory);
+        while (!File.Exists(Path.Combine(repo.FullName, "Baton.slnx")))
+            repo = repo.Parent!;
+        var temp = Path.Combine(Path.GetTempPath(), "dm-tests", Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(temp, "Desktop", "App", "Baton");
+        var hooks = Directory.CreateDirectory(Path.Combine(root, ".claude", "hooks")).FullName;
+        File.Copy(Path.Combine(repo.FullName, ".claude", "hooks", "guard.ps1"), Path.Combine(hooks, "guard.ps1"));
+        try
         {
-            RedirectStandardInput = true, RedirectStandardError = true, RedirectStandardOutput = true, UseShellExecute = false,
-        };
-        using var process = System.Diagnostics.Process.Start(info)!;
-        await process.StandardInput.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { tool_name = "Bash", tool_input = new { command = text } }));
-        process.StandardInput.Close();
-        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" ? 60 : 20));
-        Assert.Equal(expected, process.ExitCode);
+            var text = command.Replace("{root}", root).Replace("{slash}", root.Replace('\\', '/'));
+            var info = new System.Diagnostics.ProcessStartInfo("powershell.exe", $"-NoProfile -ExecutionPolicy Bypass -File \"{Path.Combine(hooks, "guard.ps1")}\"")
+            {
+                RedirectStandardInput = true, RedirectStandardError = true, RedirectStandardOutput = true, UseShellExecute = false,
+            };
+            using var process = System.Diagnostics.Process.Start(info)!;
+            await process.StandardInput.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new { tool_name = "Bash", tool_input = new { command = text } }));
+            process.StandardInput.Close();
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" ? 60 : 20));
+            Assert.Equal(expected, process.ExitCode);
+        }
+        finally
+        {
+            Directory.Delete(temp, recursive: true);
+        }
     }
 
     // ------------------------------------------------------------------ I2: the app's pipe
