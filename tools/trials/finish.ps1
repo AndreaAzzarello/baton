@@ -32,7 +32,8 @@ $audioKeys = @(Get-ChildItem $audio -ErrorAction SilentlyContinue | Where-Object
 # Explorer remembers every program that showed a tray icon: entries of debug builds or trial copies are trial traces.
 $trayIcons = "HKCU:\Control Panel\NotifyIconSettings"
 $trayKeys = @(Get-ChildItem $trayIcons -ErrorAction SilentlyContinue | Where-Object {
-  $path = "$($_.GetValue('ExecutablePath'))"; $path -like "*\bin\Debug\*\Baton.exe" -or $path -like "*\bin\Debug\*DownloadManager.exe" -or $path -match $needle })
+  $path = "$($_.GetValue('ExecutablePath'))"; $path -like "*\bin\Debug\*\Baton.exe" -or $path -like "*\bin\Debug\*DownloadManager.exe" -or $path -match $needle -or
+  $path -like "$((Resolve-Path "$PSScriptRoot\..\..").Path)\publish\*" }) # prepare.ps1 starts publish\Baton.exe once
 
 # Installer, winget and Scoop trials (install-trial.ps1): an "Installed apps" entry and shortcuts of a copy in the trial
 # folder, a trial Scoop in the user's PATH or configuration.
