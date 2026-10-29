@@ -4,6 +4,8 @@ Baton, download manager per Windows: C# / .NET 10 / WPF (tema Fluent), più este
 Fino alla 1.1 si chiamava DownloadManager (la cartella del progetto ha ancora quel nome: non rinominarla). Fasi 1–9 completate,
 versione **1.3.0** (licenza MIT, repository GitHub `AndreaAzzarello/baton`; tag e release pubblicati non si spostano mai). L'utente scrive in italiano: rispondi in italiano; codice e commenti in inglese.
 
+Regole generali (piano prima, mai push/deploy senza conferma, report finale) e vault delle lezioni: vedi `~/.claude/CLAUDE.md`.
+
 ## Vincoli permanenti
 - Nessun codice, grafica, icona, nome o marchio di altri prodotti. Solo codice originale.
 - Di "Download with…" (MPL 2.0) si riprendono solo idee, mai codice (dichiarato nei README).
