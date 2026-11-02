@@ -78,3 +78,23 @@ Usa la skill `fine-fase`. L'app reale dell'utente è installata con l'installer 
 ## Hook del progetto (`.claude/hooks`)
 - `guard.ps1` blocca la scrittura su `...\CurrentVersion\Run` e `NativeMessagingHosts` e le cancellazioni sul Desktop fuori dal progetto. Se un comando legittimo viene bloccato, spiega all'utente cosa serve invece di aggirare il blocco.
 - `extension-check.ps1` controlla sintassi e test Node dopo ogni modifica in `extension/`; `stop.ps1` fa una build incrementale a fine risposta e segnala i processi di prova rimasti. Test degli hook: `.claude\hooks\test-hooks.ps1`.
+
+## Flusso e strumenti
+Dettagli e tabella strumento→compito: `docs/dev/claude-tooling.md`.
+- Funzione nuova rilevante (1.4 Automation, funzioni con agenti/AI): `/grill-me` prima di scrivere il piano.
+- Controlla `/context`: oltre ~60% proponi `/handoff` e salvalo in `C:\Users\Andrea\Documents\ClaudeVault\prompt\baton-handoff-AAAA-MM-GG.md` (se esiste già nello stesso giorno aggiungi `-2`, `-3`…, non in %TEMP%); ricordami di aprire una nuova sessione incollandolo.
+- Decisioni architetturali → `ClaudeVault\decisioni\` (un file per decisione: data, contesto, scelta, alternative scartate); lezioni → `ClaudeVault\lezioni\`.
+- Ponytail resta spento durante lo sviluppo (`/ponytail off`); si usa solo per le revisioni finali.
+- Non usare mai la modalità bypassPermissions in questo progetto.
+- GitHub (repository pubblico): mai creare, modificare o chiudere issue, PR, commenti, etichette o release senza la mia conferma esplicita ogni volta (le regole `ask` in `.claude/settings.json` lo impongono per `gh`).
+
+## Grafo del codice (Graphify, locale, solo codice)
+- Prima di esplorare file per «dove si gestisce X», «chi chiama Y» e prima di modifiche su più moduli, interroga il grafo: `graphify affected "Simbolo" --depth 1` (chi lo usa), `graphify explain "Simbolo"`, `graphify path "A" "B"`. Funziona per nome di simbolo; le domande libere (`graphify query`) sono rumorose. Nome ambiguo → usa l'id che l'errore elenca.
+- Rigenera dopo modifiche strutturali: `graphify update .` (incrementale); da zero `graphify extract . --code-only --force`. `graphify-out/` è git-ignored; esclusioni in `.graphifyignore`.
+- Mai Graphify Cloud, mai senza `--code-only` (le variabili `GRAPHIFY_*` sono in `.claude/settings.json`).
+
+## Agent skills
+### Issue tracker
+GitHub Issues di `AndreaAzzarello/baton` (`gh`); ogni scrittura solo dopo conferma. Vedi `docs/agents/issue-tracker.md`.
+### Domain docs
+Single-context; le decisioni (ADR) stanno nel vault, non in `docs/adr/`. Vedi `docs/agents/domain.md`.

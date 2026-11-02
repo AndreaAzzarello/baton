@@ -1,4 +1,9 @@
 {
+  "env": {
+    "GRAPHIFY_BACKEND": "none",
+    "GRAPHIFY_QUERY_LOG_DISABLE": "1",
+    "GRAPHIFY_NO_CTA": "1"
+  },
   "permissions": {
     "allow": [
       "PowerShell(Get-Process*)",
@@ -30,7 +35,24 @@
       "Bash(git push*)",
       "Bash(*git push*)",
       "PowerShell(git push*)",
-      "PowerShell(*git push*)"
+      "PowerShell(*git push*)",
+      "Bash(gh issue create*)", "Bash(gh issue edit*)", "Bash(gh issue comment*)", "Bash(gh issue close*)", "Bash(gh issue reopen*)", "Bash(gh issue delete*)", "Bash(gh issue lock*)", "Bash(gh issue transfer*)",
+      "Bash(gh pr create*)", "Bash(gh pr edit*)", "Bash(gh pr comment*)", "Bash(gh pr close*)", "Bash(gh pr merge*)", "Bash(gh pr review*)", "Bash(gh pr ready*)",
+      "Bash(gh label*)", "Bash(gh release*)", "Bash(gh api*)",
+      "PowerShell(gh issue create*)", "PowerShell(gh issue edit*)", "PowerShell(gh issue comment*)", "PowerShell(gh issue close*)", "PowerShell(gh issue reopen*)", "PowerShell(gh issue delete*)", "PowerShell(gh issue lock*)", "PowerShell(gh issue transfer*)",
+      "PowerShell(gh pr create*)", "PowerShell(gh pr edit*)", "PowerShell(gh pr comment*)", "PowerShell(gh pr close*)", "PowerShell(gh pr merge*)", "PowerShell(gh pr review*)", "PowerShell(gh pr ready*)",
+      "PowerShell(gh label*)", "PowerShell(gh release*)", "PowerShell(gh api*)"
+    ],
+    "deny": [
+      "Skill(mattpocock-skills:code-review)",
+      "Skill(mattpocock-skills:pr)",
+      "Skill(mattpocock-skills:wizard)",
+      "Skill(mattpocock-skills:prototype)",
+      "Skill(mattpocock-skills:research)",
+      "Skill(mattpocock-skills:codebase-design)",
+      "Skill(mattpocock-skills:domain-modeling)",
+      "Skill(mattpocock-skills:grilling)",
+      "Skill(mattpocock-skills:writing-for-agents)"
     ]
   },
   "hooks": {

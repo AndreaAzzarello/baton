@@ -1,0 +1,12 @@
+# Graph of the solution: src/, tests/, extension/, tools/ only.
+bin/
+obj/
+publish/
+dist/
+node_modules/
+.claude/
+docs/
+installer/
+scoop-baton/
+dm-trials/
+tools/trials/out/

@@ -488,6 +488,9 @@ dist/
 .claude/state/
 .claude/settings.local.json
 
+# Graphify: local code graph and caches
+graphify-out/
+
 # Never published: user data, keys and trial artifacts
 *.db
 *.db-shm
