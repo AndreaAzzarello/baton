@@ -82,8 +82,9 @@ Usa la skill `fine-fase`. L'app reale dell'utente è installata con l'installer 
 ## Flusso e strumenti
 Dettagli e tabella strumento→compito: `docs/dev/claude-tooling.md`.
 - Funzione nuova rilevante (1.4 Automation, funzioni con agenti/AI): `/grill-me` prima di scrivere il piano.
-- Controlla `/context`: oltre ~60% proponi `/handoff` e salvalo in `C:\Users\Andrea\Documents\ClaudeVault\prompt\baton-handoff-AAAA-MM-GG.md` (se esiste già nello stesso giorno aggiungi `-2`, `-3`…, non in %TEMP%); ricordami di aprire una nuova sessione incollandolo.
+- Controlla `/context`: oltre ~60% proponi `/handoff` e salvalo in `%USERPROFILE%\Documents\ClaudeVault\prompt\baton-handoff-AAAA-MM-GG.md` (se esiste già nello stesso giorno aggiungi `-2`, `-3`…, non in %TEMP%); ricordami di aprire una nuova sessione incollandolo.
 - Decisioni architetturali → `ClaudeVault\decisioni\` (un file per decisione: data, contesto, scelta, alternative scartate); lezioni → `ClaudeVault\lezioni\`.
+- Il vault ClaudeVault è locale dell'autore: se `%USERPROFILE%\Documents\ClaudeVault` non esiste (clone nuovo), salta handoff, decisioni e lezioni senza crearlo.
 - Ponytail resta spento durante lo sviluppo (`/ponytail off`); si usa solo per le revisioni finali.
 - Non usare mai la modalità bypassPermissions in questo progetto.
 - GitHub (repository pubblico): mai creare, modificare o chiudere issue, PR, commenti, etichette o release senza la mia conferma esplicita ogni volta (le regole `ask` in `.claude/settings.json` lo impongono per `gh`).

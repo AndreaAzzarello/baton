@@ -10,14 +10,14 @@
 | Hard bug | `diagnosing-bugs` |
 | Test-first | `tdd` |
 | Close a phase | project skill `fine-fase` |
-| Context above ~60% | `/handoff` (saved in the ClaudeVault, see CLAUDE.md) |
+| Context above ~60% | `/handoff` (saved in the local vault if present, see CLAUDE.md) |
 
 Pocock's `code-review`, `pr`, `wizard`, `prototype`, `research`, `codebase-design`, `domain-modeling`, `grilling` and
 `writing-for-agents` are denied for this project (`permissions.deny` in `.claude/settings.json`; plugin skills cannot be
 switched off with `skillOverrides`). A deny blocks the call but the description may stay in context.
 
 ## Memory
-ClaudeVault (`lezioni/`, `decisioni/`, `prompt/`) plus the CLAUDE.md files. No claude-mem (it would duplicate the vault).
+The maintainer's local notes vault (`%USERPROFILE%\Documents\ClaudeVault`: `lezioni/`, `decisioni/`, `prompt/`; not part of the repository, skipped when absent) plus the CLAUDE.md files. No claude-mem (it would duplicate the vault).
 
 ## Graphify (local, code only)
 - Installed with `uv tool install graphifyy` (official uv: `winget install astral-sh.uv`). Never Graphify Cloud.
