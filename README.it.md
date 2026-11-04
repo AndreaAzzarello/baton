@@ -40,12 +40,15 @@ Versione **1.3.6** — novità in [CHANGELOG.md](CHANGELOG.md).
 
 - **Download segmentati** con più connessioni, segmentazione dinamica, pausa e ripresa anche dopo il riavvio.
 - **Code con nome** e pianificazione (giorni, orari, quota oraria, timer di riattivazione), azioni di fine coda.
-- **Categorie** per tipo di file con cartelle proprie; temi chiaro, scuro e di sistema; area di notifica.
+- **Categorie** per tipo di file, con una sola cartella o una sottocartella per tipo, a scelta tua; temi chiaro, scuro e di sistema; area di notifica.
 - **HTTP/HTTPS, FTP/FTPS**, proxy (sistema, HTTP, SOCKS5, PAC) e autenticazione (Basic, Digest, NTLM, Negotiate) con
   credenziali cifrate da Windows (DPAPI).
 - **Video HLS e DASH** con scelta della qualità, lingua audio e sottotitoli; unione in MP4 con ffmpeg se lo installi tu.
 - **Grabber** di siti: file filtrati o copia offline senza script, sincronizzabile e pianificabile, rispettando robots.txt.
 - **Dopo il download**: verifica dell'hash e scansione antivirus facoltative.
+- **Duplicati**: avvisa prima di scaricare di nuovo lo stesso file, anche se è stato rimosso dall'elenco.
+- **Appunti** (facoltativo): propone di scaricare il link che copi.
+- **Riga di comando** `batonctl` per aggiungere e comandare i download da script.
 - **Integrazione con il browser**: intercettazione dei download, menu contestuale, moduli (POST), "Scarica tutto",
   pulsante per i video.
 - **Aggiornamenti firmati** (ECDSA P-256) con ritorno automatico alla versione precedente; esportazione e importazione.
@@ -98,7 +101,7 @@ diventa una copia normale che usa `%LOCALAPPDATA%\Baton`.
 
 **Scoop**: usa lo zip portable; la cartella `Data` è conservata da Scoop tra le versioni (`persist\baton\Data`).
 
-Finché [SignPath Foundation](https://signpath.org/) non approva il progetto per la firma gratuita del codice, i file sono
+Finché le release non saranno firmate con un certificato di firma del codice, i file sono
 firmati solo con la chiave della release: SmartScreen può chiedere conferma (**Ulteriori informazioni › Esegui comunque**)
 dopo che hai verificato la firma (sezione seguente). Vedi la [policy di firma del codice](docs/SIGNING.md).
 
@@ -161,7 +164,7 @@ file nella stessa cartella, da una copia del repository:
 
 ```powershell
 .\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.6.exe"
-# OK: Baton-Setup-1.3.6.exe 1.3.6, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
+# OK: Baton-Setup-1.4.0.exe 1.4.0, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
 
 Lo script controlla anche la firma Authenticode quando c'è (se presente deve essere valida; `-RequireAuthenticode` la
@@ -237,6 +240,19 @@ Compressi, Documenti, Musica, Video, Programmi e Generale, ognuna con estensioni
   `Download\Baton`) e ora lo vedi nelle Impostazioni.
 - Se nel dialogo di aggiunta cambi cartella a mano, quella cartella vale anche se la categoria cambia.
 - Eliminando una categoria i suoi download passano a Generale; i file non vengono spostati.
+
+### Dove vengono salvati i file («Salva in»)
+
+Due modi, scelti nel wizard del primo avvio (e con un avviso una tantum da chi aggiorna dalla 1.3):
+
+- **Tutto in una cartella** (predefinito): ogni file va nella cartella predefinita, qualunque sia il tipo.
+- **Una sottocartella per tipo**: `Video`, `Musica`… dentro la cartella predefinita.
+
+**Impostazioni › Salva in** mostra l'anteprima del percorso di ogni tipo, permette di dare a un tipo una cartella tutta sua,
+di **ricordare l'ultima cartella usata** per quel tipo e di **riportare tutte alla cartella principale**. Il dialogo di
+aggiunta offre «Cartella principale / Sottocartella del tipo» solo per quel download. **Cambia categoria** e **Proprietà**
+spostano anche il file (dopo una conferma; se nella nuova cartella c'è già un file con quel nome il nuovo ha un nome
+numerato: niente viene mai sovrascritto).
 
 ## FTP e FTPS
 
@@ -387,6 +403,61 @@ Baton…** (l'estensione passa indirizzo, titolo e cookie del sito; mai dalle fi
 - I controlli girano uno alla volta in background, senza bloccare l'interfaccia, e riprendono se l'app viene chiusa a metà.
   Esito nella colonna *Stato* ("Completato · verifica…", "Completato · attenzione"), nel suggerimento della riga e nella
   notifica, che per un file segnalato non offre **Apri**.
+
+## Duplicati
+
+Baton ti avvisa prima di scaricare di nuovo lo stesso file. Un download è un **possibile duplicato** quando:
+
+1. lo **stesso indirizzo** (senza frammento) è già nell'elenco o è stato scaricato in passato;
+2. nella cartella di destinazione c'è **già un file con lo stesso nome**;
+3. dopo la risposta del server, ha **la stessa dimensione e lo stesso ETag** (o Last-Modified) di un download già completato,
+   anche se l'indirizzo è un altro. La sola dimensione non basta. Questo controllo avviene prima di scaricare un solo byte.
+
+Le scelte: **Aggiungi comunque** (nome numerato), **Sovrascrivi** (il vecchio file va nel **Cestino**, dopo una conferma: non
+viene mai cancellato), **Apri il file esistente**, **Salta**; «Ricorda la scelta» la salva in **Impostazioni › Generale ›
+Duplicati** («Se il download è un duplicato»). Quando il duplicato emerge dalla risposta del server compare una **notifica con
+i pulsanti** «Scarica comunque», «Apri il file esistente» e «Rimuovi»: funzionano anche con **Baton chiuso**, che parte
+nell'area di notifica e poi esegue l'azione, se il pulsante è valido (firmato, scade dopo 7 giorni) e il download è ancora
+nell'elenco. Se le notifiche non sono disponibili si apre il dialogo.
+
+- **Storico**: per riconoscere anche i download rimossi, Baton ricorda nome, percorso, dimensione, ETag e data, ma **non
+  l'indirizzo**: ne conserva solo un'impronta (HMAC con una chiave casuale propria di questa installazione, cifrata da
+  Windows). Si può spegnere («Ricorda i download rimossi per riconoscere i duplicati»), cancellare («Cancella storico») o
+  dimenticare con «Svuota completati». Sono ricordati al massimo 5000 download o 1 anno, e solo se il file c'è ancora.
+- **Ingressi automatici** (riga di comando; in seguito API e MCP): non possono chiedere. «Chiedi ogni volta» e «Sovrascrivi»
+  **saltano** il duplicato e lo segnalano (codice di uscita 4); «Aggiungi comunque» aggiunge con un nome numerato. **Mai
+  sovrascrivono.**
+
+## Appunti
+
+Spento di default: **Impostazioni › Generale › Integrazione › «Proponi di scaricare i link che copio»**. Quando copi un
+**link singolo** http, https o ftp a un tipo di file noto (le estensioni delle categorie; al massimo 2048 caratteri) compare
+una notifica con **Scarica** (apre il dialogo di aggiunta già compilato, dove confermi la cartella), **Ignora** e **Non per
+questo sito**. Lo stesso link non viene riproposto per 10 minuti; «Proponi di nuovo i link di tutti i siti» azzera i siti
+esclusi.
+
+Ignora le copie fatte da Baton e i contenuti segnati come riservati (per esempio le password dei gestori di password, escluse
+dalla cronologia e dal cloud degli appunti di Windows). **Il testo copiato non viene mai salvato né scritto nei registri**: la
+notifica porta solo un riferimento casuale che vive in memoria, quindi dopo la chiusura di Baton l'offerta è semplicemente
+sparita. Senza notifiche di Windows (copia portable) compare un fumetto dell'area di notifica.
+
+## Riga di comando (`batonctl`)
+
+`batonctl.exe` sta accanto a `Baton.exe`: l'installer propone di aggiungerlo al `PATH` (e lo toglie alla disinstallazione),
+lo zip portable e Scoop lo includono, e gli aggiornamenti dell'app lo tengono alla stessa versione. Parla con Baton solo
+attraverso la pipe locale del tuo utente; se Baton è chiuso lo avvia nell'area di notifica.
+
+```powershell
+batonctl add https://example.com/file.zip --category Software
+Get-Content link.txt | batonctl add - --folder D:\Download\Corso --no-start
+batonctl list --status downloading --json
+batonctl pause all
+```
+
+Comandi: `add`, `list`, `status`, `pause`, `resume`, `retry`, `queues start|stop`, `open`, `remove` (solo dall'elenco: i file
+restano), `version`; `--json` per un output stabile. Codici di uscita: 0 fatto, 1 errore, 2 argomenti non validi, 3 Baton
+non raggiungibile, 4 duplicato saltato. Non cancella mai file e non cambia impostazioni, credenziali, proxy né cartelle
+delle categorie. Guida completa: [docs/CLI.md](docs/CLI.md).
 
 ## Interfaccia
 
@@ -753,10 +824,14 @@ Firefox) non resta attivo: si sveglia solo per gli eventi del browser, non fa po
 
 ### Protocollo
 
-App ed estensione si parlano con un protocollo versionato: l'app attuale parla il **protocollo 3**. Ogni messaggio porta il
+App ed estensione si parlano con un protocollo versionato: l'app attuale parla il **protocollo 4**. Ogni messaggio porta il
 campo `version`; `hello` risponde con `protocol` e `appVersion` senza avviare l'app, e la pagina **Verifica connessione** lo
 usa per dire se app ed estensione vanno d'accordo.
 
+- **Protocollo 4**: l'origine dei messaggi (`origin`: browser, cli, mcp, api) e ciò che ognuna può fare; i comandi della riga di
+  comando (`list`, `status`, `pause`, `resume`, `retry`, `remove` dall'elenco, `open`, `queueStart`/`queueStop`, `version`) e i pulsanti
+  delle notifiche (`link`). L'host nativo marca come `browser` tutto ciò che arriva dall'estensione, che quindi non può usarli.
+  I tipi e il client della pipe stanno nel piccolo progetto `Baton.Protocol`, condiviso da app e `batonctl`.
 - **Protocollo 3**: `grab` (indirizzo, titolo, user-agent e cookie della pagina, per "Cattura questo sito") e, in
   `probeMedia` / `addMedia`, lingue audio e sottotitoli (`audioTracks`/`subtitles`, `audioId`/`subtitleIds`/`subtitleMode`).
 - **Protocollo 2**: `hello`, `probeMedia`, `addMedia`, `batch` e `add` con `method`/`body`/`bodyType` (moduli POST).
@@ -783,6 +858,7 @@ node --test "tests/extension/*.test.mjs"      # solo i test dell'estensione
 node tools/build-extension.mjs                # estensione per Chromium e Firefox in dist\
 & $dn run --project src\Baton.App   # avvio in debug
 & $dn publish src\Baton.App -c Release -r win-x64 -o publish   # exe self-contained
+& $dn publish src\Baton.Cli -c Release -r win-x64 --self-contained -o publish   # batonctl.exe (single-file, trimmed, ~14 MB)
 .\tools\sign-firefox.ps1 -Check                                          # firma dell'estensione per Firefox (vedi sopra)
 .\tools\sign-release.ps1                                                 # firma publish\Baton.exe (vedi Aggiornamenti)
 .\tools\build-packages.ps1                                               # installer e zip portable da publish\ (Inno Setup 6)
@@ -879,10 +955,10 @@ Restano aperte finché un test non le conferma o le esclude; le segnalazioni son
 
 ## Roadmap
 
-- **Ora (1.3.x)**: l'estensione aggiornata insieme all'app; winget e firma del codice (SignPath Foundation).
-- **Poi, 1.4 "Automation"**: riga di comando (`baton add …`), API locale, server MCP per gli agenti AI, regole automatiche, monitor degli appunti.
+- **Ora (1.4.0 uscita)**: riga di comando `batonctl`, duplicati, monitor degli appunti, cartelle «alla IDM». In corso: winget e firma del codice (SignPath Foundation).
+- **Poi, 1.4.1 e 1.4.2 "Automation"**: API locale e regole automatiche; server MCP per gli agenti AI.
 - **Quindi, 1.5 "AI, opzionale e rispettosa della privacy"**: comandi in linguaggio naturale e filtri del grabber assistiti, spenta all'inizio, con la tua chiave API.
-- **Da valutare**: Metalink, estrazione degli archivi, duplicati, store dei browser, altre lingue, una 2.x multipiattaforma.
+- **Da valutare**: Metalink, estrazione degli archivi, store dei browser, altre lingue, una 2.x multipiattaforma.
 
 Dettagli in [ROADMAP.md](ROADMAP.md) (con un riassunto in italiano); idee e voti nelle [Discussions](https://github.com/AndreaAzzarello/baton/discussions/categories/ideas).
 

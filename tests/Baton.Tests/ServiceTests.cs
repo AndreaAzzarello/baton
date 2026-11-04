@@ -69,6 +69,7 @@ public sealed class ServiceTests : IAsyncLifetime
         var files = Enumerable.Range(0, 4).Select(i => new ServedFile
         {
             Content = TestFileServer.RandomBytes(400 * 1024, 10 + i),
+            ETag = $"\"queue-{i}\"", // same size, different files: a real server tells them apart by their ETag
             Throttle = _ => 400 * 1024,
         }).ToList();
         var urls = files.Select((f, i) => _server.Add($"q{i}.bin", f)).ToList();

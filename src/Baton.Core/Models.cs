@@ -100,30 +100,6 @@ public sealed class DownloadRecord
     }
 }
 
-/// <summary>A cookie as the browser reported it for the download URL.</summary>
-public sealed record BrowserCookie(string Name, string Value, string Domain, string Path, bool Secure, bool HostOnly);
-
-/// <summary>
-/// What the browser would have sent with the request (some servers refuse a download without it), and the login
-/// given in the address itself (ftp://user:password@host/...). Stored encrypted and cleared when the download completes.
-/// </summary>
-public sealed record RequestContext(string? Referrer, string? UserAgent, IReadOnlyList<BrowserCookie> Cookies,
-    string? Username = null, string? Password = null)
-{
-    /// <summary>"POST" for a download started by submitting a form; null for GET.</summary>
-    public string? Method { get; init; }
-
-    /// <summary>The form fields, URL-encoded (name=value&amp;...), sent again with each request.</summary>
-    public string? Body { get; init; }
-
-    /// <summary>How the form encoded its fields: application/x-www-form-urlencoded or multipart/form-data.</summary>
-    public string? BodyType { get; init; }
-
-    public bool IsPost => Method == "POST";
-
-    public bool IsEmpty => Referrer is null && UserAgent is null && Cookies.Count == 0 && Username is null && Method is null;
-}
-
 /// <summary>What a video stream download needs besides its manifest address.</summary>
 public sealed class MediaSource
 {
@@ -209,6 +185,24 @@ public sealed class AppSettings
     /// <summary>Categories with a relative folder ("Video") get a subfolder of the download folder; off, everything lands in it.</summary>
     public bool CategorySubfolders { get; set; } = true;
 
+    /// <summary>The user has chosen between one folder and a subfolder per type (first-run wizard, or the notice shown once after the 1.4 upgrade).</summary>
+    public bool CategoryModeAsked { get; set; }
+
+    /// <summary>What to do when a download looks like one already there; Ask shows the dialog (and makes command line, API and MCP skip it).</summary>
+    public Duplicates.DuplicateAction DuplicateAction { get; set; } = Duplicates.DuplicateAction.Ask;
+
+    /// <summary>
+    /// Offer to download a copied link to a known kind of file (a notification, never a dialog by itself). Off by default;
+    /// the copied text is judged and forgotten, never stored or logged.
+    /// </summary>
+    public bool MonitorClipboard { get; set; }
+
+    /// <summary>Sites whose copied links are no longer offered ("Not for this site" on the notification), separated by spaces.</summary>
+    public string ClipboardIgnoredHosts { get; set; } = "";
+
+    /// <summary>Removed downloads are remembered (a keyed hash of the address, name, size) to recognise them again.</summary>
+    public bool RememberRemovedForDuplicates { get; set; } = true;
+
     /// <summary>Completed downloads older than this many days leave the list by themselves (files stay); 0 = never.</summary>
     public int ClearCompletedAfterDays { get; set; }
 
@@ -249,7 +243,7 @@ public sealed class AppSettings
     public int MaxConnectionsPerServer { get; set; } = 16;
     public string UserAgent { get; set; } = DefaultUserAgent;
 
-    public const string DefaultUserAgent = "Baton/1.3";
+    public const string DefaultUserAgent = "Baton/1.4";
 
     /// <summary>
     /// The default of an earlier version ("Baton/1.2", or "DownloadManager/1.0" from before the rename), saved as is: it

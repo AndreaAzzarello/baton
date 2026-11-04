@@ -123,6 +123,7 @@ $scoop = [ordered]@{
     notes = @('Data (downloads list, settings) is kept in $persist_dir\Data.',
               'The browser extension is included: allow the browser registration when Baton asks, then load the "extension" subfolder of "scoop prefix baton" (Load unpacked; that path follows updates) or baton-firefox.xpi next to it; see the README.')
     architecture = [ordered]@{ '64bit' = [ordered]@{ url = "$BaseUrl/Baton-$version-portable.zip"; hash = $zipSha } }
+    bin = 'batonctl.exe'
     shortcuts = @(, @('Baton.exe', 'Baton'))
     persist = 'Data'
     checkver = [ordered]@{ github = 'https://github.com/AndreaAzzarello/baton' }

@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Net;
+using Baton.Core.Duplicates;
 using Baton.Core.Integration;
 using Baton.Core.Media;
 using Baton.Core.Net;
@@ -46,6 +47,8 @@ public sealed class DownloadService : IAsyncDisposable
     private readonly Dictionary<long, HourlyQuota> _quotas = [];
     private readonly HourlyQuota _globalQuota = new();
     private readonly HashSet<long> _runStarted = []; // queues that started at least one download in the current run
+    private readonly HashSet<long> _skipProbeCheck = []; // downloads added "anyway": the server's answer is not compared again (memory only)
+    private DateTime _lastHistoryPrune = DateTime.MinValue;
     private readonly CancellationTokenSource _tickerCts = new();
     private readonly CancellationTokenSource _lifetime = new(); // stops the checks after a download when the app closes
     private readonly SemaphoreSlim _checkGate = new(1, 1); // one hash or scan at a time: they read whole files
@@ -158,6 +161,12 @@ public sealed class DownloadService : IAsyncDisposable
     /// the snapshot carries their outcome.
     /// </summary>
     public event Action<DownloadSnapshot>? DownloadCompleted;
+
+    /// <summary>
+    /// The server's answer showed a file already downloaded (same size and ETag); the download waits, paused, and nothing
+    /// was written. Not raised when the remembered choice is to add it anyway or to skip it.
+    /// </summary>
+    public event Action<DuplicateNotice>? DuplicateFound;
 
     /// <summary>The checks of a finished download changed (also when run again from Properties).</summary>
     public event Action<DownloadSnapshot>? CheckCompleted;
@@ -290,8 +299,9 @@ public sealed class DownloadService : IAsyncDisposable
     /// Without a queue it joins the main queue.
     /// </summary>
     /// <param name="expectedHash">A hash to verify once the file is downloaded (see <see cref="FileHash.TryParse"/>).</param>
+    /// <param name="skipDuplicateCheck">Added "anyway" (or by a source that has its own check, like the grabber): the server's answer is not compared with finished downloads.</param>
     public long Add(string url, string? directory = null, string? fileName = null, bool startNow = true, RequestContext? context = null,
-        long? categoryId = null, long? queueId = null, string? expectedHash = null)
+        long? categoryId = null, long? queueId = null, string? expectedHash = null, bool skipDuplicateCheck = false, bool paused = false)
     {
         PostCheck? check = null;
         if (!string.IsNullOrWhiteSpace(expectedHash))
@@ -316,7 +326,7 @@ public sealed class DownloadService : IAsyncDisposable
                 Url = uri.AbsoluteUri,
                 Directory = string.IsNullOrWhiteSpace(directory) ? category.ResolveFolder(_settings) : directory,
                 FileName = name,
-                Status = startNow ? DownloadStatus.Paused : DownloadStatus.Queued,
+                Status = startNow || paused ? DownloadStatus.Paused : DownloadStatus.Queued,
                 SortOrder = NextSortOrder(),
                 AddedUtc = _clock.UtcNow,
                 Context = context is { IsEmpty: false } ? context : null,
@@ -327,6 +337,8 @@ public sealed class DownloadService : IAsyncDisposable
             };
             _store.Insert(record);
             _items.Add(record);
+            if (skipDuplicateCheck)
+                _skipProbeCheck.Add(record.Id);
             if (startNow)
                 StartLocked(record, fromQueue: false);
             else
@@ -334,6 +346,79 @@ public sealed class DownloadService : IAsyncDisposable
             return record.Id;
         }
     }
+
+    /// <summary>
+    /// Rules 1 and 2 for an address about to be added (see <see cref="DuplicateDetector"/>), with the folder it would get
+    /// (the category's, unless <paramref name="directory"/> is given). The file name is the given one, or the one the address
+    /// ends with when it has an extension; otherwise rule 2 waits for the server's answer.
+    /// </summary>
+    public DuplicateMatch? FindDuplicate(string url, string? directory = null, string? fileName = null, long? categoryId = null)
+    {
+        if (!Urls.TryParseDownload(url, out var parsed))
+            return null;
+        var (uri, _, _) = Urls.SplitLogin(parsed);
+        var name = string.IsNullOrWhiteSpace(fileName) ? null : FileNames.Sanitize(fileName);
+        if (name is null && FileNames.FromUrl(uri) is { } guessed && Path.HasExtension(guessed))
+            name = guessed;
+        lock (_lock)
+        {
+            var category = _categories.FirstOrDefault(c => c.Id == categoryId) ?? Core.Categories.MatchUrl(_categories, uri.AbsoluteUri, name);
+            var folder = string.IsNullOrWhiteSpace(directory) ? category.ResolveFolder(_settings) : directory;
+            return DuplicateDetector.CheckBeforeAdd(uri.AbsoluteUri, folder, name, _items, _store);
+        }
+    }
+
+    /// <summary>
+    /// The outcome of an add by an entry that cannot ask (command line, API, MCP): the new download's id, or the duplicate
+    /// that made it skip the download (then <see cref="Id"/> is null).
+    /// </summary>
+    public sealed record AutomaticAdd(long? Id, DuplicateMatch? Duplicate);
+
+    /// <summary>
+    /// <see cref="Add"/> for the entries that cannot show a dialog. A duplicate is <b>skipped and reported</b> (the caller
+    /// answers "duplicate", with the existing download or file), unless <paramref name="allowDuplicate"/> asks to add it anyway
+    /// or the remembered choice is to add it numbered. Never overwrites: "Overwrite" and "Ask" both skip.
+    /// </summary>
+    public AutomaticAdd AddAutomatic(string url, string? directory = null, string? fileName = null, bool startNow = true,
+        RequestContext? context = null, long? categoryId = null, long? queueId = null, string? expectedHash = null, bool allowDuplicate = false, bool paused = false)
+    {
+        var duplicate = FindDuplicate(url, directory, fileName, categoryId);
+        var action = Settings.DuplicateAction;
+        var addAnyway = duplicate is null || allowDuplicate || action == DuplicateAction.AddNumbered;
+        if (!addAnyway)
+        {
+            Log.Info("duplicate", $"skipped {duplicate!.Reason}: {Log.Url(url)}");
+            return new AutomaticAdd(null, duplicate);
+        }
+        if (duplicate is not null)
+            Log.Info("duplicate", $"added anyway ({(allowDuplicate ? "requested" : "remembered choice")}) {duplicate.Reason}: {Log.Url(url)}");
+        return new AutomaticAdd(Add(url, directory, fileName, startNow, context, categoryId, queueId, expectedHash, skipDuplicateCheck: duplicate is not null, paused: paused), duplicate);
+    }
+
+    /// <summary>"Download anyway" for a download that stopped on a duplicate: it starts again without comparing the answer.</summary>
+    public void ContinueDespiteDuplicate(long id)
+    {
+        lock (_lock)
+            _skipProbeCheck.Add(id);
+        Start(id);
+    }
+
+    /// <summary>
+    /// "Overwrite": the file already there (and its entry in the list, if it is a finished download) goes to the Recycle Bin,
+    /// never deleted. False when it could not (no Recycle Bin for that drive, file in use): the caller must not go on.
+    /// </summary>
+    public async Task<bool> RecycleExistingAsync(DuplicateMatch match)
+    {
+        bool listed;
+        lock (_lock)
+            listed = match.ExistingId is { } id && Find(id) is { Status: DownloadStatus.Completed };
+        if (listed)
+            return await RemoveAsync(match.ExistingId!.Value, deleteFile: true);
+        return !File.Exists(match.ExistingPath) || await Task.Run(() => RecycleBin.Recycle(match.ExistingPath));
+    }
+
+    /// <summary>"Clear history" of the duplicate detector: every remembered entry goes and the key is replaced.</summary>
+    public void ClearDuplicateHistory() => _store.ClearHistory();
 
     /// <summary>
     /// What a video or audio address offers: its qualities with an estimated size, or why it cannot be downloaded
@@ -617,6 +702,10 @@ public sealed class DownloadService : IAsyncDisposable
             if (Find(id) is not { } record)
                 return true;
             _items.Remove(record);
+            _skipProbeCheck.Remove(id);
+            // A file that goes to the Recycle Bin is gone: only one that stays is worth remembering.
+            if (!deleteFile)
+                RememberLocked([record]);
             _store.Delete(id);
             TryDelete(record.PartPath);
             if (record.Media is not null && record.Status != DownloadStatus.Completed)
@@ -645,14 +734,16 @@ public sealed class DownloadService : IAsyncDisposable
     /// counted: a download that completes while it is open stays).
     /// </summary>
     public async Task<(int Removed, IReadOnlyList<string> FilesKept)> ClearCompletedAsync(long? categoryId = null, long? queueId = null, bool recycleFiles = false,
-        IReadOnlyCollection<long>? only = null)
+        IReadOnlyCollection<long>? only = null, bool forgetHistory = false)
     {
         var recycle = new List<string>();
         List<long> ids;
         lock (_lock)
         {
             var records = ClearableLocked(categoryId, queueId).Where(r => only is null || only.Contains(r.Id)).ToList();
-            RemoveCompletedLocked(records);
+            RemoveCompletedLocked(records, remember: !recycleFiles && !forgetHistory);
+            if (forgetHistory)
+                _store.ForgetHistory(records.Select(r => DuplicateDetector.NormalizeUrl(r.Url)).OfType<string>());
             foreach (var record in records)
             {
                 if (recycleFiles && record.FinalPath is { } path && File.Exists(path))
@@ -681,13 +772,32 @@ public sealed class DownloadService : IAsyncDisposable
     private bool IsClearable(DownloadRecord record) =>
         record.Status == DownloadStatus.Completed && !_active.ContainsKey(record.Id) && record.Check is not { Pending: true };
 
-    private void RemoveCompletedLocked(IReadOnlyList<DownloadRecord> records)
+    private void RemoveCompletedLocked(IReadOnlyList<DownloadRecord> records, bool remember = true)
     {
         if (records.Count == 0)
             return;
         var ids = records.Select(r => r.Id).ToHashSet();
+        if (remember)
+            RememberLocked(records);
         _items.RemoveAll(r => ids.Contains(r.Id));
         _store.Delete(ids);
+    }
+
+    /// <summary>
+    /// Keeps what is needed to recognise finished downloads that leave the list (address as a keyed hash, name, place, size and
+    /// ETag), unless the setting is off. Whether the file is still there is checked when the history is read.
+    /// </summary>
+    private void RememberLocked(IEnumerable<DownloadRecord> records)
+    {
+        if (!_settings.RememberRemovedForDuplicates)
+            return;
+        var now = _clock.UtcNow;
+        foreach (var record in records)
+        {
+            if (record.Status == DownloadStatus.Completed && record.FinalPath is { } path && record.TotalSize is > 0 and var size
+                && DuplicateDetector.NormalizeUrl(record.Url) is { } url)
+                _store.AddHistory(url, record.FileName!, path, size, record.ETag, record.LastModified, now);
+        }
     }
 
     private DateTime _lastAutoClear = DateTime.MinValue;
@@ -902,6 +1012,68 @@ public sealed class DownloadService : IAsyncDisposable
         CategoriesChanged?.Invoke();
     }
 
+    /// <summary>The add dialog's folder choice, kept for the next proposal when the category asks to remember it.</summary>
+    public void RememberCategoryFolder(long categoryId, string folder)
+    {
+        Category? saved = null;
+        lock (_lock)
+        {
+            if (_categories.FirstOrDefault(c => c.Id == categoryId) is not { RememberLast: true } category
+                || !Path.IsPathFullyQualified(folder) || category.LastFolder == folder)
+                return;
+            category.LastFolder = folder;
+            _store.SaveCategory(category);
+            saved = category;
+        }
+        if (saved is not null)
+            CategoriesChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// Where the finished file of a download would go if it moved to <paramref name="categoryId"/> (that category's folder,
+    /// same file name), or null when there is nothing to move: not finished, no file on disk, or already in that folder.
+    /// </summary>
+    public (string From, string To)? PlanCategoryMove(long id, long categoryId)
+    {
+        lock (_lock)
+        {
+            if (Find(id) is not { Status: DownloadStatus.Completed, FinalPath: { } from } || _active.ContainsKey(id)
+                || _categories.FirstOrDefault(c => c.Id == categoryId) is not { } category || !File.Exists(from))
+                return null;
+            var folder = category.ResolveFolder(_settings);
+            return Core.Categories.SameFolder(folder, Path.GetDirectoryName(from)!) ? null : (from, Path.Combine(folder, Path.GetFileName(from)));
+        }
+    }
+
+    /// <summary>Moves the finished file of a download to the folder of its (new) category, after the caller has asked the user.</summary>
+    public string? MoveToCategoryFolder(long id, long categoryId)
+    {
+        if (PlanCategoryMove(id, categoryId) is not { } plan)
+            return null;
+        // Outside the lock: across drives a move is a copy.
+        var target = plan.To;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            target = FileNames.MakeUnique(target);
+            File.Move(plan.From, target);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return StorageErrors.Describe(ex);
+        }
+        lock (_lock)
+        {
+            if (Find(id) is { } record)
+            {
+                record.Directory = Path.GetDirectoryName(target)!;
+                record.FileName = Path.GetFileName(target);
+                _store.Update(record);
+            }
+        }
+        return null;
+    }
+
     /// <summary>Files a download under another category; the file itself stays where it is.</summary>
     public void SetCategory(long id, long categoryId)
     {
@@ -1090,6 +1262,21 @@ public sealed class DownloadService : IAsyncDisposable
             foreach (var active in _active.Values)
                 CountBytes(active, now);
             cleared = AutoClearLocked(now);
+            if (now - _lastHistoryPrune > TimeSpan.FromDays(1))
+            {
+                _lastHistoryPrune = now;
+                _ = Task.Run(() => // file checks off the lock
+                {
+                    try
+                    {
+                        _store.PruneHistory(now);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("duplicate", "history prune", ex);
+                    }
+                });
+            }
 
             foreach (var queue in _queues.ToList())
             {
@@ -1355,6 +1542,7 @@ public sealed class DownloadService : IAsyncDisposable
         DownloadStatus final;
         string? error = null;
         LoginRequest? login = null;
+        DuplicateMatch? duplicate = null;
         try
         {
             await active.Job.RunAsync(active.Cts.Token);
@@ -1376,6 +1564,13 @@ public sealed class DownloadService : IAsyncDisposable
         {
             final = DownloadStatus.Failed;
             error = string.Format(CultureInfo.CurrentCulture, Strings.CertificateRejected, ex.Host);
+        }
+        catch (DuplicateFoundException ex)
+        {
+            // Paused, nothing written: the user decides (or the remembered choice does).
+            final = DownloadStatus.Paused;
+            error = string.Format(CultureInfo.CurrentCulture, Strings.WaitingDuplicate, Path.GetFileName(ex.Match.ExistingPath));
+            duplicate = ex.Match;
         }
         catch (Exception ex)
         {
@@ -1431,6 +1626,15 @@ public sealed class DownloadService : IAsyncDisposable
             _ = RunChecksAsync(id, announce: true);
         if (login is not null)
             LoginRequired?.Invoke(login);
+        if (duplicate is not null)
+        {
+            var job = active.Job.Record;
+            Log.Info("duplicate", $"{job.Id} {duplicate.Reason}");
+            if (Settings.DuplicateAction == DuplicateAction.Skip)
+                await RemoveAsync(job.Id, deleteFile: false); // the remembered choice: not downloaded, nothing kept
+            else
+                DuplicateFound?.Invoke(new DuplicateNotice(job.Id, job.FileName ?? FileNames.FromUrl(new Uri(job.Url)), duplicate));
+        }
         if (completed is not null)
             DownloadCompleted?.Invoke(completed);
         if (finished.Count > 0)
@@ -1642,18 +1846,25 @@ public sealed class DownloadService : IAsyncDisposable
     /// <summary>The server revealed the file name and type: confirm a guessed category before any data is written.</summary>
     private void OnProbed(DownloadRecord record, ProbeResult probe)
     {
+        DuplicateMatch? duplicate = null;
         lock (_lock)
         {
-            if (!record.AutoCategory)
-                return;
-            var guessed = _categories.FirstOrDefault(c => c.Id == record.CategoryId);
-            var category = Core.Categories.Match(_categories, record.FileName, probe.ContentType);
-            // The folder follows the category only if it was the guessed category's folder, not one the user chose.
-            if (guessed is null || Core.Categories.SameFolder(record.Directory, guessed.ResolveFolder(_settings)))
-                record.Directory = category.ResolveFolder(_settings);
-            record.CategoryId = category.Id;
-            record.AutoCategory = false;
+            if (record.AutoCategory)
+            {
+                var guessed = _categories.FirstOrDefault(c => c.Id == record.CategoryId);
+                var category = Core.Categories.Match(_categories, record.FileName, probe.ContentType);
+                // The folder follows the category only if it was the guessed category's folder, not one the user chose.
+                if (guessed is null || Core.Categories.SameFolder(record.Directory, guessed.ResolveFolder(_settings)))
+                    record.Directory = category.ResolveFolder(_settings);
+                record.CategoryId = category.Id;
+                record.AutoCategory = false;
+            }
+            // Rule 3, before any byte or .part file exists. A form (POST) download is its own probe: its answer is compared before the body is read.
+            if (!_skipProbeCheck.Contains(record.Id) && _settings.DuplicateAction != DuplicateAction.AddNumbered)
+                duplicate = DuplicateDetector.CheckProbe(probe, record.Id, _items, _store);
         }
+        if (duplicate is not null)
+            throw new DuplicateFoundException(duplicate);
     }
 
     private Task OnCheckpoint(DownloadRecord snapshot)

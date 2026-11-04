@@ -29,6 +29,7 @@ public sealed class TrayIcon : IDisposable
     private readonly int _taskbarCreated;
     private IntPtr _iconHandle;
     private string _tip = Strings.AppName;
+    private Action? _hintClick;
 
     public TrayIcon(DownloadService service, Action show, Action exit, Func<long, long?> askCustomLimit)
     {
@@ -45,8 +46,10 @@ public sealed class TrayIcon : IDisposable
     }
 
     /// <summary>A short balloon, for example the first time the window hides in the notification area.</summary>
-    public void ShowHint(string text)
+    /// <param name="onClick">Run when the user clicks the balloon (not when it times out or is dismissed).</param>
+    public void ShowHint(string text, Action? onClick = null)
     {
+        _hintClick = onClick;
         var data = NewData(NifInfo);
         data.szInfoTitle = Strings.AppName;
         data.szInfo = text.Length > 255 ? text[..255] : text;
@@ -91,10 +94,23 @@ public sealed class TrayIcon : IDisposable
             AddIcon(); // Explorer restarted: the icon must be added again
             return true;
         }
+        if (msg == WmClipboardUpdate)
+        {
+            ClipboardChanged?.Invoke();
+            return true;
+        }
         if (msg != CallbackMessage)
             return false;
         switch ((int)(lParam.ToInt64() & 0xFFFF))
         {
+            case NinBalloonUserClick:
+                var clicked = _hintClick;
+                _hintClick = null;
+                clicked?.Invoke();
+                return true;
+            case NinBalloonTimeout:
+                _hintClick = null;
+                return true;
             case NinSelect:
             case NinKeySelect:
             case WmContextMenu:
@@ -269,8 +285,24 @@ public sealed class TrayIcon : IDisposable
 
     private static readonly DependencyProperty AutomationPropertiesName = System.Windows.Automation.AutomationProperties.NameProperty;
 
+    /// <summary>The clipboard changed (only while <see cref="ListenToClipboard"/> is on). The content is not read here.</summary>
+    public event Action? ClipboardChanged;
+
+    private bool _listening;
+
+    /// <summary>Starts or stops the clipboard notifications (AddClipboardFormatListener) on this window.</summary>
+    public void ListenToClipboard(bool on)
+    {
+        if (on == _listening)
+            return;
+        _listening = on && AddClipboardFormatListener(_window.Handle);
+        if (!on)
+            RemoveClipboardFormatListener(_window.Handle);
+    }
+
     public void Dispose()
     {
+        ListenToClipboard(false);
         var data = NewData(0);
         Shell_NotifyIcon(NimDelete, ref data);
         if (_iconHandle != IntPtr.Zero)
@@ -283,6 +315,13 @@ public sealed class TrayIcon : IDisposable
     private const int NifMessage = 0x1, NifIcon = 0x2, NifTip = 0x4, NifInfo = 0x10, NifShowTip = 0x80;
     private const int NiifInfo = 0x1, NotifyIconVersion4 = 4;
     private const int NinSelect = 0x400, NinKeySelect = 0x401, WmContextMenu = 0x7B, WmLButtonDblClk = 0x203;
+    private const int NinBalloonTimeout = 0x404, NinBalloonUserClick = 0x405, WmClipboardUpdate = 0x031D;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool AddClipboardFormatListener(IntPtr hwnd);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
     private const int SmCxSmIcon = 49;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

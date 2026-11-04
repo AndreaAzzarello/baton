@@ -25,6 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Baton.Protocol\Baton.Protocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AngleSharp" Version="1.8.3" />
     <PackageReference Include="FluentFTP" Version="55.0.0" />
     <PackageReference Include="Jint" Version="4.17.0" />

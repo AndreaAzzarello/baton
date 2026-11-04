@@ -2,23 +2,23 @@
 
 Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
 
-*Until SignPath Foundation approves the project, releases carry only the release-key signature described below, and
+*Until the releases are signed with a code-signing certificate, releases carry only the release-key signature described below, and
 Windows SmartScreen may warn on first run.*
 
 ## What is signed
 
 | File | Signature | By |
 | --- | --- | --- |
-| `Baton.exe` | Authenticode | SignPath Foundation, through SignPath.io |
+| `Baton.exe`, `batonctl.exe` (the command line, from 1.4) | Authenticode | SignPath Foundation, through SignPath.io |
 | `Baton-Setup-<version>.exe` (installer) | Authenticode | SignPath Foundation, through SignPath.io |
-| `Baton.exe`, `Baton-Setup-<version>.exe`, `baton-extension-<version>.zip` | release key (ECDSA P-256), files `.sha256` and `.sig` | the author, on the author's own PC |
+| `Baton.exe`, `batonctl.exe`, `Baton-Setup-<version>.exe`, `baton-extension-<version>.zip` | release key (ECDSA P-256), files `.sha256` and `.sig` | the author, on the author's own PC |
 
 - Only binaries built from this repository, [github.com/AndreaAzzarello/baton](https://github.com/AndreaAzzarello/baton),
   are signed: Baton's own code, built by [`.github/workflows/release.yml`](../.github/workflows/release.yml) on GitHub-hosted
   runners from a version tag (`v*`) on the `main` branch. Nothing built elsewhere and no third-party program is signed.
 - The installer is made with [Inno Setup](https://jrsoftware.org/isinfo.php) (its compiler is downloaded by the workflow
   and checked against a fixed SHA-256); it contains the signed `Baton.exe` and Inno Setup's uninstaller.
-- The portable zip contains the same signed `Baton.exe`. The browser extension packages are not Windows binaries and are
+- The portable zip contains the same signed `Baton.exe` and `batonctl.exe`; the extension's package for the updater also carries the signed `batonctl.exe`, so it follows the program's updates. The browser extension packages are not Windows binaries and are
   not part of this signing (the Firefox package is signed by Mozilla's add-on service).
 - The product name in the files' metadata is always *Baton*, and the product version is the version of the tag.
 
@@ -47,13 +47,13 @@ only when the user turns on "Check for updates at startup" (off by default), to 
 1. **CI builds.** A tag `v<version>` starts the release workflow: build with zero warnings, all tests, then `Baton.exe`
    (reproducible: SDK pinned in `global.json`, LF line endings, `ContinuousIntegrationBuild`: the same commit gives the
    same `Baton.exe` byte for byte on a PC and on GitHub Actions; the installer and the zip differ between machines).
-2. **SignPath signs** `Baton.exe` with Authenticode (artifact configuration `baton-exe`); the installer and the portable
+2. **SignPath signs** `Baton.exe` and `batonctl.exe` with Authenticode (artifact configuration `baton-exe`, which must list both files); the installer and the portable
    zip are built from the signed program, then the installer is signed too (`baton-setup`). Each request waits for the
    approver. The workflow uploads everything as the artifact `baton-<version>-release`, with `SHA256SUMS.txt`.
 3. **The author downloads** that artifact.
 4. **Checks the Authenticode signatures** (`Get-AuthenticodeSignature`, status *Valid*, signer SignPath Foundation), then
    signs the **already signed** files with the release key: `tools\sign-release.ps1 -Exe <file> -Version <version>` for
-   `Baton.exe`, for the installer and for the extension's package `baton-extension-<version>.zip` (from 1.3.3 the app's
+   `Baton.exe`, `batonctl.exe`, for the installer and for the extension's package `baton-extension-<version>.zip` (from 1.3.3 the app's
    updater installs it next to `Baton.exe` only with a valid signature). The order matters: Authenticode changes the file,
    and the release key signs its final SHA-256 (the one the app's updater checks).
 5. **Publishes** the GitHub release with those files.
@@ -61,7 +61,7 @@ only when the user turns on "Check for updates at startup" (off by default), to 
 The private release key never leaves the author's PC and never reaches CI (it is encrypted with Windows DPAPI in
 `%LOCALAPPDATA%`); the public keys are built into the app (`src/Baton.Core/Updates/release-keys.txt`).
 
-Until SignPath Foundation approves the project, step 2 is skipped (no SignPath variables): the workflow produces the
+Until the releases are signed with a code-signing certificate, step 2 is skipped (no SignPath variables; the integration stays ready): the workflow produces the
 same files without Authenticode, and steps 3–5 are the same.
 
 ## Verifying a download

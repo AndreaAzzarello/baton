@@ -16,6 +16,30 @@ public enum NotificationAction
 
     /// <summary>Brings the app's window forward.</summary>
     Show,
+
+    /// <summary>A duplicate stopped by the server's answer: download it anyway (numbered name).</summary>
+    DuplicateDownload,
+
+    /// <summary>A duplicate: open the file already there, and drop the new entry.</summary>
+    DuplicateOpen,
+
+    /// <summary>A duplicate: remove the new entry from the list (files stay).</summary>
+    DuplicateRemove,
+
+    /// <summary>A copied link: open the add dialog for it. The path of the link is a short-lived reference, never the address.</summary>
+    ClipboardDownload,
+
+    /// <summary>A copied link: forget the offer.</summary>
+    ClipboardIgnore,
+
+    /// <summary>A copied link: forget the offer and stop offering links from its site.</summary>
+    ClipboardMute,
+}
+
+public static class NotificationActions
+{
+    /// <summary>The buttons that need the running app (the others open a file and work without it).</summary>
+    public static bool NeedsApp(this NotificationAction action) => action >= NotificationAction.DuplicateDownload;
 }
 
 /// <summary>

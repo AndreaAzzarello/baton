@@ -67,9 +67,7 @@ public static class AppEnvironment
     /// The browser host talks to the app of its own copy: the installed one (or a 1.2 copy) on the user's pipe; a sandboxed
     /// run, or a portable copy, on a pipe of its own data folder (so a portable copy can run next to an installed one).
     /// </summary>
-    public static string PipeName { get; } = IsSandboxed || IsPortable
-        ? AppChannel.DefaultPipeName + "." + Hash(BatonDirectory)
-        : AppChannel.DefaultPipeName;
+    public static string PipeName { get; } = PipeNames.For(ExeFolder);
 
     private static string Hash(string folder) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(folder.ToLowerInvariant())))[..8];
 

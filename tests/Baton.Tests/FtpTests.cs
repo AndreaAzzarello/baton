@@ -245,7 +245,7 @@ public sealed class FtpTests : IAsyncLifetime
             lock (questions) questions.Add(q);
             return Task.FromResult(CertificateDecision.AcceptAlways);
         };
-        var accepted = service.Add(server.Url("secure.bin", scheme), fileName: "secure-ok.bin");
+        var accepted = service.Add(server.Url("secure.bin", scheme), fileName: "secure-ok.bin", skipDuplicateCheck: true); // the same file again, on purpose
         await WaitUntil(() => service.GetSnapshot(accepted)!.Status is DownloadStatus.Completed or DownloadStatus.Failed);
         Assert.Equal(DownloadStatus.Completed, service.GetSnapshot(accepted)!.Status);
         Assert.Equal(file.Sha256, Hash(Path.Combine(_dir, "secure-ok.bin")));
@@ -258,7 +258,7 @@ public sealed class FtpTests : IAsyncLifetime
         using var reopened = new DownloadStore(DbPath);
         await using var later = new DownloadService(reopened, engineTemplate: Fast, autoTick: false);
         later.Certificates.Ask = _ => throw new InvalidOperationException("must not ask again");
-        var third = later.Add(server.Url("secure.bin", scheme), fileName: "secure-3.bin");
+        var third = later.Add(server.Url("secure.bin", scheme), fileName: "secure-3.bin", skipDuplicateCheck: true);
         await WaitUntil(() => later.GetSnapshot(third)!.Status is DownloadStatus.Completed or DownloadStatus.Failed);
         Assert.Equal(DownloadStatus.Completed, later.GetSnapshot(third)!.Status);
     }

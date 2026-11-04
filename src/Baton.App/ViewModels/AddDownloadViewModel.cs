@@ -23,6 +23,7 @@ public sealed class AddDownloadViewModel : ObservableObject
     private bool _categoryChosen;
     private bool _folderChosen;
     private bool _updatingFolder;
+    private bool _subfolderChoice;
     private string? _error;
 
     public AddDownloadViewModel(IDialogService dialogs, IReadOnlyList<Category> categories, AppSettings settings,
@@ -32,6 +33,7 @@ public sealed class AddDownloadViewModel : ObservableObject
         Queue = Queues.FirstOrDefault(q => q.Id == queueId) ?? Queues.FirstOrDefault(q => q.IsMain) ?? Queues.FirstOrDefault();
         _dialogs = dialogs;
         _settings = settings;
+        _subfolderChoice = settings.CategorySubfolders;
         Categories = categories;
         _url = url ?? "";
         _fileName = fileName ?? "";
@@ -72,6 +74,27 @@ public sealed class AddDownloadViewModel : ObservableObject
 
     public bool HasFolderSource => FolderSource is not null;
 
+    /// <summary>The main folder or the type's subfolder, for this download only; offered when the type has a relative folder.</summary>
+    public bool CanChooseSubfolder => Category.Folder.Length > 0 && !Path.IsPathFullyQualified(Category.Folder) && !Category.RememberLast;
+
+    public bool UseSubfolder
+    {
+        get => _subfolderChoice;
+        set
+        {
+            if (!Set(ref _subfolderChoice, value))
+                return;
+            OnPropertyChanged(nameof(UseMainFolder));
+            if (!_folderChosen)
+                SetFolderFromCategory();
+        }
+    }
+
+    public bool UseMainFolder { get => !_subfolderChoice; set => UseSubfolder = !value; }
+
+    /// <summary>The user typed or picked a folder: it is the one to remember for the category.</summary>
+    public bool FolderChosen => _folderChosen;
+
     public string Url
     {
         get => _url;
@@ -102,6 +125,7 @@ public sealed class AddDownloadViewModel : ObservableObject
             if (value is null || !Set(ref _category, value))
                 return;
             _categoryChosen = true;
+            OnPropertyChanged(nameof(CanChooseSubfolder));
             if (!_folderChosen)
                 SetFolderFromCategory();
         }
@@ -160,7 +184,7 @@ public sealed class AddDownloadViewModel : ObservableObject
     /// <summary>The download as the service should receive it: unchanged automatic choices stay automatic.</summary>
     public (string Url, string? Folder, string? FileName, long? CategoryId, long? QueueId) ToRequest() => (
         Url.Trim(),
-        _folderChosen ? Folder.Trim() : null,
+        _folderChosen || _subfolderChoice != _settings.CategorySubfolders ? Folder.Trim() : null, // the per-download choice is explicit too
         string.IsNullOrWhiteSpace(FileName) ? null : FileName.Trim(),
         _categoryChosen ? Category.Id : null,
         Queue?.Id);
@@ -173,14 +197,17 @@ public sealed class AddDownloadViewModel : ObservableObject
         if (_categoryChosen)
             return;
         var guess = Guess();
-        if (Set(ref _category, guess, nameof(Category)) && !_folderChosen)
+        if (!Set(ref _category, guess, nameof(Category)))
+            return;
+        OnPropertyChanged(nameof(CanChooseSubfolder));
+        if (!_folderChosen)
             SetFolderFromCategory();
     }
 
     private void SetFolderFromCategory()
     {
         _updatingFolder = true;
-        Folder = Category.ResolveFolder(_settings);
+        Folder = Category.ProposedFolder(_settings, _subfolderChoice);
         _updatingFolder = false;
         OnPropertyChanged(nameof(FolderSource));
         OnPropertyChanged(nameof(HasFolderSource));

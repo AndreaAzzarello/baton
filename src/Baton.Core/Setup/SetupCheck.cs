@@ -26,9 +26,9 @@ public sealed record SetupReport(bool Running, bool HasData, string? LegacyData,
 public static class SetupCheck
 {
     /// <summary>Next to Baton.exe: this copy is portable, its data lives in the <see cref="PortableDataFolder"/> folder beside it.</summary>
-    public const string PortableFlag = "portable.flag";
+    public const string PortableFlag = Integration.PipeNames.PortableFlag;
 
-    public const string PortableDataFolder = "Data";
+    public const string PortableDataFolder = Integration.PipeNames.PortableDataFolder;
 
     /// <param name="installedData">The installed app's data folder (%LOCALAPPDATA%\Baton).</param>
     /// <param name="legacy">DownloadManager's data folder (%LOCALAPPDATA%\DownloadManager), if there can be one.</param>

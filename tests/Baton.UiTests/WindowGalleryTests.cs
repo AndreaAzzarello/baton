@@ -303,6 +303,8 @@ public sealed class WindowGalleryTests : IDisposable
                 queues: queues) { EditCategory = _ => null }), "add-category-folder");
             yield return (new ClearCompletedWindow(new ClearCompletedViewModel(_service.CompletedToClear, categories[0].Id, null, categories[0].DisplayName)
                 { MoveToRecycleBin = true }), "clear-completed");
+            yield return (new DuplicateWindow(new DuplicateViewModel(new Baton.Core.Duplicates.DuplicateMatch(
+                Baton.Core.Duplicates.DuplicateReason.SameFile, null, @"C:\Users\Andrea\Downloads\Video\holiday-2026-final-cut-with-a-very-long-name.mp4"))), "duplicate");
             yield return (new CategoriesWindow(new CategoriesViewModel(_dialogs, categories, folder)), "categories");
             yield return (new QueuesWindow(new QueuesViewModel(_dialogs, queues, () => DateTime.UtcNow, startupEnabled: false, () => { })), "queues");
             yield return (new CountdownWindow(EndAction.Shutdown, queues[0].DisplayName, TimeSpan.FromSeconds(60)), "countdown");

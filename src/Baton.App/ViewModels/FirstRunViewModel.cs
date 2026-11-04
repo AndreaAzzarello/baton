@@ -69,7 +69,41 @@ public sealed class FirstRunViewModel : ObservableObject
         VerifyCommand = new RelayCommand(Verify);
     }
 
-    public string Folder { get => _folder; set => Set(ref _folder, value); }
+    public string Folder
+    {
+        get => _folder;
+        set
+        {
+            if (!Set(ref _folder, value))
+                return;
+            OnPropertyChanged(nameof(OneFolderPreview));
+            OnPropertyChanged(nameof(SubfolderPreview));
+        }
+    }
+
+    private bool _categorySubfolders;
+
+    /// <summary>A new installation proposes everything in one folder; the other choice is a subfolder per file type.</summary>
+    public bool CategorySubfolders
+    {
+        get => _categorySubfolders;
+        set
+        {
+            if (!Set(ref _categorySubfolders, value))
+                return;
+            OnPropertyChanged(nameof(OneFolder));
+            OnPropertyChanged(nameof(ShowCategoryFolders));
+        }
+    }
+
+    public bool OneFolder { get => !CategorySubfolders; set => CategorySubfolders = !value; }
+
+    /// <summary>The folder of each type only matters when each type has a subfolder.</summary>
+    public bool ShowCategoryFolders => CategorySubfolders;
+
+    public string OneFolderPreview => Path.Combine(Folder.Trim(), "file.ext");
+
+    public string SubfolderPreview => Path.Combine(Folder.Trim(), Categories.FirstOrDefault()?.Folder ?? "", "file.ext");
     public IReadOnlyList<CategoryFolderRow> Categories { get; }
     public IReadOnlyList<BrowserRow> Browsers { get; }
     public bool NoBrowsers => Browsers.Count == 0;
@@ -103,6 +137,7 @@ public sealed class FirstRunViewModel : ObservableObject
             DownloadFolder = Folder.Trim(),
             CategoryFolders = Categories.ToDictionary(c => c.Id, c => c.Folder),
             Theme = Theme,
+            CategorySubfolders = CategorySubfolders,
         };
     }
 }

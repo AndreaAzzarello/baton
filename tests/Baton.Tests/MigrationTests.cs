@@ -235,7 +235,7 @@ public sealed class MigrationTests : IDisposable
         Run("ALTER TABLE credentials DROP COLUMN scheme; ALTER TABLE credentials DROP COLUMN plain_confirmed; PRAGMA user_version = 7;");
 
         using var upgraded = new DownloadStore(DbPath);
-        Assert.Equal(8, upgraded.Version);
+        Assert.Equal(DownloadStore.SchemaVersion, upgraded.Version);
         Assert.EndsWith(".v7.bak", upgraded.BackupPath);
         var logins = upgraded.LoadCredentials().ToDictionary(c => c.Host);
         Assert.Equal("http", logins["intranet.local"].Scheme);   // the scheme it was used with
@@ -244,6 +244,29 @@ public sealed class MigrationTests : IDisposable
         Assert.Equal("ftpes", logins["files.example"].Scheme);   // FTP port, unknown: explicit FTPS
         Assert.Equal("pw-b", logins["unknown.example"].Password); // nothing lost
         Assert.Single(upgraded.LoadAll());
+    }
+
+    [Fact]
+    public void Version8_IsUpgradedTo9_CategoriesKeepTheirFolders_AndGetTheRememberColumns()
+    {
+        using (var store = new DownloadStore(DbPath))
+            store.SaveCategory(new Category { Name = "Films", Folder = @"D:\Films", Extensions = ["mkv"], SortOrder = 9 });
+        // Version 8: categories without the "remember last folder" columns.
+        Run("ALTER TABLE categories DROP COLUMN remember_last; ALTER TABLE categories DROP COLUMN last_folder; DROP TABLE download_history; PRAGMA user_version = 8;");
+
+        using var upgraded = new DownloadStore(DbPath);
+        Assert.Equal(DownloadStore.SchemaVersion, upgraded.Version);
+        Assert.EndsWith(".v8.bak", upgraded.BackupPath);
+        Assert.Equal(0, upgraded.HistoryCount()); // the duplicate history is created by the same step
+        var films = upgraded.LoadCategories().Single(c => c.Name == "Films");
+        Assert.Equal(@"D:\Films", films.Folder);
+        Assert.False(films.RememberLast);
+        Assert.Equal("", films.LastFolder);
+        Assert.False(upgraded.LoadSettings().CategoryModeAsked); // the one-time notice still has to be shown
+        films.RememberLast = true;
+        films.LastFolder = @"E:\Last";
+        upgraded.SaveCategory(films);
+        Assert.Equal(@"E:\Last", upgraded.LoadCategories().Single(c => c.Name == "Films").LastFolder);
     }
 
     [Fact]

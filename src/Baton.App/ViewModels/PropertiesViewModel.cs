@@ -223,6 +223,10 @@ public sealed class PropertiesViewModel : ObservableObject
             if (value is null || !Set(ref _category, value))
                 return;
             _service.SetCategory(_snapshot.Id, value.Id);
+            if (_service.PlanCategoryMove(_snapshot.Id, value.Id) is not null
+                && _dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmMoveToCategory, 1), Strings.MenuChangeCategory)
+                && _service.MoveToCategoryFolder(_snapshot.Id, value.Id) is { } problem)
+                _dialogs.ShowError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorMoveToCategory, problem), Strings.MenuChangeCategory);
         }
     }
 

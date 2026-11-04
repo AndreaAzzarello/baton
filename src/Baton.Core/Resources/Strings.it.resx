@@ -42,9 +42,12 @@
   <data name="AddCategoryLabel" xml:space="preserve"><value>C_ategoria</value></data>
   <data name="AddCategoryName" xml:space="preserve"><value>Categoria</value></data>
   <data name="AddFolderChangeCategory" xml:space="preserve"><value>Cambiala</value></data>
+  <data name="AddFolderChoiceName" xml:space="preserve"><value>Cartella per questo download</value></data>
   <data name="AddFolderFromCategory" xml:space="preserve"><value>Cartella della categoria {0}, al posto della cartella predefinita.</value></data>
   <data name="AddFolderLabel" xml:space="preserve"><value>_Salva nella cartella</value></data>
+  <data name="AddFolderMain" xml:space="preserve"><value>Cartella principale</value></data>
   <data name="AddFolderName" xml:space="preserve"><value>Cartella di destinazione</value></data>
+  <data name="AddFolderSubfolder" xml:space="preserve"><value>Sottocartella del tipo</value></data>
   <data name="AddHashHint" xml:space="preserve"><value>Se lo indichi, a fine download il file viene verificato.</value></data>
   <data name="AddHashLabel" xml:space="preserve"><value>_Hash atteso (facoltativo: MD5, SHA-1 o SHA-256)</value></data>
   <data name="AddHashName" xml:space="preserve"><value>Hash atteso</value></data>
@@ -113,6 +116,20 @@ Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></da
   <data name="CategoryFolderName" xml:space="preserve"><value>Cartella di destinazione della categoria</value></data>
   <data name="CategoryGeneral" xml:space="preserve"><value>Generale</value></data>
   <data name="CategoryGeneralHint" xml:space="preserve"><value>Categoria predefinita per i file che non corrispondono a nessun'altra: non può essere eliminata.</value></data>
+  <data name="CategoryModeButtonOne" xml:space="preserve"><value>_Una cartella</value></data>
+  <data name="CategoryModeButtonSub" xml:space="preserve"><value>_Sottocartelle</value></data>
+  <data name="CategoryModeNoticeCurrentOne" xml:space="preserve"><value>tutto in una cartella</value></data>
+  <data name="CategoryModeNoticeCurrentSub" xml:space="preserve"><value>una sottocartella per ogni tipo</value></data>
+  <data name="CategoryModeNoticeText" xml:space="preserve"><value>Baton 1.4 ti lascia scegliere come salvare i file.
+
+Tutto in una cartella:
+{0}
+
+Una sottocartella per ogni tipo:
+{1}
+
+Ora: {2}. Puoi cambiare in qualsiasi momento in Impostazioni › Salva in.</value></data>
+  <data name="CategoryModeNoticeTitle" xml:space="preserve"><value>Dove salvare i download</value></data>
   <data name="CategoryMusic" xml:space="preserve"><value>Musica</value></data>
   <data name="CategoryNameLabel" xml:space="preserve"><value>_Nome</value></data>
   <data name="CategoryNameName" xml:space="preserve"><value>Nome della categoria</value></data>
@@ -157,6 +174,7 @@ Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></da
   <data name="CheckVerify" xml:space="preserve"><value>_Verifica</value></data>
   <data name="ClearCompletedAll" xml:space="preserve"><value>_Tutti i download completati</value></data>
   <data name="ClearCompletedConfirm" xml:space="preserve"><value>Rimuovi</value></data>
+  <data name="ClearCompletedForget" xml:space="preserve"><value>Dimentica anche dallo storico dei duplicati</value></data>
   <data name="ClearCompletedNone" xml:space="preserve"><value>Non ci sono download completati da rimuovere. Quelli con controlli ancora in corso (hash, antivirus) restano nella lista.</value></data>
   <data name="ClearCompletedOnlyScope" xml:space="preserve"><value>Solo in {0}</value></data>
   <data name="ClearCompletedRecycle" xml:space="preserve"><value>Sposta anche i file nel _Cestino</value></data>
@@ -164,6 +182,7 @@ Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></da
   <data name="ClearCompletedSummary" xml:space="preserve"><value>{0} download completati verranno rimossi dalla lista. I file restano sul disco.</value></data>
   <data name="ClearCompletedSummaryRecycle" xml:space="preserve"><value>{0} download completati verranno rimossi dalla lista e i loro file ({1}) andranno nel Cestino.</value></data>
   <data name="ClearCompletedTitle" xml:space="preserve"><value>Rimuovi i completati</value></data>
+  <data name="ClipboardOffer" xml:space="preserve"><value>Scaricare {0} da {1}? Clicca qui per aggiungerlo.</value></data>
   <data name="Close" xml:space="preserve"><value>Chiudi</value></data>
   <data name="ClosingTitle" xml:space="preserve"><value>Baton — salvataggio in corso…</value></data>
   <data name="ColumnAdded" xml:space="preserve"><value>Aggiunto</value></data>
@@ -185,6 +204,7 @@ Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></da
 I download in corso vengono fermati e i dati parziali eliminati. Dal Cestino i file si possono ripristinare.</value></data>
   <data name="ConfirmDeleteLogin" xml:space="preserve"><value>Eliminare le credenziali {0}?</value></data>
   <data name="ConfirmDeleteQueue" xml:space="preserve"><value>Eliminare la coda "{0}"? I suoi download passeranno alla Coda principale.</value></data>
+  <data name="ConfirmMoveToCategory" xml:space="preserve"><value>Spostare {0} file completati nella cartella del nuovo tipo?</value></data>
   <data name="ConfirmOpenMany" xml:space="preserve"><value>Aprire {0} file insieme?</value></data>
   <data name="ConfirmRemove" xml:space="preserve"><value>Rimuovere {0} download dalla lista? I file già scaricati restano sul disco; i dati parziali vengono eliminati.</value></data>
   <data name="ConnectionTitle" xml:space="preserve"><value>Connessioni</value></data>
@@ -201,6 +221,22 @@ I download in corso vengono fermati e i dati parziali eliminati. Dal Cestino i f
 
 {1}</value></data>
   <data name="DeleteTitle" xml:space="preserve"><value>Elimina download</value></data>
+  <data name="DuplicateAddAnyway" xml:space="preserve"><value>Aggiungi comunque</value></data>
+  <data name="DuplicateAskEach" xml:space="preserve"><value>Chiedi ogni volta</value></data>
+  <data name="DuplicateBatchAll" xml:space="preserve"><value>Aggiungi tutti</value></data>
+  <data name="DuplicateBatchMessage" xml:space="preserve"><value>{0} link su {1} sono già nell'elenco o sul disco.</value></data>
+  <data name="DuplicateBatchSkip" xml:space="preserve"><value>Salta i duplicati</value></data>
+  <data name="DuplicateExisting" xml:space="preserve"><value>File esistente</value></data>
+  <data name="DuplicateOpen" xml:space="preserve"><value>Apri il file esistente</value></data>
+  <data name="DuplicateOverwrite" xml:space="preserve"><value>Sovrascrivi</value></data>
+  <data name="DuplicateOverwriteConfirm" xml:space="preserve"><value>Il file esistente «{0}» verrà spostato nel Cestino e sostituito. Continuare?</value></data>
+  <data name="DuplicateOverwriteFailed" xml:space="preserve"><value>Non è stato possibile spostare il file esistente nel Cestino: nulla è stato sostituito.</value></data>
+  <data name="DuplicateRemember" xml:space="preserve"><value>Ricorda la scelta</value></data>
+  <data name="DuplicateSameFile" xml:space="preserve"><value>Sembra un file che hai già (stessa dimensione e versione), da un altro indirizzo.</value></data>
+  <data name="DuplicateSameName" xml:space="preserve"><value>Nella cartella di destinazione c'è già un file con questo nome.</value></data>
+  <data name="DuplicateSameUrl" xml:space="preserve"><value>Questo indirizzo è già nell'elenco, oppure lo hai già scaricato.</value></data>
+  <data name="DuplicateSkip" xml:space="preserve"><value>Salta</value></data>
+  <data name="DuplicateTitle" xml:space="preserve"><value>Già scaricato?</value></data>
   <data name="EmptyFilteredHint" xml:space="preserve"><value>Scegli un altro filtro nel pannello a sinistra o cambia la ricerca</value></data>
   <data name="EmptyFilteredTitle" xml:space="preserve"><value>Nessun download corrisponde</value></data>
   <data name="EmptyHint" xml:space="preserve"><value>Premi Aggiungi (Ctrl+N), incolla un link con Ctrl+V oppure trascinalo qui</value></data>
@@ -239,6 +275,7 @@ I download in corso vengono fermati e i dati parziali eliminati. Dal Cestino i f
   <data name="ErrorHashFormat" xml:space="preserve"><value>Hash non riconosciuto: incolla un MD5 (32 caratteri), un SHA-1 (40) o uno SHA-256 (64), anche con il prefisso "sha256:".</value></data>
   <data name="ErrorIncomplete" xml:space="preserve"><value>Il download si è interrotto prima di ricevere tutti i dati.</value></data>
   <data name="ErrorInvalidUrl" xml:space="preserve"><value>Inserisci un indirizzo valido: http://, https://, ftp://, ftps:// (TLS implicito) o ftpes:// (TLS esplicito).</value></data>
+  <data name="ErrorMoveToCategory" xml:space="preserve"><value>Alcuni file non sono stati spostati: {0}</value></data>
   <data name="ErrorNewerDatabase" xml:space="preserve"><value>Il database è stato creato da una versione più recente dell'app (schema {0}).</value></data>
   <data name="ErrorNoAnswer" xml:space="preserve"><value>Il server non ha risposto entro {0:0} s.</value></data>
   <data name="ErrorNoData" xml:space="preserve"><value>Nessun dato ricevuto per {0:0} s.</value></data>
@@ -755,6 +792,18 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="RemoveTitle" xml:space="preserve"><value>Rimuovi download</value></data>
   <data name="ResumeNotSupported" xml:space="preserve"><value>No: il server non permette di riprendere</value></data>
   <data name="Save" xml:space="preserve"><value>Salva</value></data>
+  <data name="SaveInCategory" xml:space="preserve"><value>_Tipo di file</value></data>
+  <data name="SaveInFolder" xml:space="preserve"><value>_Salva in</value></data>
+  <data name="SaveInIntro" xml:space="preserve"><value>Dove finiscono i file scaricati. Scegli una cartella per tutto, oppure una sottocartella per ogni tipo di file; ogni tipo può anche avere una cartella sua.</value></data>
+  <data name="SaveInMode" xml:space="preserve"><value>Come si usa la cartella predefinita</value></data>
+  <data name="SaveInOneFolder" xml:space="preserve"><value>Tutto nella _cartella predefinita</value></data>
+  <data name="SaveInPreview" xml:space="preserve"><value>Esempio: {0}</value></data>
+  <data name="SaveInPreviewName" xml:space="preserve"><value>Esempio di percorso di un file di questo tipo</value></data>
+  <data name="SaveInRemember" xml:space="preserve"><value>_Ricorda l'ultima cartella usata per questo tipo</value></data>
+  <data name="SaveInResetAll" xml:space="preserve"><value>Riporta tutte alla cartella _principale</value></data>
+  <data name="SaveInResetAllToolTip" xml:space="preserve"><value>Toglie le cartelle proprie e mette ogni file nella cartella predefinita; si applica quando salvi.</value></data>
+  <data name="SaveInSubfolders" xml:space="preserve"><value>Una _sottocartella per ogni tipo (Video, Musica…)</value></data>
+  <data name="SaveInTypes" xml:space="preserve"><value>E_stensioni</value></data>
   <data name="ScanClean" xml:space="preserve"><value>Nessuna minaccia rilevata.</value></data>
   <data name="ScanErrorNotFound" xml:space="preserve"><value>Programma antivirus non trovato.</value></data>
   <data name="ScanErrorNotFullPath" xml:space="preserve"><value>L'antivirus deve essere indicato con il percorso completo.</value></data>
@@ -782,16 +831,23 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SelectionStatusOne" xml:space="preserve"><value>1 selezionato  ·  {0} di {1}</value></data>
   <data name="SelectionTotalUnknown" xml:space="preserve"><value>Dimensione totale sconosciuta</value></data>
   <data name="SettingsAppearance" xml:space="preserve"><value>Aspetto</value></data>
-  <data name="SettingsCategorySubfolders" xml:space="preserve"><value>Usa _sottocartelle per categoria</value></data>
   <data name="SettingsClearCompleted" xml:space="preserve"><value>Rimuovi dalla lista i download completati da più di</value></data>
   <data name="SettingsClearCompletedDays" xml:space="preserve"><value>giorni (i file restano)</value></data>
   <data name="SettingsClearCompletedDaysName" xml:space="preserve"><value>Giorni dopo i quali i download completati escono dalla lista</value></data>
+  <data name="SettingsClearHistory" xml:space="preserve"><value>Cancella storico</value></data>
+  <data name="SettingsClearHistoryConfirm" xml:space="preserve"><value>Dimenticare tutti i download ricordati? I duplicati dei download rimossi non verranno più riconosciuti.</value></data>
+  <data name="SettingsClipboard" xml:space="preserve"><value>Proponi di scaricare i link che copio</value></data>
+  <data name="SettingsClipboardForgetIgnored" xml:space="preserve"><value>Proponi di nuovo i link di tutti i siti</value></data>
+  <data name="SettingsClipboardHint" xml:space="preserve"><value>Solo un link a un tipo di file noto, in una notifica: nulla parte da solo e ciò che copi non viene mai salvato né registrato. Gli elementi segnati come riservati (come le password) vengono ignorati.</value></data>
+  <data name="SettingsClipboardIgnored" xml:space="preserve"><value>Siti ignorati: {0}</value></data>
   <data name="SettingsCloseToTray" xml:space="preserve"><value>Chiudendo la finestra, resta _attivo nell'area di notifica</value></data>
   <data name="SettingsConcurrent" xml:space="preserve"><value>Download _simultanei in totale, per tutte le code (1–50)</value></data>
   <data name="SettingsConfirmBrowser" xml:space="preserve"><value>Chiedi conferma per i download inviati dall'estensione del browser</value></data>
   <data name="SettingsConnections" xml:space="preserve"><value>_Connessioni per download (1–32)</value></data>
   <data name="SettingsConnectionsHint" xml:space="preserve"><value>Il numero di connessioni vale per i download avviati dopo il salvataggio. Il limite di file simultanei di ogni coda si imposta in Code.</value></data>
   <data name="SettingsDownloads" xml:space="preserve"><value>Download</value></data>
+  <data name="SettingsDuplicateAction" xml:space="preserve"><value>Se il download è un duplicato</value></data>
+  <data name="SettingsDuplicates" xml:space="preserve"><value>Duplicati</value></data>
   <data name="SettingsFfmpegFound" xml:space="preserve"><value>Verrà usato: {0}</value></data>
   <data name="SettingsFfmpegLabel" xml:space="preserve"><value>ffmpeg, per unire audio e video in un MP4 (_vuoto = cerca nel PATH)</value></data>
   <data name="SettingsFfmpegMissingFile" xml:space="preserve"><value>Il file indicato non esiste.</value></data>
@@ -805,6 +861,7 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsHashHint" xml:space="preserve"><value>Un hash atteso indicato aggiungendo il download (o nelle proprietà) viene sempre verificato, anche con questa opzione disattivata.</value></data>
   <data name="SettingsHashOnCompletion" xml:space="preserve"><value>Calcola l'hash di ogni file completato</value></data>
   <data name="SettingsHashTitle" xml:space="preserve"><value>Hash</value></data>
+  <data name="SettingsHistoryCleared" xml:space="preserve"><value>Lo storico è stato cancellato.</value></data>
   <data name="SettingsIntegration" xml:space="preserve"><value>Browser e notifiche</value></data>
   <data name="SettingsLanguage" xml:space="preserve"><value>_Lingua</value></data>
   <data name="SettingsLanguageName" xml:space="preserve"><value>Lingua dell'interfaccia</value></data>
@@ -812,7 +869,7 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsOverridingCategories" xml:space="preserve"><value>Queste categorie usano una cartella propria al posto di quella predefinita:</value></data>
   <data name="SettingsPortableHost" xml:space="preserve"><value>Collega l'estensione del browser a questa copia portable (la registra come host nativo dei browser)</value></data>
   <data name="SettingsPortableStartupWarning" xml:space="preserve"><value>Versione portable: la voce di avvio punta a {0}. Se sposti o rinomini questa cartella, Baton non partirà più con Windows: disattiva e riattiva l'opzione dalla nuova posizione.</value></data>
-  <data name="SettingsResetCategoryFolders" xml:space="preserve"><value>Riporta tutte alla cartella predefinita</value></data>
+  <data name="SettingsRememberRemoved" xml:space="preserve"><value>Ricorda i download rimossi per riconoscere i duplicati</value></data>
   <data name="SettingsRestoreHint" xml:space="preserve"><value>Dopo un aggiornamento la versione precedente resta accanto al programma: se la nuova dà problemi puoi tornare indietro.</value></data>
   <data name="SettingsRestorePrevious" xml:space="preserve"><value>Ripristina la versione precedente</value></data>
   <data name="SettingsRestoreTitle" xml:space="preserve"><value>Versione precedente</value></data>
@@ -834,6 +891,7 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsTabCredentials" xml:space="preserve"><value>Credenziali</value></data>
   <data name="SettingsTabGeneral" xml:space="preserve"><value>Generale</value></data>
   <data name="SettingsTabNetwork" xml:space="preserve"><value>Rete</value></data>
+  <data name="SettingsTabSaveIn" xml:space="preserve"><value>Salva in</value></data>
   <data name="SettingsTabUpdates" xml:space="preserve"><value>Aggiornamenti</value></data>
   <data name="SettingsTheme" xml:space="preserve"><value>Tema</value></data>
   <data name="SettingsTitle" xml:space="preserve"><value>Impostazioni</value></data>
@@ -864,11 +922,21 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="ThemeLight" xml:space="preserve"><value>Chiaro</value></data>
   <data name="ThemeSystem" xml:space="preserve"><value>Segui il sistema</value></data>
   <data name="TimeoutLabel" xml:space="preserve"><value>_Timeout in secondi (5–600)</value></data>
+  <data name="ToastClipboardFrom" xml:space="preserve"><value>da {0}</value></data>
+  <data name="ToastClipboardTitle" xml:space="preserve"><value>Scaricare con Baton?</value></data>
   <data name="ToastCompletedDetails" xml:space="preserve"><value>{0} · {1}</value></data>
   <data name="ToastCompletedProblemTitle" xml:space="preserve"><value>Download completato: attenzione</value></data>
   <data name="ToastCompletedTitle" xml:space="preserve"><value>Download completato</value></data>
+  <data name="ToastDownload" xml:space="preserve"><value>Scarica</value></data>
+  <data name="ToastDownloadAnyway" xml:space="preserve"><value>Scarica comunque</value></data>
+  <data name="ToastDuplicateFound" xml:space="preserve"><value>Già presente: {0}</value></data>
+  <data name="ToastDuplicateTitle" xml:space="preserve"><value>Possibile duplicato</value></data>
+  <data name="ToastIgnore" xml:space="preserve"><value>Ignora</value></data>
+  <data name="ToastMuteSite" xml:space="preserve"><value>Non per questo sito</value></data>
   <data name="ToastOpen" xml:space="preserve"><value>Apri</value></data>
+  <data name="ToastOpenExisting" xml:space="preserve"><value>Apri il file esistente</value></data>
   <data name="ToastOpenFolder" xml:space="preserve"><value>Apri cartella</value></data>
+  <data name="ToastRemove" xml:space="preserve"><value>Rimuovi</value></data>
   <data name="ToolbarAddSeparator" xml:space="preserve"><value>Aggiungi separatore</value></data>
   <data name="ToolbarHint" xml:space="preserve"><value>Spunta i pulsanti da mostrare e mettili nell'ordine che preferisci (Alt+Su/Giù sposta, Spazio mostra o nasconde). I pulsanti dopo lo spazio flessibile stanno a destra.</value></data>
   <data name="ToolbarMoveDown" xml:space="preserve"><value>Sposta giù</value></data>
@@ -936,6 +1004,7 @@ Limite: {2}</value></data>
   <data name="UrlUpdatedRestart" xml:space="preserve"><value>Indirizzo aggiornato: il download ripartirà da zero.</value></data>
   <data name="UserAgentLabel" xml:space="preserve"><value>User-agent _inviato ai server</value></data>
   <data name="UserAgentName" xml:space="preserve"><value>User-agent</value></data>
+  <data name="WaitingDuplicate" xml:space="preserve"><value>Possibile duplicato di {0}: in attesa della tua scelta</value></data>
   <data name="WaitingLogin" xml:space="preserve"><value>In attesa delle credenziali per {0}</value></data>
   <data name="WaitingProxyLogin" xml:space="preserve"><value>In attesa delle credenziali del proxy {0}</value></data>
   <data name="WaitingQuota" xml:space="preserve"><value>Quota oraria raggiunta: riprende verso le {0}</value></data>

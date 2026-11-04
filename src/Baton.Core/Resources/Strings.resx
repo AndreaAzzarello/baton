@@ -42,9 +42,12 @@
   <data name="AddCategoryLabel" xml:space="preserve"><value>Ca_tegory</value></data>
   <data name="AddCategoryName" xml:space="preserve"><value>Category</value></data>
   <data name="AddFolderChangeCategory" xml:space="preserve"><value>Change it</value></data>
+  <data name="AddFolderChoiceName" xml:space="preserve"><value>Folder for this download</value></data>
   <data name="AddFolderFromCategory" xml:space="preserve"><value>Folder of the {0} category, instead of the default folder.</value></data>
   <data name="AddFolderLabel" xml:space="preserve"><value>_Save in folder</value></data>
+  <data name="AddFolderMain" xml:space="preserve"><value>Main folder</value></data>
   <data name="AddFolderName" xml:space="preserve"><value>Destination folder</value></data>
+  <data name="AddFolderSubfolder" xml:space="preserve"><value>Subfolder of the type</value></data>
   <data name="AddHashHint" xml:space="preserve"><value>When given, the file is checked at the end of the download.</value></data>
   <data name="AddHashLabel" xml:space="preserve"><value>Expected _hash (optional: MD5, SHA-1 or SHA-256)</value></data>
   <data name="AddHashName" xml:space="preserve"><value>Expected hash</value></data>
@@ -113,6 +116,20 @@ Use the new address anyway and restart the download from scratch?</value></data>
   <data name="CategoryFolderName" xml:space="preserve"><value>Destination folder of the category</value></data>
   <data name="CategoryGeneral" xml:space="preserve"><value>General</value></data>
   <data name="CategoryGeneralHint" xml:space="preserve"><value>Default category for files that match no other: it cannot be deleted.</value></data>
+  <data name="CategoryModeButtonOne" xml:space="preserve"><value>_One folder</value></data>
+  <data name="CategoryModeButtonSub" xml:space="preserve"><value>_Subfolders</value></data>
+  <data name="CategoryModeNoticeCurrentOne" xml:space="preserve"><value>everything in one folder</value></data>
+  <data name="CategoryModeNoticeCurrentSub" xml:space="preserve"><value>a subfolder for each type</value></data>
+  <data name="CategoryModeNoticeText" xml:space="preserve"><value>Baton 1.4 lets you choose how files are saved.
+
+Everything in one folder:
+{0}
+
+A subfolder for each type:
+{1}
+
+Now: {2}. You can change it any time in Settings › Save in.</value></data>
+  <data name="CategoryModeNoticeTitle" xml:space="preserve"><value>Where to save downloads</value></data>
   <data name="CategoryMusic" xml:space="preserve"><value>Music</value></data>
   <data name="CategoryNameLabel" xml:space="preserve"><value>_Name</value></data>
   <data name="CategoryNameName" xml:space="preserve"><value>Category name</value></data>
@@ -157,6 +174,7 @@ Use the new address anyway and restart the download from scratch?</value></data>
   <data name="CheckVerify" xml:space="preserve"><value>_Verify</value></data>
   <data name="ClearCompletedAll" xml:space="preserve"><value>_All completed downloads</value></data>
   <data name="ClearCompletedConfirm" xml:space="preserve"><value>Remove</value></data>
+  <data name="ClearCompletedForget" xml:space="preserve"><value>Also forget them in the duplicate history</value></data>
   <data name="ClearCompletedNone" xml:space="preserve"><value>There are no completed downloads to remove. Downloads whose checks (hash, antivirus) are still running stay in the list.</value></data>
   <data name="ClearCompletedOnlyScope" xml:space="preserve"><value>Only in {0}</value></data>
   <data name="ClearCompletedRecycle" xml:space="preserve"><value>Also move the files to the _Recycle Bin</value></data>
@@ -164,6 +182,7 @@ Use the new address anyway and restart the download from scratch?</value></data>
   <data name="ClearCompletedSummary" xml:space="preserve"><value>{0} completed downloads will leave the list. Their files stay on the disk.</value></data>
   <data name="ClearCompletedSummaryRecycle" xml:space="preserve"><value>{0} completed downloads will leave the list and their files ({1}) will go to the Recycle Bin.</value></data>
   <data name="ClearCompletedTitle" xml:space="preserve"><value>Clear completed</value></data>
+  <data name="ClipboardOffer" xml:space="preserve"><value>Download {0} from {1}? Click here to add it.</value></data>
   <data name="Close" xml:space="preserve"><value>Close</value></data>
   <data name="ClosingTitle" xml:space="preserve"><value>Baton — saving…</value></data>
   <data name="ColumnAdded" xml:space="preserve"><value>Added</value></data>
@@ -185,6 +204,7 @@ Use the new address anyway and restart the download from scratch?</value></data>
 Running downloads are stopped and their partial data deleted. Files can be restored from the Recycle Bin.</value></data>
   <data name="ConfirmDeleteLogin" xml:space="preserve"><value>Delete the credentials {0}?</value></data>
   <data name="ConfirmDeleteQueue" xml:space="preserve"><value>Delete the queue "{0}"? Its downloads will move to the Main queue.</value></data>
+  <data name="ConfirmMoveToCategory" xml:space="preserve"><value>Move {0} finished file(s) to the folder of the new type?</value></data>
   <data name="ConfirmOpenMany" xml:space="preserve"><value>Open {0} files at once?</value></data>
   <data name="ConfirmRemove" xml:space="preserve"><value>Remove {0} downloads from the list? Files already downloaded stay on disk; partial data is deleted.</value></data>
   <data name="ConnectionTitle" xml:space="preserve"><value>Connections</value></data>
@@ -201,6 +221,22 @@ Running downloads are stopped and their partial data deleted. Files can be resto
 
 {1}</value></data>
   <data name="DeleteTitle" xml:space="preserve"><value>Delete downloads</value></data>
+  <data name="DuplicateAddAnyway" xml:space="preserve"><value>Add anyway</value></data>
+  <data name="DuplicateAskEach" xml:space="preserve"><value>Ask me each time</value></data>
+  <data name="DuplicateBatchAll" xml:space="preserve"><value>Add all</value></data>
+  <data name="DuplicateBatchMessage" xml:space="preserve"><value>{0} of {1} links are already in your list or on the disk.</value></data>
+  <data name="DuplicateBatchSkip" xml:space="preserve"><value>Skip duplicates</value></data>
+  <data name="DuplicateExisting" xml:space="preserve"><value>Existing file</value></data>
+  <data name="DuplicateOpen" xml:space="preserve"><value>Open the existing file</value></data>
+  <data name="DuplicateOverwrite" xml:space="preserve"><value>Overwrite</value></data>
+  <data name="DuplicateOverwriteConfirm" xml:space="preserve"><value>The existing file "{0}" will be moved to the Recycle Bin and replaced. Continue?</value></data>
+  <data name="DuplicateOverwriteFailed" xml:space="preserve"><value>The existing file could not be moved to the Recycle Bin, so nothing was replaced.</value></data>
+  <data name="DuplicateRemember" xml:space="preserve"><value>Remember my choice</value></data>
+  <data name="DuplicateSameFile" xml:space="preserve"><value>This looks like a file you already have (same size and version), from another address.</value></data>
+  <data name="DuplicateSameName" xml:space="preserve"><value>A file with this name is already in the destination folder.</value></data>
+  <data name="DuplicateSameUrl" xml:space="preserve"><value>This address is already in your list, or you downloaded it before.</value></data>
+  <data name="DuplicateSkip" xml:space="preserve"><value>Skip</value></data>
+  <data name="DuplicateTitle" xml:space="preserve"><value>Already downloaded?</value></data>
   <data name="EmptyFilteredHint" xml:space="preserve"><value>Pick another filter in the left pane or change the search</value></data>
   <data name="EmptyFilteredTitle" xml:space="preserve"><value>No downloads match</value></data>
   <data name="EmptyHint" xml:space="preserve"><value>Press Add (Ctrl+N), paste a link with Ctrl+V or drag it here</value></data>
@@ -239,6 +275,7 @@ Running downloads are stopped and their partial data deleted. Files can be resto
   <data name="ErrorHashFormat" xml:space="preserve"><value>Hash not recognized: paste an MD5 (32 characters), a SHA-1 (40) or a SHA-256 (64), also with the "sha256:" prefix.</value></data>
   <data name="ErrorIncomplete" xml:space="preserve"><value>The download stopped before all data was received.</value></data>
   <data name="ErrorInvalidUrl" xml:space="preserve"><value>Enter a valid address: http://, https://, ftp://, ftps:// (implicit TLS) or ftpes:// (explicit TLS).</value></data>
+  <data name="ErrorMoveToCategory" xml:space="preserve"><value>Some files could not be moved: {0}</value></data>
   <data name="ErrorNewerDatabase" xml:space="preserve"><value>The database was created by a newer version of the app (schema {0}).</value></data>
   <data name="ErrorNoAnswer" xml:space="preserve"><value>The server did not answer within {0:0} s.</value></data>
   <data name="ErrorNoData" xml:space="preserve"><value>No data received for {0:0} s.</value></data>
@@ -755,6 +792,18 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="RemoveTitle" xml:space="preserve"><value>Remove downloads</value></data>
   <data name="ResumeNotSupported" xml:space="preserve"><value>No: the server does not allow resuming</value></data>
   <data name="Save" xml:space="preserve"><value>Save</value></data>
+  <data name="SaveInCategory" xml:space="preserve"><value>File _type</value></data>
+  <data name="SaveInFolder" xml:space="preserve"><value>Sa_ve in</value></data>
+  <data name="SaveInIntro" xml:space="preserve"><value>Where finished files go. Pick one folder for everything, or a subfolder for each type of file; each type can also have a folder of its own.</value></data>
+  <data name="SaveInMode" xml:space="preserve"><value>How the default folder is used</value></data>
+  <data name="SaveInOneFolder" xml:space="preserve"><value>Everything in the default _folder</value></data>
+  <data name="SaveInPreview" xml:space="preserve"><value>Example: {0}</value></data>
+  <data name="SaveInPreviewName" xml:space="preserve"><value>Example of the path of a file of this type</value></data>
+  <data name="SaveInRemember" xml:space="preserve"><value>_Remember the last folder used for this type</value></data>
+  <data name="SaveInResetAll" xml:space="preserve"><value>Bring all back to the _main folder</value></data>
+  <data name="SaveInResetAllToolTip" xml:space="preserve"><value>Removes the folders of their own and puts every file in the default folder; applied when you save.</value></data>
+  <data name="SaveInSubfolders" xml:space="preserve"><value>A _subfolder for each type (Video, Music…)</value></data>
+  <data name="SaveInTypes" xml:space="preserve"><value>E_xtensions</value></data>
   <data name="ScanClean" xml:space="preserve"><value>No threats found.</value></data>
   <data name="ScanErrorNotFound" xml:space="preserve"><value>Antivirus program not found.</value></data>
   <data name="ScanErrorNotFullPath" xml:space="preserve"><value>The antivirus must be given with its full path.</value></data>
@@ -782,16 +831,23 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="SelectionStatusOne" xml:space="preserve"><value>1 selected  ·  {0} of {1}</value></data>
   <data name="SelectionTotalUnknown" xml:space="preserve"><value>Total size unknown</value></data>
   <data name="SettingsAppearance" xml:space="preserve"><value>Appearance</value></data>
-  <data name="SettingsCategorySubfolders" xml:space="preserve"><value>Use _subfolders for categories</value></data>
   <data name="SettingsClearCompleted" xml:space="preserve"><value>Remove from the list the downloads completed more than</value></data>
   <data name="SettingsClearCompletedDays" xml:space="preserve"><value>days ago (the files stay)</value></data>
   <data name="SettingsClearCompletedDaysName" xml:space="preserve"><value>Days after which completed downloads leave the list</value></data>
+  <data name="SettingsClearHistory" xml:space="preserve"><value>Clear history</value></data>
+  <data name="SettingsClearHistoryConfirm" xml:space="preserve"><value>Forget every remembered download? Duplicates of removed downloads will no longer be recognised.</value></data>
+  <data name="SettingsClipboard" xml:space="preserve"><value>Offer to download links I copy</value></data>
+  <data name="SettingsClipboardForgetIgnored" xml:space="preserve"><value>Offer links from every site again</value></data>
+  <data name="SettingsClipboardHint" xml:space="preserve"><value>Only a lone link to a known kind of file, in a notification: nothing starts by itself, and what you copy is never saved or logged. Items marked private (like passwords) are ignored.</value></data>
+  <data name="SettingsClipboardIgnored" xml:space="preserve"><value>Sites ignored: {0}</value></data>
   <data name="SettingsCloseToTray" xml:space="preserve"><value>Closing the window keeps it running in the notification _area</value></data>
   <data name="SettingsConcurrent" xml:space="preserve"><value>_Simultaneous downloads in total, across all queues (1–50)</value></data>
   <data name="SettingsConfirmBrowser" xml:space="preserve"><value>Ask for confirmation for downloads sent by the browser extension</value></data>
   <data name="SettingsConnections" xml:space="preserve"><value>_Connections per download (1–32)</value></data>
   <data name="SettingsConnectionsHint" xml:space="preserve"><value>The number of connections applies to downloads started after saving. The limit of simultaneous files of each queue is set in Queues.</value></data>
   <data name="SettingsDownloads" xml:space="preserve"><value>Downloads</value></data>
+  <data name="SettingsDuplicateAction" xml:space="preserve"><value>If a download is a duplicate</value></data>
+  <data name="SettingsDuplicates" xml:space="preserve"><value>Duplicates</value></data>
   <data name="SettingsFfmpegFound" xml:space="preserve"><value>Will use: {0}</value></data>
   <data name="SettingsFfmpegLabel" xml:space="preserve"><value>ffmpeg, to join audio and video into an MP4 (_empty = look in PATH)</value></data>
   <data name="SettingsFfmpegMissingFile" xml:space="preserve"><value>The file does not exist.</value></data>
@@ -805,6 +861,7 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="SettingsHashHint" xml:space="preserve"><value>An expected hash given when adding the download (or in its properties) is always checked, even with this option off.</value></data>
   <data name="SettingsHashOnCompletion" xml:space="preserve"><value>Compute the hash of every completed file</value></data>
   <data name="SettingsHashTitle" xml:space="preserve"><value>Hash</value></data>
+  <data name="SettingsHistoryCleared" xml:space="preserve"><value>The history was cleared.</value></data>
   <data name="SettingsIntegration" xml:space="preserve"><value>Browser and notifications</value></data>
   <data name="SettingsLanguage" xml:space="preserve"><value>_Language</value></data>
   <data name="SettingsLanguageName" xml:space="preserve"><value>Language of the interface</value></data>
@@ -812,7 +869,7 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="SettingsOverridingCategories" xml:space="preserve"><value>These categories use a folder of their own instead of the default folder:</value></data>
   <data name="SettingsPortableHost" xml:space="preserve"><value>Connect the browser extension to this portable copy (registers it as the browsers' native messaging host)</value></data>
   <data name="SettingsPortableStartupWarning" xml:space="preserve"><value>Portable version: the start entry points to {0}. If you move or rename this folder, Baton will no longer start with Windows: turn the option off and on again from the new place.</value></data>
-  <data name="SettingsResetCategoryFolders" xml:space="preserve"><value>Bring them all back to the default folder</value></data>
+  <data name="SettingsRememberRemoved" xml:space="preserve"><value>Remember removed downloads to recognise duplicates</value></data>
   <data name="SettingsRestoreHint" xml:space="preserve"><value>After an update the previous version stays next to the program: if the new one has problems you can go back.</value></data>
   <data name="SettingsRestorePrevious" xml:space="preserve"><value>Restore the previous version</value></data>
   <data name="SettingsRestoreTitle" xml:space="preserve"><value>Previous version</value></data>
@@ -834,6 +891,7 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="SettingsTabCredentials" xml:space="preserve"><value>Credentials</value></data>
   <data name="SettingsTabGeneral" xml:space="preserve"><value>General</value></data>
   <data name="SettingsTabNetwork" xml:space="preserve"><value>Network</value></data>
+  <data name="SettingsTabSaveIn" xml:space="preserve"><value>Save in</value></data>
   <data name="SettingsTabUpdates" xml:space="preserve"><value>Updates</value></data>
   <data name="SettingsTheme" xml:space="preserve"><value>Theme</value></data>
   <data name="SettingsTitle" xml:space="preserve"><value>Settings</value></data>
@@ -864,11 +922,21 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="ThemeLight" xml:space="preserve"><value>Light</value></data>
   <data name="ThemeSystem" xml:space="preserve"><value>Follow the system</value></data>
   <data name="TimeoutLabel" xml:space="preserve"><value>_Timeout in seconds (5–600)</value></data>
+  <data name="ToastClipboardFrom" xml:space="preserve"><value>from {0}</value></data>
+  <data name="ToastClipboardTitle" xml:space="preserve"><value>Download with Baton?</value></data>
   <data name="ToastCompletedDetails" xml:space="preserve"><value>{0} · {1}</value></data>
   <data name="ToastCompletedProblemTitle" xml:space="preserve"><value>Download completed: warning</value></data>
   <data name="ToastCompletedTitle" xml:space="preserve"><value>Download completed</value></data>
+  <data name="ToastDownload" xml:space="preserve"><value>Download</value></data>
+  <data name="ToastDownloadAnyway" xml:space="preserve"><value>Download anyway</value></data>
+  <data name="ToastDuplicateFound" xml:space="preserve"><value>Already there: {0}</value></data>
+  <data name="ToastDuplicateTitle" xml:space="preserve"><value>Possible duplicate</value></data>
+  <data name="ToastIgnore" xml:space="preserve"><value>Ignore</value></data>
+  <data name="ToastMuteSite" xml:space="preserve"><value>Not for this site</value></data>
   <data name="ToastOpen" xml:space="preserve"><value>Open</value></data>
+  <data name="ToastOpenExisting" xml:space="preserve"><value>Open existing file</value></data>
   <data name="ToastOpenFolder" xml:space="preserve"><value>Open folder</value></data>
+  <data name="ToastRemove" xml:space="preserve"><value>Remove</value></data>
   <data name="ToolbarAddSeparator" xml:space="preserve"><value>Add separator</value></data>
   <data name="ToolbarHint" xml:space="preserve"><value>Tick the buttons to show and put them in the order you like (Alt+Up/Down moves, Space shows or hides). Buttons after the flexible space go to the right.</value></data>
   <data name="ToolbarMoveDown" xml:space="preserve"><value>Move down</value></data>
@@ -936,6 +1004,7 @@ Limit: {2}</value></data>
   <data name="UrlUpdatedRestart" xml:space="preserve"><value>Address updated: the download will start over.</value></data>
   <data name="UserAgentLabel" xml:space="preserve"><value>User-agent _sent to servers</value></data>
   <data name="UserAgentName" xml:space="preserve"><value>User-agent</value></data>
+  <data name="WaitingDuplicate" xml:space="preserve"><value>Possible duplicate of {0}: waiting for your choice</value></data>
   <data name="WaitingLogin" xml:space="preserve"><value>Waiting for the credentials of {0}</value></data>
   <data name="WaitingProxyLogin" xml:space="preserve"><value>Waiting for the credentials of the proxy {0}</value></data>
   <data name="WaitingQuota" xml:space="preserve"><value>Hourly quota reached: resumes around {0}</value></data>

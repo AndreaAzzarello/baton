@@ -188,6 +188,9 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
     public Answer Ask(string message, string title) =>
         Show(message, title, MessageKind.Question, [(Strings.Yes, Answer.Yes), (Strings.No, Answer.No), (Strings.Cancel, Answer.Cancel)], Answer.Cancel);
 
+    public Answer Choose(string message, string title, string firstLabel, string secondLabel, Answer defaultAnswer) =>
+        Show(message, title, MessageKind.Question, [(firstLabel, Answer.Yes), (secondLabel, Answer.No)], defaultAnswer);
+
     public void Inform(string message, string title) => Show(message, title, MessageKind.Information, [(Strings.Ok, Answer.Yes)], Answer.Yes);
 
     public void ShowError(string message, string title) => Show(message, title, MessageKind.Error, [(Strings.Ok, Answer.Yes)], Answer.Yes);
@@ -220,6 +223,9 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
     public bool ShowImport(ImportViewModel viewModel) => new ImportWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
 
     public bool ShowToolbar(ToolbarViewModel viewModel) => new ToolbarWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
+
+    public void ShowDuplicate(DuplicateViewModel viewModel, bool standalone) =>
+        new DuplicateWindow(viewModel, standalone) { Owner = standalone ? null : Owner }.ShowDialog();
 
     public bool ShowClearCompleted(ClearCompletedViewModel viewModel) => new ClearCompletedWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
 

@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Baton.Core\Baton.Core.csproj" />
+    <ProjectReference Include="..\..\src\Baton.Cli\Baton.Cli.csproj" />
   </ItemGroup>
 
   <ItemGroup>

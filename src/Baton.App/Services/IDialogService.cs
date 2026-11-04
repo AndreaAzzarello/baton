@@ -60,6 +60,9 @@ public interface IDialogService
 
     Answer Ask(string message, string title);
 
+    /// <summary>Two named choices (Yes = the first, No = the second); closing the window answers Cancel.</summary>
+    Answer Choose(string message, string title, string firstLabel, string secondLabel, Answer defaultAnswer);
+
     void Inform(string message, string title);
 
     void ShowError(string message, string title);
@@ -79,6 +82,9 @@ public interface IDialogService
     bool ShowToolbar(ToolbarViewModel viewModel);
 
     bool ShowClearCompleted(ClearCompletedViewModel viewModel);
+
+    /// <summary>Why a download looks like one already there, and what to do; the choice is in the view model (Skip when closed).</summary>
+    void ShowDuplicate(DuplicateViewModel viewModel, bool standalone);
 
     /// <summary>The first-run wizard; null when the user skipped it.</summary>
     Core.Setup.FirstRunChoices? ShowFirstRun(FirstRunViewModel viewModel);

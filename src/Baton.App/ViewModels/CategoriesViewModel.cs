@@ -9,14 +9,42 @@ using Baton.Core.Resources;
 namespace Baton.App.ViewModels;
 
 /// <summary>One category being edited; nothing is saved until the dialog is confirmed.</summary>
-public sealed class CategoryEditViewModel(Category category, string defaultFolder) : ObservableObject
+public sealed class CategoryEditViewModel : ObservableObject
 {
-    private string _name = category.DisplayName;
-    private string _extensions = Categories.FormatExtensions(category.Extensions);
-    private string _folder = category.ResolveFolder(defaultFolder);
+    private string _name;
+    private string _extensions;
+    private string _folder;
     private bool _folderEdited;
+    private bool _rememberLast;
+    private string _defaultFolder;
+    private bool _subfolders;
 
-    public Category Original { get; } = category;
+    /// <param name="subfolders">The "subfolder per type" option as it is now: the folder shown is the one a download really gets.</param>
+    public CategoryEditViewModel(Category category, string defaultFolder, bool subfolders = true)
+    {
+        Original = category;
+        _defaultFolder = defaultFolder;
+        _subfolders = subfolders;
+        _name = category.DisplayName;
+        _extensions = Categories.FormatExtensions(category.Extensions);
+        _folder = category.ResolveFolder(defaultFolder, subfolders);
+        _rememberLast = category.RememberLast;
+    }
+
+    /// <summary>The main folder or the mode changed while editing: a folder the user did not touch follows them.</summary>
+    public void Follow(string defaultFolder, bool subfolders)
+    {
+        _defaultFolder = defaultFolder;
+        _subfolders = subfolders;
+        if (_folderEdited || IsNew)
+            return;
+        _folder = Original.ResolveFolder(defaultFolder, subfolders);
+        OnPropertyChanged(nameof(Folder));
+    }
+
+    public bool RememberLast { get => _rememberLast; set => Set(ref _rememberLast, value); }
+
+    public Category Original { get; }
     public bool IsGeneral => Original.IsGeneral;
     public bool IsNew => Original.Id == 0;
 
@@ -28,7 +56,7 @@ public sealed class CategoryEditViewModel(Category category, string defaultFolde
             if (!Set(ref _name, value) || !IsNew || _folderEdited)
                 return;
             // A new category gets a subfolder named after it until the user picks a folder.
-            _folder = Path.Combine(defaultFolder, FileNames.Sanitize(value.Trim()));
+            _folder = Path.Combine(_defaultFolder, FileNames.Sanitize(value.Trim()));
             OnPropertyChanged(nameof(Folder));
         }
     }
@@ -55,9 +83,10 @@ public sealed class CategoryEditViewModel(Category category, string defaultFolde
         var result = Original.Clone();
         result.Name = Name.Trim() == Original.DisplayName ? Original.Name : Name.Trim(); // a built-in name shown in another language stays as stored
         result.Extensions = Categories.ParseExtensions(Extensions);
+        result.RememberLast = RememberLast;
         if (IsNew && !_folderEdited)
             result.Folder = FileNames.Sanitize(Name.Trim());
-        else if (!string.Equals(Folder.Trim(), Original.ResolveFolder(defaultFolder), StringComparison.OrdinalIgnoreCase))
+        else if (!string.Equals(Folder.Trim(), Original.ResolveFolder(defaultFolder, _subfolders), StringComparison.OrdinalIgnoreCase))
             result.Folder = Folder.Trim();
         return result;
     }
@@ -67,7 +96,8 @@ public sealed class CategoryEditViewModel(Category category, string defaultFolde
     public bool IsChanged(string defaultFolder)
     {
         var edited = ToCategory(defaultFolder);
-        return IsNew || edited.Name != Original.Name || edited.Folder != Original.Folder || !edited.Extensions.SequenceEqual(Original.Extensions);
+        return IsNew || edited.Name != Original.Name || edited.Folder != Original.Folder || edited.RememberLast != Original.RememberLast
+            || !edited.Extensions.SequenceEqual(Original.Extensions);
     }
 }
 
@@ -75,15 +105,17 @@ public sealed class CategoriesViewModel : ObservableObject
 {
     private readonly IDialogService _dialogs;
     private readonly string _defaultFolder;
+    private readonly bool _subfolders;
     private readonly List<Category> _deleted = [];
     private CategoryEditViewModel? _selected;
     private string? _error;
 
-    public CategoriesViewModel(IDialogService dialogs, IReadOnlyList<Category> categories, string defaultFolder, long? selectId = null)
+    public CategoriesViewModel(IDialogService dialogs, IReadOnlyList<Category> categories, string defaultFolder, long? selectId = null, bool subfolders = true)
     {
         _dialogs = dialogs;
         _defaultFolder = defaultFolder;
-        Items = new ObservableCollection<CategoryEditViewModel>(categories.Select(c => new CategoryEditViewModel(c, defaultFolder)));
+        _subfolders = subfolders;
+        Items = new ObservableCollection<CategoryEditViewModel>(categories.Select(c => new CategoryEditViewModel(c, defaultFolder, subfolders)));
         _selected = Items.FirstOrDefault(i => i.Original.Id == selectId) ?? Items.FirstOrDefault();
         AddCommand = new RelayCommand(Add);
         DeleteCommand = new RelayCommand(Delete, () => Selected is { IsGeneral: false });
@@ -135,7 +167,7 @@ public sealed class CategoriesViewModel : ObservableObject
     private void Add()
     {
         var category = new Category { Name = Strings.CategoryNewName, Folder = Strings.CategoryNewName };
-        var item = new CategoryEditViewModel(category, _defaultFolder);
+        var item = new CategoryEditViewModel(category, _defaultFolder, _subfolders);
         Items.Add(item);
         Selected = item;
     }

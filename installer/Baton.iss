@@ -14,6 +14,10 @@
 #ifndef OutputDir
   #define OutputDir "..\dist\installer"
 #endif
+; The command line (tools\build-packages.ps1 passes it; it is built apart, self-contained).
+#ifndef CliExe
+  #define CliExe SourceDir + "\batonctl.exe"
+#endif
 ; The browser extension shipped with the program (tools\build-packages.ps1 builds it first).
 #ifndef ExtensionDir
   #define ExtensionDir "..\dist\chromium"
@@ -67,12 +71,18 @@ RestartApplications=no
 ShowLanguageDialog=auto
 LanguageDetectionMethod=uilanguage
 SetupLogging=yes
+; "Add batonctl to the PATH" changes the user's environment: running programs are told.
+ChangesEnvironment=yes
 
 [Languages]
 Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "it"; MessagesFile: "compiler:Languages\Italian.isl"
 
 [CustomMessages]
+en.CommandLineGroup=Command line:
+en.AddToPath=Add batonctl (the command line) to the PATH
+it.CommandLineGroup=Riga di comando:
+it.AddToPath=Aggiungi batonctl (la riga di comando) al PATH
 en.PreviousTitle=Data and other copies of Baton
 en.PreviousSubtitle=What Setup found on this PC
 en.PreviousIntro=Nothing is deleted: other copies and their data stay where they are.
@@ -95,6 +105,7 @@ it.ImportFailed=Non è stato possibile copiare i dati della copia portable (sono
 it.KeepData=Tenere i dati di Baton (elenco dei download, impostazioni e registri in %1)?%n%nSì: vengono tenuti, una nuova installazione ritrova tutto.%nNo: vengono eliminati.%n%nI file scaricati non vengono mai eliminati.
 
 [Tasks]
+Name: "addtopath"; Description: "{cm:AddToPath}"; GroupDescription: "{cm:CommandLineGroup}"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [InstallDelete]
@@ -105,6 +116,7 @@ Type: filesandordirs; Name: "{app}\extension.new"
 
 [Files]
 Source: "{#SourceDir}\Baton.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#CliExe}"; DestDir: "{app}"; DestName: "batonctl.exe"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "..\THIRD-PARTY-LICENSES.txt"; DestDir: "{app}"; Flags: ignoreversion
 ; Chromium browsers load the folder ("Load unpacked"); Firefox the package. An upgrade replaces both ([InstallDelete]).
@@ -127,6 +139,9 @@ Filename: "{app}\Baton.exe"; Parameters: "--uninstall"; Flags: runhidden waitunt
 ; Left by the app's own updates (the previous version, kept for "restore previous version").
 Type: files; Name: "{app}\Baton.exe.old"
 Type: files; Name: "{app}\Baton.exe.failed"
+Type: files; Name: "{app}\batonctl.exe.old"
+; Put there by the app's updater when the installation had none.
+Type: files; Name: "{app}\batonctl.exe"
 Type: filesandordirs; Name: "{app}\extension.old"
 Type: filesandordirs; Name: "{app}\extension.new"
 Type: filesandordirs; Name: "{app}\extension.failed"
@@ -215,10 +230,78 @@ begin
   Result := (PortableData <> '') and ((PreviousPage = nil) or PreviousPage.Values[0]);
 end;
 
+// The user's PATH (HKCU\Environment), edited here instead of with a [Registry] entry so that an empty value, a doubled
+// entry or a trailing backslash are handled, and so that the entry can be taken out again. A test run (BATON_DATA, as for
+// the app) works on a throw-away key instead, so the real PATH is never touched.
+function EnvironmentKey: String;
+begin
+  if GetEnv('BATON_DATA') = '' then
+    Result := 'Environment'
+  else
+    Result := 'Software\BatonTrial\Environment';
+end;
+
+function SameEntry(const A, B: String): Boolean;
+begin
+  Result := CompareText(RemoveBackslashUnlessRoot(A), RemoveBackslashUnlessRoot(B)) = 0;
+end;
+
+// The PATH without the entries equal to Dir (and without empty ones).
+function PathWithout(const Path, Dir: String): String;
+var
+  Rest, Part: String;
+  P: Integer;
+begin
+  Result := '';
+  Rest := Path;
+  while Rest <> '' do
+  begin
+    P := Pos(';', Rest);
+    if P = 0 then
+    begin
+      Part := Rest;
+      Rest := '';
+    end
+    else
+    begin
+      Part := Copy(Rest, 1, P - 1);
+      Rest := Copy(Rest, P + 1, MaxInt);
+    end;
+    if (Part <> '') and not SameEntry(Part, Dir) then
+    begin
+      if Result <> '' then
+        Result := Result + ';';
+      Result := Result + Part;
+    end;
+  end;
+end;
+
+procedure AddToPath(const Dir: String);
+var
+  Old, Cleaned: String;
+begin
+  if not RegQueryStringValue(HKCU, EnvironmentKey, 'Path', Old) then
+    Old := '';
+  Cleaned := PathWithout(Old, Dir);
+  if Cleaned <> '' then
+    Cleaned := Cleaned + ';';
+  RegWriteExpandStringValue(HKCU, EnvironmentKey, 'Path', Cleaned + Dir);
+end;
+
+procedure RemoveFromPath(const Dir: String);
+var
+  Old: String;
+begin
+  if RegQueryStringValue(HKCU, EnvironmentKey, 'Path', Old) and (PathWithout(Old, Dir) <> Old) then
+    RegWriteExpandStringValue(HKCU, EnvironmentKey, 'Path', PathWithout(Old, Dir));
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   Code: Integer;
 begin
+  if (CurStep = ssPostInstall) and WizardIsTaskSelected('addtopath') then
+    AddToPath(ExpandConstant('{app}'));
   if (CurStep = ssPostInstall) and ImportWanted then
   begin
     WizardForm.StatusLabel.Caption := CustomMessage('Importing');
@@ -250,6 +333,8 @@ procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   Data: String;
 begin
+  if CurUninstallStep = usUninstall then
+    RemoveFromPath(ExpandConstant('{app}'));
   // The data folder is kept unless the user asks otherwise; a silent uninstall (winget) always keeps it. A test run
   // (BATON_DATA, as for the app) can only ever reach its own folder.
   Data := GetEnv('BATON_DATA');

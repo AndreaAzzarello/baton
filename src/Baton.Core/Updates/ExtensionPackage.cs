@@ -15,7 +15,7 @@ namespace Baton.Core.Updates;
 public sealed record ExtensionAsset(string Name, Uri? Download, string? Sha256, string? Signatures);
 
 /// <summary>
-/// Keeps the extension next to Baton.exe (the "extension" folder for Chromium and baton-firefox.xpi, see
+/// Keeps batonctl.exe (when the package holds it) and the extension next to Baton.exe (the "extension" folder for Chromium and baton-firefox.xpi, see
 /// <see cref="BundledExtension"/>) at the program's version. The package is signed like the program ("version + file
 /// name + SHA-256", <see cref="UpdateSignature"/>), downloaded, verified, extracted next to the program into
 /// "extension.new" (same drive, so the swap is a rename), checked to hold the expected version, and then swapped in:
@@ -24,6 +24,9 @@ public sealed record ExtensionAsset(string Name, Uri? Download, string? Sha256, 
 public static class ExtensionPackage
 {
     public const string Prefix = "baton-extension-";
+    /// <summary>The command line (from 1.4), shipped in the same package so that it is updated with the program.</summary>
+    public const string CliName = "batonctl.exe";
+
     public const string StagingName = BundledExtension.FolderName + ".new";
     public const string BackupName = BundledExtension.FolderName + ".old";
 
@@ -35,6 +38,8 @@ public static class ExtensionPackage
     public static string NameFor(Version version) => $"{Prefix}{version.ToString(3)}.zip";
 
     private static string XpiBackupName => BundledExtension.FirefoxPackageName + ".old";
+
+    private static string CliBackupName => CliName + ".old";
 
     /// <summary>The version in extension\manifest.json under <paramref name="folder"/> (a program folder or an unpacked package), null when unreadable.</summary>
     public static Version? VersionIn(string folder) => ManifestVersion(Path.Combine(folder, BundledExtension.FolderName, "manifest.json"));
@@ -194,7 +199,7 @@ public static class ExtensionPackage
             if (parts.Any(p => !SafeName(p)))
                 throw Invalid(entry.FullName);
             if (!(parts[0] == BundledExtension.FolderName && (parts.Length > 1 || isFolder))
-                && !(parts.Length == 1 && parts[0] == BundledExtension.FirefoxPackageName && !isFolder))
+                && !(parts.Length == 1 && parts[0] is BundledExtension.FirefoxPackageName or CliName && !isFolder))
                 throw Invalid(entry.FullName);
             // Unix mode in the high half of the external attributes: a symbolic link is refused, never followed.
             if (((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000 || (entry.ExternalAttributes & (int)FileAttributes.ReparsePoint) != 0)
@@ -271,14 +276,20 @@ public static class ExtensionPackage
         var xpi = Path.Combine(programFolder, BundledExtension.FirefoxPackageName);
         var xpiBackup = Path.Combine(programFolder, XpiBackupName);
         var stagedXpi = Path.Combine(staging, BundledExtension.FirefoxPackageName);
+        var cli = Path.Combine(programFolder, CliName);
+        var cliBackup = Path.Combine(programFolder, CliBackupName);
+        var stagedCli = Path.Combine(staging, CliName);
         Writable(programFolder, () =>
         {
             DeleteFolder(backup);
             DeleteFolder(aside);
             if (File.Exists(xpiBackup))
                 File.Delete(xpiBackup);
+            if (File.Exists(stagedCli) && File.Exists(cliBackup))
+                File.Delete(cliBackup);
             var hadFolder = Directory.Exists(current);
             var hadXpi = false;
+            var hadCli = false;
             if (hadFolder)
                 Directory.Move(current, backup);
             try
@@ -293,9 +304,21 @@ public static class ExtensionPackage
                     }
                     File.Move(stagedXpi, xpi);
                 }
+                // The command line, renamed even if it is running (Windows allows it), like Baton.exe.
+                if (File.Exists(stagedCli))
+                {
+                    if (File.Exists(cli))
+                    {
+                        File.Move(cli, cliBackup);
+                        hadCli = true;
+                    }
+                    File.Move(stagedCli, cli);
+                }
             }
             catch
             {
+                if (hadCli && !File.Exists(cli))
+                    File.Move(cliBackup, cli);
                 if (hadXpi && !File.Exists(xpi))
                     File.Move(xpiBackup, xpi);
                 if (hadFolder && Directory.Exists(backup))
@@ -344,6 +367,8 @@ public static class ExtensionPackage
             }
             if (File.Exists(xpiBackup))
                 File.Move(xpiBackup, xpi, overwrite: true);
+            if (File.Exists(Path.Combine(programFolder, CliBackupName)))
+                File.Move(Path.Combine(programFolder, CliBackupName), Path.Combine(programFolder, CliName), overwrite: true);
         });
         TryDelete(aside);
         return true;

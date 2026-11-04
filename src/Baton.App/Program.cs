@@ -52,6 +52,9 @@ internal static class Program
         }
         if (!first)
         {
+            // Started in the tray while the app is already (or still) starting: nothing to show.
+            if (args.Contains(Core.Platform.SystemRegistration.TrayArgument))
+                return 0;
             BrowserIntegration.AllowForeground();
             AppChannel.SendAsync(AppEnvironment.PipeName, new ChannelMessage(Messages.Activate), TimeSpan.FromSeconds(3))
                 .GetAwaiter().GetResult();
@@ -74,6 +77,24 @@ internal static class Program
         return app.Run();
     }
 
+    /// <summary>Starts this program in the notification area (the single-instance check keeps a second copy from running).</summary>
+    private static bool StartApp()
+    {
+        try
+        {
+            BrowserIntegration.AllowForeground();
+            using var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!, Core.Platform.SystemRegistration.TrayArgument)
+            {
+                UseShellExecute = false,
+            });
+            return process is not null;
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>
     /// Opens the file or its folder. Links come from notifications but could also come from a web page, so only
     /// links signed with this user's secret are accepted. Returns null for "show", which starts or activates the app.
@@ -88,6 +109,20 @@ internal static class Program
         }
         if (action == NotificationAction.Show)
             return null;
+
+        // The buttons that act on the app: its answer is the verdict (it checks the link again). With the app closed, a duplicate's
+        // button starts Baton in the notification area and then acts; a copied link's offer died with the app.
+        if (action.NeedsApp())
+        {
+            var outcome = LinkLauncher.ForwardAsync(action, link,
+                message => AppChannel.SendAsync(AppEnvironment.PipeName, message, TimeSpan.FromSeconds(1)),
+                StartApp, TimeSpan.FromSeconds(30)).GetAwaiter().GetResult();
+            if (outcome == LinkOutcome.Done)
+                return 0;
+            MessageBox.Show(outcome == LinkOutcome.AppNotReachable ? Strings.ErrorAppNotStarted : Strings.ErrorNotificationExpired,
+                Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Information);
+            return 1;
+        }
 
         // The link opens only the file of its own download, still finished and still at that place.
         string? current;

@@ -95,7 +95,7 @@ public sealed class NetworkTests : IAsyncLifetime
         Assert.Equal(file.Sha256, Hash(Path.Combine(_dir, "basic.bin")));
 
         request = null;
-        var second = service.Add(url, fileName: "basic-2.bin");
+        var second = service.Add(url, fileName: "basic-2.bin", skipDuplicateCheck: true); // the same file on purpose
         Assert.Equal(DownloadStatus.Completed, await Finished(service, second));
         Assert.Null(request);
         AssertNowhereInDatabase("pw-basic-1");

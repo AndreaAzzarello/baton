@@ -74,6 +74,25 @@ manifest ostili per 1.2.1 (`replay.json`: firma vera riusata; `bad.json`: progra
 nulla; il valido deve finire con `app\Baton.exe` 1.2.0, `app\Baton.exe.old` 1.1.0, niente `DownloadManager.exe`, i dati
 copiati in `data` (stesso numero di download di `data-legacy`, che resta com'era) e `data-legacy\updates\started`.
 
+Notifiche (toast) con pulsanti, duplicati e link copiati (dalla 1.4.0): un'app isolata non registra l'identità delle notifiche e
+quindi ripiega su dialogo o balloon. Con `BATON_TOAST_TRIAL=<file>` **e** `BATON_DATA` impostate (da sola non fa nulla: c'è un test)
+mostra toast veri con l'identità `Baton.App` già registrata dall'app installata (nessuna scrittura nel registro) e aggiunge al file
+l'XML di ogni toast, con i link `baton:` firmati. Usa un file nello scratchpad.
+- Duplicato (criterio 3): scarica un file dal sito locale e poi aggiungi, dal dialogo (UI Automation), `/grab/<altro>/<stesso nome>`
+  con «Nome file» diverso (il sito dà lo stesso ETag per lo stesso nome); il secondo va in Pausa e fa comparire il toast.
+- Pulsanti: non si cliccano (il protocollo `baton:` del registro punta all'app reale). Si lancia `publish\Baton.exe "<link>"`
+  con `BATON_DATA` dal log: con app aperta e **chiusa** (deve avviarsi in tray e agire); un link alterato o già usato apre una
+  MessageBox e non fa nulla (nello script metti un timeout e chiudi quel processo, mai l'app). Non eseguire «Apri il file esistente»
+  né `batonctl open`: aprono un programma sul desktop dell'utente.
+- Appunti: `MonitorClipboard=1` nei dati isolati, poi `Set-Clipboard` da un processo `-STA` con tentativi ripetuti; **salva e ripristina
+  il testo degli appunti** (ed esci se contengono file o immagini): l'utente lavora al PC.
+- Il banner non è visibile a UI Automation: si dimostra con il log dell'XML e con `ToastNotificationManager.History.GetHistory('Baton.App')`.
+- `batonctl` solo con `BATON_DATA` impostata nella stessa chiamata (ogni chiamata PowerShell riparte da zero: senza, parla con l'app vera).
+- Installer: `install-trial.ps1` si rifiuta se Baton è installato davvero; in quel caso prova una **copia** di `installer\Baton.iss` con
+  AppId, nome e collegamento diversi (senza `AppUserModelID`) e il PATH nella chiave `HKCU\Software\BatonTrial\Environment`; salva prima
+  il valore di `HKCU\Environment\Path` e confrontalo alla fine. La copia lascia chiavi `AppListBackup\ListOfEventDrivenBackedUpTiles_*`
+  con il suo percorso: se contengono solo la copia, cancellale.
+
 Guarda sempre gli screenshot del pannello video e del popup (grafica, testi troncati, tema).
 
 ## 3. Chiusura (obbligatoria)

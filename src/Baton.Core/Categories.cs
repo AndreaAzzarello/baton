@@ -21,6 +21,12 @@ public sealed class Category
 
     public int SortOrder { get; set; }
 
+    /// <summary>The add dialog proposes the folder last used for this category instead of its own folder.</summary>
+    public bool RememberLast { get; set; }
+
+    /// <summary>The full path last chosen in the add dialog; only used while <see cref="RememberLast"/> is on.</summary>
+    public string LastFolder { get; set; } = "";
+
     public bool IsGeneral => Key == Categories.GeneralKey;
 
     /// <summary>
@@ -36,6 +42,10 @@ public sealed class Category
         : Path.IsPathFullyQualified(Folder) ? Folder
         : subfolders ? Path.Combine(defaultFolder, Folder)
         : defaultFolder;
+
+    /// <summary>What the add dialog proposes: the remembered folder when asked for, otherwise <see cref="ResolveFolder(AppSettings)"/>.</summary>
+    public string ProposedFolder(AppSettings settings, bool? subfolders = null) =>
+        RememberLast && Path.IsPathFullyQualified(LastFolder) ? LastFolder : ResolveFolder(settings.DownloadFolder, subfolders ?? settings.CategorySubfolders);
 
     /// <summary>An absolute folder of its own, other than the default folder: it takes downloads away from the default.</summary>
     public bool OverridesDefault(string defaultFolder) =>

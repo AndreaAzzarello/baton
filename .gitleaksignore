@@ -1,0 +1,5 @@
+# False positive: the "key" in extension/manifest.json is the PUBLIC key of the browser extension.
+# Chromium derives the extension ID from it (it must stay fixed so the native messaging host keeps
+# working); it is meant to be published and cannot sign or decrypt anything.
+007cb02b681e69b37c7f8dfce9fd4e465097f33d:extension/manifest.json:generic-api-key:6
+extension/manifest.json:generic-api-key:7

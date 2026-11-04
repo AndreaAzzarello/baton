@@ -9,7 +9,7 @@ namespace Baton.Core;
 public sealed partial class DownloadStore : IDisposable
 {
     /// <summary>Version written by this build. Every older version is upgraded by <see cref="Migrate"/>.</summary>
-    public const int SchemaVersion = 8;
+    public const int SchemaVersion = 9;
 
     private const string PreferencePrefix = "ui.";
 
@@ -147,6 +147,8 @@ public sealed partial class DownloadStore : IDisposable
             MigrateTo7(tx);
         if (version < 8)
             MigrateTo8(tx);
+        if (version < 9)
+            MigrateTo9(tx);
         Execute($"PRAGMA user_version = {SchemaVersion};", tx);
         tx.Commit();
     }
@@ -356,6 +358,13 @@ public sealed partial class DownloadStore : IDisposable
     /// (when they all agree); otherwise the encrypted one (https, or FTPS on port 990, explicit FTPS elsewhere for FTP
     /// ports). A login that lands on a plain scheme has not been confirmed for it: the app asks once, with a warning.
     /// </summary>
+    private void MigrateTo9(SqliteTransaction tx)
+    {
+        AddColumnIfMissing("categories", "remember_last", "INTEGER NOT NULL DEFAULT 0", tx);
+        AddColumnIfMissing("categories", "last_folder", "TEXT NOT NULL DEFAULT ''", tx);
+        CreateHistoryTable(tx);
+    }
+
     private void MigrateTo8(SqliteTransaction tx)
     {
         AddColumnIfMissing("credentials", "scheme", "TEXT NOT NULL DEFAULT 'https'", tx);
@@ -724,7 +733,7 @@ public sealed partial class DownloadStore : IDisposable
         lock (_lock)
         {
             var result = new List<Category>();
-            using var cmd = Command("SELECT id, key, name, extensions, folder, sort_order FROM categories ORDER BY sort_order, id;");
+            using var cmd = Command("SELECT id, key, name, extensions, folder, sort_order, remember_last, last_folder FROM categories ORDER BY sort_order, id;");
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
             {
@@ -736,6 +745,8 @@ public sealed partial class DownloadStore : IDisposable
                     Extensions = Categories.ParseExtensions(reader.GetString(3)),
                     Folder = reader.GetString(4),
                     SortOrder = reader.GetInt32(5),
+                    RememberLast = reader.GetInt64(6) != 0,
+                    LastFolder = reader.GetString(7),
                 });
             }
             return result;
@@ -748,12 +759,12 @@ public sealed partial class DownloadStore : IDisposable
         lock (_lock)
         {
             if (category.Id == 0)
-            {
                 InsertCategory(category, null);
-                return;
-            }
-            using var cmd = Command("UPDATE categories SET name = $name, extensions = $ext, folder = $folder, sort_order = $order WHERE id = $id;");
+            // Not part of BindCategory/InsertCategory: those also run while upgrading from versions without these columns.
+            using var cmd = Command("UPDATE categories SET name = $name, extensions = $ext, folder = $folder, sort_order = $order, remember_last = $remember, last_folder = $last WHERE id = $id;");
             BindCategory(cmd, category);
+            cmd.Parameters.AddWithValue("$remember", category.RememberLast ? 1 : 0);
+            cmd.Parameters.AddWithValue("$last", category.LastFolder);
             cmd.Parameters.AddWithValue("$id", category.Id);
             cmd.ExecuteNonQuery();
         }
@@ -797,6 +808,11 @@ public sealed partial class DownloadStore : IDisposable
                     case nameof(AppSettings.SpeedLimitKBps): settings.SpeedLimitKBps = long.Parse(value, CultureInfo.InvariantCulture); break;
                     case nameof(AppSettings.DownloadFolder): settings.DownloadFolder = value; break;
                     case nameof(AppSettings.CategorySubfolders): settings.CategorySubfolders = value != "0"; break;
+                    case nameof(AppSettings.CategoryModeAsked): settings.CategoryModeAsked = value != "0"; break;
+                    case nameof(AppSettings.DuplicateAction) when Enum.TryParse<Duplicates.DuplicateAction>(value, out var duplicate): settings.DuplicateAction = duplicate; break;
+                    case nameof(AppSettings.MonitorClipboard): settings.MonitorClipboard = value == "1"; break;
+                    case nameof(AppSettings.ClipboardIgnoredHosts): settings.ClipboardIgnoredHosts = value; break;
+                    case nameof(AppSettings.RememberRemovedForDuplicates): settings.RememberRemovedForDuplicates = value != "0"; break;
                     case nameof(AppSettings.ClearCompletedAfterDays) when int.TryParse(value, CultureInfo.InvariantCulture, out var days):
                         settings.ClearCompletedAfterDays = Math.Clamp(days, 0, 365); break;
                     case nameof(AppSettings.QueueRunning): settings.QueueRunning = value == "1"; break;
@@ -850,6 +866,11 @@ public sealed partial class DownloadStore : IDisposable
             [nameof(AppSettings.SpeedLimitKBps)] = settings.SpeedLimitKBps.ToString(CultureInfo.InvariantCulture),
             [nameof(AppSettings.DownloadFolder)] = settings.DownloadFolder,
             [nameof(AppSettings.CategorySubfolders)] = settings.CategorySubfolders ? "1" : "0",
+            [nameof(AppSettings.CategoryModeAsked)] = settings.CategoryModeAsked ? "1" : "0",
+            [nameof(AppSettings.DuplicateAction)] = settings.DuplicateAction.ToString(),
+            [nameof(AppSettings.MonitorClipboard)] = settings.MonitorClipboard ? "1" : "0",
+            [nameof(AppSettings.ClipboardIgnoredHosts)] = settings.ClipboardIgnoredHosts,
+            [nameof(AppSettings.RememberRemovedForDuplicates)] = settings.RememberRemovedForDuplicates ? "1" : "0",
             [nameof(AppSettings.ClearCompletedAfterDays)] = settings.ClearCompletedAfterDays.ToString(CultureInfo.InvariantCulture),
             [nameof(AppSettings.QueueRunning)] = settings.QueueRunning ? "1" : "0",
             [nameof(AppSettings.ConfirmBrowserDownloads)] = settings.ConfirmBrowserDownloads ? "1" : "0",

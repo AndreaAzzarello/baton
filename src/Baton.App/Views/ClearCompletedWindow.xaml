@@ -12,6 +12,7 @@
         </StackPanel>
         <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" LineHeight="20" AutomationProperties.LiveSetting="Polite" />
         <CheckBox x:Name="RecycleBox" Content="{l:Loc ClearCompletedRecycle}" IsChecked="{Binding MoveToRecycleBin}" Margin="0,12,0,0" />
+        <CheckBox x:Name="ForgetBox" Content="{l:Loc ClearCompletedForget}" IsChecked="{Binding ForgetHistory}" Margin="0,8,0,0" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,24,0,0">
             <Button Content="{l:Loc ClearCompletedConfirm}" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnOk" IsEnabled="{Binding CanConfirm}" />
             <Button Content="{l:Loc Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />

@@ -18,8 +18,17 @@
                     <Button DockPanel.Dock="Right" Content="{l:Loc Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseCommand}" />
                     <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc SettingsFolder}" />
                 </DockPanel>
-                <TextBlock Text="{l:Loc FirstRunCategoriesHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,12,0,6" />
-                <ItemsControl ItemsSource="{Binding Categories}" Focusable="False">
+                <StackPanel Margin="0,12,0,0" AutomationProperties.Name="{l:Loc SaveInMode}">
+                    <RadioButton Content="{l:Loc SaveInOneFolder}" IsChecked="{Binding OneFolder}" GroupName="SaveMode" Margin="0,2" />
+                    <TextBlock Text="{Binding OneFolderPreview}" Foreground="{DynamicResource MutedBrush}" Margin="24,0,0,4" TextWrapping="Wrap"
+                               AutomationProperties.Name="{l:Loc SaveInPreviewName}" />
+                    <RadioButton Content="{l:Loc SaveInSubfolders}" IsChecked="{Binding CategorySubfolders}" GroupName="SaveMode" Margin="0,2" />
+                    <TextBlock Text="{Binding SubfolderPreview}" Foreground="{DynamicResource MutedBrush}" Margin="24,0,0,4" TextWrapping="Wrap"
+                               AutomationProperties.Name="{l:Loc SaveInPreviewName}" />
+                </StackPanel>
+                <TextBlock Text="{l:Loc FirstRunCategoriesHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,12,0,6"
+                           Visibility="{Binding ShowCategoryFolders, Converter={StaticResource BoolToVisibility}}" />
+                <ItemsControl ItemsSource="{Binding Categories}" Focusable="False" Visibility="{Binding ShowCategoryFolders, Converter={StaticResource BoolToVisibility}}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <DockPanel Margin="0,2">

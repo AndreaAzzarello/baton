@@ -35,13 +35,25 @@ if ($command -match $writesRegistry) {
 # first, in Windows, forward-slash and Git Bash form, as a whole folder name; never when the command has ".." segments).
 $deletes = '(?i)(^|[\s;&|(])(Remove-Item|ri|rm|rmdir|rd|del|erase)\b|\[(System\.)?IO\.(File|Directory)\]::Delete'
 $root = Split-Path (Split-Path $PSScriptRoot)
+$forms = @($root, ($root -replace '\\', '/'), ('/' + $root.Substring(0, 1).ToLower() + ($root.Substring(2) -replace '\\', '/')))
+# Home-relative spellings of the same folder (~, $HOME, $env:USERPROFILE, %USERPROFILE%), when the project is under the home.
+$userHome = $env:USERPROFILE
+if ($userHome -and $root.StartsWith($userHome.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
+  $rel = $root.Substring($userHome.TrimEnd('\').Length + 1)
+  foreach ($prefix in '~', '$HOME', '${HOME}', '$env:USERPROFILE', '%USERPROFILE%') {
+    $forms += "$prefix\$rel"
+    $forms += "$prefix/" + ($rel -replace '\\', '/')
+  }
+}
 $outside = $command
 if ($command -notmatch '(^|[\\/])\.\.([\\/]|$)') {
-  foreach ($form in $root, ($root -replace '\\', '/'), ('/' + $root.Substring(0, 1).ToLower() + ($root.Substring(2) -replace '\\', '/'))) {
+  foreach ($form in $forms) {
     $outside = [regex]::Replace($outside, [regex]::Escape($form) + '(?=[\\/"''\s;|&)]|$)', '<project>', 'IgnoreCase')
   }
 }
-$desktopOutsideProject = '(?i)Desktop|GetFolderPath\(\s*.Desktop.\s*\)'
+# "Desktop" only counts as a path segment (next to a separator), as the folder passed to cd, or through the .NET API:
+# the word inside a message, comment or heredoc is not a path.
+$desktopOutsideProject = '(?i)[\\/]Desktop(?=[\\/"''\s;|&)]|$)|(^|[\s"''=(~:])Desktop[\\/]|\b(cd|sl|pushd|Set-Location|Push-Location)\s+["'']?Desktop\b|GetFolderPath\(\s*.Desktop.\s*\)|SpecialFolder\]::Desktop'
 if ($command -match $deletes -and $outside -match $desktopOutsideProject) {
   Block "cancellazione sul Desktop dell'utente. Le prove scrivono solo nella cartella di lavoro (%TEMP%\dm-trials); i file sul Desktop vanno rimossi solo dall'utente, o dopo una sua conferma esplicita."
 }

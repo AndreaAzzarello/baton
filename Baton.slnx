@@ -1,7 +1,9 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Baton.App/Baton.App.csproj" />
+    <Project Path="src/Baton.Cli/Baton.Cli.csproj" />
     <Project Path="src/Baton.Core/Baton.Core.csproj" />
+    <Project Path="src/Baton.Protocol/Baton.Protocol.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Baton.Tests/Baton.Tests.csproj" />

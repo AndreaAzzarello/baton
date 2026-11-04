@@ -19,16 +19,23 @@ Where Baton is heading. There are no dates: each item ships when it is ready, te
 - **Packaging**: the winget package, and code signing of `Baton.exe` and the installer through SignPath Foundation, so
   Windows SmartScreen recognizes the files.
 
+## Done
+
+### 1.4.0 — "Automation", first step
+
+- **Command line** (`batonctl`): add, list, pause and query downloads from scripts, see [docs/CLI.md](docs/CLI.md).
+- **Duplicate detection** before downloading the same file again, with notification buttons that work even when Baton is closed.
+- **Clipboard monitor**: offers to download a copied link (off by default).
+- **IDM-style save folders**: one folder or a subfolder per file type, your choice.
+
 ## Planned
 
-### 1.4 — "Automation"
+### 1.4.1 and 1.4.2 — "Automation", the rest
 
-- **Command line**: `baton add <url>` and friends, to add, pause and query downloads from scripts.
 - **Local API**: the same operations for other programs on the same computer, never exposed to the network.
 - **MCP server**, so AI agents (Claude Code, Claude Desktop and others) can control Baton: add downloads, read their
   state, manage queues.
 - **Automatic rules**: site → folder, queue or schedule.
-- **Clipboard monitor**: offers to download a copied link.
 
 ### 1.5 — "AI, optional and privacy-first"
 
@@ -43,7 +50,6 @@ Off by default, with **your own API key**. Cookies, passwords and form data are 
 
 - Multi-mirror and **Metalink** downloads.
 - **Archive auto-extraction** after the download.
-- **Duplicate detection** before downloading the same file again.
 - **Statistics**: what was downloaded, when, at what speed (kept on your computer).
 - The extension on the **browser stores** (Chrome Web Store, Edge Add-ons, Firefox Add-ons).
 - More **interface languages**.
@@ -61,13 +67,13 @@ Dove va Baton, senza date: ogni punto esce quando è pronto, provato e firmato. 
 
 - **In progress — 1.3.x**: l'estensione del browser aggiornata insieme all'app; pacchetti (winget) e firma del codice
   tramite SignPath Foundation.
-- **Planned — 1.4 "Automation"**: riga di comando (`baton add …`), API locale, server MCP perché gli agenti AI (Claude
-  Code, Claude Desktop…) possano comandare Baton, regole automatiche (sito → cartella, coda o pianificazione), monitor degli
-  appunti.
+- **Fatto — 1.4.0**: riga di comando (`batonctl`), rilevamento dei duplicati, monitor degli appunti, cartelle «alla IDM».
+- **Planned — 1.4.1 e 1.4.2**: API locale e regole automatiche (sito → cartella, coda o pianificazione); server MCP perché
+  gli agenti AI (Claude Code, Claude Desktop…) possano comandare Baton.
 - **Planned — 1.5 "AI, opzionale e rispettosa della privacy"**: comandi in linguaggio naturale, filtri del grabber
   assistiti, nomi dei file intelligenti, spiegazione degli errori in parole semplici. Spenta all'inizio, con la tua chiave
   API; cookie e password mai inviati.
-- **Exploring**: download da più mirror e Metalink, estrazione automatica degli archivi, rilevamento dei duplicati,
+- **Exploring**: download da più mirror e Metalink, estrazione automatica degli archivi,
   statistiche, estensioni negli store dei browser, altre lingue; 2.x multipiattaforma (interfaccia su Avalonia, poi Linux e
   forse macOS).
 

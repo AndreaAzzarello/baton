@@ -389,6 +389,10 @@ public sealed class Phase7Tests
     [InlineData(@"Remove-Item {root}\src\..\..\elsewhere -Recurse", 2)]
     [InlineData(@"Remove-Item {root}.bak -Recurse", 2)]
     [InlineData(@"Remove-Item C:\Users\user\Desktop\notes.txt", 2)]
+    [InlineData("cd {root} && graphify update .", 0)]
+    [InlineData(@"cd {root} ; Remove-Item graphify-out\cache -Recurse", 0)]
+    [InlineData("git commit -m \"the Desktop folder moved\"; rm -f notes.tmp", 0)]
+    [InlineData("rm -rf C:/Users/user/Desktop/other", 2)]
     public async Task GuardHook_AllowsDeletingInsideTheProjectWhereverItIs_NeverOnTheDesktop(string command, int expected)
     {
         // The project moved (Desktop\DownloadManager, then Desktop\App\Baton\DownloadManager): the guard follows its own folder.

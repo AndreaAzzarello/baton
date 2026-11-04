@@ -64,6 +64,9 @@ public sealed class ClearCompletedViewModel : ObservableObject
         }
     }
 
+    /// <summary>Also forget these downloads in the history that recognises duplicates (off: they stay remembered).</summary>
+    public bool ForgetHistory { get; set; }
+
     public int Count => _items.Count;
 
     /// <summary>The downloads counted in <see cref="Summary"/>: only these are removed.</summary>

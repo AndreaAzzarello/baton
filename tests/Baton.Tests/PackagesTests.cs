@@ -34,6 +34,9 @@ public sealed class PackagesTests : IDisposable
         var exe = Directory.GetFiles(Path.Combine(root, "src", "Baton.App", "bin"), "Baton.exe", SearchOption.AllDirectories)
             .Where(f => FileVersionInfo.GetVersionInfo(f).ProductVersion?.StartsWith(projectVersion + "+", StringComparison.Ordinal) == true)
             .OrderByDescending(File.GetLastWriteTimeUtc).First();
+        var cli = Directory.GetFiles(Path.Combine(root, "src", "Baton.Cli", "bin"), "batonctl.exe", SearchOption.AllDirectories)
+            .Where(f => FileVersionInfo.GetVersionInfo(f).ProductVersion?.StartsWith(projectVersion, StringComparison.Ordinal) == true)
+            .OrderByDescending(File.GetLastWriteTimeUtc).First();
         var info = new ProcessStartInfo("powershell.exe")
         {
             RedirectStandardOutput = true,
@@ -43,7 +46,7 @@ public sealed class PackagesTests : IDisposable
             CreateNoWindow = true,
         };
         foreach (var arg in new[] { "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", Path.Combine(root, "tools", "build-packages.ps1"),
-                     "-Source", Path.GetDirectoryName(exe)!, "-Out", _dir, "-SkipInstaller" })
+                     "-Source", Path.GetDirectoryName(exe)!, "-Cli", cli, "-Out", _dir, "-SkipInstaller" })
             info.ArgumentList.Add(arg);
         using var process = Process.Start(info)!;
         var output = process.StandardOutput.ReadToEndAsync();
@@ -56,6 +59,7 @@ public sealed class PackagesTests : IDisposable
         var names = zip.Entries.Select(e => e.FullName).ToHashSet();
         Assert.Contains("Baton.exe", names);
         Assert.Contains("portable.flag", names);
+        Assert.Contains("batonctl.exe", names);
         Assert.Contains("baton-firefox.xpi", names);
         // Every file of the Chromium build, under "extension/" next to Baton.exe.
         var chromium = Path.Combine(root, "dist", "chromium");
@@ -65,7 +69,7 @@ public sealed class PackagesTests : IDisposable
         // The updater's package: the same extension files, and accepted as they are by the app (from 1.3.3).
         var package = Directory.GetFiles(_dir, "baton-extension-*.zip").Single();
         using (var extension = ZipFile.OpenRead(package))
-            Assert.Equal(names.Where(n => n.StartsWith("extension/") || n == "baton-firefox.xpi").Order(), extension.Entries.Select(e => e.FullName).Order());
+            Assert.Equal(names.Where(n => n.StartsWith("extension/") || n is "baton-firefox.xpi" or "batonctl.exe").Order(), extension.Entries.Select(e => e.FullName).Order());
         var version = Core.Updates.UpdateChecker.ParseVersion(Path.GetFileNameWithoutExtension(package))!;
         var program = Path.Combine(_dir, "program");
         Directory.CreateDirectory(program);
@@ -73,6 +77,7 @@ public sealed class PackagesTests : IDisposable
         Core.Updates.ExtensionPackage.Swap(program);
         Assert.Equal(version, Core.Updates.ExtensionPackage.VersionIn(program));
         Assert.True(File.Exists(Path.Combine(program, "baton-firefox.xpi")));
+        Assert.True(File.Exists(Path.Combine(program, "batonctl.exe")));      // the command line comes with the package
     }
 
     [Fact]
@@ -122,6 +127,7 @@ public sealed class PackagesTests : IDisposable
         Assert.Contains("più segmenti", File.ReadAllText(Path.Combine(folder, "AndreaAzzarello.Baton.locale.it-IT.yaml")));
         var scoop = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(_dir, "out", "scoop", "baton.json"))).RootElement;
         Assert.Equal("9.8.7", scoop.GetProperty("version").GetString());
+        Assert.Equal("batonctl.exe", scoop.GetProperty("bin").GetString());      // Scoop puts the command line on the PATH
         Assert.Equal(Convert.ToHexStringLower(SHA256.HashData("zip"u8)), scoop.GetProperty("architecture").GetProperty("64bit").GetProperty("hash").GetString());
     }
 

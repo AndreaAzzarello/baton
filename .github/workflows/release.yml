@@ -1,6 +1,6 @@
 # Release build, started by a version tag (v1.3.0) or by hand. It builds Baton.exe reproducibly (pinned SDK in
 # global.json, ContinuousIntegrationBuild, file times from the commit), the installer and the portable zip, and uploads
-# them as one artifact. With SignPath configured, Baton.exe and the installer are signed with Authenticode by SignPath
+# them as one artifact. With SignPath configured, Baton.exe, batonctl.exe (same artifact configuration) and the installer are signed with Authenticode by SignPath
 # Foundation on the way; without it (variables empty) the same files come out unsigned. Nothing is published here, and
 # the release key (ECDSA, tools\sign-release.ps1) never comes to CI: the author signs the downloaded files at home.
 # See docs\SIGNING.md.
@@ -56,15 +56,19 @@ jobs:
           dotnet build Baton.slnx -warnaserror
           dotnet test Baton.slnx --no-build
 
-      - name: Publish Baton.exe (reproducible)
-        run: dotnet publish src\Baton.App -c Release -r win-x64 -o out\unsigned -p:ContinuousIntegrationBuild=true
+      - name: Publish Baton.exe and batonctl.exe (reproducible)
+        run: |
+          dotnet publish src\Baton.App -c Release -r win-x64 -o out\unsigned -p:ContinuousIntegrationBuild=true
+          dotnet publish src\Baton.Cli -c Release -r win-x64 --self-contained -o out\unsigned -p:ContinuousIntegrationBuild=true
 
-      - name: Upload Baton.exe for signing
+      - name: Upload Baton.exe and batonctl.exe for signing
         id: unsigned-exe
         uses: actions/upload-artifact@v7
         with:
           name: unsigned-exe
-          path: out/unsigned/Baton.exe
+          path: |
+            out/unsigned/Baton.exe
+            out/unsigned/batonctl.exe
           if-no-files-found: error
 
       - name: Sign Baton.exe (SignPath)
@@ -83,7 +87,7 @@ jobs:
       - name: Without SignPath, Baton.exe stays unsigned
         if: env.SIGN != 'true'
         shell: pwsh
-        run: New-Item -ItemType Directory -Force out\exe | Out-Null; Copy-Item out\unsigned\Baton.exe out\exe\
+        run: New-Item -ItemType Directory -Force out\exe | Out-Null; Copy-Item out\unsigned\Baton.exe, out\unsigned\batonctl.exe out\exe\
 
       - name: Install Inno Setup 6.7.3 (checked)
         shell: pwsh
@@ -129,13 +133,13 @@ jobs:
         run: |
           if ($env:SIGN -eq 'true') {
             Copy-Item out\setup\Baton-Setup.exe "out\release\Baton-Setup-$env:BATON_VERSION.exe" -Force
-            foreach ($f in 'out\release\Baton-Setup-*.exe', 'out\exe\Baton.exe') {
+            foreach ($f in 'out\release\Baton-Setup-*.exe', 'out\exe\Baton.exe', 'out\exe\batonctl.exe') {
               $s = Get-AuthenticodeSignature (Resolve-Path $f)
               if ($s.Status -ne 'Valid') { throw "$f`: Authenticode $($s.Status)" }
               "$f signed by $($s.SignerCertificate.Subject)"
             }
           }
-          Copy-Item out\exe\Baton.exe, THIRD-PARTY-LICENSES.txt out\release\
+          Copy-Item out\exe\Baton.exe, out\exe\batonctl.exe, THIRD-PARTY-LICENSES.txt out\release\
           # dist holds the extension packages: build-packages.ps1 built them for the installer and the zip
           Copy-Item "dist\baton-chromium-$env:BATON_VERSION.zip", "dist\baton-firefox-$env:BATON_VERSION.xpi" out\release\
           Get-ChildItem out\release -File | Sort-Object Name | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)" } |

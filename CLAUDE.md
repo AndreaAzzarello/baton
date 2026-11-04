@@ -18,6 +18,8 @@ Le regole generali (piano, conferme, report finale) e il vault delle lezioni sta
 - `src/Baton.Core` — motore senza UI: `DownloadService` (code, scheduler, quote), `DownloadJob` (file a segmenti) e `Media/MediaJob` (HLS/DASH, lingue audio, sottotitoli WebVTT, DASH multi-periodo) dietro `IDownloadJob`, `Grabber`
   (`GrabberEngine` scansione statica con AngleSharp, `RobotsTxt`, `HostThrottle`, `TrapGuard`, `LocalPaths` per percorsi sicuri,
   `GrabberService` progetti, sincronizzazione e pianificazione), `Net` (trasporti HTTP/FTP, proxy, PAC), `Security` (credenziali DPAPI, certificati), `Integration` (protocollo con l'estensione, `MessageValidator`, host nativo, pipe), `Platform` (registro), `DownloadStore` (SQLite), `Resources/Strings.resx`.
+- `src/Baton.Protocol` — senza dipendenze, trim/AOT-safe: `Messages` e DTO (`ChannelMessage`/`ChannelReply`), `ChannelClient` (client della pipe), `ProtocolJson` (source generator), `PipeNames` (nome pipe uguale per app e CLI), `Origins`, `Urls`, `RequestContext`. Namespace `Baton.Core.Integration`/`Baton.Core`.
+- `src/Baton.Cli` — `batonctl.exe`: parla con l'app solo via `Baton.Protocol` (`ArgParser`, `CliApp`); codici di uscita 0/1/2/3/4, `--json`; avvia `Baton.exe --tray` se chiusa. Viaggia nel pacchetto firmato `baton-extension-<v>.zip` (`ExtensionPackage.CliName`).
 - `src/Baton.App` — WPF in MVVM: `ViewModels`, `Views`, `Services` (dialoghi, tray, tema, notifiche). Le view model non creano finestre: passano da `IDialogService`.
 - `extension/` — sorgente unico dell'estensione, caricabile così com'è in Chromium; `node tools/build-extension.mjs` crea `dist/chromium` e `dist/firefox`. Logica pura in `rules.js` (testata con Node).
 - `src/Baton.App/Controls/ListSelection.cs` — mouse delle liste come in Esplora file; stili `ListCell`/`ListRow` in `Themes/Controls.xaml` (selezione disegnata dalle celle). Usali per ogni nuovo DataGrid.
@@ -30,7 +32,7 @@ Le regole generali (piano, conferme, report finale) e il vault delle lezioni sta
 
 ## Comandi
 - Usa `"C:\Program Files\dotnet\dotnet.exe"`: quello x86 viene prima nel PATH.
-- Build `dotnet build Baton.slnx`; test `dotnet test Baton.slnx`; pubblicazione `dotnet publish src\Baton.App -c Release -r win-x64 -o publish`.
+- Build `dotnet build Baton.slnx`; test `dotnet test Baton.slnx`; pubblicazione `dotnet publish src\Baton.App -c Release -r win-x64 -o publish` e `dotnet publish src\Baton.Cli -c Release -r win-x64 --self-contained -o publish` (batonctl.exe, single-file con trimming, ~14 MB; Native AOT non è possibile senza linker MSVC).
 - Il progetto ha il suo repository git; anche la home dell'utente è un repo: non fare commit lì.
 - PowerShell 5.1 toglie le virgolette al JSON passato ai programmi esterni: passa i messaggi tramite file.
 
@@ -70,6 +72,7 @@ Le regole generali (piano, conferme, report finale) e il vault delle lezioni sta
 - Installer, portable, Scoop: `install-trial.ps1` (installa in `dm-trials\inst` con `BATON_DATA`; si rifiuta se Baton è
   installato davvero), `portable-trial.ps1` (alla domanda sull'host nativo rispondi sempre «No»), Scoop solo in `dm-trials\scoop` con
   `XDG_CONFIG_HOME` reindirizzato e PATH ripristinato con il suo tipo. Pulsanti di Inno: `ui.ps1 -Action click` (BM_CLICK).
+- Toast veri da un'app isolata: `BATON_TOAST_TRIAL=<file>` (vale solo con `BATON_DATA` impostata; testato) li mostra e ne registra l'XML; procedura nella skill `prova-reale`.
 - A fine prova `tools\trials\finish.ps1` (prima senza `-Apply`): niente processi di prova aperti, nessuna traccia di Firefox portabile nel registro.
 
 ## Fine fase
@@ -81,6 +84,7 @@ Usa la skill `fine-fase`. L'app reale dell'utente è installata con l'installer 
 
 ## Flusso e strumenti
 Dettagli e tabella strumento→compito: `docs/dev/claude-tooling.md`.
+- All'inizio di ogni sessione leggi le ultime 3 voci di `HISTORY.md` (diario di sviluppo nella radice, pubblico: voci datate AAAA-MM-GG, la più recente in alto, 5-8 righe ciascuna; una voce a ogni commit tuo e a ogni autosave, con la stessa data si aggiorna la voce invece di duplicarla; mai dati sensibili né percorsi personali, solo percorsi relativi al repository; non sostituisce `CHANGELOG.md`, che è per gli utenti).
 - Funzione nuova rilevante (1.4 Automation, funzioni con agenti/AI): `/grill-me` prima di scrivere il piano.
 - Controlla `/context`: oltre ~60% proponi `/handoff` e salvalo in `%USERPROFILE%\Documents\ClaudeVault\prompt\baton-handoff-AAAA-MM-GG.md` (se esiste già nello stesso giorno aggiungi `-2`, `-3`…, non in %TEMP%); ricordami di aprire una nuova sessione incollandolo.
 - Decisioni architetturali → `ClaudeVault\decisioni\` (un file per decisione: data, contesto, scelta, alternative scartate); lezioni → `ClaudeVault\lezioni\`.
@@ -92,6 +96,7 @@ Dettagli e tabella strumento→compito: `docs/dev/claude-tooling.md`.
 ## Grafo del codice (Graphify, locale, solo codice)
 - Prima di esplorare file per «dove si gestisce X», «chi chiama Y» e prima di modifiche su più moduli, interroga il grafo: `graphify affected "Simbolo" --depth 1` (chi lo usa), `graphify explain "Simbolo"`, `graphify path "A" "B"`. Funziona per nome di simbolo; le domande libere (`graphify query`) sono rumorose. Nome ambiguo → usa l'id che l'errore elenca.
 - Rigenera dopo modifiche strutturali: `graphify update .` (incrementale); da zero `graphify extract . --code-only --force`. `graphify-out/` è git-ignored; esclusioni in `.graphifyignore`.
+- A ogni fase o versione e dopo ogni modifica strutturale (nuovo progetto, spostamento di tipi, nuovi servizi): `graphify update .` e una query di prova su un simbolo nuovo; poi decisioni e lezioni nel vault (solo se esiste). Il riepilogo finale dichiara «grafo aggiornato: sì/no» e «vault aggiornato: file». Nessun hook git: costerebbe ~7 s a commit; la regola vive in `/fine-fase`.
 - Mai Graphify Cloud, mai senza `--code-only` (le variabili `GRAPHIFY_*` sono in `.claude/settings.json`).
 
 ## Agent skills

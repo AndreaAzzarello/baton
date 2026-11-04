@@ -38,8 +38,7 @@ Details in [PRIVACY.md](PRIVACY.md).
 
 - **Segmented downloads** with up to 32 connections (8 by default), dynamic segmentation, pause and resume (also after a restart).
 - **Queues and scheduling**: named queues, days and hours, hourly quotas, wake timers, end-of-queue actions.
-- **Categories** with their own folders: your default folder always wins (even the Desktop), with optional subfolders per
-  category; a category with a folder of its own is shown as such. Light, dark and system themes; notification-area icon.
+- **Categories**: one folder for everything or a subfolder per file type, your choice; a category can have a folder of its own. Light, dark and system themes; notification-area icon.
 - **HTTP/HTTPS, FTP/FTPS**, proxies (system, HTTP, SOCKS5, PAC) and authentication (Basic, Digest, NTLM, Negotiate).
 - **HLS and DASH video** with quality, audio language and subtitles; merged into MP4 if you install ffmpeg.
 - **Site grabber**: filtered files or an offline copy of static pages, respecting robots.txt, with sync and scheduling.
@@ -49,6 +48,9 @@ Details in [PRIVACY.md](PRIVACY.md).
 - **Clear completed** (Ctrl+Shift+Del): removes finished downloads from the list, files kept unless you tick the Recycle
   Bin; optionally by itself after N days.
 - **After the download**: optional hash check and antivirus scan.
+- **Duplicates**: warns before downloading the same file again, even one removed from the list (the history keeps no address, only a keyed hash).
+- **Clipboard** (optional, off by default): offers to download a link you copy; the copied text is never stored.
+- **Command line**: `batonctl` adds and controls downloads from scripts, see [docs/CLI.md](docs/CLI.md).
 - **Signed updates** (ECDSA P-256) with automatic rollback; settings export and import.
 
 ## Download & install
@@ -78,7 +80,7 @@ or start with Windows pointed to is replaced in those registrations (and left on
 is copied at the first start ([migration notes](README.it.md#da-downloadmanager-11-a-baton), Italian).
 
 > [!NOTE]
-> Until [SignPath Foundation](https://signpath.org/) approves the project for free code signing, the files are signed only
+> Until the releases are signed with a code-signing certificate, the files are signed only
 > with the project's release key, so Windows SmartScreen may warn you. After [verifying the release](#verify-a-release),
 > choose **More info › Run anyway**. See the [code signing policy](docs/SIGNING.md).
 
@@ -117,7 +119,7 @@ file. From a clone of this repository:
 
 ```powershell
 .\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.6.exe"
-# OK: Baton-Setup-1.3.6.exe 1.3.6, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
+# OK: Baton-Setup-1.4.0.exe 1.4.0, SHA-256 …, signed by b80f666050fcbc7d; no Authenticode signature.
 ```
 
 `SHA256SUMS.txt` lists the hashes of every file of the release, also the portable zip and the extension packages.
@@ -134,6 +136,7 @@ Requirements: .NET 10 SDK and Node.js (for the extension's tests).
 dotnet build Baton.slnx                                          # zero warnings expected
 dotnet test Baton.slnx                                           # xUnit, WPF UI and extension tests
 dotnet publish src\Baton.App -c Release -r win-x64 -o publish    # self-contained Baton.exe
+dotnet publish src\Baton.Cli -c Release -r win-x64 --self-contained -o publish   # batonctl.exe
 node tools/build-extension.mjs                                   # dist\chromium, dist\firefox and their packages
 .\tools\build-packages.ps1                                       # installer (Inno Setup 6) and portable zip
 ```
@@ -168,16 +171,16 @@ To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Roadmap
 
-- **Now (1.3.x)**: the browser extension updated together with the app; winget and code signing (SignPath Foundation).
-- **Next, 1.4 "Automation"**: command line (`baton add …`), local API, an MCP server for AI agents, automatic rules, clipboard monitor.
+- **Now (1.4.0)**: command line (`batonctl`), duplicates, clipboard monitor, IDM-style save folders. In progress: winget and code signing (SignPath Foundation).
+- **Next, 1.4.1 and 1.4.2 "Automation"**: local API and automatic rules; an MCP server for AI agents.
 - **Then, 1.5 "AI, optional and privacy-first"**: natural-language commands and smarter grabber filters, off by default, your own API key.
-- **Exploring**: Metalink, archive extraction, duplicates, browser stores, more languages, a cross-platform 2.x.
+- **Exploring**: Metalink, archive extraction, browser stores, more languages, a cross-platform 2.x.
 
 Details in [ROADMAP.md](ROADMAP.md); ideas and votes in [Discussions](https://github.com/AndreaAzzarello/baton/discussions/categories/ideas).
 
 ## Documentation
 
-- **[Full guide (Italian)](README.it.md)**: every feature, settings, data, performance, troubleshooting.
+- **[Command line](docs/CLI.md)** · **[Full guide (Italian)](README.it.md)**: every feature, settings, data, performance, troubleshooting.
 - [CHANGELOG.md](CHANGELOG.md) · [ROADMAP.md](ROADMAP.md) · [PRIVACY.md](PRIVACY.md) · [SECURITY.md](SECURITY.md) ·
   [CONTRIBUTING.md](CONTRIBUTING.md) · [Code of conduct](CODE_OF_CONDUCT.md)
 

@@ -263,6 +263,9 @@ public sealed class MainListCommandsTests : IDisposable
     public void ChangeCategory_AppliesToTheWholeSelection() => Sta(() =>
     {
         using var s = Open(Database(("a.zip", 3, 10), ("b.pdf", 3, 10), ("c.mp3", 2, 0)));
+        var settings = s.Service.Settings;
+        settings.DownloadFolder = _dir; // the files move to the category's folder: under the test folder, never the real Downloads
+        s.Service.UpdateSettings(settings);
         var target = s.Vm.Categories.First(c => c.Name == "Video").Id;
         s.Vm.ChangeCategory(s.Items("a.zip", "b.pdf", "c.mp3").Select(i => i.Id).ToList(), target);
         Assert.All(s.Service.GetSnapshots(), snap => Assert.Equal(target, snap.CategoryId));

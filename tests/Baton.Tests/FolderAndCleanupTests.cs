@@ -49,6 +49,77 @@ public sealed class FolderAndCleanupTests : IDisposable
         Assert.False(new Category { Folder = @"C:\Users\x\Desktop\" }.OverridesDefault(on.DownloadFolder)); // the same folder
     }
 
+    [Fact]
+    public void ProposedFolder_UsesTheRememberedFolderOnlyWhenAskedFor_AndItIsAbsolute()
+    {
+        var settings = new AppSettings { DownloadFolder = @"C:\Users\x\Desktop", CategorySubfolders = false };
+        var video = new Category { Key = Categories.VideoKey, Name = "Video", Folder = "Video", LastFolder = @"D:\Last" };
+        Assert.Equal(@"C:\Users\x\Desktop", video.ProposedFolder(settings)); // not asked for
+        video.RememberLast = true;
+        Assert.Equal(@"D:\Last", video.ProposedFolder(settings));
+        video.LastFolder = "relative";
+        Assert.Equal(@"C:\Users\x\Desktop", video.ProposedFolder(settings)); // unusable: falls back
+    }
+
+    [Fact]
+    public async Task RememberCategoryFolder_IsSavedOnlyForCategoriesThatAskForIt()
+    {
+        var last = Path.Combine(_dir, "Last");
+        using (var store = Store())
+        {
+            await using var service = new DownloadService(store, autoTick: false);
+            await service.StopQueueAsync();
+            var video = Of(service, Categories.VideoKey);
+            service.RememberCategoryFolder(video.Id, last);
+            Assert.Equal("", Of(service, Categories.VideoKey).LastFolder); // RememberLast is off
+            video.RememberLast = true;
+            service.SaveCategory(video);
+            service.RememberCategoryFolder(video.Id, "not-absolute");
+            service.RememberCategoryFolder(video.Id, last);
+        }
+        using var reopened = new DownloadStore(Path.Combine(_dir, "state.db"));
+        Assert.Equal(last, reopened.LoadCategories().Single(c => c.Key == Categories.VideoKey).LastFolder);
+    }
+
+    [Fact]
+    public async Task MoveToCategoryFolder_MovesTheFinishedFile_AndKeepsTheOneAlreadyThere()
+    {
+        var old = Path.Combine(_dir, "Old");
+        Directory.CreateDirectory(old);
+        File.WriteAllText(Path.Combine(old, "film.mp4"), "x");
+        using var store = Store(new AppSettings { DownloadFolder = Desktop, CategorySubfolders = true, ProxyMode = ProxyMode.None });
+        var record = new DownloadRecord { Url = "https://e.test/film.mp4", Directory = old, FileName = "film.mp4", Status = DownloadStatus.Completed, AddedUtc = DateTime.UtcNow };
+        store.Insert(record);
+        await using var service = new DownloadService(store, autoTick: false);
+        await service.StopQueueAsync();
+        var video = Of(service, Categories.VideoKey);
+        Directory.CreateDirectory(Path.Combine(Desktop, "Video"));
+        File.WriteAllText(Path.Combine(Desktop, "Video", "film.mp4"), "other");
+
+        var plan = service.PlanCategoryMove(record.Id, video.Id);
+        Assert.Equal((Path.Combine(old, "film.mp4"), Path.Combine(Desktop, "Video", "film.mp4")), plan);
+        Assert.Null(service.MoveToCategoryFolder(record.Id, video.Id));
+
+        Assert.Equal("other", File.ReadAllText(Path.Combine(Desktop, "Video", "film.mp4"))); // not overwritten
+        Assert.Equal("x", File.ReadAllText(Path.Combine(Desktop, "Video", "film (1).mp4")));
+        Assert.False(File.Exists(Path.Combine(old, "film.mp4")));
+        Assert.Equal("film (1).mp4", service.GetSnapshot(record.Id)!.DisplayName);
+        Assert.Null(service.PlanCategoryMove(record.Id, video.Id)); // already there
+    }
+
+    [Fact]
+    public async Task FirstRun_SetsTheChosenMode_AndMarksItAsAsked()
+    {
+        using var store = Store(new AppSettings { DownloadFolder = Desktop, ProxyMode = ProxyMode.None });
+        await using var service = new DownloadService(store, autoTick: false);
+        await service.StopQueueAsync();
+        Assert.False(service.Settings.CategoryModeAsked);
+        Core.Setup.FirstRun.Apply(service, new Core.Setup.FirstRunChoices { DownloadFolder = Desktop, CategorySubfolders = false });
+        Assert.False(service.Settings.CategorySubfolders);
+        Assert.True(service.Settings.CategoryModeAsked);
+        Assert.Equal(Desktop, service.GetSnapshot(service.Add("https://example.test/c.mp4", startNow: false))!.Directory);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

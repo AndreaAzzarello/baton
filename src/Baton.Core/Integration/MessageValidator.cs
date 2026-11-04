@@ -17,7 +17,11 @@ public static class MessageValidator
     public const int MaxSubtitles = 20;
 
     private static readonly string[] KnownTypes =
-        [Messages.Ping, Messages.Add, Messages.Activate, Messages.Queues, Messages.Hello, Messages.ProbeMedia, Messages.AddMedia, Messages.Batch, Messages.Grab];
+        [Messages.Ping, Messages.Add, Messages.Activate, Messages.Queues, Messages.Hello, Messages.ProbeMedia, Messages.AddMedia, Messages.Batch, Messages.Grab,
+         Messages.List, Messages.Status, Messages.Pause, Messages.Resume, Messages.Retry, Messages.Remove, Messages.Open, Messages.QueueStart,
+         Messages.QueueStop, Messages.Version, Messages.Link];
+
+    public const int MaxLinkLength = 8192;
 
     private static readonly string[] BodyTypes = [Net.FormBody.UrlEncoded, Net.FormBody.Multipart];
 
@@ -30,11 +34,33 @@ public static class MessageValidator
             return $"Unknown message type: {Clip(message.Type)}";
         if (message.Version is < 1 or > 1000)
             return "Invalid protocol version.";
+        if (message.Origin is { } origin && !Origins.Known.Contains(origin))
+            return "Unknown origin.";
+        if (Text(message.Queue, 200) is { } queueError)
+            return queueError;
+        if (message.Id is < 1)
+            return "Invalid download number.";
 
         switch (message.Type)
         {
             case Messages.Add:
-                return message.Download is { } download ? ValidateDownload(download) : "Missing download.";
+                if (message.Download is not { } download)
+                    return "Missing download.";
+                // The extra fields are for the command line, MCP and the API: a browser never sends them.
+                if ((message.Origin ?? Origins.Browser) == Origins.Browser
+                    && (download.Folder is not null || download.Category is not null || download.Start is not null || download.AllowDuplicate is not null))
+                    return "These options are not for the browser.";
+                return ValidateDownload(download);
+            case Messages.Status:
+            case Messages.Open:
+                return message.Id is null ? "Missing download number." : null;
+            case Messages.Pause:
+            case Messages.Resume:
+            case Messages.Retry:
+            case Messages.Remove:
+                return message.Id is null && message.All != true ? "Missing download number." : null;
+            case Messages.Link:
+                return message.Link is { Length: > 0 and <= MaxLinkLength } link && NotificationLinks.IsLink(link) && !HasControl(link) ? null : "Invalid link.";
             case Messages.ProbeMedia:
             case Messages.AddMedia:
                 if (message.Media is not { } media)
@@ -53,8 +79,10 @@ public static class MessageValidator
     {
         if (DownloadUrl(d.Url) is { } urlError)
             return urlError;
-        if ((Text(d.FileName, 255) ?? Text(d.Referrer, MaxUrlLength) ?? Text(d.UserAgent, 1024) ?? Text(d.Queue, 200)) is { } textError)
+        if ((Text(d.FileName, 255) ?? Text(d.Referrer, MaxUrlLength) ?? Text(d.UserAgent, 1024) ?? Text(d.Queue, 200) ?? Text(d.Category, 200) ?? Text(d.Folder, 1024)) is { } textError)
             return textError;
+        if (d.Folder is { Length: > 0 } folder && !Path.IsPathFullyQualified(folder))
+            return "The folder must be a full path.";
         if (d.Referrer is { Length: > 0 } referrer && !IsWeb(referrer))
             return "The referrer must be an http or https address.";
         if (Cookies(d.Cookies) is { } cookieError)

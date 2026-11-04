@@ -7,6 +7,10 @@ namespace Baton.Core.Integration;
 /// <param name="Method">"GET" or "POST" (protocol 2): a download started by submitting a form.</param>
 /// <param name="Body">The form fields, URL-encoded, for a POST.</param>
 /// <param name="BodyType">How the form encodes its fields: application/x-www-form-urlencoded or multipart/form-data (the fields are passed URL-encoded either way).</param>
+/// <param name="Folder">Protocol 4, not from the browser: the destination folder (a full path).</param>
+/// <param name="Category">Protocol 4, not from the browser: the name of the category that decides the folder.</param>
+/// <param name="Start">Protocol 4, not from the browser: false adds the download paused.</param>
+/// <param name="AllowDuplicate">Protocol 4, not from the browser: add it even if it looks like a duplicate.</param>
 public sealed record BrowserDownload(
     string Url,
     string? FileName = null,
@@ -16,7 +20,11 @@ public sealed record BrowserDownload(
     string? Queue = null,
     string? Method = null,
     string? Body = null,
-    string? BodyType = null)
+    string? BodyType = null,
+    string? Folder = null,
+    string? Category = null,
+    bool? Start = null,
+    bool? AllowDuplicate = null)
 {
     public RequestContext ToContext() => new(Referrer, UserAgent, Cookies ?? [])
     {
@@ -95,7 +103,19 @@ public sealed record ChannelMessage(
     int? Version = null,
     MediaRequest? Media = null,
     BatchRequest? Batch = null,
-    GrabRequest? Grab = null);
+    GrabRequest? Grab = null,
+    string? Origin = null,
+    long? Id = null,
+    bool? All = null,
+    string? Queue = null,
+    string? Link = null);
+
+/// <summary>A download as the command line, the API and MCP see it. Never holds cookies, passwords, tokens or form fields; the address has no login or query.</summary>
+public sealed record DownloadInfo(long Id, string Name, string Url, string Folder, string? Path, string Status, long Downloaded, long? TotalSize,
+    string? Error, string? Queue, string? Category, DateTime AddedUtc, DateTime? CompletedUtc);
+
+/// <summary>The download already there that made an automatic add skip (protocol 4).</summary>
+public sealed record DuplicateInfo(string Reason, long? ExistingId, string ExistingPath);
 
 /// <param name="Queues">For "queues": the names of the app's queues, the main one first (added in 0.5).</param>
 /// <param name="Protocol">The protocol version the app speaks (2 from 0.6; absent from older apps, which speak 1).</param>
@@ -112,15 +132,22 @@ public sealed record ChannelReply(
     int? Protocol = null,
     string? AppVersion = null,
     MediaInfoReply? Media = null,
-    string? ExtensionVersion = null);
+    string? ExtensionVersion = null,
+    List<DownloadInfo>? Downloads = null,
+    DownloadInfo? Download = null,
+    string? Result = null,
+    long? Id = null,
+    DuplicateInfo? Duplicate = null,
+    int? Count = null);
 
 public static class Messages
 {
     /// <summary>
     /// Version 1: ping, add, queues (extension 0.2–0.5). Version 2: hello, POST downloads, probeMedia, addMedia, batch.
-    /// Version 3: grab, audio languages and subtitles of videos. A newer app keeps answering older messages unchanged.
+    /// Version 3: grab, audio languages and subtitles of videos. Version 4: the command line (origin, list, status, pause, resume,
+    /// retry, remove, open, queue start/stop, version) and the buttons of notifications (link). A newer app keeps answering older messages unchanged.
     /// </summary>
-    public const int ProtocolVersion = 3;
+    public const int ProtocolVersion = 4;
 
     public const string Ping = "ping";
     public const string Add = "add";
@@ -144,11 +171,23 @@ public static class Messages
     /// <summary>Open a new grabber project for the page (protocol 3).</summary>
     public const string Grab = "grab";
 
-    /// <summary>Messages that never start the app: the answer without it is enough.</summary>
-    public static readonly string[] Questions = [Ping, Queues, Hello];
+    public const string List = "list";
+    public const string Status = "status";
+    public const string Pause = "pause";
+    public const string Resume = "resume";
+    public const string Retry = "retry";
+    public const string Remove = "remove";
+    public const string Open = "open";
+    public const string QueueStart = "queueStart";
+    public const string QueueStop = "queueStop";
+    public const string Version = "version";
 
-    public static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
-    {
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-    };
+    /// <summary>A button of a notification, forwarded by the process Windows started with its "baton:" link; the app checks the signature.</summary>
+    public const string Link = "link";
+
+    /// <summary>Messages that never start the app: the answer without it is enough.</summary>
+    public static readonly string[] Questions = [Ping, Queues, Hello, Version];
+
+    /// <summary>The options of the source-generated context, for code that serializes the two messages with them.</summary>
+    public static JsonSerializerOptions Json => ProtocolJson.Default.Options;
 }

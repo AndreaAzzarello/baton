@@ -49,6 +49,11 @@ $dump = & "$tools\ui.ps1" -Window 'Baton' -Action dump
 Check (($dump -join "`n") -match 'portable') "the browser-host question is asked"
 & "$tools\ui.ps1" -Window 'Baton' -Action invoke -Name 'No' | Out-Null
 Start-Sleep 3
+# The command line in the zip finds the portable app by its own pipe (portable.flag next to it), never an installed one:
+# "version" does not start anything, and the versions must match (an installed older Baton would answer another one).
+Check (Test-Path "$dir\batonctl.exe") "zip: batonctl.exe"
+$ver = & "$dir\batonctl.exe" version --json | ConvertFrom-Json
+Check ($ver.running -and $ver.app -eq $ver.cli) "batonctl from the zip reaches the portable app (app $($ver.app), cli $($ver.cli))"
 Check (Test-Path "$dir\Data\downloads.db") "data next to the program ($dir\Data)"
 Check (-not (Test-Path (Join-Path $env:LOCALAPPDATA 'Baton\portable.flag'))) "nothing in %LOCALAPPDATA%\Baton"
 & "$tools\shot.ps1" -Title 'Baton' -Out "$shots\portable-main.png" -NoFront -ProcessId $app.Id

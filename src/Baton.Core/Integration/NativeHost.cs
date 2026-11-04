@@ -45,8 +45,11 @@ public static class NativeHost
             try
             {
                 var message = JsonSerializer.Deserialize<ChannelMessage>(json, Messages.Json) ?? throw new JsonException("Empty message.");
+                // Whatever the extension claims, it is the browser: the command line's types are out of its reach.
+                message = message with { Origin = Origins.Browser };
                 // Checked here as well as in the app: an invalid message never even starts the app.
-                reply = MessageValidator.Validate(message) is { } error
+                // A notification's button never comes from the extension.
+                reply = (message.Type == Messages.Link ? "Unknown message type." : MessageValidator.Validate(message) ?? OriginPolicy.Check(message, AutomationLevel.Off, AutomationLevel.Off)) is { } error
                     ? new ChannelReply(false, Error: error, Protocol: Messages.ProtocolVersion)
                     : await ForwardAsync(message, pipeName, launchApp, startupTimeout, appVersion, extensionVersion, useAppLanguage);
             }

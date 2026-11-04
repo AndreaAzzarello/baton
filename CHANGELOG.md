@@ -4,6 +4,41 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
+## [1.4.0] — 2026-11-04
+
+Prima tappa di «Automation»: cartelle come in IDM, duplicati, appunti e riga di comando. L'API locale e le regole arrivano
+con la 1.4.1, il server MCP con la 1.4.2.
+
+- **Nuovo: `batonctl`, la riga di comando** (`batonctl add | list | status | pause | resume | retry | queues | open | remove |
+  version`, `--json`, codici di uscita 0-4). Se Baton è chiuso lo avvia nell'area di notifica. Distribuita con Baton:
+  l'installer propone di aggiungerla al `PATH` (e la toglie alla disinstallazione), è nello zip portable e in Scoop, e gli
+  aggiornamenti dell'app la portano con sé. Dettagli in [docs/CLI.md](docs/CLI.md). Dietro ci sono il protocollo 4
+  (origine dei messaggi e permessi per origine; l'estensione del browser non può usare i nuovi comandi) e il nuovo progetto
+  `Baton.Protocol`, condiviso da app e CLI. La CLI è pubblicata self-contained, single-file e con trimming (circa 14 MB);
+  Native AOT non è possibile senza il linker MSVC.
+- **Nuovo: rilevamento dei duplicati.** Stesso indirizzo già in elenco, stesso nome nella cartella di destinazione, oppure
+  (dopo la risposta del server) stessa dimensione ed ETag di un file già scaricato. Scelte: Aggiungi comunque (nome
+  numerato), Sovrascrivi (il vecchio file va nel Cestino, con conferma), Apri il file esistente, Salta; con «ricorda la
+  scelta». Lo storico dei download rimossi conserva l'indirizzo solo come HMAC con una chiave per installazione, cifrata da
+  Windows: nessun indirizzo in chiaro. Gli ingressi automatici (riga di comando) non chiedono: saltano il duplicato e lo
+  segnalano (a terminale con il motivo, in italiano o in inglese secondo la lingua di Windows; con `--json` un codice
+  stabile: `sameUrl`, `sameName`, `sameFile`), e non sovrascrivono mai.
+- **Nuovo: pulsanti nelle notifiche dei duplicati** («Scarica comunque», «Apri il file esistente», «Rimuovi»): funzionano
+  anche con Baton chiuso, lo avviano nell'area di notifica e poi agiscono, se il link (firmato, valido 7 giorni) è valido e
+  il download è ancora in elenco.
+- **Nuovo: monitor degli appunti** (spento di default, Impostazioni › Generale › Integrazione). Un link singolo a un tipo di
+  file noto, copiato altrove, fa comparire una notifica con «Scarica» (apre il dialogo di aggiunta già compilato),
+  «Ignora» e «Non per questo sito». Ignora le copie di Baton e i contenuti riservati; il testo degli appunti non viene mai
+  salvato né registrato.
+- **Corretto: i download finivano in `Desktop\Video`.** Le categorie avevano una cartella relativa «Video» e la modalità
+  «sottocartella per tipo» era attiva senza che l'utente l'avesse mai scelta. Ora la scelta è nel wizard (predefinito:
+  tutto in una cartella) e, per chi aggiorna, in un avviso una tantum; Impostazioni › «Salva in» mostra l'anteprima del
+  percorso, permette di riportare tutto alla cartella principale e di ricordare l'ultima cartella per tipo; il dialogo di
+  aggiunta sceglie «cartella principale / sottocartella del tipo» per quel download; «Cambia categoria» e «Proprietà» spostano
+  il file (con conferma, mai sovrascrivendo).
+- Schema del database 9 (migrazione in un'unica transazione, dopo un backup del database; i download esistenti restano).
+- Test: 675 nel Core, 55 sull'interfaccia.
+
 ## [1.3.6] — 2026-10-26
 
 - **Corretto: le notifiche dei download tolti con «Rimuovi tutti i completati» restavano nel Centro notifiche.** Windows

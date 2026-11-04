@@ -116,6 +116,49 @@ public sealed class ExtensionUpdateTests : IAsyncLifetime
     private async Task<ExtensionAsset?> AssetOf(string release) => await UpdateChecker.ExtensionOfAsync(_http, release, New, default);
 
     [Fact]
+    public void CommandLineInThePackage_IsSwappedLikeTheProgram_AndRestoredWithIt()
+    {
+        var folder = ProgramFolder("1.3.2");
+        File.WriteAllText(Path.Combine(folder, "batonctl.exe"), "cli 1.3.2");
+        var package = Path.Combine(_dir, "with-cli.zip");
+        File.WriteAllBytes(package, Package("1.3.3", zip => Entry(zip, "batonctl.exe", "cli 1.3.3")));
+
+        ExtensionPackage.Stage(package, folder, New);
+        Assert.Equal("cli 1.3.2", File.ReadAllText(Path.Combine(folder, "batonctl.exe")));   // nothing changes before the swap
+        ExtensionPackage.Swap(folder);
+        Assert.Equal("cli 1.3.3", File.ReadAllText(Path.Combine(folder, "batonctl.exe")));
+        Assert.Equal("cli 1.3.2", File.ReadAllText(Path.Combine(folder, "batonctl.exe.old")));
+
+        Assert.True(ExtensionPackage.Restore(folder, Old));
+        Assert.Equal("cli 1.3.2", File.ReadAllText(Path.Combine(folder, "batonctl.exe")));
+        Assert.False(File.Exists(Path.Combine(folder, "batonctl.exe.old")));
+
+        // An installation that had no command line gets it; a package without one leaves things as they are.
+        var bare = ProgramFolder("1.3.2");
+        ExtensionPackage.Stage(package, bare, New);
+        ExtensionPackage.Swap(bare);
+        Assert.Equal("cli 1.3.3", File.ReadAllText(Path.Combine(bare, "batonctl.exe")));
+        Assert.False(File.Exists(Path.Combine(bare, "batonctl.exe.old")));
+        File.WriteAllBytes(package, Package("1.3.4"));
+        ExtensionPackage.Stage(package, bare, new Version(1, 3, 4));
+        ExtensionPackage.Swap(bare);
+        Assert.Equal("cli 1.3.3", File.ReadAllText(Path.Combine(bare, "batonctl.exe")));
+    }
+
+    [Fact]
+    public void OtherExecutablesInTheZip_AreStillRefused()
+    {
+        var folder = ProgramFolder("1.3.2");
+        var package = Path.Combine(_dir, "other.zip");
+        foreach (var name in new[] { "Baton.exe", "evil.exe", "sub/batonctl.exe" })
+        {
+            File.WriteAllBytes(package, Package("1.3.3", zip => Entry(zip, name, "x")));
+            Assert.Throws<UpdateException>(() => ExtensionPackage.Stage(package, folder, New));
+        }
+        Assert.Equal("program", File.ReadAllText(Path.Combine(folder, "Baton.exe")));
+    }
+
+    [Fact]
     public async Task SignedPackage_ReplacesFolderAndFirefoxPackage_KeepingTheOldOnes()
     {
         var folder = ProgramFolder("1.3.2");

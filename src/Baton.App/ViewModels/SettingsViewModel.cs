@@ -7,6 +7,7 @@ using System.Windows.Input;
 using Baton.App.Mvvm;
 using Baton.App.Services;
 using Baton.Core;
+using Baton.Core.Duplicates;
 using Baton.Core.Net;
 using Baton.Core.Resources;
 using Baton.Core.Security;
@@ -68,6 +69,23 @@ public sealed class SettingsViewModel : ObservableObject
         Theme = current.Theme;
         LanguageChoice = Languages.First(l => l.Value == current.Language);
         PortableBrowserHost = current.PortableBrowserHost == true;
+        DuplicateActionChoice = DuplicateActions.First(a => a.Value == current.DuplicateAction);
+        RememberRemovedForDuplicates = current.RememberRemovedForDuplicates;
+        MonitorClipboard = current.MonitorClipboard;
+        _ignoredHosts = current.ClipboardIgnoredHosts;
+        ForgetIgnoredHostsCommand = new RelayCommand(() =>
+        {
+            _ignoredHosts = "";
+            OnPropertyChanged(nameof(IgnoredHostsText));
+            OnPropertyChanged(nameof(HasIgnoredHosts));
+        });
+        ClearHistoryCommand = new RelayCommand(() =>
+        {
+            if (ClearDuplicateHistory is null || !_dialogs.Confirm(Strings.SettingsClearHistoryConfirm, Strings.SettingsClearHistory))
+                return;
+            ClearDuplicateHistory();
+            _dialogs.Inform(Strings.SettingsHistoryCleared, Strings.SettingsClearHistory);
+        });
 
         _proxyMode = current.ProxyMode;
         ProxyTypeChoice = ProxyTypes.First(t => t.Value == current.ProxyType);
@@ -102,9 +120,17 @@ public sealed class SettingsViewModel : ObservableObject
         {
             if (ResetCategories is null)
                 return;
+            // Every category back under the main folder, and everything in it: applied for good on "Save".
+            CategorySubfolders = false;
             Categories = ResetCategories(Folder.Trim());
             OnPropertyChanged(nameof(OverridingCategories));
             OnPropertyChanged(nameof(HasOverridingCategories));
+        });
+        BrowseCategoryCommand = new RelayCommand(() =>
+        {
+            if (SelectedCategory is { } edit
+                && _dialogs.PickFolder(Strings.PickDestinationFolder, Directory.Exists(edit.Folder) ? edit.Folder : null) is { } picked)
+                edit.Folder = picked;
         });
         BrowseFfmpegCommand = new RelayCommand(() =>
         {
@@ -165,19 +191,112 @@ public sealed class SettingsViewModel : ObservableObject
                 return;
             OnPropertyChanged(nameof(OverridingCategories));
             OnPropertyChanged(nameof(HasOverridingCategories));
+            FollowFolders();
         }
     }
 
-    public bool CategorySubfolders { get; set; }
+    private bool _categorySubfolders;
+
+    /// <summary>One subfolder per file type (true) or everything in <see cref="Folder"/> (false).</summary>
+    public bool CategorySubfolders
+    {
+        get => _categorySubfolders;
+        set
+        {
+            if (!Set(ref _categorySubfolders, value))
+                return;
+            OnPropertyChanged(nameof(OneFolder));
+            FollowFolders();
+        }
+    }
+
+    public bool OneFolder { get => !CategorySubfolders; set => CategorySubfolders = !value; }
+
+    private IReadOnlyList<Category> _categories = [];
+    private CategoryEditViewModel? _selectedCategory;
 
     /// <summary>The categories, to list those whose own absolute folder takes their downloads away from <see cref="Folder"/>.</summary>
-    public IReadOnlyList<Category> Categories { get; set; } = [];
+    public IReadOnlyList<Category> Categories
+    {
+        get => _categories;
+        set
+        {
+            _categories = value;
+            CategoryEdits = value.Select(c => new CategoryEditViewModel(c, Folder.Trim(), CategorySubfolders)).ToList();
+            foreach (var edit in CategoryEdits)
+                edit.PropertyChanged += (_, _) => OnPropertyChanged(nameof(SavePreview));
+            OnPropertyChanged(nameof(CategoryEdits));
+            SelectedCategory = CategoryEdits.FirstOrDefault();
+        }
+    }
+
+    /// <summary>The "Save in" tab: one editable row per category, saved with the settings (see <see cref="ChangedCategories"/>).</summary>
+    public IReadOnlyList<CategoryEditViewModel> CategoryEdits { get; private set; } = [];
+
+    public CategoryEditViewModel? SelectedCategory
+    {
+        get => _selectedCategory;
+        set
+        {
+            if (Set(ref _selectedCategory, value))
+                OnPropertyChanged(nameof(SavePreview));
+        }
+    }
+
+    /// <summary>The categories the user changed in the "Save in" tab.</summary>
+    public IReadOnlyList<Category> ChangedCategories =>
+        CategoryEdits.Where(e => e.IsChanged(Folder.Trim())).Select(e => e.ToCategory(Folder.Trim())).ToList();
+
+    /// <summary>Where a file of the selected category would be saved, with the options as they are now.</summary>
+    public string SavePreview => SelectedCategory is { } edit && Path.IsPathFullyQualified(edit.Folder.Trim())
+        ? string.Format(CultureInfo.CurrentCulture, Strings.SaveInPreview,
+            Path.Combine(edit.Folder.Trim(), "example." + (Core.Categories.ParseExtensions(edit.Extensions).FirstOrDefault() ?? "bin")))
+        : "";
+
+    private void FollowFolders()
+    {
+        foreach (var edit in CategoryEdits)
+            edit.Follow(Folder.Trim(), CategorySubfolders);
+        OnPropertyChanged(nameof(SavePreview));
+    }
 
     /// <summary>Set by the main window: brings those categories back under the default folder right away (like logins, not on "Save").</summary>
     /// <remarks>Given the default folder as typed, so it resets exactly the categories listed.</remarks>
     public Func<string, IReadOnlyList<Category>>? ResetCategories { get; init; }
 
+    /// <summary>Forgets every remembered download of the duplicate detector (and replaces its key); null hides nothing, the button just does nothing (tests).</summary>
+    public Action? ClearDuplicateHistory { get; init; }
+
+    public ICommand ClearHistoryCommand { get; }
+
+    /// <summary>What to do when a download looks like one already there (Settings › General).</summary>
+    public IReadOnlyList<Choice<DuplicateAction>> DuplicateActions { get; } =
+    [
+        new(DuplicateAction.Ask, Strings.DuplicateAskEach),
+        new(DuplicateAction.AddNumbered, Strings.DuplicateAddAnyway),
+        new(DuplicateAction.Overwrite, Strings.DuplicateOverwrite),
+        new(DuplicateAction.OpenExisting, Strings.DuplicateOpen),
+        new(DuplicateAction.Skip, Strings.DuplicateSkip),
+    ];
+
+    public Choice<DuplicateAction> DuplicateActionChoice { get; set; }
+
+    public bool RememberRemovedForDuplicates { get; set; }
+
+    public bool MonitorClipboard { get; set; }
+
+    // The sites muted from a notification ("Not for this site"); the settings only show them and can forget them all.
+    private string _ignoredHosts = "";
+
+    public bool HasIgnoredHosts => _ignoredHosts.Length > 0;
+
+    public string IgnoredHostsText => string.Format(CultureInfo.CurrentCulture, Strings.SettingsClipboardIgnored, _ignoredHosts.Replace(" ", ", "));
+
+    public ICommand ForgetIgnoredHostsCommand { get; }
+
     public ICommand ResetCategoryFoldersCommand { get; }
+
+    public ICommand BrowseCategoryCommand { get; }
 
     /// <summary>"Video: D:\Films" lines, or "" when every category follows the default folder.</summary>
     public string OverridingCategories => string.Join(Environment.NewLine,
@@ -396,6 +515,11 @@ public sealed class SettingsViewModel : ObservableObject
             Error = Strings.ErrorSpeedLimit;
         else if (!Path.IsPathFullyQualified(Folder.Trim()))
             Error = Strings.ErrorFolderNotAbsolute;
+        else if (CategoryEdits.FirstOrDefault(e => !Path.IsPathFullyQualified(e.Folder.Trim())) is { } badFolder)
+        {
+            SelectedCategory = badFolder;
+            Error = string.Format(CultureInfo.CurrentCulture, Strings.ErrorCategoryFolder, badFolder.Name.Trim());
+        }
         else if (ClearCompletedEnabled && (!int.TryParse(ClearCompletedDays, NumberStyles.Integer, CultureInfo.CurrentCulture, out var clearDays)
                  || clearDays is < 1 or > 365))
             Error = Strings.ErrorClearCompletedDays;
@@ -420,6 +544,10 @@ public sealed class SettingsViewModel : ObservableObject
             result.CategorySubfolders = CategorySubfolders;
             result.ClearCompletedAfterDays = ClearCompletedEnabled ? int.Parse(ClearCompletedDays, CultureInfo.CurrentCulture) : 0;
             result.ConfirmBrowserDownloads = ConfirmBrowserDownloads;
+            result.DuplicateAction = DuplicateActionChoice.Value;
+            result.RememberRemovedForDuplicates = RememberRemovedForDuplicates;
+            result.MonitorClipboard = MonitorClipboard;
+            result.ClipboardIgnoredHosts = _ignoredHosts;
             result.FfmpegPath = FfmpegPath.Trim();
             result.NotifyOnCompletion = NotifyOnCompletion;
             result.Theme = Theme;

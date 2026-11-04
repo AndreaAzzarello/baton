@@ -390,7 +390,8 @@ public sealed class GrabberService : IAsyncDisposable
         foreach (var item in items.Where(i => !i.IsPage && i.Status is not (GrabberItemStatus.Removed or GrabberItemStatus.Failed)))
         {
             var referrer = Uri.TryCreate(item.SourcePage, UriKind.Absolute, out var page) ? page.AbsoluteUri : null;
-            var downloadId = _downloads.Add(item.Url, target, null, startNow: false, new RequestContext(referrer, userAgent, cookies), categoryId, queue);
+            var downloadId = _downloads.Add(item.Url, target, null, startNow: false, new RequestContext(referrer, userAgent, cookies), categoryId, queue,
+                skipDuplicateCheck: true); // the project keeps its own record of what it fetched
             known.TryGetValue(item.Url, out var old);
             states.Add(new GrabberFileState
             {

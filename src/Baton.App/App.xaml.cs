@@ -22,6 +22,9 @@ public partial class App : Application
     private DownloadService? _service;
     private Core.Grabber.GrabberService? _grabber;
     private MainViewModel? _viewModel;
+    private ControlHandler? _control;
+    private LinkActions? _linkActions;
+    private ClipboardWatcher? _clipboard;
     private ToastService? _toasts;
     private TrayIcon? _tray;
     private bool _runningEndAction;
@@ -101,10 +104,24 @@ public partial class App : Application
         _grabber = new Core.Grabber.GrabberService(service, _store);
         service.ResumePendingChecks(); // now that the notifications and the grabber listen
         _viewModel = new MainViewModel(service, _store, dialogs, shell, new StartupService(), new GrabberUi(_grabber, service, dialogs, shell));
+        // A duplicate found by the server's answer: a notification with buttons; the dialog stays as the fallback when notifications are off.
+        _viewModel.NotifyDuplicate = notice => _toasts.ShowDuplicate(notice);
+        _control = new ControlHandler(service, () => AutomationLevel.Off, () => AutomationLevel.Off, path => shell.OpenFile(path), AppVersion);
+        _linkActions = new LinkActions(service, _toasts.Links, _toasts.Offers, path => Dispatcher.InvokeAsync(() => shell.OpenFile(path)),
+            url => Dispatcher.InvokeAsync(() => _viewModel?.OfferFromClipboard(url)),
+            host =>
+            {
+                var settings = service.Settings;
+                settings.ClipboardIgnoredHosts = ClipboardLinks.WithIgnored(settings.ClipboardIgnoredHosts, host);
+                service.UpdateSettings(settings);
+            });
+        // A download the server's answer showed to be a file already there waits for the user's choice (never more than one dialog at a time).
+        service.DuplicateFound += notice => Dispatcher.InvokeAsync(() => _viewModel?.ReceiveDuplicate(notice));
         var portableHost = service.Settings.PortableBrowserHost;
         _viewModel.SettingsSaved += settings =>
         {
             themes.Apply(settings.Theme);
+            _clipboard?.Apply(settings.MonitorClipboard);
             if (Localizer.Apply(settings.Language))
                 _viewModel.OnLanguageChanged();
             // Only a change of the check box counts as the user's answer.
@@ -118,6 +135,8 @@ public partial class App : Application
         var window = new MainWindow(_viewModel, service.ShutdownAsync, () => service.Settings.CloseToTray && _tray is not null);
         MainWindow = window;
         _tray = new TrayIcon(service, () => window.BringToFront(), window.ExitApp, current => dialogs.AskSpeedLimit(current));
+        _clipboard = new ClipboardWatcher(_tray, service, _toasts, url => Dispatcher.InvokeAsync(() => _viewModel?.OfferFromClipboard(url)));
+        _clipboard.Apply(service.Settings.MonitorClipboard);
         var hintShown = false;
         window.HiddenToTray += () =>
         {
@@ -153,7 +172,7 @@ public partial class App : Application
         if (firstRun)
             RunFirstRun(service, dialogs, shell, themes);
         else
-            _ = OfferDesktopRelocationAsync(service, dialogs);
+            _ = OfferAfterUpgradeAsync(service, dialogs, window);
 
         var startHidden = e.Args.Contains(Core.Platform.SystemRegistration.TrayArgument);
         var fromBrowser = e.Args.Contains(BrowserIntegration.BackgroundArgument);
@@ -224,12 +243,55 @@ public partial class App : Application
         settings.DesktopRelocationAsked = true; // a new installation never starts on the Desktop
         service.UpdateSettings(settings);
         if (dialogs.ShowFirstRun(wizard) is not { } choices)
+        {
+            // Skipped: a new installation still starts with everything in one folder.
+            settings.CategorySubfolders = false;
+            settings.CategoryModeAsked = true;
+            service.UpdateSettings(settings);
             return;
+        }
         Core.Setup.FirstRun.Apply(service, choices);
         themes.Apply(choices.Theme);
         if (wizard.StartWithWindows)
             new StartupService().Set(true);
         Log.Info("app", "first run completed");
+    }
+
+    private static async Task OfferAfterUpgradeAsync(DownloadService service, IDialogService dialogs, MainWindow window)
+    {
+        await OfferDesktopRelocationAsync(service, dialogs);
+        if (service.Settings.CategoryModeAsked)
+            return;
+        // Never at logon behind a hidden window: the notice waits until the window is first shown.
+        if (window.IsVisible)
+            OfferCategoryMode(service, dialogs);
+        else
+            window.IsVisibleChanged += OnFirstVisible;
+
+        void OnFirstVisible(object? sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.NewValue is not true)
+                return;
+            window.IsVisibleChanged -= OnFirstVisible;
+            window.Dispatcher.BeginInvoke(() => OfferCategoryMode(service, dialogs), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        }
+    }
+
+    /// <summary>1.4: one folder or a subfolder per type was never asked of existing users; asked once, the current choice preselected.</summary>
+    private static void OfferCategoryMode(DownloadService service, IDialogService dialogs)
+    {
+        var settings = service.Settings;
+        if (settings.CategoryModeAsked)
+            return;
+        var one = System.IO.Path.Combine(settings.DownloadFolder, "file.ext");
+        var sub = System.IO.Path.Combine(settings.DownloadFolder, service.Categories.FirstOrDefault(c => !c.IsGeneral)?.Folder ?? "", "file.ext");
+        var current = settings.CategorySubfolders ? Strings.CategoryModeNoticeCurrentSub : Strings.CategoryModeNoticeCurrentOne;
+        var answer = dialogs.Choose(string.Format(CultureInfo.CurrentCulture, Strings.CategoryModeNoticeText, one, sub, current), Strings.CategoryModeNoticeTitle,
+            Strings.CategoryModeButtonOne, Strings.CategoryModeButtonSub, settings.CategorySubfolders ? Answer.No : Answer.Yes);
+        if (answer != Answer.Cancel) // closing the window keeps what is there
+            settings.CategorySubfolders = answer == Answer.No;
+        settings.CategoryModeAsked = true;
+        service.UpdateSettings(settings);
     }
 
     /// <summary>
@@ -356,6 +418,7 @@ public partial class App : Application
         _systemTimer.Stop();
         // Running grabber projects stop; what they found so far is saved.
         _grabber?.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(5));
+        _clipboard?.Dispose();
         _tray?.Dispose();
         _wakeTimer.Dispose();
         _store?.Dispose();
@@ -411,6 +474,16 @@ public partial class App : Application
     private async Task<ChannelReply> OnChannelMessage(ChannelMessage message)
     {
         // Messages were validated by the channel (known types, sizes, address schemes) before reaching here.
+        if (_control is not null)
+        {
+            // What the origin may do (the extension is always "browser"; MCP and the API stay off until their settings exist).
+            if (_control.Authorize(message) is { } refused)
+                return refused;
+            if (message.Type == Messages.Link && _linkActions is not null)
+                return await _linkActions.HandleAsync(message.Link!);
+            if (ControlHandler.Handles(message))
+                return await _control.HandleAsync(message);
+        }
         switch (message.Type)
         {
             case Messages.Ping:

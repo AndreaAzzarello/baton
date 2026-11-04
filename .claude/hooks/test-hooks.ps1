@@ -41,6 +41,31 @@ $guardCases = @(
   @{ Expect = 2; Command = 'rm "$HOME/Desktop/explicit.txt"' },
   @{ Expect = 2; Command = '[IO.File]::Delete([Environment]::GetFolderPath("Desktop") + "\implicit.txt")' }
 )
+$guardCases += @(
+  @{ Expect = 0; Command = "cd '$root'; graphify update ." },
+  @{ Expect = 0; Command = "cd $($root -replace '\\', '/') && graphify update ." },
+  @{ Expect = 0; Command = 'git commit -m "docs: the Desktop folder moved"; rm -f notes.tmp' },
+  @{ Expect = 0; Command = "Remove-Item `$env:TEMP\x -Recurse; Write-Output 'sul Desktop dell''utente'" },
+  @{ Expect = 2; Command = 'rm -rf C:/Users/user/Desktop/other' },
+  @{ Expect = 2; Command = 'cd Desktop; Remove-Item old.txt' },
+  @{ Expect = 2; Command = 'Remove-Item "$env:USERPROFILE\Desktop\x.txt"' },
+  @{ Expect = 2; Command = 'rm -rf ~/Desktop/other' },
+  @{ Expect = 2; Command = 'del %USERPROFILE%\Desktop\x.txt' }
+)
+# Spellings relative to the home folder only make sense when the project sits under it.
+if ($env:USERPROFILE -and $root.StartsWith($env:USERPROFILE.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
+  $rel = $root.Substring($env:USERPROFILE.TrimEnd('\').Length + 1)
+  $relSlash = $rel -replace '\\', '/'
+  $guardCases += @(
+    @{ Expect = 0; Command = "cd ~/$relSlash && graphify update ." },
+    @{ Expect = 0; Command = "cd ~/$relSlash && rm -rf graphify-out/cache" },
+    @{ Expect = 0; Command = "cd `"`$HOME/$relSlash`" && rm -rf dist" },
+    @{ Expect = 0; Command = "Remove-Item `$env:USERPROFILE\$rel\dist -Recurse -Force" },
+    @{ Expect = 0; Command = "del %USERPROFILE%\$rel\dist\x.txt" },
+    @{ Expect = 2; Command = "rm -rf ~/$relSlash/../other" },
+    @{ Expect = 2; Command = "Remove-Item `$env:USERPROFILE\$rel.bak -Recurse" }
+  )
+}
 foreach ($case in $guardCases) {
   $r = Invoke-Hook "guard.ps1" (Bash $case.Command)
   $ok = $r.Code -eq $case.Expect -and $r.Ms -lt 2000

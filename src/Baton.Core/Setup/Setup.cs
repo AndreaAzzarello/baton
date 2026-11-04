@@ -48,6 +48,9 @@ public sealed class FirstRunChoices
     public Dictionary<long, string> CategoryFolders { get; set; } = [];
 
     public AppTheme Theme { get; set; } = AppTheme.System;
+
+    /// <summary>One folder for everything (false, what a new installation proposes) or a subfolder per file type.</summary>
+    public bool CategorySubfolders { get; set; }
 }
 
 public static class FirstRun
@@ -61,6 +64,8 @@ public static class FirstRun
         if (Path.IsPathFullyQualified(choices.DownloadFolder.Trim()))
             settings.DownloadFolder = choices.DownloadFolder.Trim();
         settings.Theme = choices.Theme;
+        settings.CategorySubfolders = choices.CategorySubfolders;
+        settings.CategoryModeAsked = true;
         service.UpdateSettings(settings);
         foreach (var category in service.Categories)
         {

@@ -9,6 +9,7 @@ using System.Windows.Threading;
 using Baton.App.Mvvm;
 using Baton.App.Services;
 using Baton.Core;
+using Baton.Core.Duplicates;
 using Baton.Core.Integration;
 using Baton.Core.Portable;
 using Baton.Core.Resources;
@@ -322,6 +323,14 @@ public sealed class MainViewModel : ObservableObject
     {
         foreach (var id in ids)
             _service.SetCategory(id, categoryId);
+        // Finished files stay where they are unless the user agrees to move them to the new type's folder.
+        var moves = ids.Where(id => _service.PlanCategoryMove(id, categoryId) is not null).ToList();
+        if (moves.Count > 0 && _dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmMoveToCategory, moves.Count), Strings.MenuChangeCategory))
+        {
+            var problems = moves.Select(id => _service.MoveToCategoryFolder(id, categoryId)).OfType<string>().Distinct().ToList();
+            if (problems.Count > 0)
+                _dialogs.ShowError(string.Format(CultureInfo.CurrentCulture, Strings.ErrorMoveToCategory, string.Join("; ", problems)), Strings.MenuChangeCategory);
+        }
         Refresh();
     }
 
@@ -403,10 +412,129 @@ public sealed class MainViewModel : ObservableObject
         }
         if (urls.Count == 0 || !_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.ConfirmAddLinks, urls.Count), Strings.AddTitle))
             return;
-        foreach (var url in urls)
-            _service.Add(url, startNow: false, queueId: CurrentQueueId);
+        if (FilterDuplicates(urls, null, null) is not { } plan)
+            return;
+        foreach (var (url, anyway) in plan)
+            _service.Add(url, startNow: false, queueId: CurrentQueueId, skipDuplicateCheck: anyway);
         Refresh();
     }
+
+    // ------------------------------------------------------------------ duplicates
+
+    private enum DuplicateOutcome { Add, AddAnyway, Cancel }
+
+    private static DuplicateChoice ChoiceOf(DuplicateAction action) => action switch
+    {
+        DuplicateAction.AddNumbered => DuplicateChoice.AddNumbered,
+        DuplicateAction.Overwrite => DuplicateChoice.Overwrite,
+        DuplicateAction.OpenExisting => DuplicateChoice.OpenExisting,
+        _ => DuplicateChoice.Skip,
+    };
+
+    private void RememberDuplicateAction(DuplicateAction action)
+    {
+        var settings = _service.Settings.Clone();
+        settings.DuplicateAction = action;
+        _service.UpdateSettings(settings);
+    }
+
+    /// <summary>
+    /// Rules 1 and 2 before an interactive add: the same address in the list or the history, or the same name in the folder.
+    /// The remembered choice answers without a dialog, except that overwriting is always confirmed. A form (POST) is not
+    /// compared by address: the same address with other fields is another download; the server's answer decides.
+    /// </summary>
+    private DuplicateOutcome ResolveDuplicate(string url, string? folder, string? fileName, long? categoryId, bool isPost, bool standalone)
+    {
+        if (isPost || _service.FindDuplicate(url, folder, fileName, categoryId) is not { } match)
+            return DuplicateOutcome.Add;
+        var choice = ChoiceOf(_service.Settings.DuplicateAction);
+        if (_service.Settings.DuplicateAction == DuplicateAction.Ask)
+        {
+            var dialog = new DuplicateViewModel(match);
+            _dialogs.ShowDuplicate(dialog, standalone);
+            choice = dialog.Choice;
+            if (dialog.Remember)
+                RememberDuplicateAction(dialog.ChosenAction);
+        }
+        switch (choice)
+        {
+            case DuplicateChoice.AddNumbered:
+                return DuplicateOutcome.AddAnyway;
+            case DuplicateChoice.Overwrite:
+                if (!_dialogs.Confirm(string.Format(CultureInfo.CurrentCulture, Strings.DuplicateOverwriteConfirm, Path.GetFileName(match.ExistingPath)), Strings.DuplicateTitle))
+                    return DuplicateOutcome.Cancel;
+                // Off the UI thread: the Recycle Bin can take a moment. The old file is never deleted for good.
+                if (!Task.Run(() => _service.RecycleExistingAsync(match)).GetAwaiter().GetResult())
+                {
+                    _dialogs.ShowError(Strings.DuplicateOverwriteFailed, Strings.DuplicateTitle);
+                    return DuplicateOutcome.Cancel;
+                }
+                return DuplicateOutcome.Add;
+            case DuplicateChoice.OpenExisting:
+                if (File.Exists(match.ExistingPath))
+                    _shell.OpenFile(match.ExistingPath);
+                return DuplicateOutcome.Cancel;
+            default:
+                return DuplicateOutcome.Cancel;
+        }
+    }
+
+    /// <summary>
+    /// Several links at once: one summary instead of a dialog each. Null when cancelled; otherwise the links to add, each
+    /// marked when it is a known duplicate that the user wants anyway. A remembered choice other than "add" skips them.
+    /// </summary>
+    private List<(string Url, bool Anyway)>? FilterDuplicates(IReadOnlyList<string> urls, string? folder, long? categoryId)
+    {
+        var known = urls.Where(u => _service.FindDuplicate(u, folder, null, categoryId) is not null).ToHashSet();
+        List<(string, bool)> All(bool anyway) => urls.Select(u => (u, anyway && known.Contains(u))).ToList();
+        if (known.Count == 0)
+            return All(false);
+        var answer = _service.Settings.DuplicateAction switch
+        {
+            DuplicateAction.AddNumbered => Answer.No,
+            DuplicateAction.Ask => _dialogs.Choose(string.Format(CultureInfo.CurrentCulture, Strings.DuplicateBatchMessage, known.Count, urls.Count),
+                Strings.DuplicateTitle, Strings.DuplicateBatchSkip, Strings.DuplicateBatchAll, Answer.Yes),
+            _ => Answer.Yes, // Skip, Open and Overwrite do not apply to a list: the duplicates are left out
+        };
+        return answer switch
+        {
+            Answer.Cancel => null,
+            Answer.No => All(true),
+            _ => urls.Where(u => !known.Contains(u)).Select(u => (u, false)).ToList(),
+        };
+    }
+
+    /// <summary>A download stopped by the server's answer: add it anyway, open the file already there, or remove it.</summary>
+    private void HandleDuplicateNotice(DuplicateNotice notice)
+    {
+        // Notifications on: the buttons ("Download anyway", "Open existing file", "Remove") answer instead of the dialog.
+        if (NotifyDuplicate?.Invoke(notice) == true)
+            return;
+        var dialog = new DuplicateViewModel(notice.Match, canOverwrite: false);
+        _dialogs.ShowDuplicate(dialog, standalone: true);
+        if (dialog.Remember)
+            RememberDuplicateAction(dialog.ChosenAction);
+        switch (dialog.Choice)
+        {
+            case DuplicateChoice.AddNumbered:
+                _service.ContinueDespiteDuplicate(notice.DownloadId);
+                break;
+            case DuplicateChoice.OpenExisting:
+                if (File.Exists(notice.Match.ExistingPath))
+                    _shell.OpenFile(notice.Match.ExistingPath);
+                _ = _service.RemoveAsync(notice.DownloadId, deleteFile: false);
+                break;
+            default:
+                _ = _service.RemoveAsync(notice.DownloadId, deleteFile: false);
+                break;
+        }
+    }
+
+    /// <summary>Shows the duplicate as a notification with buttons; false (or null) when it cannot, then the dialog asks.</summary>
+    public Func<DuplicateNotice, bool>? NotifyDuplicate { get; set; }
+
+    /// <summary>The server's answer showed a file already downloaded: asked in turn with the requests from the browser.</summary>
+    public void ReceiveDuplicate(DuplicateNotice notice) => ReceiveRequest(notice, closing: false);
 
     /// <summary>A download sent by the browser extension: confirmed in the add dialog, or started directly.</summary>
     public void ReceiveFromBrowser(BrowserDownload download, bool closing) => ReceiveRequest(download, closing);
@@ -416,6 +544,19 @@ public sealed class MainViewModel : ObservableObject
 
     /// <summary>"Download all": the links and images of a page, to choose from.</summary>
     public void ReceiveBatch(BatchRequest batch, bool closing) => ReceiveRequest(batch, closing);
+
+    private sealed record ClipboardOffer(string Url);
+
+    /// <summary>The user clicked the "Download this?" notification for a copied link: the add dialog opens already filled, in turn with the other requests.</summary>
+    public void OfferFromClipboard(string url) => ReceiveRequest(new ClipboardOffer(url), closing: false);
+
+    private void HandleClipboardOffer(ClipboardOffer offer)
+    {
+        var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings, offer.Url,
+            queues: _service.Queues, queueId: CurrentQueueId) { EditCategory = EditCategoryFolder };
+        if (_dialogs.ShowAddDownload(dialog, standalone: true))
+            Submit(dialog, null, standalone: true);
+    }
 
     /// <summary>"Capture this site": a new grabber project for the page, with its cookies.</summary>
     public void ReceiveGrab(GrabRequest grab, bool closing) => ReceiveRequest(grab, closing);
@@ -445,6 +586,12 @@ public sealed class MainViewModel : ObservableObject
                     case GrabRequest grab:
                         _grabber.CreateFromBrowser(grab);
                         break;
+                    case DuplicateNotice notice:
+                        HandleDuplicateNotice(notice);
+                        break;
+                    case ClipboardOffer offer:
+                        HandleClipboardOffer(offer);
+                        break;
                 }
             }
         }
@@ -464,7 +611,9 @@ public sealed class MainViewModel : ObservableObject
         // A form from another site is always confirmed, even with confirmations turned off.
         if (!_service.Settings.ConfirmBrowserDownloads && !next.IsCrossSitePost)
         {
-            _service.Add(next.Url, null, fileName, startNow: true, context, queueId: queueId);
+            var outcome = ResolveDuplicate(next.Url, null, fileName, null, context.IsPost, standalone: true);
+            if (outcome != DuplicateOutcome.Cancel)
+                _service.Add(next.Url, null, fileName, startNow: true, context, queueId: queueId, skipDuplicateCheck: outcome == DuplicateOutcome.AddAnyway);
             return;
         }
 
@@ -480,7 +629,7 @@ public sealed class MainViewModel : ObservableObject
             EditCategory = EditCategoryFolder,
         };
         if (_dialogs.ShowAddDownload(dialog, standalone: true))
-            Submit(dialog, context);
+            Submit(dialog, context, standalone: true);
     }
 
     private void HandleMedia(MediaRequest media)
@@ -497,7 +646,8 @@ public sealed class MainViewModel : ObservableObject
         var fileName = Core.Media.MediaCatalog.FileNameFor(media.Title, media.Url, ".mp4");
         if (!_service.Settings.ConfirmBrowserDownloads)
         {
-            _service.AddMedia(media, kind, media.Label, fileName: fileName, queueId: queueId);
+            if (ResolveDuplicate(media.Url, null, fileName, null, isPost: false, standalone: true) != DuplicateOutcome.Cancel)
+                _service.AddMedia(media, kind, media.Label, fileName: fileName, queueId: queueId);
             return;
         }
 
@@ -522,9 +672,13 @@ public sealed class MainViewModel : ObservableObject
         if (!_dialogs.ShowAddDownload(dialog, standalone: true))
             return;
         var (_, folder, name, categoryId, chosenQueue) = dialog.ToRequest();
+        if (ResolveDuplicate(media.Url, folder, name, categoryId, isPost: false, standalone: true) == DuplicateOutcome.Cancel)
+            return;
         try
         {
             _service.AddMedia(media, kind, media.Label, folder, name, dialog.StartNow, categoryId, chosenQueue);
+            if (dialog.FolderChosen)
+                _service.RememberCategoryFolder(dialog.Category.Id, dialog.Folder.Trim());
         }
         catch (ArgumentException ex)
         {
@@ -549,8 +703,11 @@ public sealed class MainViewModel : ObservableObject
         var context = new RequestContext(batch.PageUrl, batch.UserAgent, batch.Cookies ?? []);
         var folder = dialog.Folder.Trim().Length > 0 ? dialog.Folder.Trim() : null;
         var queue = dialog.Queue?.Id ?? queueId;
-        foreach (var item in dialog.Selected)
-            _service.Add(item.Url, folder, null, startNow: false, context, dialog.Category.Category?.Id, queue);
+        var category = dialog.Category.Category?.Id;
+        if (FilterDuplicates(dialog.Selected.Select(i => i.Url).ToList(), folder, category) is not { } plan)
+            return;
+        foreach (var (url, anyway) in plan)
+            _service.Add(url, folder, null, startNow: false, context, category, queue, skipDuplicateCheck: anyway);
         // "Download now" starts the queue, so the files still respect its limit instead of all starting at once.
         if (dialog.StartNow)
             _service.StartQueue(queue);
@@ -744,10 +901,16 @@ public sealed class MainViewModel : ObservableObject
             Submit(dialog, null);
     }
 
-    private void Submit(AddDownloadViewModel dialog, RequestContext? context)
+    private void Submit(AddDownloadViewModel dialog, RequestContext? context, bool standalone = false)
     {
         var (url, folder, fileName, categoryId, queueId) = dialog.ToRequest();
-        _service.Add(url, folder, fileName, dialog.StartNow, context, categoryId, queueId, dialog.ExpectedHashOrNull);
+        var outcome = ResolveDuplicate(url, folder, fileName, categoryId, context?.IsPost == true, standalone);
+        if (outcome == DuplicateOutcome.Cancel)
+            return;
+        _service.Add(url, folder, fileName, dialog.StartNow, context, categoryId, queueId, dialog.ExpectedHashOrNull,
+            skipDuplicateCheck: outcome == DuplicateOutcome.AddAnyway);
+        if (dialog.FolderChosen)
+            _service.RememberCategoryFolder(dialog.Category.Id, dialog.Folder.Trim());
         Refresh();
     }
 
@@ -822,7 +985,7 @@ public sealed class MainViewModel : ObservableObject
         IReadOnlyList<string> kept;
         try
         {
-            (_, kept) = await _service.ClearCompletedAsync(categoryId, queueId, dialog.MoveToRecycleBin, dialog.Ids);
+            (_, kept) = await _service.ClearCompletedAsync(categoryId, queueId, dialog.MoveToRecycleBin, dialog.Ids, dialog.ForgetHistory);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Microsoft.Data.Sqlite.SqliteException or System.Runtime.InteropServices.COMException)
         {
@@ -889,10 +1052,13 @@ public sealed class MainViewModel : ObservableObject
                 _service.ResetCategoryFolders(folder);
                 return _service.Categories;
             },
+            ClearDuplicateHistory = _service.ClearDuplicateHistory,
         };
         if (!_dialogs.ShowSettings(dialog) || dialog.Result is null)
             return;
         _service.UpdateSettings(dialog.Result);
+        foreach (var changed in dialog.ChangedCategories)
+            _service.SaveCategory(changed);
         if (dialog.RunAtStartup != _startup.IsEnabled)
             _startup.Set(dialog.RunAtStartup);
         SettingsSaved?.Invoke(dialog.Result);
@@ -914,7 +1080,7 @@ public sealed class MainViewModel : ObservableObject
 
     private bool ShowCategories(long? selectId, bool addNew)
     {
-        var dialog = new CategoriesViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, selectId);
+        var dialog = new CategoriesViewModel(_dialogs, _service.Categories, _service.Settings.DownloadFolder, selectId, _service.Settings.CategorySubfolders);
         if (addNew)
             dialog.AddCommand.Execute(null);
         if (!_dialogs.ShowCategories(dialog))

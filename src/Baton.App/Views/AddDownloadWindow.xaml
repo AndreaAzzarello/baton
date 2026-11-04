@@ -35,6 +35,11 @@
             <Button DockPanel.Dock="Right" Content="{l:Loc Browse}" Style="{StaticResource DialogButton}" Command="{Binding BrowseCommand}" />
             <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc AddFolderName}" />
         </DockPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,6,0,0" AutomationProperties.Name="{l:Loc AddFolderChoiceName}"
+                    Visibility="{Binding CanChooseSubfolder, Converter={StaticResource BoolToVisibility}}">
+            <RadioButton Content="{l:Loc AddFolderMain}" IsChecked="{Binding UseMainFolder}" GroupName="AddFolderChoice" Margin="0,0,20,0" />
+            <RadioButton Content="{l:Loc AddFolderSubfolder}" IsChecked="{Binding UseSubfolder}" GroupName="AddFolderChoice" />
+        </StackPanel>
         <TextBlock Margin="0,4,0,0" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource MutedBrush}"
                    Visibility="{Binding HasFolderSource, Converter={StaticResource BoolToVisibility}}">
             <Run Text="{Binding FolderSource, Mode=OneWay}" />
