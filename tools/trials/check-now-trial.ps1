@@ -49,6 +49,11 @@ Check (@(Get-Process Baton -ErrorAction SilentlyContinue | Where-Object { $_.Pat
 if ($Zip) {
   for ($i = 0; $i -lt 120 -and (ExtensionVersion) -ne $Expect; $i++) { Start-Sleep 1 }
   Check ((ExtensionVersion) -eq $Expect) "the extension next to it is $(ExtensionVersion) (extension.old: $(if (Test-Path "$base\app\extension.old") { 'kept' } else { 'none' }))"
+  # From 1.4.0 the signed package carries the command line: it must appear next to Baton.exe at the new version.
+  if ([version]$Expect -ge [version]'1.4.0') {
+    for ($i = 0; $i -lt 60 -and -not (Test-Path "$base\app\batonctl.exe"); $i++) { Start-Sleep 1 }
+    Check ((Test-Path "$base\app\batonctl.exe") -and (Version "$base\app\batonctl.exe") -eq $Expect) "batonctl.exe arrived with the update ($(if (Test-Path "$base\app\batonctl.exe") { Version "$base\app\batonctl.exe" } else { 'missing' }))"
+  }
   Get-ChildItem "$base\data\logs" -Filter *.log | Sort-Object LastWriteTime | Select-Object -Last 1 | ForEach-Object { Select-String -Path $_.FullName -Pattern 'extension' | Select-Object -Last 3 | ForEach-Object { "     log: $($_.Line.Trim())" } }
 }
 "SHA-256 $((Get-FileHash "$base\app\Baton.exe").Hash)"
