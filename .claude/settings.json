@@ -44,14 +44,9 @@
       "PowerShell(gh label*)", "PowerShell(gh release*)", "PowerShell(gh api*)"
     ],
     "deny": [
-      "Skill(mattpocock-skills:code-review)",
       "Skill(mattpocock-skills:pr)",
       "Skill(mattpocock-skills:wizard)",
-      "Skill(mattpocock-skills:prototype)",
       "Skill(mattpocock-skills:research)",
-      "Skill(mattpocock-skills:codebase-design)",
-      "Skill(mattpocock-skills:domain-modeling)",
-      "Skill(mattpocock-skills:grilling)",
       "Skill(mattpocock-skills:writing-for-agents)"
     ]
   },
