@@ -158,8 +158,9 @@ Estensione: in Chrome, Edge, Opera e Brave basta **ricaricarla** (l'ID non cambi
 `Baton.exe` e l'installer hanno ciascuno l'hash SHA-256 (`.sha256`) e una firma ECDSA P-256 (`.sig`) di
 "versione + nome del file + SHA-256", fatta con una chiave privata che non lascia mai il PC dell'autore. Le chiavi pubbliche
 sono in [`src/Baton.Core/Updates/release-keys.txt`](src/Baton.Core/Updates/release-keys.txt):
-`b80f666050fcbc7d` (principale) e `cc691630b30bf7f1` (di riserva, dalla 1.2.0). Quando SignPath firmerà le release avranno
-anche la firma **Authenticode** (visibile in Proprietà › Firme digitali), apposta prima della chiave della release. Con i tre
+`b80f666050fcbc7d` (principale) e `cc691630b30bf7f1` (di riserva, dalla 1.2.0). Le release **non** hanno la firma Authenticode:
+SignPath Foundation ha rifiutato la domanda, quindi Windows SmartScreen può avvisare al primo avvio; l'integrità si verifica con
+questa firma e con lo SHA-256. Se un giorno ci sarà un certificato, lo script lo controllerà già. Con i tre
 file nella stessa cartella, da una copia del repository:
 
 ```powershell
@@ -459,6 +460,57 @@ restano), `version`; `--json` per un output stabile. Codici di uscita: 0 fatto, 
 non raggiungibile, 4 duplicato saltato. Non cancella mai file e non cambia impostazioni, credenziali, proxy né cartelle
 delle categorie. Guida completa: [docs/CLI.md](docs/CLI.md).
 
+## API locale
+
+Spenta per impostazione predefinita (Impostazioni › Automazione). Quando la accendi (livello *Sola lettura*, *Lettura e
+aggiunta* o *Controllo esteso*) Baton ascolta su `http://127.0.0.1:7745/api/v1` (la porta si cambia; se è occupata lo dice
+nelle impostazioni, senza sceglierne un'altra). Serve il token (Mostra, Copia, Nuovo token: il vecchio smette subito di
+valere) in `Authorization: Bearer …`.
+
+```powershell
+$h = @{ Authorization = "Bearer $token" }
+Invoke-RestMethod http://127.0.0.1:7745/api/v1/downloads -Headers $h
+Invoke-RestMethod http://127.0.0.1:7745/api/v1/downloads -Method Post -Headers $h -ContentType application/json `
+  -Body '{"url":"https://example.com/file.zip","category":"Software"}'
+```
+
+Sicurezza: solo chi chiama dal computer, `Host` esatto (`127.0.0.1:porta` o `localhost:porta`), nessun header `Origin` (una
+pagina web non può usarla; non c'è CORS), 120 richieste al minuto e 1 MB per richiesta. Gli indirizzi ammessi sono http, https
+e ftp, mai quelli di questo computer o della rete locale (impostazione «Consenti indirizzi della rete locale», spenta): il
+controllo si ripete a ogni connessione e a ogni redirect, anche per FTP. L'API sceglie la cartella solo tramite la categoria e
+non apre mai file. Rifiuti e modifiche finiscono nel **Registro attività** (Impostazioni › Automazione). Rotte, livelli e
+dettagli: [docs/API.md](docs/API.md) e [docs/openapi.json](docs/openapi.json).
+
+## Regole automatiche
+
+La finestra **Regole** (pulsante nella barra, oppure Impostazioni › Automazione › Regole) decide da sola cartella, coda, nome e
+altro quando aggiungi un download. Le condizioni valgono tutte insieme (AND): sito (con i sottodomini), modello d'indirizzo con
+`*` e `?` o espressione regolare (sempre senza backtracking), estensione, categoria, dimensione minima e massima (solo se è nota
+quando si aggiunge) e origine (browser, dialogo, elenco di link, appunti, riga di comando, API, MCP). Una regola senza condizioni
+non si applica mai.
+
+Azioni: cartella, categoria, coda, avvio (subito, in coda o in pausa; **la «programmazione» di una regola è la scelta di una coda
+pianificata**: non c'è un orario per singola regola, per un orario scegli una coda che ha la sua pianificazione),
+**rinomina** con `{name}`, `{ext}`, `{host}`, `{date}`, `{time}`, `{category}` e `{n}` (il primo numero libero nella cartella),
+scansione antivirus, numero di connessioni, user agent, limite di velocità per quel download, «aggiungi senza chiedere»,
+«mostra nella cartella» e «apri a fine download».
+
+- Si valutano **una sola volta, all'aggiunta**; vince la prima regola che corrisponde (l'ordine si cambia con le frecce o Alt+Su/Giù)
+  e **ciò che scegli tu vince sempre** (cartella, nome, categoria, coda o avvio indicati nel dialogo, dalla riga di comando o
+  dall'API). La coda, la categoria e la cartella **preselezionate** nel dialogo Aggiungi non sono una scelta: diventano
+  esplicite solo se le cambi tu, quindi una regola «sito → coda» funziona anche dal dialogo. Il dialogo dice quale regola si
+  applica («Regola: nome») e mostra la coda e la cartella che darà; se cambi un campo, vale la tua scelta.
+- Dal browser, la dimensione arriva a Baton quando il browser la conosce (Chromium: `totalBytes` o `fileSize`; Firefox:
+  `totalBytes`): le condizioni sulla dimensione valgono anche per i download intercettati. Con un'estensione più vecchia, o se
+  il browser non conosce la dimensione, una regola con una condizione sulla dimensione non scatta.
+- La rinomina lavora sul nome che il server rivela; l'estensione reale resta sempre e non si può introdurre un'estensione di
+  programma o script. Il controllo dei duplicati confronta il nome finale.
+- «Apri» non vale mai per programmi e script e solo dopo una scansione che non ha trovato nulla (accende la scansione per
+  quel download); in caso contrario il rifiuto è nel registro. Una regola importata che apre file o salta la conferma resta
+  disattivata finché non la accendi.
+- I flussi HLS/DASH prendono solo cartella, categoria e coda.
+- L'anteprima della finestra dice quale regola, così com'è scritta, si applica a un indirizzo.
+
 ## Interfaccia
 
 - **Elenco e selezione come in Esplora file**: clic, Ctrl+clic, Maiusc+clic, Ctrl+A; clic sul vuoto per deselezionare. Le
@@ -485,14 +537,15 @@ delle categorie. Guida completa: [docs/CLI.md](docs/CLI.md).
 - **Barra degli strumenti personalizzabile**: **Altro** › *Personalizza la barra degli strumenti…* (o tasto destro sulla
   barra): pulsanti visibili, ordine (Alt+Su/Giù), separatori, spazio flessibile che divide sinistra e destra, icone piccole o
   grandi, testo sì/no. Salvato tra una sessione e l'altra; *Ripristina* torna alla barra predefinita.
-- **Esporta e importa** (**Altro**): la lista dei download in JSON o i soli indirizzi in testo; impostazioni, categorie, code e
-  progetti del grabber in JSON. **Mai** password, cookie, campi dei moduli o altri segreti, né i percorsi dei programmi
+- **Esporta e importa** (**Altro**): la lista dei download in JSON o i soli indirizzi in testo; impostazioni, categorie, code,
+  progetti del grabber e **regole** in JSON (le regole portano categorie e code per nome, senza id né segreti). **Mai** password, cookie, campi dei moduli o altri segreti, né i percorsi dei programmi
   (ffmpeg, antivirus) e l'indirizzo degli aggiornamenti. L'importazione (JSON di Baton o di DownloadManager fino alla 1.1, o un testo qualsiasi con
   indirizzi) mostra prima un'anteprima: tipo, nome, già presente, non valido; si sceglie cosa importare e cosa fare dei
   duplicati (salta, sostituisci, mantieni entrambi); l'anteprima mostra anche le cartelle di categorie e progetti. Il file
   importato non è fidato: i download entrano in pausa nella cartella della loro categoria (mai in una cartella indicata dal file
   né come già completati), code e progetti senza pianificazione né azione di fine coda, e la password del proxy resta solo se
-  il proxy è lo stesso. Categorie e impostazioni **non sono mai preselezionate**; le cartelle sono accettate solo se locali e
+  il proxy è lo stesso. Categorie, regole e impostazioni **non sono mai preselezionate** (una regola importata che apre file o salta la conferma, o la cui
+  categoria o coda non esiste qui, entra disattivata; un nome già presente è un duplicato come per code e progetti); le cartelle sono accettate solo se locali e
   assolute, nel profilo dell'utente o su un disco dati, e mai di sistema o di avvio (Windows, Programmi, ProgramData, AppData,
   menu Start ed Esecuzione automatica, profili di PowerShell), giudicate sul percorso reale (nomi brevi 8.3, junction e
   collegamenti risolti); quelle scartate compaiono nell'anteprima con il motivo. Proxy, PAC e la disattivazione della conferma
@@ -955,7 +1008,7 @@ Restano aperte finché un test non le conferma o le esclude; le segnalazioni son
 
 ## Roadmap
 
-- **Ora (1.4.0 uscita)**: riga di comando `batonctl`, duplicati, monitor degli appunti, cartelle «alla IDM». In corso: winget e firma del codice (SignPath Foundation).
+- **Ora (1.4.0 uscita)**: riga di comando `batonctl`, duplicati, monitor degli appunti, cartelle «alla IDM». La firma Authenticode non c'è: SignPath Foundation ha rifiutato la domanda. Winget: non ancora disponibile.
 - **Poi, 1.4.1 e 1.4.2 "Automation"**: API locale e regole automatiche; server MCP per gli agenti AI.
 - **Quindi, 1.5 "AI, opzionale e rispettosa della privacy"**: comandi in linguaggio naturale e filtri del grabber assistiti, spenta all'inizio, con la tua chiave API.
 - **Da valutare**: Metalink, estrazione degli archivi, store dei browser, altre lingue, una 2.x multipiattaforma.

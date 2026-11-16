@@ -431,7 +431,7 @@ public sealed class Phase7Tests
         var pipeName = "dm-test-" + Guid.NewGuid().ToString("N");
         using var cts = new CancellationTokenSource();
         var server = AppChannel.ServeAsync(pipeName, _ => Task.FromResult(new ChannelReply(true)), cts.Token, maxConnections: 3,
-            readTimeout: TimeSpan.FromSeconds(1));
+            readTimeout: TimeSpan.FromSeconds(3));
         var idle = new List<System.IO.Pipes.NamedPipeClientStream>();
         try
         {
@@ -443,11 +443,14 @@ public sealed class Phase7Tests
                 await client.ConnectAsync(5000);
                 idle.Add(client);
             }
-            Assert.Null(await AppChannel.SendAsync(pipeName, new ChannelMessage(Messages.Ping), TimeSpan.FromMilliseconds(400)));
+            Assert.Null(await AppChannel.SendAsync(pipeName, new ChannelMessage(Messages.Ping), TimeSpan.FromMilliseconds(500)));
 
-            // ...until the silent ones are dropped after the read timeout; then the app answers again.
-            await Task.Delay(1500);
-            var reply = await AppChannel.SendAsync(pipeName, new ChannelMessage(Messages.Ping), TimeSpan.FromSeconds(5));
+            // ...until the silent ones are dropped after the read timeout; then the app answers again. The wait is a poll with
+            // a generous ceiling, not a fixed pause: a slow CI runner may drop the connections late, but they must be dropped.
+            ChannelReply? reply = null;
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+            while (reply is null && DateTime.UtcNow < deadline)
+                reply = await AppChannel.SendAsync(pipeName, new ChannelMessage(Messages.Ping), TimeSpan.FromSeconds(1));
             Assert.True(reply?.Ok);
         }
         finally

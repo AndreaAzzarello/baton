@@ -22,6 +22,8 @@
   <!-- Public keys whose signatures updates must carry (written by tools\sign-release.ps1 -NewKey) -->
   <ItemGroup>
     <EmbeddedResource Include="Updates\release-keys.txt" LogicalName="Baton.Core.Updates.release-keys.txt" />
+    <!-- The API description the server hands out at /api/v1/openapi.json (the source lives with the docs) -->
+    <EmbeddedResource Include="..\..\docs\openapi.json" LogicalName="Baton.Core.Integration.openapi.json" />
   </ItemGroup>
 
   <ItemGroup>

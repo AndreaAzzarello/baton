@@ -270,6 +270,29 @@ public sealed class MigrationTests : IDisposable
     }
 
     [Fact]
+    public void Version9_IsUpgradedTo10_DownloadsAndSettingsKept_RulesAndLogCreated()
+    {
+        using (var store = new DownloadStore(DbPath))
+        {
+            store.SaveSettings(new AppSettings { DownloadFolder = @"D:\Kept", ProxyMode = ProxyMode.None });
+            store.Insert(new DownloadRecord { Url = "https://a.test/keep.zip", Directory = @"D:\Kept", Status = DownloadStatus.Completed, AddedUtc = DateTime.UtcNow });
+        }
+        // Version 9: no rules, no automation log.
+        Run("DROP TABLE rules; DROP TABLE automation_log; PRAGMA user_version = 9;");
+
+        using var upgraded = new DownloadStore(DbPath);
+        Assert.Equal(DownloadStore.SchemaVersion, upgraded.Version);
+        Assert.EndsWith(".v9.bak", upgraded.BackupPath);
+        Assert.Single(upgraded.LoadAll());                                   // nothing lost
+        Assert.Equal(@"D:\Kept", upgraded.LoadSettings().DownloadFolder);
+        Assert.Equal(0L, Scalar("SELECT COUNT(*) FROM rules;"));
+        Assert.Equal(0L, Scalar("SELECT COUNT(*) FROM automation_log;"));
+        var off = upgraded.LoadSettings();
+        Assert.Equal(Baton.Core.Integration.AutomationLevel.Off, off.ApiLevel);   // automation stays off after the upgrade
+        Assert.Equal(Baton.Core.Integration.AutomationLevel.Off, off.McpLevel);
+    }
+
+    [Fact]
     public void NewDatabase_StartsAtCurrentVersion_WithoutBackup()
     {
         using var store = new DownloadStore(DbPath);

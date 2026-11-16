@@ -34,11 +34,91 @@
   <data name="ActionRemove" xml:space="preserve"><value>Rimuovi</value></data>
   <data name="ActionRemoveToolTip" xml:space="preserve"><value>Rimuovi dall'elenco (Canc)</value></data>
   <data name="ActionResume" xml:space="preserve"><value>Riprendi</value></data>
+  <data name="ActionRules" xml:space="preserve"><value>Regole</value></data>
+  <data name="ActionRulesToolTip" xml:space="preserve"><value>Regole automatiche: cartella, coda, nome e altro per i download che corrispondono</value></data>
   <data name="ActionSettings" xml:space="preserve"><value>Impostazioni</value></data>
   <data name="ActionStart" xml:space="preserve"><value>Avvia</value></data>
   <data name="ActionStartToolTip" xml:space="preserve"><value>Avvia o riprendi subito i download selezionati</value></data>
   <data name="ActionUp" xml:space="preserve"><value>Su</value></data>
   <data name="ActionUpToolTip" xml:space="preserve"><value>Sposta su nella coda (solo con l'ordine della coda)</value></data>
+  <data name="ActivityAction_api_add" xml:space="preserve"><value>Aggiunta di un download</value></data>
+  <data name="ActivityAction_api_list" xml:space="preserve"><value>Elenco dei download</value></data>
+  <data name="ActivityAction_api_openapi" xml:space="preserve"><value>Lettura della descrizione dell'API</value></data>
+  <data name="ActivityAction_api_pause" xml:space="preserve"><value>Pausa di un download</value></data>
+  <data name="ActivityAction_api_queueStart" xml:space="preserve"><value>Avvio di una coda</value></data>
+  <data name="ActivityAction_api_queueStop" xml:space="preserve"><value>Arresto di una coda</value></data>
+  <data name="ActivityAction_api_queues" xml:space="preserve"><value>Elenco delle code</value></data>
+  <data name="ActivityAction_api_remove" xml:space="preserve"><value>Rimozione dall'elenco</value></data>
+  <data name="ActivityAction_api_request" xml:space="preserve"><value>Richiesta</value></data>
+  <data name="ActivityAction_api_resume" xml:space="preserve"><value>Ripresa di un download</value></data>
+  <data name="ActivityAction_api_retry" xml:space="preserve"><value>Nuovo tentativo di un download</value></data>
+  <data name="ActivityAction_api_status" xml:space="preserve"><value>Lettura di un download</value></data>
+  <data name="ActivityAction_api_version" xml:space="preserve"><value>Lettura della versione</value></data>
+  <data name="ActivityAction_duplicate_skip" xml:space="preserve"><value>Duplicato saltato</value></data>
+  <data name="ActivityAction_rule_applied" xml:space="preserve"><value>Regola applicata</value></data>
+  <data name="ActivityAction_rule_open" xml:space="preserve"><value>Apertura del file finito</value></data>
+  <data name="ActivityLogAll" xml:space="preserve"><value>Tutto</value></data>
+  <data name="ActivityLogClear" xml:space="preserve"><value>_Cancella</value></data>
+  <data name="ActivityLogClearConfirm" xml:space="preserve"><value>Cancellare tutto il registro attività?</value></data>
+  <data name="ActivityLogColumnAction" xml:space="preserve"><value>Che cosa</value></data>
+  <data name="ActivityLogColumnDetail" xml:space="preserve"><value>Dettagli</value></data>
+  <data name="ActivityLogColumnOrigin" xml:space="preserve"><value>Origine</value></data>
+  <data name="ActivityLogColumnResult" xml:space="preserve"><value>Esito</value></data>
+  <data name="ActivityLogColumnTime" xml:space="preserve"><value>Quando</value></data>
+  <data name="ActivityLogEmpty" xml:space="preserve"><value>Ancora nulla di registrato.</value></data>
+  <data name="ActivityLogFilter" xml:space="preserve"><value>Mostra</value></data>
+  <data name="ActivityLogHint" xml:space="preserve"><value>Ciò che hanno fatto l'API locale, MCP, le regole e il controllo dei duplicati. Conservato per 30 giorni; gli indirizzi non includono mai ciò che segue il «?». La riga di comando non viene registrata.</value></data>
+  <data name="ActivityLogName" xml:space="preserve"><value>Voci del registro attività</value></data>
+  <data name="ActivityLogOriginApi" xml:space="preserve"><value>API locale</value></data>
+  <data name="ActivityLogOriginDuplicates" xml:space="preserve"><value>Duplicati</value></data>
+  <data name="ActivityLogOriginMcp" xml:space="preserve"><value>MCP</value></data>
+  <data name="ActivityLogOriginRules" xml:space="preserve"><value>Regole</value></data>
+  <data name="ActivityLogRefresh" xml:space="preserve"><value>_Aggiorna</value></data>
+  <data name="ActivityLogTitle" xml:space="preserve"><value>Registro attività</value></data>
+  <data name="ActivityOutcomeStatus" xml:space="preserve"><value>{0} ({1})</value></data>
+  <data name="ActivityOutcome_ok" xml:space="preserve"><value>Fatto</value></data>
+  <data name="ActivityOutcome_refused" xml:space="preserve"><value>Rifiutato</value></data>
+  <data name="ActivityOutcome_skipped" xml:space="preserve"><value>Saltato</value></data>
+  <data name="ActivityReason_badBody" xml:space="preserve"><value>Il corpo non è valido</value></data>
+  <data name="ActivityReason_badHost" xml:space="preserve"><value>Intestazione Host inattesa</value></data>
+  <data name="ActivityReason_badScheme" xml:space="preserve"><value>Solo indirizzi http, https e ftp</value></data>
+  <data name="ActivityReason_bodyTooLarge" xml:space="preserve"><value>Corpo più grande di 1 MB</value></data>
+  <data name="ActivityReason_cannotRestart" xml:space="preserve"><value>Questo download non si può riavviare</value></data>
+  <data name="ActivityReason_cliOnly" xml:space="preserve"><value>Solo la riga di comando può farlo</value></data>
+  <data name="ActivityReason_duplicate" xml:space="preserve"><value>Duplicato</value></data>
+  <data name="ActivityReason_failed" xml:space="preserve"><value>Baton non ha potuto farlo</value></data>
+  <data name="ActivityReason_fileMissing" xml:space="preserve"><value>Il file manca</value></data>
+  <data name="ActivityReason_folderRefused" xml:space="preserve"><value>Non si può scegliere una cartella; usa una categoria</value></data>
+  <data name="ActivityReason_invalid" xml:space="preserve"><value>Richiesta non valida</value></data>
+  <data name="ActivityReason_level" xml:space="preserve"><value>Non consentito dal livello scelto</value></data>
+  <data name="ActivityReason_missingUrl" xml:space="preserve"><value>Indirizzo mancante</value></data>
+  <data name="ActivityReason_noCategory" xml:space="preserve"><value>Nessuna categoria con questo nome</value></data>
+  <data name="ActivityReason_noCleanScan" xml:space="preserve"><value>Nessuna scansione senza minacce</value></data>
+  <data name="ActivityReason_noDownload" xml:space="preserve"><value>Nessun download con questo numero</value></data>
+  <data name="ActivityReason_noFile" xml:space="preserve"><value>Il file non c'è</value></data>
+  <data name="ActivityReason_noQueue" xml:space="preserve"><value>Nessuna coda con questo nome</value></data>
+  <data name="ActivityReason_noToken" xml:space="preserve"><value>Token mancante</value></data>
+  <data name="ActivityReason_notLoopback" xml:space="preserve"><value>Non da questo computer</value></data>
+  <data name="ActivityReason_privateNetwork" xml:space="preserve"><value>Indirizzo su questo computer o su una rete privata</value></data>
+  <data name="ActivityReason_programOrScript" xml:space="preserve"><value>Un programma o uno script non si apre mai</value></data>
+  <data name="ActivityReason_rateLimit" xml:space="preserve"><value>Troppe richieste</value></data>
+  <data name="ActivityReason_sameFile" xml:space="preserve"><value>Stesso file</value></data>
+  <data name="ActivityReason_sameName" xml:space="preserve"><value>Stesso nome</value></data>
+  <data name="ActivityReason_sameUrl" xml:space="preserve"><value>Stesso indirizzo</value></data>
+  <data name="ActivityReason_unknownType" xml:space="preserve"><value>Richiesta sconosciuta</value></data>
+  <data name="ActivityReason_webPage" xml:space="preserve"><value>Richiesta da una pagina web</value></data>
+  <data name="ActivityReason_wrongToken" xml:space="preserve"><value>Token errato</value></data>
+  <data name="ActivityStatus_201" xml:space="preserve"><value>Aggiunto</value></data>
+  <data name="ActivityStatus_400" xml:space="preserve"><value>Richiesta non valida</value></data>
+  <data name="ActivityStatus_401" xml:space="preserve"><value>Non autorizzato</value></data>
+  <data name="ActivityStatus_403" xml:space="preserve"><value>Rifiutato</value></data>
+  <data name="ActivityStatus_404" xml:space="preserve"><value>Non trovato</value></data>
+  <data name="ActivityStatus_409" xml:space="preserve"><value>Duplicato</value></data>
+  <data name="ActivityStatus_413" xml:space="preserve"><value>Troppo grande</value></data>
+  <data name="ActivityStatus_429" xml:space="preserve"><value>Troppe richieste</value></data>
+  <data name="ActivityStatus_error" xml:space="preserve"><value>Errore</value></data>
+  <data name="ActivityStatus_ok" xml:space="preserve"><value>Fatto</value></data>
+  <data name="ActivityStatus_refused" xml:space="preserve"><value>Rifiutato</value></data>
   <data name="AddCategoryLabel" xml:space="preserve"><value>C_ategoria</value></data>
   <data name="AddCategoryName" xml:space="preserve"><value>Categoria</value></data>
   <data name="AddFolderChangeCategory" xml:space="preserve"><value>Cambiala</value></data>
@@ -58,6 +138,7 @@
   <data name="AddQueueLabel" xml:space="preserve"><value>C_oda</value></data>
   <data name="AddQueueName" xml:space="preserve"><value>Coda</value></data>
   <data name="AddQueueToolTip" xml:space="preserve"><value>«Scarica ora» avvia subito il download; «Aggiungi alla coda» lo fa partire quando tocca a lui in questa coda</value></data>
+  <data name="AddRuleApplied" xml:space="preserve"><value>Regola: {0}. Ciò che cambi qui ha la precedenza.</value></data>
   <data name="AddStartNow" xml:space="preserve"><value>Scarica ora</value></data>
   <data name="AddTitle" xml:space="preserve"><value>Aggiungi download</value></data>
   <data name="AddToQueue" xml:space="preserve"><value>Aggiungi alla coda</value></data>
@@ -71,6 +152,10 @@ No: usa il nuovo indirizzo e ricomincia da zero</value></data>
   <data name="AskRestartDifferent" xml:space="preserve"><value>Il file al nuovo indirizzo è diverso: {0}.
 
 Usare comunque il nuovo indirizzo ricominciando il download da zero?</value></data>
+  <data name="AutomationLevelExtended" xml:space="preserve"><value>Controllo esteso (pausa, ripresa, nuovo tentativo, rimozione, code)</value></data>
+  <data name="AutomationLevelOff" xml:space="preserve"><value>Spento</value></data>
+  <data name="AutomationLevelReadAdd" xml:space="preserve"><value>Lettura e aggiunta di download</value></data>
+  <data name="AutomationLevelReadOnly" xml:space="preserve"><value>Sola lettura</value></data>
   <data name="BatchAllTypes" xml:space="preserve"><value>Tutti i tipi</value></data>
   <data name="BatchCategoryAuto" xml:space="preserve"><value>Automatica (per tipo)</value></data>
   <data name="BatchClearVisible" xml:space="preserve"><value>_Deseleziona visibili</value></data>
@@ -236,6 +321,7 @@ I download in corso vengono fermati e i dati parziali eliminati. Dal Cestino i f
   <data name="DuplicateSameName" xml:space="preserve"><value>Nella cartella di destinazione c'è già un file con questo nome.</value></data>
   <data name="DuplicateSameUrl" xml:space="preserve"><value>Questo indirizzo è già nell'elenco, oppure lo hai già scaricato.</value></data>
   <data name="DuplicateSkip" xml:space="preserve"><value>Salta</value></data>
+  <data name="DuplicateSkippedHint" xml:space="preserve"><value>Saltato, duplicato di {0}: {1}</value></data>
   <data name="DuplicateTitle" xml:space="preserve"><value>Già scaricato?</value></data>
   <data name="EmptyFilteredHint" xml:space="preserve"><value>Scegli un altro filtro nel pannello a sinistra o cambia la ricerca</value></data>
   <data name="EmptyFilteredTitle" xml:space="preserve"><value>Nessun download corrisponde</value></data>
@@ -248,6 +334,7 @@ I download in corso vengono fermati e i dati parziali eliminati. Dal Cestino i f
   <data name="EndActionShutdown" xml:space="preserve"><value>Spegni il PC</value></data>
   <data name="EndActionSleep" xml:space="preserve"><value>Sospendi</value></data>
   <data name="ErrorAllConnectionsRefused" xml:space="preserve"><value>Il server ha rifiutato tutte le connessioni.</value></data>
+  <data name="ErrorApiPort" xml:space="preserve"><value>La porta dell'API deve essere tra 1024 e 65535.</value></data>
   <data name="ErrorAppNoAnswer" xml:space="preserve"><value>Baton non ha risposto in tempo.</value></data>
   <data name="ErrorAppNotStarted" xml:space="preserve"><value>Impossibile avviare Baton.</value></data>
   <data name="ErrorCategoryDuplicate" xml:space="preserve"><value>Esiste già una categoria chiamata "{0}".</value></data>
@@ -571,6 +658,7 @@ L'estensione che hai continua a funzionare. Per aggiornarla esegui l'installer d
   <data name="ImportKindNetwork" xml:space="preserve"><value>Rete</value></data>
   <data name="ImportKindProject" xml:space="preserve"><value>Progetto</value></data>
   <data name="ImportKindQueue" xml:space="preserve"><value>Coda</value></data>
+  <data name="ImportKindRule" xml:space="preserve"><value>Regola</value></data>
   <data name="ImportKindSettings" xml:space="preserve"><value>Impostazioni</value></data>
   <data name="ImportModeKeepBoth" xml:space="preserve"><value>Mantieni entrambi</value></data>
   <data name="ImportModeReplace" xml:space="preserve"><value>Sostituisci</value></data>
@@ -583,6 +671,8 @@ L'estensione che hai continua a funzionare. Per aggiornarla esegui l'installer d
   <data name="ImportNetworkWarning" xml:space="preserve"><value>Attenzione: da qui in poi tutto il traffico dell'app passerebbe dal proxy indicato in questo file, e la conferma dei download potrebbe essere disattivata. Spunta solo se il file viene da una fonte di cui ti fidi.</value></data>
   <data name="ImportPacNotHttps" xml:space="preserve"><value>File PAC non ammesso: deve essere un indirizzo https o un file su questo computer (mai http o cartelle di rete).</value></data>
   <data name="ImportQueueDetail" xml:space="preserve"><value>{0} download contemporanei</value></data>
+  <data name="ImportRuleRisky" xml:space="preserve"><value>Verrà importata disattivata: apre file o aggiunge download senza chiedere. Attivala nella finestra Regole dopo averla letta.</value></data>
+  <data name="ImportRuleUnresolved" xml:space="preserve"><value>La sua categoria o coda non esiste in questa app: la regola verrà importata disattivata.</value></data>
   <data name="ImportSettingsName" xml:space="preserve"><value>Impostazioni (senza password, programmi e indirizzo di aggiornamento)</value></data>
   <data name="ImportSummary" xml:space="preserve"><value>{0}: {1} elementi, {2} già presenti, {3} non validi. Scegli cosa importare.</value></data>
   <data name="ImportTitle" xml:space="preserve"><value>Importa</value></data>
@@ -644,7 +734,7 @@ L'estensione che hai continua a funzionare. Per aggiornarla esegui l'installer d
   <data name="MenuEditQueue" xml:space="preserve"><value>Modifica coda…</value></data>
   <data name="MenuEnqueue" xml:space="preserve"><value>Metti in coda</value></data>
   <data name="MenuExportList" xml:space="preserve"><value>Esporta la lista dei download (JSON)…</value></data>
-  <data name="MenuExportSettings" xml:space="preserve"><value>Esporta impostazioni, categorie, code e progetti…</value></data>
+  <data name="MenuExportSettings" xml:space="preserve"><value>Esporta impostazioni, categorie, code, progetti e regole…</value></data>
   <data name="MenuExportUrls" xml:space="preserve"><value>Esporta gli indirizzi (testo)…</value></data>
   <data name="MenuImport" xml:space="preserve"><value>Importa…</value></data>
   <data name="MenuMoveToQueue" xml:space="preserve"><value>Sposta nella coda</value></data>
@@ -791,6 +881,71 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="RelocationTitle" xml:space="preserve"><value>Download sul Desktop</value></data>
   <data name="RemoveTitle" xml:space="preserve"><value>Rimuovi download</value></data>
   <data name="ResumeNotSupported" xml:space="preserve"><value>No: il server non permette di riprendere</value></data>
+  <data name="RuleActionCategory" xml:space="preserve"><value>Categoria</value></data>
+  <data name="RuleActionsHeader" xml:space="preserve"><value>Allora</value></data>
+  <data name="RuleAdd" xml:space="preserve"><value>Aggiungi regola</value></data>
+  <data name="RuleAnyCategory" xml:space="preserve"><value>Qualsiasi</value></data>
+  <data name="RuleConditionCategory" xml:space="preserve"><value>Categoria</value></data>
+  <data name="RuleConditionsHeader" xml:space="preserve"><value>Quando (devono valere tutte)</value></data>
+  <data name="RuleConnections" xml:space="preserve"><value>Connessioni (1-32)</value></data>
+  <data name="RuleDelete" xml:space="preserve"><value>Elimina</value></data>
+  <data name="RuleDomains" xml:space="preserve"><value>Siti (con i sottodomini), separati da spazi</value></data>
+  <data name="RuleEnabled" xml:space="preserve"><value>Attiva</value></data>
+  <data name="RuleErrorFolder" xml:space="preserve"><value>«{0}»: la cartella deve essere un percorso completo.</value></data>
+  <data name="RuleErrorName" xml:space="preserve"><value>Ogni regola ha bisogno di un nome.</value></data>
+  <data name="RuleErrorNoCondition" xml:space="preserve"><value>«{0}» non ha condizioni, quindi non si applicherebbe mai.</value></data>
+  <data name="RuleErrorNumber" xml:space="preserve"><value>«{0}»: un numero non è valido.</value></data>
+  <data name="RuleErrorRegex" xml:space="preserve"><value>«{0}»: l'espressione regolare non è valida ({1}).</value></data>
+  <data name="RuleExtensions" xml:space="preserve"><value>Estensioni, separate da spazi</value></data>
+  <data name="RuleFolder" xml:space="preserve"><value>Salva in questa cartella</value></data>
+  <data name="RuleImportedNote" xml:space="preserve"><value>Regola importata: leggi cosa fa prima di attivarla.</value></data>
+  <data name="RuleKeep" xml:space="preserve"><value>Lascia com'è</value></data>
+  <data name="RuleMaxSize" xml:space="preserve"><value>Al massimo (MB)</value></data>
+  <data name="RuleMinSize" xml:space="preserve"><value>Almeno (MB)</value></data>
+  <data name="RuleMoveDown" xml:space="preserve"><value>Sposta giù</value></data>
+  <data name="RuleMoveUp" xml:space="preserve"><value>Sposta su</value></data>
+  <data name="RuleNameLabel" xml:space="preserve"><value>Nome</value></data>
+  <data name="RuleNewName" xml:space="preserve"><value>Nuova regola</value></data>
+  <data name="RuleOpenHint" xml:space="preserve"><value>Mai un programma o uno script, e solo dopo una scansione senza minacce (attiva la scansione).</value></data>
+  <data name="RuleOpenWhenDone" xml:space="preserve"><value>Apri il file a fine download</value></data>
+  <data name="RuleOriginApi" xml:space="preserve"><value>API locale</value></data>
+  <data name="RuleOriginBatch" xml:space="preserve"><value>Elenco di link</value></data>
+  <data name="RuleOriginBrowser" xml:space="preserve"><value>Browser</value></data>
+  <data name="RuleOriginCli" xml:space="preserve"><value>Riga di comando</value></data>
+  <data name="RuleOriginClipboard" xml:space="preserve"><value>Appunti</value></data>
+  <data name="RuleOriginDialog" xml:space="preserve"><value>Dialogo Aggiungi</value></data>
+  <data name="RuleOriginMcp" xml:space="preserve"><value>MCP</value></data>
+  <data name="RuleOriginsLabel" xml:space="preserve"><value>Aggiunto da (nessuna spunta: ovunque)</value></data>
+  <data name="RulePreviewApplies" xml:space="preserve"><value>Si applica la regola «{0}».</value></data>
+  <data name="RulePreviewFolder" xml:space="preserve"><value>Cartella: {0}</value></data>
+  <data name="RulePreviewHeader" xml:space="preserve"><value>Quale regola si applica?</value></data>
+  <data name="RulePreviewName" xml:space="preserve"><value>Nome: {0}</value></data>
+  <data name="RulePreviewNone" xml:space="preserve"><value>Nessuna regola si applica.</value></data>
+  <data name="RulePreviewOrigin" xml:space="preserve"><value>Aggiunto da</value></data>
+  <data name="RulePreviewSkips" xml:space="preserve"><value>Non viene chiesta conferma.</value></data>
+  <data name="RulePreviewUrl" xml:space="preserve"><value>Indirizzo da provare</value></data>
+  <data name="RuleQueue" xml:space="preserve"><value>Coda</value></data>
+  <data name="RuleRename" xml:space="preserve"><value>Rinomina in</value></data>
+  <data name="RuleRenameHint" xml:space="preserve"><value>Usa {name} {ext} {host} {date} {time} {category} {n}. L'estensione reale viene sempre mantenuta.</value></data>
+  <data name="RuleScan" xml:space="preserve"><value>Scansiona il file finito con l'antivirus</value></data>
+  <data name="RuleShowInFolder" xml:space="preserve"><value>Mostra il file nella sua cartella a fine download</value></data>
+  <data name="RuleSizeHint" xml:space="preserve"><value>Una dimensione conta solo se è nota quando si aggiunge il download.</value></data>
+  <data name="RuleSkipConfirm" xml:space="preserve"><value>Aggiungi senza chiedere</value></data>
+  <data name="RuleSpeedLimit" xml:space="preserve"><value>Limite di velocità (KB/s)</value></data>
+  <data name="RuleStart" xml:space="preserve"><value>Avvio</value></data>
+  <data name="RuleStartNow" xml:space="preserve"><value>Avvia subito</value></data>
+  <data name="RuleStartPaused" xml:space="preserve"><value>Aggiungi in pausa</value></data>
+  <data name="RuleStartQueued" xml:space="preserve"><value>Metti in coda</value></data>
+  <data name="RuleUnreadable" xml:space="preserve"><value>Regola non leggibile da questa versione</value></data>
+  <data name="RuleUnreadableDeleteConfirm" xml:space="preserve"><value>Eliminare la regola «{0}», che questa versione non sa leggere? Non si potrà recuperare.</value></data>
+  <data name="RuleUnreadableNote" xml:space="preserve"><value>Questa regola è stata salvata in una forma che questa versione di Baton non sa leggere, per esempio da una versione più recente. È disattivata e resta com'è; puoi solo spostarla o eliminarla.</value></data>
+  <data name="RuleUrlPattern" xml:space="preserve"><value>Modello di indirizzo (* e ?)</value></data>
+  <data name="RuleUrlRegex" xml:space="preserve"><value>Indirizzo come espressione regolare</value></data>
+  <data name="RuleUserAgent" xml:space="preserve"><value>User agent</value></data>
+  <data name="RulesEmpty" xml:space="preserve"><value>Ancora nessuna regola. Aggiungine una per smistare o rinominare i download da sola.</value></data>
+  <data name="RulesHint" xml:space="preserve"><value>Quando si aggiunge un download, la prima regola che corrisponde decide cartella, coda, nome e altro. Ciò che scegli tu vince sempre e le regole si controllano una sola volta, all'aggiunta.</value></data>
+  <data name="RulesListName" xml:space="preserve"><value>Regole</value></data>
+  <data name="RulesTitle" xml:space="preserve"><value>Regole automatiche</value></data>
   <data name="Save" xml:space="preserve"><value>Salva</value></data>
   <data name="SaveInCategory" xml:space="preserve"><value>_Tipo di file</value></data>
   <data name="SaveInFolder" xml:space="preserve"><value>_Salva in</value></data>
@@ -830,7 +985,26 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SelectionStatus" xml:space="preserve"><value>{0} selezionati  ·  {1} di {2}</value></data>
   <data name="SelectionStatusOne" xml:space="preserve"><value>1 selezionato  ·  {0} di {1}</value></data>
   <data name="SelectionTotalUnknown" xml:space="preserve"><value>Dimensione totale sconosciuta</value></data>
+  <data name="SettingsActivityLog" xml:space="preserve"><value>_Registro attività…</value></data>
+  <data name="SettingsApiFailed" xml:space="preserve"><value>L'API non è partita. Scegli un'altra porta o controlla il log.</value></data>
+  <data name="SettingsApiLevel" xml:space="preserve"><value>API locale</value></data>
+  <data name="SettingsApiPort" xml:space="preserve"><value>Porta dell'API</value></data>
+  <data name="SettingsApiPortBusy" xml:space="preserve"><value>La porta {0} è usata da un altro programma, quindi l'API è spenta. Scegli un'altra porta.</value></data>
+  <data name="SettingsApiPortHint" xml:space="preserve"><value>Solo questo PC può raggiungerla (127.0.0.1). Se un altro programma usa la porta, l'API resta spenta finché non ne scegli un'altra.</value></data>
+  <data name="SettingsApiRunning" xml:space="preserve"><value>L'API è in ascolto su http://127.0.0.1:{0}/api/v1/</value></data>
+  <data name="SettingsApiToken" xml:space="preserve"><value>Token dell'API</value></data>
+  <data name="SettingsApiTokenCopied" xml:space="preserve"><value>Token copiato negli appunti.</value></data>
+  <data name="SettingsApiTokenCopy" xml:space="preserve"><value>_Copia</value></data>
+  <data name="SettingsApiTokenHidden" xml:space="preserve"><value>Nascosto</value></data>
+  <data name="SettingsApiTokenHide" xml:space="preserve"><value>_Nascondi</value></data>
+  <data name="SettingsApiTokenHint" xml:space="preserve"><value>I programmi lo inviano come «Authorization: Bearer …». È salvato cifrato e non viene mai esportato.</value></data>
+  <data name="SettingsApiTokenNew" xml:space="preserve"><value>_Nuovo token</value></data>
+  <data name="SettingsApiTokenNewConfirm" xml:space="preserve"><value>Creare un nuovo token? Il vecchio smette subito di funzionare e ogni programma che lo usa dovrà ricevere quello nuovo.</value></data>
+  <data name="SettingsApiTokenNone" xml:space="preserve"><value>Ancora nessun token: se ne crea uno quando attivi l'API.</value></data>
+  <data name="SettingsApiTokenRenewed" xml:space="preserve"><value>Nuovo token creato; il vecchio non funziona più.</value></data>
+  <data name="SettingsApiTokenShow" xml:space="preserve"><value>_Mostra</value></data>
   <data name="SettingsAppearance" xml:space="preserve"><value>Aspetto</value></data>
+  <data name="SettingsAutomationHint" xml:space="preserve"><value>Permette ad altri programmi e agenti AI di questo PC di controllare Baton. Tutto è spento per impostazione predefinita; la riga di comando non è coinvolta. Aprire i file non è mai permesso loro e nulla qui cancella file dal disco.</value></data>
   <data name="SettingsClearCompleted" xml:space="preserve"><value>Rimuovi dalla lista i download completati da più di</value></data>
   <data name="SettingsClearCompletedDays" xml:space="preserve"><value>giorni (i file restano)</value></data>
   <data name="SettingsClearCompletedDaysName" xml:space="preserve"><value>Giorni dopo i quali i download completati escono dalla lista</value></data>
@@ -865,6 +1039,9 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsIntegration" xml:space="preserve"><value>Browser e notifiche</value></data>
   <data name="SettingsLanguage" xml:space="preserve"><value>_Lingua</value></data>
   <data name="SettingsLanguageName" xml:space="preserve"><value>Lingua dell'interfaccia</value></data>
+  <data name="SettingsLocalNetwork" xml:space="preserve"><value>Consenti indirizzi della rete locale</value></data>
+  <data name="SettingsLocalNetworkHint" xml:space="preserve"><value>Spento: programmi e agenti non possono far scaricare a Baton da questo stesso PC o da reti private (router, NAS, intranet). Attivalo solo se ti serve.</value></data>
+  <data name="SettingsMcpLevel" xml:space="preserve"><value>Server MCP (agenti AI)</value></data>
   <data name="SettingsNotify" xml:space="preserve"><value>Mostra una notifica di Windows quando un download è completato</value></data>
   <data name="SettingsOverridingCategories" xml:space="preserve"><value>Queste categorie usano una cartella propria al posto di quella predefinita:</value></data>
   <data name="SettingsPortableHost" xml:space="preserve"><value>Collega l'estensione del browser a questa copia portable (la registra come host nativo dei browser)</value></data>
@@ -873,6 +1050,7 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsRestoreHint" xml:space="preserve"><value>Dopo un aggiornamento la versione precedente resta accanto al programma: se la nuova dà problemi puoi tornare indietro.</value></data>
   <data name="SettingsRestorePrevious" xml:space="preserve"><value>Ripristina la versione precedente</value></data>
   <data name="SettingsRestoreTitle" xml:space="preserve"><value>Versione precedente</value></data>
+  <data name="SettingsRules" xml:space="preserve"><value>_Regole…</value></data>
   <data name="SettingsRunAtStartup" xml:space="preserve"><value>Avvia Baton con _Windows, ridotto nell'area di notifica</value></data>
   <data name="SettingsScanCodes" xml:space="preserve"><value>Codici di uscita che indicano una minaccia (separati da virgole)</value></data>
   <data name="SettingsScanHint" xml:space="preserve"><value>Il file scaricato non viene mai aperto né eseguito: è solo passato all'antivirus. Un controllo che supera il tempo massimo viene interrotto.</value></data>
@@ -887,6 +1065,7 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsScannerReset" xml:space="preserve"><value>Ripristina Windows Defender</value></data>
   <data name="SettingsSpeedLimit" xml:space="preserve"><value>_Limite di velocità globale in KB/s (0 = nessuno)</value></data>
   <data name="SettingsSystem" xml:space="preserve"><value>Sistema</value></data>
+  <data name="SettingsTabAutomation" xml:space="preserve"><value>Automazione</value></data>
   <data name="SettingsTabChecks" xml:space="preserve"><value>Dopo il download</value></data>
   <data name="SettingsTabCredentials" xml:space="preserve"><value>Credenziali</value></data>
   <data name="SettingsTabGeneral" xml:space="preserve"><value>Generale</value></data>

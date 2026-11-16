@@ -52,6 +52,8 @@
                  AutomationProperties.Name="{l:Loc AddHashName}" AutomationProperties.HelpText="{Binding HashHint}" />
         <TextBlock Text="{Binding HashHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" FontSize="12" />
 
+        <TextBlock Text="{Binding RuleText}" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource AccentBrush}"
+                   Visibility="{Binding HasRule, Converter={StaticResource BoolToVisibility}}" AutomationProperties.LiveSetting="Polite" />
         <TextBlock Text="{Binding Note}" Style="{StaticResource NoteText}" />
         <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" AutomationProperties.LiveSetting="Assertive" />
 

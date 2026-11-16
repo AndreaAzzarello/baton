@@ -10,9 +10,9 @@ public static class ToolbarLayout
     public const string Spacer = "~";
 
     public static readonly string[] Buttons =
-        ["add", "start", "pause", "enqueue", "remove", "deletefiles", "clearcompleted", "progress", "properties", "up", "down", "queue", "folder", "categories", "queues", "grabber", "settings"];
+        ["add", "start", "pause", "enqueue", "remove", "deletefiles", "clearcompleted", "progress", "properties", "up", "down", "queue", "folder", "categories", "queues", "rules", "grabber", "settings"];
 
-    public const string Default = "add,|,start,pause,enqueue,remove,progress,properties,|,up,down,|,queue,~,folder,categories,queues,grabber,settings";
+    public const string Default = "add,|,start,pause,enqueue,remove,progress,properties,|,up,down,|,queue,~,folder,categories,queues,rules,grabber,settings";
 
     /// <summary>The ids in order: each button at most once, exactly one spacer, no empty or doubled separators.</summary>
     public static List<string> Parse(string? text)

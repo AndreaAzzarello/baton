@@ -82,6 +82,9 @@
                 <Button Style="{StaticResource ToolButton}" Command="{Binding QueuesCommand}" Tag="queues" AutomationProperties.Name="{l:Loc ActionQueues}" ToolTip="{l:Loc ActionQueuesToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE823;" /><TextBlock Text="{l:Loc ActionQueues}" Margin="0,3,0,0" /></StackPanel>
                 </Button>
+                <Button Style="{StaticResource ToolButton}" Command="{Binding RulesCommand}" Tag="rules" AutomationProperties.Name="{l:Loc ActionRules}" ToolTip="{l:Loc ActionRulesToolTip}">
+                    <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE71C;" /><TextBlock Text="{l:Loc ActionRules}" Margin="0,3,0,0" /></StackPanel>
+                </Button>
                 <Button Style="{StaticResource ToolButton}" Command="{Binding CategoriesCommand}" Tag="categories" AutomationProperties.Name="{l:Loc ActionCategories}" ToolTip="{l:Loc ActionCategoriesToolTip}">
                     <StackPanel><TextBlock Style="{StaticResource Glyph}" Text="&#xE8FD;" /><TextBlock Text="{l:Loc ActionCategories}" Margin="0,3,0,0" /></StackPanel>
                 </Button>

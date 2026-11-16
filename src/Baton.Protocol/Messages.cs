@@ -11,6 +11,7 @@ namespace Baton.Core.Integration;
 /// <param name="Category">Protocol 4, not from the browser: the name of the category that decides the folder.</param>
 /// <param name="Start">Protocol 4, not from the browser: false adds the download paused.</param>
 /// <param name="AllowDuplicate">Protocol 4, not from the browser: add it even if it looks like a duplicate.</param>
+/// <param name="Size">The size in bytes when the browser knows it (optional, from the browser only); older extensions omit it.</param>
 public sealed record BrowserDownload(
     string Url,
     string? FileName = null,
@@ -24,7 +25,8 @@ public sealed record BrowserDownload(
     string? Folder = null,
     string? Category = null,
     bool? Start = null,
-    bool? AllowDuplicate = null)
+    bool? AllowDuplicate = null,
+    long? Size = null)
 {
     public RequestContext ToContext() => new(Referrer, UserAgent, Cookies ?? [])
     {

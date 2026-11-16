@@ -391,6 +391,35 @@ public sealed class ExtensionUpdateTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task UpdateFrom136_TheNewVersionCompletesTheInstallation_WithBatonctl()
+    {
+        var v141 = new Version(1, 4, 1);
+        var package = Package("1.4.1", zip => Entry(zip, "batonctl.exe", "cli 1.4.1"));
+        var release = Release(v141, package);
+
+        // What the 1.3.6 updater leaves: the new Baton.exe, the extension still at 1.3.6, no batonctl.exe. The package that holds
+        // batonctl.exe is one it cannot stage, so the new version has to finish the job when it starts.
+        var folder = ProgramFolder("1.3.6");
+        Assert.Contains("older than 1.4.1", ExtensionPackage.RepairReason(folder, v141));
+        Assert.True(await ExtensionPackage.RepairAsync(_http, release, v141, folder, Downloads, default, Keys));
+        Assert.Equal(v141, ExtensionPackage.VersionIn(folder));
+        Assert.Equal("cli 1.4.1", File.ReadAllText(Path.Combine(folder, ExtensionPackage.CliName)));
+        Assert.Null(ExtensionPackage.RepairReason(folder, v141)); // whole: the next start does nothing
+
+        // The extension already at the program's version but batonctl.exe missing (an extension updated on its own): still completed.
+        File.Delete(Path.Combine(folder, ExtensionPackage.CliName));
+        Assert.Contains(ExtensionPackage.CliName, ExtensionPackage.RepairReason(folder, v141));
+        Assert.True(await ExtensionPackage.RepairAsync(_http, release, v141, folder, Downloads, default, Keys));
+        Assert.True(File.Exists(Path.Combine(folder, ExtensionPackage.CliName)));
+
+        // Before 1.4.0 nobody expects batonctl.exe, and a build without an extension folder is left alone.
+        Assert.Null(ExtensionPackage.RepairReason(ProgramFolder("1.3.3"), New));
+        var bare = Path.Combine(_dir, "bare141");
+        Directory.CreateDirectory(bare);
+        Assert.Null(ExtensionPackage.RepairReason(bare, v141));
+    }
+
+    [Fact]
     public async Task ReleaseOfItsOwnVersion_FromGitHubLatestOrAManifest()
     {
         Assert.Equal("https://api.github.com/repos/AndreaAzzarello/baton/releases/tags/v1.3.3",

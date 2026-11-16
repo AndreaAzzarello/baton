@@ -9,7 +9,7 @@ namespace Baton.Core;
 public sealed partial class DownloadStore : IDisposable
 {
     /// <summary>Version written by this build. Every older version is upgraded by <see cref="Migrate"/>.</summary>
-    public const int SchemaVersion = 9;
+    public const int SchemaVersion = 10;
 
     private const string PreferencePrefix = "ui.";
 
@@ -149,6 +149,8 @@ public sealed partial class DownloadStore : IDisposable
             MigrateTo8(tx);
         if (version < 9)
             MigrateTo9(tx);
+        if (version < 10)
+            MigrateTo10(tx);
         Execute($"PRAGMA user_version = {SchemaVersion};", tx);
         tx.Commit();
     }
@@ -353,11 +355,7 @@ public sealed partial class DownloadStore : IDisposable
             """, tx);
     }
 
-    /// <summary>
-    /// Logins become valid for one scheme. The scheme a login was used with is taken from the downloads of its server
-    /// (when they all agree); otherwise the encrypted one (https, or FTPS on port 990, explicit FTPS elsewhere for FTP
-    /// ports). A login that lands on a plain scheme has not been confirmed for it: the app asks once, with a warning.
-    /// </summary>
+    /// <summary>Categories can remember the last folder used, and the history of removed downloads (for duplicate detection) is created.</summary>
     private void MigrateTo9(SqliteTransaction tx)
     {
         AddColumnIfMissing("categories", "remember_last", "INTEGER NOT NULL DEFAULT 0", tx);
@@ -365,6 +363,11 @@ public sealed partial class DownloadStore : IDisposable
         CreateHistoryTable(tx);
     }
 
+    /// <summary>
+    /// Logins become valid for one scheme. The scheme a login was used with is taken from the downloads of its server
+    /// (when they all agree); otherwise the encrypted one (https, or FTPS on port 990, explicit FTPS elsewhere for FTP
+    /// ports). A login that lands on a plain scheme has not been confirmed for it: the app asks once, with a warning.
+    /// </summary>
     private void MigrateTo8(SqliteTransaction tx)
     {
         AddColumnIfMissing("credentials", "scheme", "TEXT NOT NULL DEFAULT 'https'", tx);
@@ -615,9 +618,9 @@ public sealed partial class DownloadStore : IDisposable
             using var cmd = Command("""
                 INSERT INTO downloads (url, directory, file_name, total_size, etag, last_modified, supports_ranges, status, error,
                                        sort_order, added_utc, completed_utc, request_context, category_id, auto_category, content_type,
-                                       queue_id, failures, retry_at, media, post_check)
+                                       queue_id, failures, retry_at, media, post_check, rule_applied)
                 VALUES ($url, $dir, $name, $size, $etag, $lm, $ranges, $status, $error,
-                        $order, $added, $completed, $context, $category, $auto, $ctype, $queue, $failures, $retry, $media, $check);
+                        $order, $added, $completed, $context, $category, $auto, $ctype, $queue, $failures, $retry, $media, $check, $rule);
                 SELECT last_insert_rowid();
                 """, tx);
             Bind(cmd, record);
@@ -638,7 +641,7 @@ public sealed partial class DownloadStore : IDisposable
                     last_modified = $lm, supports_ranges = $ranges, status = $status, error = $error,
                     sort_order = $order, added_utc = $added, completed_utc = $completed, request_context = $context,
                     category_id = $category, auto_category = $auto, content_type = $ctype,
-                    queue_id = $queue, failures = $failures, retry_at = $retry, media = $media, post_check = $check
+                    queue_id = $queue, failures = $failures, retry_at = $retry, media = $media, post_check = $check, rule_applied = $rule
                 WHERE id = $id;
                 """, tx);
             Bind(cmd, record);
@@ -710,6 +713,7 @@ public sealed partial class DownloadStore : IDisposable
                         RetryAtUtc = NullableString(reader, "retry_at") is { } retry ? ParseDate(retry) : null,
                         Media = ReadMedia(NullableString(reader, "media")),
                         Check = ReadJson<PostDownload.PostCheck>(NullableString(reader, "post_check")),
+                        Rule = ReadJson<Rules.AppliedRule>(NullableString(reader, "rule_applied")),
                     };
                     records[r.Id] = r;
                 }
@@ -810,6 +814,12 @@ public sealed partial class DownloadStore : IDisposable
                     case nameof(AppSettings.CategorySubfolders): settings.CategorySubfolders = value != "0"; break;
                     case nameof(AppSettings.CategoryModeAsked): settings.CategoryModeAsked = value != "0"; break;
                     case nameof(AppSettings.DuplicateAction) when Enum.TryParse<Duplicates.DuplicateAction>(value, out var duplicate): settings.DuplicateAction = duplicate; break;
+                    case nameof(AppSettings.McpLevel) when Enum.TryParse<Integration.AutomationLevel>(value, out var mcpLevel): settings.McpLevel = mcpLevel; break;
+                    case nameof(AppSettings.ApiLevel) when Enum.TryParse<Integration.AutomationLevel>(value, out var apiLevel): settings.ApiLevel = apiLevel; break;
+                    case nameof(AppSettings.ApiPort) when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var apiPort):
+                        settings.ApiPort = Math.Clamp(apiPort, 1024, 65535); break;
+                    case nameof(AppSettings.ApiToken): settings.ApiToken = Secrets.Unprotect(value) ?? ""; break;
+                    case nameof(AppSettings.AllowLocalNetworkForAgents): settings.AllowLocalNetworkForAgents = value == "1"; break;
                     case nameof(AppSettings.MonitorClipboard): settings.MonitorClipboard = value == "1"; break;
                     case nameof(AppSettings.ClipboardIgnoredHosts): settings.ClipboardIgnoredHosts = value; break;
                     case nameof(AppSettings.RememberRemovedForDuplicates): settings.RememberRemovedForDuplicates = value != "0"; break;
@@ -868,6 +878,12 @@ public sealed partial class DownloadStore : IDisposable
             [nameof(AppSettings.CategorySubfolders)] = settings.CategorySubfolders ? "1" : "0",
             [nameof(AppSettings.CategoryModeAsked)] = settings.CategoryModeAsked ? "1" : "0",
             [nameof(AppSettings.DuplicateAction)] = settings.DuplicateAction.ToString(),
+            [nameof(AppSettings.McpLevel)] = settings.McpLevel.ToString(),
+            [nameof(AppSettings.ApiLevel)] = settings.ApiLevel.ToString(),
+            [nameof(AppSettings.ApiPort)] = Math.Clamp(settings.ApiPort, 1024, 65535).ToString(CultureInfo.InvariantCulture),
+            // Never stored in clear: encrypted with the Windows user's key, like the proxy password.
+            [nameof(AppSettings.ApiToken)] = settings.ApiToken.Length == 0 ? "" : Secrets.Protect(settings.ApiToken),
+            [nameof(AppSettings.AllowLocalNetworkForAgents)] = settings.AllowLocalNetworkForAgents ? "1" : "0",
             [nameof(AppSettings.MonitorClipboard)] = settings.MonitorClipboard ? "1" : "0",
             [nameof(AppSettings.ClipboardIgnoredHosts)] = settings.ClipboardIgnoredHosts,
             [nameof(AppSettings.RememberRemovedForDuplicates)] = settings.RememberRemovedForDuplicates ? "1" : "0",
@@ -1014,6 +1030,7 @@ public sealed partial class DownloadStore : IDisposable
         cmd.Parameters.AddWithValue("$retry", r.RetryAtUtc is { } retry ? retry.ToString("O", CultureInfo.InvariantCulture) : DBNull.Value);
         cmd.Parameters.AddWithValue("$media", r.Media is { } media ? System.Text.Json.JsonSerializer.Serialize(media, MediaJson) : DBNull.Value);
         cmd.Parameters.AddWithValue("$check", r.Check is { } check ? System.Text.Json.JsonSerializer.Serialize(check, MediaJson) : DBNull.Value);
+        cmd.Parameters.AddWithValue("$rule", r.Rule is { } rule ? System.Text.Json.JsonSerializer.Serialize(rule, MediaJson) : DBNull.Value);
     }
 
     private static readonly System.Text.Json.JsonSerializerOptions MediaJson = new(System.Text.Json.JsonSerializerDefaults.Web);

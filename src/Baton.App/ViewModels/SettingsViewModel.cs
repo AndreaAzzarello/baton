@@ -8,6 +8,7 @@ using Baton.App.Mvvm;
 using Baton.App.Services;
 using Baton.Core;
 using Baton.Core.Duplicates;
+using Baton.Core.Integration;
 using Baton.Core.Net;
 using Baton.Core.Resources;
 using Baton.Core.Security;
@@ -100,6 +101,36 @@ public sealed class SettingsViewModel : ObservableObject
         UserAgent = current.UserAgent;
         FtpActiveMode = current.FtpActiveMode;
         _ffmpegPath = current.FfmpegPath;
+
+        McpLevelChoice = AutomationLevels.First(l => l.Value == current.McpLevel);
+        ApiLevelChoice = AutomationLevels.First(l => l.Value == current.ApiLevel);
+        ApiPort = current.ApiPort.ToString(CultureInfo.CurrentCulture);
+        _apiToken = current.ApiToken;
+        AllowLocalNetworkForAgents = current.AllowLocalNetworkForAgents;
+        ShowTokenCommand = new RelayCommand(() =>
+        {
+            TokenVisible = !TokenVisible;
+        }, () => _apiToken.Length > 0);
+        CopyTokenCommand = new RelayCommand(() =>
+        {
+            CopyText?.Invoke(_apiToken);
+            TokenMessage = Strings.SettingsApiTokenCopied;
+        }, () => _apiToken.Length > 0 && CopyText is not null);
+        NewTokenCommand = new RelayCommand(() =>
+        {
+            if (_apiToken.Length > 0 && !_dialogs.Confirm(Strings.SettingsApiTokenNewConfirm, Strings.SettingsTabAutomation))
+                return;
+            _apiToken = AutomationToken.Create();
+            // Valid at once, not on "Save": the old one must stop working now.
+            SaveApiToken?.Invoke(_apiToken);
+            TokenVisible = true;
+            TokenMessage = Strings.SettingsApiTokenRenewed;
+            OnPropertyChanged(nameof(TokenText));
+            OnPropertyChanged(nameof(HasToken));
+            CommandManager.InvalidateRequerySuggested();
+        });
+        OpenActivityLogCommand = new RelayCommand(() => OpenActivityLog?.Invoke(), () => OpenActivityLog is not null);
+        OpenRulesCommand = new RelayCommand(() => OpenRules?.Invoke(), () => OpenRules is not null);
 
         ComputeHashOnCompletion = current.ComputeHashOnCompletion;
         HashAlgorithmChoice = HashAlgorithms.FirstOrDefault(a => a.Value == current.HashAlgorithm) ?? HashAlgorithms[^1];
@@ -358,6 +389,65 @@ public sealed class SettingsViewModel : ObservableObject
 
     public ICommand BrowseCommand { get; }
 
+    // Automation
+
+    public IReadOnlyList<Choice<AutomationLevel>> AutomationLevels { get; } =
+    [
+        new(AutomationLevel.Off, Strings.AutomationLevelOff),
+        new(AutomationLevel.ReadOnly, Strings.AutomationLevelReadOnly),
+        new(AutomationLevel.ReadAdd, Strings.AutomationLevelReadAdd),
+        new(AutomationLevel.Extended, Strings.AutomationLevelExtended),
+    ];
+
+    public Choice<AutomationLevel> McpLevelChoice { get; set; }
+    public Choice<AutomationLevel> ApiLevelChoice { get; set; }
+    public string ApiPort { get; set; }
+    public bool AllowLocalNetworkForAgents { get; set; }
+
+    private string _apiToken;
+    private bool _tokenVisible;
+    private string? _tokenMessage;
+
+    /// <summary>Called when "New token" is pressed: stores it right away (the old token stops working at once).</summary>
+    public Action<string>? SaveApiToken { get; init; }
+
+    /// <summary>Puts text on the clipboard.</summary>
+    public Action<string>? CopyText { get; init; }
+
+    /// <summary>What the local API is doing now (listening, port in use…); null when it is off.</summary>
+    public string? ApiStatus { get; init; }
+
+    /// <summary>Opens the activity log window; null disables the button (tests).</summary>
+    public Action? OpenActivityLog { get; init; }
+    public Action? OpenRules { get; init; }
+
+    public bool HasToken => _apiToken.Length > 0;
+
+    public bool TokenVisible
+    {
+        get => _tokenVisible;
+        private set
+        {
+            if (!Set(ref _tokenVisible, value))
+                return;
+            OnPropertyChanged(nameof(TokenText));
+            OnPropertyChanged(nameof(ShowTokenLabel));
+        }
+    }
+
+    /// <summary>The token when shown; otherwise only a note that it is hidden (or that there is none yet).</summary>
+    public string TokenText => _apiToken.Length == 0 ? Strings.SettingsApiTokenNone : _tokenVisible ? _apiToken : Strings.SettingsApiTokenHidden;
+
+    public string ShowTokenLabel => _tokenVisible ? Strings.SettingsApiTokenHide : Strings.SettingsApiTokenShow;
+
+    public string? TokenMessage { get => _tokenMessage; private set => Set(ref _tokenMessage, value); }
+
+    public ICommand ShowTokenCommand { get; }
+    public ICommand CopyTokenCommand { get; }
+    public ICommand NewTokenCommand { get; }
+    public ICommand OpenActivityLogCommand { get; }
+    public ICommand OpenRulesCommand { get; }
+
     // After the download
 
     public static IReadOnlyList<Choice<string>> HashAlgorithms { get; } =
@@ -534,6 +624,8 @@ public sealed class SettingsViewModel : ObservableObject
             Error = scannerError;
         else if (UpdateUrl.Trim().Length > 0 && Core.Updates.UpdateChecker.Allowed(UpdateUrl.Trim()) is null)
             Error = Strings.UpdateErrorAddress;
+        else if (!int.TryParse(ApiPort, NumberStyles.Integer, CultureInfo.CurrentCulture, out var apiPort) || apiPort is < 1024 or > 65535)
+            Error = Strings.ErrorApiPort;
         else
         {
             var result = network;
@@ -565,6 +657,12 @@ public sealed class SettingsViewModel : ObservableObject
             result.ScanTimeoutSeconds = scanTimeout;
             result.UpdateCheckEnabled = UpdateCheckEnabled;
             result.UpdateUrl = UpdateUrl.Trim();
+            result.McpLevel = McpLevelChoice.Value;
+            result.ApiLevel = ApiLevelChoice.Value;
+            result.ApiPort = apiPort;
+            result.AllowLocalNetworkForAgents = AllowLocalNetworkForAgents;
+            // Turning the API on without a token creates one, so it is never open.
+            result.ApiToken = _apiToken.Length == 0 && result.ApiLevel != AutomationLevel.Off ? AutomationToken.Create() : _apiToken;
             Result = result;
             return true;
         }

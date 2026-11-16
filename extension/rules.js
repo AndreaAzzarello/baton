@@ -170,6 +170,17 @@
     return path ? String(path).split(/[\\/]/).pop() : "";
   }
 
+  /**
+   * The size in bytes the browser knows for a download (Chromium: totalBytes, else fileSize; Firefox: totalBytes when it
+   * has it), or null when it does not (-1, 0 or missing). The app's size conditions use it.
+   */
+  function knownSize(item) {
+    for (const value of [item?.totalBytes, item?.fileSize]) {
+      if (Number.isSafeInteger(value) && value > 0) return value;
+    }
+    return null;
+  }
+
   function pathOf(url) {
     try {
       return new URL(url).pathname;
@@ -410,6 +421,7 @@
     isRestricted,
     extensionOf,
     baseName,
+    knownSize,
     decide,
     pruneSkips,
     encodeForm,

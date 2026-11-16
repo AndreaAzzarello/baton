@@ -19,7 +19,10 @@ public sealed record RequestContext(string? Referrer, string? UserAgent, IReadOn
     /// <summary>How the form encoded its fields: application/x-www-form-urlencoded or multipart/form-data.</summary>
     public string? BodyType { get; init; }
 
+    /// <summary>Set for a download asked for by the local API or MCP: its requests never reach this computer or a private network (see <c>UrlGuard</c>).</summary>
+    public bool PublicOnly { get; init; }
+
     public bool IsPost => Method == "POST";
 
-    public bool IsEmpty => Referrer is null && UserAgent is null && Cookies.Count == 0 && Username is null && Method is null;
+    public bool IsEmpty => Referrer is null && UserAgent is null && Cookies.Count == 0 && Username is null && Method is null && !PublicOnly;
 }

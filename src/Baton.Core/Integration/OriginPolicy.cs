@@ -47,6 +47,9 @@ public static class OriginPolicy
                 var level = origin == Origins.Mcp ? mcp : api;
                 if (level == AutomationLevel.Off)
                     return "Automation is turned off in the settings.";
+                // Opening a file or a program on the desktop is for the user's own command line only, whatever the level.
+                if (message.Type == Messages.Open)
+                    return "Opening a file is only for the command line.";
                 return RequiredLevel(message.Type) is { } needed && level >= needed ? null : "The level chosen in the settings does not allow this.";
             default:
                 return "Unknown origin.";

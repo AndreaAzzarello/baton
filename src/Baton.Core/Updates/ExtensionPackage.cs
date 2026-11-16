@@ -85,6 +85,26 @@ public static class ExtensionPackage
         }
     }
 
+    /// <summary>The first version whose package holds batonctl.exe: the updater of 1.3.6 and earlier cannot unpack such a package.</summary>
+    public static readonly Version CliSince = new(1, 4, 0);
+
+    /// <summary>
+    /// Why the installation next to the program is incomplete for <paramref name="version"/>, or null when it is whole (or has no
+    /// extension folder at all, a build without it). Two cases: the extension is older than the program (an update made by an
+    /// older updater replaced only Baton.exe), or, from <see cref="CliSince"/> on, batonctl.exe is missing (the 1.3.6 updater
+    /// cannot stage a package that holds it, so the new version completes the installation when it starts).
+    /// </summary>
+    public static string? RepairReason(string programFolder, Version version)
+    {
+        if (VersionIn(programFolder) is not { } found)
+            return null;
+        if (found < version)
+            return $"the extension next to the program is {found.ToString(3)}, older than {version.ToString(3)}";
+        if (version >= CliSince && !File.Exists(Path.Combine(programFolder, CliName)))
+            return $"{CliName} is missing next to the program";
+        return null;
+    }
+
     /// <summary>
     /// An update made by 1.3.2 or earlier replaced only Baton.exe: when the extension next to the program is older than
     /// <paramref name="version"/> (the program's), the package of that very release is installed. False when there was
@@ -93,7 +113,7 @@ public static class ExtensionPackage
     public static async Task<bool> RepairAsync(HttpClient http, string address, Version version, string programFolder, string downloadFolder,
         CancellationToken ct, IReadOnlyList<ReleaseKey>? keys = null)
     {
-        if (VersionIn(programFolder) is not { } found || found >= version)
+        if (RepairReason(programFolder, version) is null)
             return false;
         var asset = await UpdateChecker.ExtensionOfAsync(http, address, version, ct);
         await PrepareAsync(http, asset, version, programFolder, downloadFolder, ct, keys);

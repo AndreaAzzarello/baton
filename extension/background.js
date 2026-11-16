@@ -110,11 +110,12 @@ async function setProblem(problem) {
 // ---------------------------------------------------------------- handing downloads to the app
 
 /** Sends a download to the app; throws when the app refuses it or does not answer in time. */
-async function handOver({ url, referrer, fileName, incognito, post }) {
+async function handOver({ url, referrer, fileName, incognito, post, size }) {
   const { queue } = await loadSettings();
   const download = {
     url,
     fileName: fileName || null,
+    size: size > 0 ? size : null, // when the browser knows it: lets the app's size rules apply (older apps ignore it)
     referrer: referrer && /^https?:/i.test(referrer) ? referrer : null,
     userAgent: navigator.userAgent,
     // A download is a top-level navigation started by the referring page: the cookies the browser itself sent with it.
@@ -221,6 +222,7 @@ async function interceptionTarget(item) {
     fileName: Rules.baseName(item.filename),
     incognito: item.incognito === true,
     post: post && !redirected ? post : null,
+    size: Rules.knownSize(item),
   };
 }
 

@@ -79,6 +79,7 @@ public sealed class ToolbarViewModel : ObservableObject
         "folder" => Strings.ActionFolder,
         "categories" => Strings.ActionCategories,
         "queues" => Strings.ActionQueues,
+        "rules" => Strings.ActionRules,
         "grabber" => Strings.ActionGrabber,
         "settings" => Strings.ActionSettings,
         ToolbarLayout.Separator => Strings.ToolbarSeparator,

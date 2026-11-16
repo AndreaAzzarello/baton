@@ -1,0 +1,77 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Baton local API",
+    "version": "1.0.0",
+    "description": "Control Baton from programs on the same PC. Listens on 127.0.0.1 only. Every request needs `Authorization: Bearer <token>` (Settings > Automation) and a Host of 127.0.0.1:<port> or localhost:<port>; requests with an Origin header are refused (no CORS). At most 120 requests per minute (429), bodies up to 1 MB. What a request may do depends on the level chosen in the settings: read only, read and add, extended control."
+  },
+  "servers": [{ "url": "http://127.0.0.1:7745/api/v1" }],
+  "security": [{ "bearer": [] }],
+  "paths": {
+    "/version": { "get": { "summary": "App and protocol version", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "version": { "type": "string" }, "protocol": { "type": "integer" } } } } } } } } },
+    "/downloads": {
+      "get": { "summary": "List downloads (read only)", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "downloads": { "type": "array", "items": { "$ref": "#/components/schemas/Download" } } } } } } } } },
+      "post": {
+        "summary": "Add a download (read and add)",
+        "description": "Only http, https and ftp. Addresses on this computer or a private network are refused unless the setting 'Allow addresses of the local network' is on. The API cannot choose a folder: use `category`.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddRequest" } } } },
+        "responses": {
+          "201": { "description": "Added", "content": { "application/json": { "schema": { "type": "object", "properties": { "id": { "type": "integer" }, "result": { "type": "string", "enum": ["added"] } } } } } },
+          "409": { "description": "Looks like a duplicate; send allowDuplicate: true to add it anyway", "content": { "application/json": { "schema": { "type": "object", "properties": { "result": { "type": "string", "enum": ["duplicate"] }, "duplicate": { "type": "object", "properties": { "reason": { "type": "string", "enum": ["sameUrl", "sameName", "sameFile"] }, "existingId": { "type": "integer", "nullable": true }, "existingPath": { "type": "string" } } } } } } } },
+          "400": { "description": "Invalid request (also: `folder` given, unknown field, unknown category)" },
+          "403": { "description": "Level too low, or a private-network address" }
+        }
+      }
+    },
+    "/downloads/{id}": {
+      "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }],
+      "get": { "summary": "One download (read only)", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Download" } } } }, "404": { "description": "No such download" } } },
+      "delete": { "summary": "Remove from the list, never from the disk (extended control)", "responses": { "200": { "description": "OK" }, "404": { "description": "No such download" } } }
+    },
+    "/downloads/{id}/pause": { "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }], "post": { "summary": "Pause (extended control)", "responses": { "200": { "description": "OK" } } } },
+    "/downloads/{id}/resume": { "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }], "post": { "summary": "Resume (extended control)", "responses": { "200": { "description": "OK" } } } },
+    "/downloads/{id}/retry": { "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }], "post": { "summary": "Retry a failed download (extended control)", "responses": { "200": { "description": "OK" } } } },
+    "/queues": { "get": { "summary": "List queues (read only)", "responses": { "200": { "description": "OK" } } } },
+    "/queues/{name}/start": { "parameters": [{ "name": "name", "in": "path", "required": true, "schema": { "type": "string" } }], "post": { "summary": "Start a queue (extended control)", "responses": { "200": { "description": "OK" }, "404": { "description": "No such queue" } } } },
+    "/queues/{name}/stop": { "parameters": [{ "name": "name", "in": "path", "required": true, "schema": { "type": "string" } }], "post": { "summary": "Stop a queue (extended control)", "responses": { "200": { "description": "OK" }, "404": { "description": "No such queue" } } } },
+    "/openapi.json": { "get": { "summary": "This description (also needs the token)", "responses": { "200": { "description": "OK" } } } }
+  },
+  "components": {
+    "securitySchemes": { "bearer": { "type": "http", "scheme": "bearer" } },
+    "schemas": {
+      "AddRequest": {
+        "type": "object",
+        "required": ["url"],
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string" },
+          "fileName": { "type": "string" },
+          "referrer": { "type": "string" },
+          "userAgent": { "type": "string" },
+          "queue": { "type": "string" },
+          "category": { "type": "string" },
+          "start": { "type": "boolean", "description": "false adds it paused" },
+          "allowDuplicate": { "type": "boolean" }
+        }
+      },
+      "Download": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "url": { "type": "string", "description": "Without login or query string" },
+          "folder": { "type": "string" },
+          "path": { "type": "string", "nullable": true },
+          "status": { "type": "string" },
+          "downloaded": { "type": "integer" },
+          "totalSize": { "type": "integer", "nullable": true },
+          "error": { "type": "string", "nullable": true },
+          "queue": { "type": "string", "nullable": true },
+          "category": { "type": "string", "nullable": true },
+          "addedUtc": { "type": "string", "format": "date-time" },
+          "completedUtc": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      }
+    }
+  }
+}

@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>batonctl</AssemblyName>
-    <Version>1.4.0</Version>
+    <Version>1.4.1</Version>
     <RootNamespace>Baton.Cli</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>

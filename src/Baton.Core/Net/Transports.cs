@@ -178,10 +178,25 @@ public sealed class FtpTransport : ITransport
     private readonly AppSettings _settings;
     private readonly CertificateTrust _trust;
     private readonly ProxyResolver? _proxy;
+    private readonly bool _publicOnly;
+    private readonly Func<IPAddress, bool> _isBlocked;
+    private readonly Func<string, CancellationToken, Task<IPAddress[]>> _resolve;
     private bool _certificateRejected;
+    private bool _addressBlocked;
 
-    public FtpTransport(Uri url, NetworkCredential login, AppSettings settings, CertificateTrust trust, ProxyResolver? proxy)
+    /// <param name="publicOnly">
+    /// The address was asked for by an agent (the local API): the control connection only goes to a public address that
+    /// this transport resolved itself (so a DNS answer that changes after the check cannot lead it to a private one), and
+    /// the data connection always goes to the same address as the control connection, never to the one a server names.
+    /// </param>
+    /// <param name="isBlocked">The addresses refused when <paramref name="publicOnly"/> is set (tests only; private by default).</param>
+    /// <param name="resolve">Name resolution (tests only).</param>
+    public FtpTransport(Uri url, NetworkCredential login, AppSettings settings, CertificateTrust trust, ProxyResolver? proxy,
+        bool publicOnly = false, Func<IPAddress, bool>? isBlocked = null, Func<string, CancellationToken, Task<IPAddress[]>>? resolve = null)
     {
+        _publicOnly = publicOnly;
+        _isBlocked = isBlocked ?? UrlGuard.IsPrivate;
+        _resolve = resolve ?? ((host, ct) => Dns.GetHostAddressesAsync(host, ct));
         _url = url;
         _path = Uri.UnescapeDataString(url.AbsolutePath);
         _login = login;
@@ -258,7 +273,8 @@ public sealed class FtpTransport : ITransport
                 FtpSecurity.Explicit => FtpEncryptionMode.Explicit,
                 _ => FtpEncryptionMode.None,
             },
-            DataConnectionType = _settings.FtpActiveMode ? FtpDataConnectionType.AutoActive : FtpDataConnectionType.AutoPassive,
+            // PASVEX is EPSV for servers without EPSV: the data connection goes to the control connection's address.
+            DataConnectionType = _publicOnly ? FtpDataConnectionType.PASVEX : _settings.FtpActiveMode ? FtpDataConnectionType.AutoActive : FtpDataConnectionType.AutoPassive,
             ConnectTimeout = timeout,
             ReadTimeout = timeout,
             DataConnectionConnectTimeout = timeout,
@@ -271,9 +287,20 @@ public sealed class FtpTransport : ITransport
             SocketKeepAlive = true,
         };
 
-        var client = CreateClient(port, config);
+        var viaProxy = _proxy?.Resolve(_url) is { } p && p.Scheme is "socks5" or "http";
+        var pinned = _publicOnly && !viaProxy ? await ResolvePublicAsync(ct) : null;
+        var encrypted = SecurityOf(_url) != FtpSecurity.None;
+        // Without TLS the connection goes to the checked address itself; with TLS the certificate must match the name, so
+        // the name is kept and the remote address is checked before the login (during the handshake) and after it.
+        var client = CreateClient(port, config, encrypted ? null : pinned);
         client.ValidateCertificate += (_, e) =>
         {
+            if (_publicOnly && !viaProxy && client.SocketRemoteEndPoint is IPEndPoint remote && _isBlocked(remote.Address))
+            {
+                e.Accept = false;
+                _addressBlocked = true;
+                return;
+            }
             var accepted = _trust.Validate(_url.Host, port, e.Certificate, e.PolicyErrors);
             _certificateRejected |= !accepted;
             e.Accept = accepted;
@@ -281,6 +308,8 @@ public sealed class FtpTransport : ITransport
         try
         {
             await client.Connect(ct);
+            if (_publicOnly && !viaProxy && client.SocketRemoteEndPoint is IPEndPoint connected && _isBlocked(connected.Address))
+                throw new DownloadFailedException(Strings.MediaErrorPrivate);
             return client;
         }
         catch (Exception ex)
@@ -293,7 +322,15 @@ public sealed class FtpTransport : ITransport
     }
 
     /// <summary>A SOCKS5 or HTTP (CONNECT) proxy carries FTP; other proxy kinds cannot, and the connection is direct.</summary>
-    private AsyncFtpClient CreateClient(int port, FtpConfig config)
+    private async Task<IPAddress> ResolvePublicAsync(CancellationToken ct)
+    {
+        var host = _url.IdnHost.Trim('[', ']');
+        var addresses = IPAddress.TryParse(host, out var literal) ? [literal] : await _resolve(host, ct);
+        var allowed = addresses.FirstOrDefault(a => !_isBlocked(a));
+        return allowed ?? throw new DownloadFailedException(Strings.MediaErrorPrivate);
+    }
+
+    private AsyncFtpClient CreateClient(int port, FtpConfig config, IPAddress? pinned = null)
     {
         if (_proxy?.Resolve(_url) is { } proxy && proxy.Scheme is "socks5" or "http")
         {
@@ -310,7 +347,7 @@ public sealed class FtpTransport : ITransport
             client.Config = config;
             return client;
         }
-        return new AsyncFtpClient(_url.Host, _login, port, config);
+        return new AsyncFtpClient(pinned?.ToString() ?? _url.Host, _login, port, config);
     }
 
     /// <summary>Turns FTP replies into what the engine understands: busy (like HTTP 429), login, missing file, certificate.</summary>
@@ -318,6 +355,8 @@ public sealed class FtpTransport : ITransport
     {
         if (ex is OperationCanceledException or DownloadFailedException or AuthenticationRequiredException or ServerBusyException)
             return null;
+        if (_addressBlocked)
+            return new DownloadFailedException(Strings.MediaErrorPrivate, ex);
         if (_certificateRejected || ex is AuthenticationException && ex.Message.Contains("certificate", StringComparison.OrdinalIgnoreCase))
             return new UntrustedCertificateException(_url.Host, ex);
         var code = ex switch

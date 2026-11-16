@@ -87,7 +87,7 @@ Errors: `{"ok":false,"error":"…"}` (on the standard output with `--json`). Oth
   "addedUtc":"…","completedUtc":null}]}
 
 // version
-{"cli":"1.4.0","app":"1.4.0","running":true}
+{"cli":"1.4.1","app":"1.4.1","running":true}
 ```
 
 Downloads in the answers never carry cookies, passwords, tokens, form fields or the query string of the address.

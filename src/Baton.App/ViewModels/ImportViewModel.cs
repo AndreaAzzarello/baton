@@ -27,6 +27,7 @@ public sealed class ImportRow(ImportItem item) : ObservableObject
         ImportKind.Category => Strings.ImportKindCategory,
         ImportKind.Queue => Strings.ImportKindQueue,
         ImportKind.Project => Strings.ImportKindProject,
+        ImportKind.Rule => Strings.ImportKindRule,
         ImportKind.NetworkSettings => Strings.ImportKindNetwork,
         _ => Strings.ImportKindSettings,
     };

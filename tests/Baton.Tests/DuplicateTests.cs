@@ -165,10 +165,24 @@ public sealed class DuplicateTests : IAsyncLifetime
         store.AddHistory("https://a.test/old", "old", @"C:\D\old", 1, null, null, now.AddDays(-400));
         store.AddHistory("https://a.test/kept", "kept", @"C:\D\kept", 1, null, null, now);
 
-        var removed = store.PruneHistory(now, path => path != @"C:\D\gone");
+        var removed = store.PruneHistory(now, path => path != @"C:\D\gone", _ => true);
 
         Assert.Equal(2, removed);
         Assert.Equal("kept", store.FindBySize(1).Single().FileName);
+    }
+
+    [Fact]
+    public void Prune_KeepsTheEntriesOfADriveThatIsNotThere()
+    {
+        using var store = Store();
+        var now = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
+        store.AddHistory("https://a.test/usb", "usb", @"E:\D\usb", 1, null, null, now);   // unplugged drive
+        store.AddHistory("https://a.test/gone", "gone", @"C:\D\gone", 1, null, null, now); // drive there, file not
+
+        var removed = store.PruneHistory(now, _ => false, path => path.StartsWith(@"C:\", StringComparison.Ordinal));
+
+        Assert.Equal(1, removed);
+        Assert.Equal("usb", store.FindBySize(1).Single().FileName);
     }
 
     [Fact]
@@ -179,7 +193,7 @@ public sealed class DuplicateTests : IAsyncLifetime
         for (var i = 0; i < DownloadStore.HistoryMaxEntries + 3; i++)
             store.AddHistory($"https://a.test/{i}", $"f{i}", $@"C:\D\f{i}", 7, null, null, now.AddSeconds(i));
 
-        Assert.Equal(3, store.PruneHistory(now.AddHours(1), _ => true));
+        Assert.Equal(3, store.PruneHistory(now.AddHours(1), _ => true, _ => true));
         Assert.Equal(DownloadStore.HistoryMaxEntries, store.HistoryCount());
         Assert.DoesNotContain(store.FindBySize(7), e => e.FileName == "f0"); // the oldest went
     }
@@ -261,6 +275,41 @@ public sealed class DuplicateTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SameName_IsComparedWithTheFinalName_NotTheOneGuessedFromTheAddress()
+    {
+        // The address ends in "get.bin?id=1" but the server names the file "real.bin".
+        var url = _server.Add("get.bin", new ServedFile
+        {
+            Content = TestFileServer.RandomBytes(40_000, 11),
+            ContentDisposition = "attachment; filename=\"real.bin\"",
+            ETag = "\"z\"",
+        }) + "?id=1";
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+
+        // A file called like the address, not like the final name: not a duplicate (and nothing is flagged before the server answers).
+        await File.WriteAllBytesAsync(Path.Combine(_dir, "get.bin"), [1]);
+        Assert.Null(service.FindDuplicate(url, _dir));
+        Assert.Equal(DownloadStatus.Completed, (await Finished(service, service.Add(url, _dir))).Status);
+
+        // The final name is taken: now it is one, found once the server has answered and before any byte is written.
+        await service.ClearCompletedAsync();
+        DuplicateNotice? notice = null;
+        service.DuplicateFound += n => notice = n;
+        var other = _server.Add("other.bin", new ServedFile // another file (size, ETag) that the server also calls "real.bin"
+        {
+            Content = TestFileServer.RandomBytes(41_000, 12),
+            ContentDisposition = "attachment; filename=\"real.bin\"",
+            ETag = "\"y\"",
+        });
+        var again = service.Add(other, _dir);
+        await WaitFor(() => notice is not null);
+        Assert.Equal(DuplicateReason.SameName, notice!.Match.Reason);
+        Assert.Equal(Path.Combine(_dir, "real.bin"), notice.Match.ExistingPath);
+        Assert.Equal(DownloadStatus.Paused, service.GetSnapshot(again)!.Status);
+    }
+
+    [Fact]
     public async Task SameSizeButAnotherEtag_IsNotADuplicate()
     {
         var content = TestFileServer.RandomBytes(200_000, 8);
@@ -290,9 +339,16 @@ public sealed class DuplicateTests : IAsyncLifetime
         Assert.Equal(DownloadStatus.Completed, (await Finished(service, service.Add(second))).Status);
 
         service.UpdateSettings(new AppSettings { DownloadFolder = _dir, ProxyMode = ProxyMode.None, DuplicateAction = DuplicateAction.Skip });
+        DuplicateNotice? said = null;
+        service.DuplicateSkipped += n => said = n;
         var skipped = service.Add(third);
         await WaitFor(() => service.GetSnapshot(skipped) is null); // not downloaded, not kept in the list
         Assert.Empty(Directory.GetFiles(_dir, "three*", SearchOption.AllDirectories));
+        await WaitFor(() => said is not null);                      // ...but not in silence: the app is told what was skipped
+        Assert.Equal(skipped, said!.DownloadId);
+        Assert.Equal(DuplicateReason.SameFile, said.Match.Reason);
+        var line = Assert.Single(service.AutomationLog.Read(Baton.Core.Automation.AutomationLog.Duplicates)); // and written in the activity log
+        Assert.Equal(Baton.Core.Automation.ActivityText.DuplicateSkip, line.Action);
     }
 
     [Fact]

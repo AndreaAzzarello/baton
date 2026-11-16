@@ -1,0 +1,185 @@
+<Window x:Class="Baton.App.Views.RulesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:Baton.App.Services"
+        Title="{l:Loc RulesTitle}" Width="1000" Height="820" MinWidth="820" MinHeight="560"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="20" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.ColumnSpan="3" Text="{l:Loc RulesHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,12" />
+
+        <DockPanel Grid.Row="1">
+            <WrapPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                <Button Style="{StaticResource DialogButton}" Margin="0,0,6,6" MinWidth="0" Command="{Binding AddCommand}" AutomationProperties.Name="{l:Loc RuleAdd}">
+                    <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE710;" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" /><TextBlock Text="{l:Loc RuleAdd}" /></StackPanel>
+                </Button>
+                <Button Style="{StaticResource DialogButton}" Margin="0,0,6,6" MinWidth="0" Command="{Binding DeleteCommand}" AutomationProperties.Name="{l:Loc RuleDelete}">
+                    <StackPanel Orientation="Horizontal"><TextBlock Style="{StaticResource Glyph}" Text="&#xE74D;" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" /><TextBlock Text="{l:Loc RuleDelete}" /></StackPanel>
+                </Button>
+                <Button Style="{StaticResource DialogButton}" Margin="0,0,6,6" MinWidth="0" Command="{Binding MoveUpCommand}" ToolTip="{l:Loc RuleMoveUp}" AutomationProperties.Name="{l:Loc RuleMoveUp}">
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE70E;" FontSize="12" />
+                </Button>
+                <Button Style="{StaticResource DialogButton}" Margin="0,0,0,6" MinWidth="0" Command="{Binding MoveDownCommand}" ToolTip="{l:Loc RuleMoveDown}" AutomationProperties.Name="{l:Loc RuleMoveDown}">
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE70D;" FontSize="12" />
+                </Button>
+            </WrapPanel>
+            <Grid>
+                <ListBox x:Name="List" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" AutomationProperties.Name="{l:Loc RulesListName}"
+                         Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                         KeyDown="OnListKeyDown">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding Enabled}" IsEnabled="{Binding IsEditable}" AutomationProperties.Name="{Binding ListLabel}" Margin="2,3">
+                                <TextBlock Text="{Binding ListLabel}" TextWrapping="Wrap" />
+                            </CheckBox>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Text="{l:Loc RulesEmpty}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="14" VerticalAlignment="Top" IsHitTestVisible="False"
+                           Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+            </Grid>
+        </DockPanel>
+
+        <ScrollViewer Grid.Row="1" Grid.Column="2" VerticalScrollBarVisibility="Auto" Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisibility}}">
+            <StackPanel DataContext="{Binding Selected}" Margin="0,0,12,0" IsEnabled="{Binding IsEditable}">
+                <TextBlock Text="{l:Loc RuleUnreadableNote}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8"
+                           Visibility="{Binding IsUnreadable, Converter={StaticResource BoolToVisibility}}" />
+                <TextBlock Text="{l:Loc RuleImportedNote}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8"
+                           Visibility="{Binding IsImported, Converter={StaticResource BoolToVisibility}}" />
+                <Label Content="{l:Loc RuleNameLabel}" Target="{Binding ElementName=NameBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <TextBox x:Name="NameBox" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleNameLabel}" />
+                <CheckBox IsChecked="{Binding Enabled}" Margin="0,8,0,0" AutomationProperties.Name="{l:Loc RuleEnabled}" Content="{l:Loc RuleEnabled}" />
+
+                <TextBlock Text="{l:Loc RuleConditionsHeader}" FontWeight="SemiBold" Margin="0,18,0,6" />
+                <Label Content="{l:Loc RuleDomains}" Target="{Binding ElementName=DomainsBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <TextBox x:Name="DomainsBox" Text="{Binding Domains, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleDomains}" />
+                <Label Content="{l:Loc RuleUrlPattern}" Target="{Binding ElementName=PatternBox}" Padding="0" Margin="0,8,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <TextBox x:Name="PatternBox" Text="{Binding UrlPattern, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleUrlPattern}" />
+                <Label Content="{l:Loc RuleUrlRegex}" Target="{Binding ElementName=RegexBox}" Padding="0" Margin="0,8,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <TextBox x:Name="RegexBox" Text="{Binding UrlRegex, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleUrlRegex}" />
+                <Label Content="{l:Loc RuleExtensions}" Target="{Binding ElementName=ExtensionsBox}" Padding="0" Margin="0,8,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <TextBox x:Name="ExtensionsBox" Text="{Binding Extensions, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleExtensions}" />
+                <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="110" /><ColumnDefinition Width="12" /><ColumnDefinition Width="110" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <Label Content="{l:Loc RuleConditionCategory}" Target="{Binding ElementName=ConditionCategoryBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <ComboBox x:Name="ConditionCategoryBox" ItemsSource="{Binding ConditionCategories}" SelectedItem="{Binding ConditionCategory}" DisplayMemberPath="Text"
+                                  AutomationProperties.Name="{l:Loc RuleConditionCategory}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <Label Content="{l:Loc RuleMinSize}" Target="{Binding ElementName=MinBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBox x:Name="MinBox" Text="{Binding MinSize, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleMinSize}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="4">
+                        <Label Content="{l:Loc RuleMaxSize}" Target="{Binding ElementName=MaxBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBox x:Name="MaxBox" Text="{Binding MaxSize, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleMaxSize}" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock Text="{l:Loc RuleSizeHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                <TextBlock Text="{l:Loc RuleOriginsLabel}" Foreground="{DynamicResource MutedBrush}" Margin="0,8,0,4" />
+                <ItemsControl ItemsSource="{Binding Origins}" AutomationProperties.Name="{l:Loc RuleOriginsLabel}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsChecked}" Content="{Binding Text}" AutomationProperties.Name="{Binding Text}" Margin="0,0,16,4" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="{l:Loc RuleActionsHeader}" FontWeight="SemiBold" Margin="0,18,0,6" />
+                <Label Content="{l:Loc RuleFolder}" Target="{Binding ElementName=FolderBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="{l:Loc Browse}" Style="{StaticResource DialogButton}"
+                            Command="{Binding DataContext.BrowseCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                    <TextBox x:Name="FolderBox" Text="{Binding Folder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleFolder}" />
+                </DockPanel>
+                <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <Label Content="{l:Loc RuleActionCategory}" Target="{Binding ElementName=ActionCategoryBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <ComboBox x:Name="ActionCategoryBox" ItemsSource="{Binding ActionCategories}" SelectedItem="{Binding ActionCategory}" DisplayMemberPath="Text"
+                                  AutomationProperties.Name="{l:Loc RuleActionCategory}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <Label Content="{l:Loc RuleQueue}" Target="{Binding ElementName=QueueBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <ComboBox x:Name="QueueBox" ItemsSource="{Binding Queues}" SelectedItem="{Binding Queue}" DisplayMemberPath="Text" AutomationProperties.Name="{l:Loc RuleQueue}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="4">
+                        <Label Content="{l:Loc RuleStart}" Target="{Binding ElementName=StartBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <ComboBox x:Name="StartBox" ItemsSource="{Binding Starts}" SelectedItem="{Binding Start}" DisplayMemberPath="Text" AutomationProperties.Name="{l:Loc RuleStart}" />
+                    </StackPanel>
+                </Grid>
+                <Label Content="{l:Loc RuleRename}" Target="{Binding ElementName=RenameBox}" Padding="0" Margin="0,8,0,4" Foreground="{DynamicResource MutedBrush}" />
+                <TextBox x:Name="RenameBox" Text="{Binding Rename, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleRename}" />
+                <TextBlock Text="{l:Loc RuleRenameHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140" /><ColumnDefinition Width="12" /><ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="200" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <Label Content="{l:Loc RuleConnections}" Target="{Binding ElementName=ConnectionsBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBox x:Name="ConnectionsBox" Text="{Binding Connections, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleConnections}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <Label Content="{l:Loc RuleUserAgent}" Target="{Binding ElementName=AgentBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBox x:Name="AgentBox" Text="{Binding UserAgent, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleUserAgent}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="4">
+                        <Label Content="{l:Loc RuleSpeedLimit}" Target="{Binding ElementName=LimitBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBox x:Name="LimitBox" Text="{Binding SpeedLimit, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RuleSpeedLimit}" />
+                    </StackPanel>
+                </Grid>
+                <CheckBox IsChecked="{Binding Scan}" Margin="0,10,0,0" AutomationProperties.Name="{l:Loc RuleScan}" Content="{l:Loc RuleScan}" />
+                <CheckBox IsChecked="{Binding SkipConfirmation}" Margin="0,6,0,0" AutomationProperties.Name="{l:Loc RuleSkipConfirm}" Content="{l:Loc RuleSkipConfirm}" />
+                <CheckBox IsChecked="{Binding ShowInFolder}" Margin="0,6,0,0" AutomationProperties.Name="{l:Loc RuleShowInFolder}" Content="{l:Loc RuleShowInFolder}" />
+                <CheckBox IsChecked="{Binding OpenWhenDone}" Margin="0,6,0,0" AutomationProperties.Name="{l:Loc RuleOpenWhenDone}" Content="{l:Loc RuleOpenWhenDone}" />
+                <TextBlock Text="{l:Loc RuleOpenHint}" Foreground="{DynamicResource MutedBrush}" Margin="22,2,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Grid.ColumnSpan="3" Margin="0,14,0,0" Padding="12" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="6">
+            <StackPanel>
+                <TextBlock Text="{l:Loc RulePreviewHeader}" FontWeight="SemiBold" />
+                <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" /><ColumnDefinition Width="12" /><ColumnDefinition Width="200" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <Label Content="{l:Loc RulePreviewUrl}" Target="{Binding ElementName=PreviewBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBox x:Name="PreviewBox" Text="{Binding PreviewUrl, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{l:Loc RulePreviewUrl}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <Label Content="{l:Loc RulePreviewOrigin}" Target="{Binding ElementName=PreviewOriginBox}" Padding="0" Margin="0,0,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <ComboBox x:Name="PreviewOriginBox" ItemsSource="{Binding PreviewOrigins}" SelectedItem="{Binding PreviewOrigin}" DisplayMemberPath="Text"
+                                  AutomationProperties.Name="{l:Loc RulePreviewOrigin}" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock x:Name="PreviewResult" Text="{Binding PreviewText}" TextWrapping="Wrap" Margin="0,8,0,0" MinHeight="18" AutomationProperties.LiveSetting="Polite"
+                           AutomationProperties.Name="{l:Loc RulePreviewHeader}" />
+            </StackPanel>
+        </Border>
+
+        <DockPanel Grid.Row="3" Grid.ColumnSpan="3" Margin="0,16,0,0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Content="{l:Loc Save}" Style="{StaticResource PrimaryButton}" Click="OnSave" IsDefault="True" />
+                <Button Content="{l:Loc Cancel}" Style="{StaticResource DialogButton}" IsCancel="True" />
+            </StackPanel>
+            <TextBlock Text="{Binding Error}" Style="{StaticResource ErrorText}" Margin="0" VerticalAlignment="Center" AutomationProperties.LiveSetting="Assertive" />
+        </DockPanel>
+    </Grid>
+</Window>

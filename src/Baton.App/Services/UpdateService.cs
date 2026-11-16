@@ -190,6 +190,8 @@ public sealed class UpdateService(DownloadService service, IDialogService dialog
             return; // a repair or an update is already at work on it
         try
         {
+            if (ExtensionPackage.RepairReason(ProgramFolder(exe), Version.Parse(App.AppVersion)) is { } reason)
+                Log.Warning("update", $"installation incomplete: {reason}; completing it with the package of {App.AppVersion}");
             using var http = service.Network.CreateHttpClient();
             using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(10));
             if (await ExtensionPackage.RepairAsync(http, address.Trim(), Version.Parse(App.AppVersion), ProgramFolder(exe), Folder, timeout.Token))

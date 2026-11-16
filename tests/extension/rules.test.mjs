@@ -119,7 +119,12 @@ test("connection states for the check page", () => {
   assert.equal(R.connectionState(null, new Error("the app did not answer in time")), "error");
 });
 
-test("sizes are formatted for people", () => {
+test("the browser's size is read, and sizes are formatted for people", () => {
+  assert.equal(R.knownSize({ totalBytes: 100, fileSize: 5 }), 100);
+  assert.equal(R.knownSize({ totalBytes: -1, fileSize: 5 }), 5);
+  assert.equal(R.knownSize({ totalBytes: 0 }), null);
+  assert.equal(R.knownSize({ totalBytes: "12" }), null);
+  assert.equal(R.knownSize(undefined), null);
   assert.equal(R.formatSize(0, "en"), "");
   assert.equal(R.formatSize(1536, "en"), "1.5 KB");
   assert.equal(R.formatSize(734003200, "it"), "700 MB");

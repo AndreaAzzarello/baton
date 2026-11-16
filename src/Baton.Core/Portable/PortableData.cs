@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Baton.Core.Grabber;
+using Baton.Core.Rules;
 
 namespace Baton.Core.Portable;
 
@@ -26,6 +27,27 @@ public sealed record ExportedCategory(string Name, string? Key, List<string> Ext
 
 public sealed record ExportedQueue(string Name, string? Key, int MaxConcurrent, QueueSchedule Schedule, int RetryCount, int RetryDelaySeconds,
     long QuotaMBPerHour, EndAction EndAction);
+
+/// <summary>
+/// An automatic rule as exported: no id and no "imported" mark, and categories and queues by name (their ids mean nothing in
+/// another app). Rules hold no secret: addresses, patterns, folders and name templates only.
+/// </summary>
+public sealed class ExportedRule
+{
+    public string Name { get; set; } = "";
+    public bool Enabled { get; set; } = true;
+    public RuleConditions Conditions { get; set; } = new();
+
+    /// <summary>The category named by the condition "category is...".</summary>
+    public string? ConditionCategory { get; set; }
+
+    public RuleActions Actions { get; set; } = new();
+
+    /// <summary>The category and queue the actions name.</summary>
+    public string? ActionCategory { get; set; }
+
+    public string? ActionQueue { get; set; }
+}
 
 /// <summary>The settings that travel: no password, and no program paths or update address (see <see cref="PortableData"/>).</summary>
 public sealed class ExportedSettings
@@ -78,6 +100,9 @@ public sealed class PortableFile
 
     /// <summary>Grabber projects, without their cookies.</summary>
     public List<GrabberProject>? Projects { get; set; }
+
+    /// <summary>Automatic rules, in order.</summary>
+    public List<ExportedRule>? Rules { get; set; }
 }
 
 /// <summary>
@@ -123,7 +148,7 @@ public static class PortableData
         string.Join(Environment.NewLine, records.OrderBy(r => r.SortOrder).Select(r => Urls.Display(r.Url))) + Environment.NewLine;
 
     public static PortableFile ExportSettings(AppSettings settings, IReadOnlyList<Category> categories, IReadOnlyList<DownloadQueue> queues,
-        IReadOnlyList<GrabberProject> projects, DateTime utcNow) => new()
+        IReadOnlyList<GrabberProject> projects, DateTime utcNow, IReadOnlyList<Rule>? rules = null) => new()
     {
         Kind = PortableFile.SettingsKind,
         ExportedUtc = utcNow,
@@ -150,7 +175,26 @@ public static class PortableData
             copy.LastResult = null;
             return copy;
         }).ToList(),
+        Rules = (rules ?? []).Where(r => !r.Unreadable).OrderBy(r => r.SortOrder).Select(r => ExportRule(r, categories, queues)).ToList(),
     };
+
+    private static ExportedRule ExportRule(Rule rule, IReadOnlyList<Category> categories, IReadOnlyList<DownloadQueue> queues)
+    {
+        var conditions = rule.Conditions.Clone();
+        var actions = rule.Actions.Clone();
+        var exported = new ExportedRule
+        {
+            Name = rule.Name,
+            Enabled = rule.Enabled,
+            ConditionCategory = categories.FirstOrDefault(c => c.Id == conditions.CategoryId)?.Name,
+            ActionCategory = categories.FirstOrDefault(c => c.Id == actions.CategoryId)?.Name,
+            ActionQueue = queues.FirstOrDefault(q => q.Id == actions.QueueId)?.Name,
+        };
+        (conditions.CategoryId, actions.CategoryId, actions.QueueId) = (null, null, null);
+        exported.Conditions = conditions;
+        exported.Actions = actions;
+        return exported;
+    }
 
     public static string Serialize(PortableFile file) => JsonSerializer.Serialize(file, Json);
 
@@ -165,6 +209,16 @@ public static class PortableData
         file.Categories = file.Categories?.Where(c => c is not null).ToList();
         file.Queues = file.Queues?.Where(q => q is not null).ToList();
         file.Projects = file.Projects?.Where(p => p is not null).ToList();
+        file.Rules = file.Rules?.Where(r => r is not null).ToList();
+        foreach (var r in file.Rules ?? [])
+        {
+            r.Name ??= "";
+            r.Conditions ??= new RuleConditions();
+            r.Actions ??= new RuleActions();
+            r.Conditions.Domains = r.Conditions.Domains?.Where(d => d is not null).ToList() ?? [];
+            r.Conditions.Extensions = r.Conditions.Extensions?.Where(e => e is not null).ToList() ?? [];
+            r.Conditions.Origins = r.Conditions.Origins?.Where(o => o is not null).ToList() ?? [];
+        }
         foreach (var p in file.Projects ?? [])
         {
             p.Name ??= "";
@@ -203,7 +257,7 @@ public static class PortableData
             }
             if (file is null || file.Format is not (PortableFile.FormatName or PortableFile.LegacyFormatName) || file.Kind is not (PortableFile.DownloadsKind or PortableFile.SettingsKind))
                 throw new FormatException(Resources.Strings.ImportErrorFormat);
-            if ((file.Downloads?.Count ?? 0) + (file.Categories?.Count ?? 0) + (file.Queues?.Count ?? 0) + (file.Projects?.Count ?? 0) > MaxItems)
+            if ((file.Downloads?.Count ?? 0) + (file.Categories?.Count ?? 0) + (file.Queues?.Count ?? 0) + (file.Projects?.Count ?? 0) + (file.Rules?.Count ?? 0) > MaxItems)
                 throw new FormatException(Resources.Strings.ImportErrorTooLarge);
             return Clean(file);
         }

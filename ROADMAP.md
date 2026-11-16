@@ -30,12 +30,16 @@ Where Baton is heading. There are no dates: each item ships when it is ready, te
 
 ## Planned
 
-### 1.4.1 and 1.4.2 — "Automation", the rest
+### 1.4.1 — "Automation", the local API and rules
 
-- **Local API**: the same operations for other programs on the same computer, never exposed to the network.
+- **Local API** on `127.0.0.1` with a token, levels, rate limit and a guard against private networks, see [docs/API.md](docs/API.md).
+- **Automatic rules**: site, address, type, size or origin → folder, category, queue, name, scan and more.
+- **Activity log** of what the API and the rules did.
+
+### 1.4.2 — "Automation", MCP
+
 - **MCP server**, so AI agents (Claude Code, Claude Desktop and others) can control Baton: add downloads, read their
   state, manage queues.
-- **Automatic rules**: site → folder, queue or schedule.
 
 ### 1.5 — "AI, optional and privacy-first"
 
@@ -68,8 +72,8 @@ Dove va Baton, senza date: ogni punto esce quando è pronto, provato e firmato. 
 - **In progress — 1.3.x**: l'estensione del browser aggiornata insieme all'app; pacchetti (winget) e firma del codice
   tramite SignPath Foundation.
 - **Fatto — 1.4.0**: riga di comando (`batonctl`), rilevamento dei duplicati, monitor degli appunti, cartelle «alla IDM».
-- **Planned — 1.4.1 e 1.4.2**: API locale e regole automatiche (sito → cartella, coda o pianificazione); server MCP perché
-  gli agenti AI (Claude Code, Claude Desktop…) possano comandare Baton.
+- **In arrivo — 1.4.1**: API locale, regole automatiche e registro delle attività.
+- **Planned — 1.4.2**: server MCP perché gli agenti AI (Claude Code, Claude Desktop…) possano comandare Baton.
 - **Planned — 1.5 "AI, opzionale e rispettosa della privacy"**: comandi in linguaggio naturale, filtri del grabber
   assistiti, nomi dei file intelligenti, spiegazione degli errori in parole semplici. Spenta all'inizio, con la tua chiave
   API; cookie e password mai inviati.

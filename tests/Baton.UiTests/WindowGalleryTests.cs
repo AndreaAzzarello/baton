@@ -297,6 +297,29 @@ public sealed class WindowGalleryTests : IDisposable
             own.First(c => c.Key == Categories.VideoKey).Folder = Path.Combine(_dir, "Films");
             yield return (new SettingsWindow(new SettingsViewModel(_dialogs, _service.Settings, runAtStartup: false, _service.Credentials, _service.Certificates,
                 _ => Task.CompletedTask, () => { }, Path.Combine(_dir, "Baton.exe"), new BundledExtensionViewModel(_dir, _shell)) { RunAtStartup = true, Categories = own }), "settings");
+            // The Automation tab (the gallery only sees the tab that is open), with a token shown.
+            var automation = new SettingsWindow(new SettingsViewModel(_dialogs, new AppSettings { DownloadFolder = folder, ApiLevel = Baton.Core.Integration.AutomationLevel.ReadAdd,
+                ApiToken = Baton.Core.Integration.AutomationToken.Create() }, runAtStartup: false) { CopyText = _ => { }, OpenActivityLog = () => { } });
+            var tabs = (System.Windows.Controls.TabControl)automation.FindName("Tabs");
+            tabs.SelectedIndex = 5; // General, Save in, Network, After download, Updates, Automation
+            ((SettingsViewModel)automation.DataContext).ShowTokenCommand.Execute(null);
+            yield return (automation, "settings-automation");
+            var log = _service.AutomationLog;
+            log.Record(Baton.Core.Automation.AutomationLog.Api, "api.add", "201", "https://downloads.example.com/files/archive.zip");
+            log.Record(Baton.Core.Automation.AutomationLog.Api, "api.list", "401", Baton.Core.Automation.ActivityText.Reason("wrongToken"));
+            log.Record(Baton.Core.Automation.AutomationLog.RulesOrigin, Baton.Core.Automation.ActivityText.RuleApplied, "ok", "Work files");
+            yield return (new ActivityLogWindow(new ActivityLogViewModel(_dialogs, log)), "activity-log");
+            var sampleRules = new List<Baton.Core.Rules.Rule>
+            {
+                new() { Id = 1, SortOrder = 0, Name = "Work files", Conditions = { Domains = ["example.com"], Extensions = ["pdf", "docx"] },
+                    Actions = { Folder = Path.Combine(folder, "Work"), Rename = "{date}-{name}", Start = Baton.Core.Rules.RuleStart.Queued } },
+                new() { Id = 2, SortOrder = 1, Name = "Big downloads at night", Conditions = { MinSize = 500L * 1024 * 1024 }, Actions = { QueueId = queues[0].Id, Connections = 4 } },
+                new() { Id = 3, SortOrder = 2, Name = "Imported: open photos", Enabled = false, Imported = true,
+                    Conditions = { Extensions = ["jpg", "png"], Origins = ["browser"] }, Actions = { OpenWhenDone = true, SkipConfirmation = true } },
+            };
+            var rulesViewModel = new RulesViewModel(_dialogs, sampleRules, categories, queues, folder, selectId: 1)
+                { PreviewUrl = "https://files.example.com/reports/budget.pdf" };
+            yield return (new RulesWindow(rulesViewModel), "rules");
             yield return (new AddDownloadWindow(new AddDownloadViewModel(_dialogs, categories, _service.Settings, "https://downloads.example.com/files/archive.zip",
                 note: Baton.Core.Resources.Strings.FromBrowserWithCookies, queues: queues)), "add");
             yield return (new AddDownloadWindow(new AddDownloadViewModel(_dialogs, own, _service.Settings, "https://downloads.example.com/files/holiday.mp4",

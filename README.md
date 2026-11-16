@@ -51,7 +51,9 @@ Details in [PRIVACY.md](PRIVACY.md).
 - **Duplicates**: warns before downloading the same file again, even one removed from the list (the history keeps no address, only a keyed hash).
 - **Clipboard** (optional, off by default): offers to download a link you copy; the copied text is never stored.
 - **Command line**: `batonctl` adds and controls downloads from scripts, see [docs/CLI.md](docs/CLI.md).
-- **Signed updates** (ECDSA P-256) with automatic rollback; settings export and import.
+- **Local API** (off by default): a token-protected REST API on `127.0.0.1` for scripts and agents, never reachable from the network, see [docs/API.md](docs/API.md).
+- **Rules**: the first matching rule (site, address, type, size, origin) picks folder, queue, name and more when a download is added; every application is in the activity log.
+- **Signed updates** (ECDSA P-256) with automatic rollback; settings and rules export and import.
 
 ## Download & install
 
@@ -114,8 +116,8 @@ says to reload it from `chrome://extensions`.
 `Baton.exe`, the installer and the extension's package `baton-extension-<version>.zip` each carry a SHA-256 hash (`.sha256`) and an ECDSA P-256 signature (`.sig`) of
 "version + file name + SHA-256", made with a private key that never leaves the author's PC. The public keys are in
 [`release-keys.txt`](src/Baton.Core/Updates/release-keys.txt): `b80f666050fcbc7d` (main) and `cc691630b30bf7f1` (spare).
-Once SignPath signs the releases they also carry an Authenticode signature, made before the release key signs the final
-file. From a clone of this repository:
+Releases carry no Authenticode signature: SignPath Foundation declined the application, so Windows SmartScreen may warn on
+first run; integrity is checked with this signature and the SHA-256. From a clone of this repository:
 
 ```powershell
 .\tools\verify-release.ps1 -Exe "$HOME\Downloads\Baton-Setup-1.3.6.exe"
@@ -171,8 +173,8 @@ To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Roadmap
 
-- **Now (1.4.0)**: command line (`batonctl`), duplicates, clipboard monitor, IDM-style save folders. In progress: winget and code signing (SignPath Foundation).
-- **Next, 1.4.1 and 1.4.2 "Automation"**: local API and automatic rules; an MCP server for AI agents.
+- **Now (1.4.1)**: local API, automatic rules and the activity log, after 1.4.0 (command line, duplicates, clipboard monitor, IDM-style save folders). No Authenticode signature: SignPath Foundation declined the application. Winget: not available yet.
+- **Next, 1.4.2 "Automation"**: an MCP server for AI agents.
 - **Then, 1.5 "AI, optional and privacy-first"**: natural-language commands and smarter grabber filters, off by default, your own API key.
 - **Exploring**: Metalink, archive extraction, browser stores, more languages, a cross-platform 2.x.
 

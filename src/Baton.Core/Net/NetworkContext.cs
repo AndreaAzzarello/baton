@@ -96,7 +96,7 @@ public sealed class NetworkContext
             var login = ownLogin
                         ?? (saved is not null ? new NetworkCredential(saved.Username, saved.Password) : null)
                         ?? new NetworkCredential("anonymous", "anonymous@");
-            return new FtpTransport(url, login, Settings, Certificates, Proxy);
+            return new FtpTransport(url, login, Settings, Certificates, Proxy, publicOnly: context?.PublicOnly == true);
         }
 
         var cookies = context is { Cookies.Count: > 0 } ? RequestContexts.ToCookieContainer(context.Cookies) : null;

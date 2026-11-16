@@ -103,6 +103,18 @@ public sealed class ProtocolV4Tests : IAsyncLifetime
     }
 
     [Fact]
+    public void Open_IsOnlyForTheCommandLine_McpAndApiAreRefusedAtEveryLevel()
+    {
+        foreach (var level in new[] { AutomationLevel.ReadOnly, AutomationLevel.ReadAdd, AutomationLevel.Extended })
+        {
+            Assert.NotNull(Check(Messages.Open, Origins.Mcp, mcp: level));
+            Assert.NotNull(Check(Messages.Open, Origins.Api, api: level));
+        }
+        Assert.Null(Check(Messages.Open, Origins.Cli));
+        Assert.Null(Check(Messages.Pause, Origins.Api, api: AutomationLevel.Extended)); // the rest of "extended control" stays
+    }
+
+    [Fact]
     public void AnUnknownOrigin_AndTheClipboard_AreRefused()
     {
         Assert.NotNull(Check(Messages.List, "root"));
@@ -243,7 +255,8 @@ public sealed class ProtocolV4Tests : IAsyncLifetime
         Assert.Equal("sameFile", ControlHandler.ReasonCode(DuplicateReason.SameFile));
         var forced = await control.HandleAsync(Cli(Messages.Add, download: new BrowserDownload(url, AllowDuplicate: true)));
         Assert.Equal("added", forced.Result);
-        await WaitFor(() => service.GetSnapshots().All(s => s.Status == DownloadStatus.Completed));
+        // "Completed" shows before the job leaves the active set and its checks end; "remove all" takes only what CompletedToClear lists.
+        await WaitFor(() => service.CompletedToClear().Count == 2);
 
         var removed = await control.HandleAsync(Cli(Messages.Remove, all: true));
         Assert.Equal(2, removed.Count);
@@ -406,7 +419,7 @@ public sealed class ProtocolV4Tests : IAsyncLifetime
         using var store = Store();
         await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
         var firstId = service.Add(first);
-        await WaitFor(() => service.GetSnapshot(firstId)!.Status == DownloadStatus.Completed);
+        await WaitFor(() => service.CompletedToClear().Any(s => s.Id == firstId));
         await service.ClearCompletedAsync();
         DuplicateNotice? notice = null;
         service.DuplicateFound += n => notice = n;
@@ -458,7 +471,7 @@ public sealed class ProtocolV4Tests : IAsyncLifetime
         using var store = Store();
         await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
         var firstId = service.Add(first);
-        await WaitFor(() => service.GetSnapshot(firstId)!.Status == DownloadStatus.Completed);
+        await WaitFor(() => service.CompletedToClear().Any(s => s.Id == firstId));
         await service.ClearCompletedAsync();
         DuplicateNotice? notice = null;
         service.DuplicateFound += n => notice = n;
@@ -485,7 +498,7 @@ public sealed class ProtocolV4Tests : IAsyncLifetime
             return true;
         }
 
-        public Task<ChannelReply?> Send(ChannelMessage message) => AppChannel.SendAsync(pipe, message, TimeSpan.FromMilliseconds(300));
+        public Task<ChannelReply?> Send(ChannelMessage message) => AppChannel.SendAsync(pipe, message, TimeSpan.FromSeconds(1)); // a slow CI runner may answer late: a missed reply would be sent again
 
         public async ValueTask DisposeAsync()
         {

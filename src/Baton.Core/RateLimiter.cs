@@ -28,8 +28,13 @@ public sealed class RateLimiter
         }
     }
 
+    /// <summary>A limiter this one answers to: a download with its own limit also stays within the global one.</summary>
+    public RateLimiter? Parent { get; init; }
+
     public async ValueTask WaitAsync(int bytes, CancellationToken ct)
     {
+        if (Parent is not null)
+            await Parent.WaitAsync(bytes, ct);
         while (true)
         {
             TimeSpan delay;

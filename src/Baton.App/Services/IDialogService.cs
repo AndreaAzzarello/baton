@@ -39,6 +39,12 @@ public interface IDialogService
 
     bool ShowQueues(QueuesViewModel viewModel);
 
+    /// <summary>The activity log of the local API, MCP and the rules (a dialog: it is opened from the settings, which are modal).</summary>
+    void ShowActivityLog(ActivityLogViewModel viewModel);
+
+    /// <summary>The automatic rules window; true when saved.</summary>
+    bool ShowRules(RulesViewModel viewModel);
+
     /// <summary>The countdown before a queue's end action; true when it ran out or the user chose to go ahead.</summary>
     bool ShowCountdown(Core.EndAction action, string queueName, TimeSpan length);
 

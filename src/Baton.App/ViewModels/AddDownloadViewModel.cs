@@ -5,6 +5,7 @@ using Baton.App.Mvvm;
 using Baton.App.Services;
 using Baton.Core;
 using Baton.Core.Resources;
+using Baton.Core.Rules;
 
 namespace Baton.App.ViewModels;
 
@@ -25,12 +26,20 @@ public sealed class AddDownloadViewModel : ObservableObject
     private bool _updatingFolder;
     private bool _subfolderChoice;
     private string? _error;
+    private readonly Func<string, string?, RulePreview>? _ruleLookup;
+    private readonly DownloadQueue? _defaultQueue;
+    private DownloadQueue? _queue;
+    private bool _queueChosen;
+    private RulePreview? _rule;
 
+    /// <param name="ruleLookup">What the rules would do with an address and file name (the origin and size are the caller's); null: no rules.</param>
     public AddDownloadViewModel(IDialogService dialogs, IReadOnlyList<Category> categories, AppSettings settings,
-        string? url, string? fileName = null, string? note = null, IReadOnlyList<DownloadQueue>? queues = null, long? queueId = null)
+        string? url, string? fileName = null, string? note = null, IReadOnlyList<DownloadQueue>? queues = null, long? queueId = null,
+        Func<string, string?, RulePreview>? ruleLookup = null)
     {
         Queues = queues ?? [];
-        Queue = Queues.FirstOrDefault(q => q.Id == queueId) ?? Queues.FirstOrDefault(q => q.IsMain) ?? Queues.FirstOrDefault();
+        _defaultQueue = _queue = Queues.FirstOrDefault(q => q.Id == queueId) ?? Queues.FirstOrDefault(q => q.IsMain) ?? Queues.FirstOrDefault();
+        _ruleLookup = ruleLookup;
         _dialogs = dialogs;
         _settings = settings;
         _subfolderChoice = settings.CategorySubfolders;
@@ -38,7 +47,9 @@ public sealed class AddDownloadViewModel : ObservableObject
         _url = url ?? "";
         _fileName = fileName ?? "";
         Note = note;
+        _rule = LookUpRule();
         _category = Guess();
+        _queue = RuleQueue() ?? _defaultQueue;
         SetFolderFromCategory();
         Validate();
         BrowseCommand = new RelayCommand(Browse);
@@ -49,8 +60,25 @@ public sealed class AddDownloadViewModel : ObservableObject
 
     public IReadOnlyList<DownloadQueue> Queues { get; }
 
-    /// <summary>The queue the download joins: "Download now" starts it at once, "Add to queue" waits for the queue.</summary>
-    public DownloadQueue? Queue { get; set; }
+    /// <summary>
+    /// The queue the download joins: "Download now" starts it at once, "Add to queue" waits for the queue. The one preselected
+    /// (the queue being viewed, or the main one) is not a choice: only a different one picked here stands over a rule.
+    /// </summary>
+    public DownloadQueue? Queue
+    {
+        get => _queue;
+        set
+        {
+            if (value is null || !Set(ref _queue, value))
+                return;
+            _queueChosen = true;
+        }
+    }
+
+    /// <summary>"Rule: name" when a rule applies to this address and the user has not overridden what it sets; null otherwise.</summary>
+    public string? RuleText => _rule?.Rule is { } rule ? string.Format(CultureInfo.CurrentCulture, Strings.AddRuleApplied, rule.Name) : null;
+
+    public bool HasRule => RuleText is not null;
 
     public string? Note { get; }
 
@@ -187,27 +215,42 @@ public sealed class AddDownloadViewModel : ObservableObject
         _folderChosen || _subfolderChoice != _settings.CategorySubfolders ? Folder.Trim() : null, // the per-download choice is explicit too
         string.IsNullOrWhiteSpace(FileName) ? null : FileName.Trim(),
         _categoryChosen ? Category.Id : null,
-        Queue?.Id);
+        _queueChosen || RuleQueue() is null ? Queue?.Id : null); // the preselected queue is not explicit: a rule's queue (shown here) is left to the rule
 
     private Category Guess() =>
-        Core.Categories.MatchUrl(Categories, Url.Trim(), string.IsNullOrWhiteSpace(FileName) ? null : FileName.Trim());
+        (_rule?.Rule?.Actions.CategoryId is { } ruleCategory ? Categories.FirstOrDefault(c => c.Id == ruleCategory) : null)
+        ?? Core.Categories.MatchUrl(Categories, Url.Trim(), string.IsNullOrWhiteSpace(FileName) ? null : FileName.Trim());
+
+    private RulePreview? LookUpRule() =>
+        _ruleLookup is null || !Urls.TryParseDownload(Url.Trim(), out _) ? null
+            : _ruleLookup(Url.Trim(), string.IsNullOrWhiteSpace(FileName) ? null : FileName.Trim());
+
+    private DownloadQueue? RuleQueue() =>
+        _rule?.Rule?.Actions.QueueId is { } id ? Queues.FirstOrDefault(q => q.Id == id) : null;
+
+    /// <summary>The address or name changed: the rule that applies may be another one, and with it the queue and folder shown.</summary>
+    private void RefreshRule()
+    {
+        _rule = LookUpRule();
+        OnPropertyChanged(nameof(RuleText));
+        OnPropertyChanged(nameof(HasRule));
+        if (!_queueChosen)
+            Set(ref _queue, RuleQueue() ?? _defaultQueue, nameof(Queue));
+    }
 
     private void FollowGuess()
     {
-        if (_categoryChosen)
-            return;
-        var guess = Guess();
-        if (!Set(ref _category, guess, nameof(Category)))
-            return;
-        OnPropertyChanged(nameof(CanChooseSubfolder));
+        RefreshRule();
+        if (!_categoryChosen && Set(ref _category, Guess(), nameof(Category)))
+            OnPropertyChanged(nameof(CanChooseSubfolder));
         if (!_folderChosen)
-            SetFolderFromCategory();
+            SetFolderFromCategory(); // also when only the rule changed: its folder is shown
     }
 
     private void SetFolderFromCategory()
     {
         _updatingFolder = true;
-        Folder = Category.ProposedFolder(_settings, _subfolderChoice);
+        Folder = _rule?.Folder is { Length: > 0 } ruleFolder ? ruleFolder : Category.ProposedFolder(_settings, _subfolderChoice);
         _updatingFolder = false;
         OnPropertyChanged(nameof(FolderSource));
         OnPropertyChanged(nameof(HasFolderSource));

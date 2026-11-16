@@ -2,6 +2,7 @@ using System.Globalization;
 using Baton.Core.Grabber;
 using Baton.Core.Media;
 using Baton.Core.PostDownload;
+using Baton.Core.Rules;
 using Baton.Core.Resources;
 
 namespace Baton.Core.Portable;
@@ -16,6 +17,9 @@ public enum ImportKind
 
     /// <summary>Proxy, PAC file and the confirmation of browser downloads: a separate choice with its own warning.</summary>
     NetworkSettings,
+
+    /// <summary>An automatic rule (see <see cref="Rules.RuleEngine.ForImport"/>).</summary>
+    Rule,
 }
 
 /// <summary>What to do with an item that already exists (same address, or same name).</summary>
@@ -56,7 +60,7 @@ public sealed record ImportResult(int Added, int Replaced, int Skipped);
 public static class PortableImport
 {
     public static List<ImportItem> Plan(PortableFile file, IReadOnlyList<DownloadSnapshot> downloads, IReadOnlyList<Category> categories,
-        IReadOnlyList<DownloadQueue> queues, IReadOnlyList<GrabberProject> projects)
+        IReadOnlyList<DownloadQueue> queues, IReadOnlyList<GrabberProject> projects, IReadOnlyList<Rule>? rules = null)
     {
         var items = new List<ImportItem>();
         var known = downloads.Select(d => Urls.Display(d.Url)).ToHashSet(StringComparer.Ordinal);
@@ -104,6 +108,21 @@ public static class PortableImport
             var duplicate = projects.Any(x => Same(x.Name, copy.Name));
             items.Add(new ImportItem(ImportKind.Project, copy.Name, $"{copy.StartUrl} → {copy.Folder}", copy) { IsDuplicate = duplicate, Problem = problem, Include = problem is null });
         }
+        foreach (var r in file.Rules ?? [])
+        {
+            var problem = RuleProblem(r);
+            var duplicate = (rules ?? []).Any(x => !x.Unreadable && Same(x.Name, r.Name));
+            var unresolved = !KnownName(r.ConditionCategory, categories.Select(c => c.Name), file.Categories?.Select(c => c.Name))
+                             || !KnownName(r.ActionCategory, categories.Select(c => c.Name), file.Categories?.Select(c => c.Name))
+                             || !KnownName(r.ActionQueue, queues.Select(q => q.Name), file.Queues?.Select(q => q.Name));
+            // Never ticked in advance, like categories: a rule decides where downloads go. One that opens files or adds without asking
+            // (or whose category or queue is missing) is imported switched off, and the preview says so.
+            items.Add(new ImportItem(ImportKind.Rule, r.Name ?? "", RuleSummary(r), r)
+            {
+                IsDuplicate = duplicate, Problem = problem, Include = false,
+                Warning = r.Actions.IsRisky ? Strings.ImportRuleRisky : unresolved ? Strings.ImportRuleUnresolved : null,
+            });
+        }
         if (file.Settings is { } settings)
         {
             // Replacing settings is a choice the user makes: never ticked in advance, and the network part on its own.
@@ -117,6 +136,37 @@ public static class PortableImport
             });
         }
         return items;
+    }
+
+    private static bool KnownName(string? name, IEnumerable<string> existing, IEnumerable<string>? inFile) =>
+        string.IsNullOrWhiteSpace(name) || existing.Any(n => Same(n, name)) || (inFile ?? []).Any(n => Same(n, name));
+
+    private static string RuleSummary(ExportedRule r) => string.Join(" ", new[]
+    {
+        string.Join(", ", r.Conditions.Domains.Take(3)), r.Conditions.UrlPattern, r.Conditions.UrlRegex, string.Join(" ", r.Conditions.Extensions.Take(5)),
+    }.Where(t => !string.IsNullOrWhiteSpace(t)));
+
+    /// <summary>Why an imported rule cannot be taken in, or null: the same limits the Rules window enforces, since the file is untrusted.</summary>
+    private static string? RuleProblem(ExportedRule r)
+    {
+        var c = r.Conditions;
+        var a = r.Actions;
+        if (string.IsNullOrWhiteSpace(r.Name) || r.Name.Length > 100 || (c.IsEmpty && string.IsNullOrWhiteSpace(r.ConditionCategory)))
+            return Strings.ImportInvalidItem;
+        if (c.Domains.Count > 100 || c.Extensions.Count > 100 || c.Origins.Count > RuleOrigins.All.Length
+            || c.Domains.Concat(c.Extensions).Concat(c.Origins).Any(t => t.Length > 300)
+            || (c.UrlPattern?.Length ?? 0) > 1000 || (c.UrlRegex?.Length ?? 0) > 1000 || (a.Rename?.Length ?? 0) > 255 || (a.UserAgent?.Length ?? 0) > 1024
+            || (c.UrlPattern ?? "").Any(char.IsControl) || (a.UserAgent ?? "").Any(char.IsControl) || (a.Rename ?? "").Any(char.IsControl))
+            return Strings.ImportInvalidItem;
+        if (c.Origins.Any(o => !RuleOrigins.All.Contains(o, StringComparer.OrdinalIgnoreCase)))
+            return Strings.ImportInvalidItem;
+        if (!string.IsNullOrWhiteSpace(c.UrlRegex) && RuleEngine.ValidateRegex(c.UrlRegex!) is not null)
+            return Strings.ImportInvalidItem;
+        if (c.MinSize is < 0 || c.MaxSize is < 0 || c.MinSize > c.MaxSize || a.Connections is < 1 or > 32 || a.SpeedLimitKBps is < 0)
+            return Strings.ImportInvalidItem;
+        if (a.Start is { } start && !Enum.IsDefined(start))
+            return Strings.ImportInvalidItem;
+        return string.IsNullOrWhiteSpace(a.Folder) ? null : FolderProblem(a.Folder, allowRelative: false);
     }
 
     private static bool Same(string a, string? b) => string.Equals(a.Trim(), b?.Trim(), StringComparison.CurrentCultureIgnoreCase);
@@ -265,6 +315,33 @@ public static class PortableImport
                     break;
                 }
 
+                case ExportedRule rule:
+                {
+                    var current = downloads.Rules.ToList();
+                    var existing = current.FirstOrDefault(x => !x.Unreadable && Same(x.Name, rule.Name));
+                    if (existing is not null && mode == DuplicateMode.Skip)
+                    {
+                        skipped++;
+                        break;
+                    }
+                    var made = BuildRule(rule, downloads);
+                    if (existing is not null && mode == DuplicateMode.Replace)
+                    {
+                        made.Id = existing.Id;
+                        current[current.IndexOf(existing)] = made;
+                        replaced++;
+                    }
+                    else
+                    {
+                        if (existing is not null)
+                            made.Name = NewName(rule.Name, current.Select(x => x.Name));
+                        current.Add(made);
+                        added++;
+                    }
+                    downloads.SaveRules(current);
+                    break;
+                }
+
                 case ExportedSettings s when !settingsDone:
                     downloads.UpdateSettings(MergeSettings(downloads.Settings, s, general, network));
                     settingsDone = true;
@@ -280,6 +357,24 @@ public static class PortableImport
             }
         }
         return new ImportResult(added, replaced, skipped);
+    }
+
+    /// <summary>
+    /// An exported rule as a rule of this app: categories and queues found by name; one that opens files or adds without asking,
+    /// or whose condition names a category that does not exist here, comes in switched off (an action naming a missing category or
+    /// queue is dropped). Numbers are clamped.
+    /// </summary>
+    private static Rule BuildRule(ExportedRule exported, DownloadService downloads)
+    {
+        long? CategoryNamed(string? name) => string.IsNullOrWhiteSpace(name) ? null : downloads.Categories.FirstOrDefault(c => Same(c.Name, name))?.Id;
+        var rule = new Rule { Name = exported.Name.Trim(), Enabled = exported.Enabled, Conditions = exported.Conditions.Clone(), Actions = exported.Actions.Clone() };
+        rule.Conditions.CategoryId = CategoryNamed(exported.ConditionCategory);
+        if (!string.IsNullOrWhiteSpace(exported.ConditionCategory) && rule.Conditions.CategoryId is null)
+            rule.Enabled = false;
+        rule.Actions.CategoryId = CategoryNamed(exported.ActionCategory);
+        rule.Actions.QueueId = string.IsNullOrWhiteSpace(exported.ActionQueue) ? null : downloads.Queues.FirstOrDefault(q => Same(q.Name, exported.ActionQueue))?.Id;
+        rule.Actions.Connections = rule.Actions.Connections is { } n ? Math.Clamp(n, 1, 32) : null;
+        return RuleEngine.ForImport(rule);
     }
 
     /// <summary>The imported settings over the current ones; program paths, the update address and passwords stay as they are.</summary>

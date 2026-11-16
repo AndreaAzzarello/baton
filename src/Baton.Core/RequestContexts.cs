@@ -16,6 +16,8 @@ public static class RequestContexts
     {
         if (context is null)
             return;
+        if (context.PublicOnly)
+            request.Options.Set(Net.UrlGuard.PublicOnly, true);
         if (Uri.TryCreate(context.Referrer, UriKind.Absolute, out var referrer) && referrer.Scheme is "http" or "https")
             request.Headers.Referrer = referrer;
         if (!string.IsNullOrWhiteSpace(context.UserAgent))

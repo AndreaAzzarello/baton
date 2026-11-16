@@ -4,6 +4,50 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
+## [1.4.1] — 2026-11-16
+
+Seconda tappa di «Automation»: API locale, regole automatiche e registro delle attività. Il server MCP arriva con la 1.4.2.
+
+- **Nuovo: API REST locale** (spenta di default; Impostazioni › Automazione). Ascolta solo su `127.0.0.1`, richiede un token
+  (Mostra, Copia, Nuovo token) e accetta solo l'Host esatto, senza header `Origin` (nessun CORS): una pagina web non può
+  usarla. Livelli: spenta, sola lettura, lettura e aggiunta, controllo esteso (pausa, ripresa, nuovo tentativo, rimozione dalla
+  lista, code). Limiti: 1 MB per richiesta, 120 richieste al minuto. Indirizzi ammessi: http, https e ftp, mai quelli di questo
+  computer o della rete locale (impostazione «Consenti indirizzi della rete locale», spenta); il controllo si ripete a ogni
+  connessione e a ogni redirect, anche per FTP (nome risolto da Baton, connessione dati sempre allo stesso indirizzo del
+  controllo). L'API non sceglie la cartella (solo la categoria) e non apre mai file. Vedi [docs/API.md](docs/API.md) e
+  [docs/openapi.json](docs/openapi.json).
+- **Nuovo: regole automatiche** (finestra «Regole»). Condizioni in AND: sito (con sottodomini), modello d'indirizzo o
+  espressione regolare (senza backtracking), estensione, categoria, dimensione (se nota), origine. Azioni: cartella, categoria,
+  coda, avvio (subito, in coda, in pausa), rinomina (`{name}{ext}{host}{date}{time}{category}{n}`; l'estensione reale resta
+  sempre e non si può aggiungere un'estensione di programma), scansione, connessioni, user agent, limite di velocità,
+  «aggiungi senza chiedere», «mostra nella cartella», «apri a fine download» (mai per programmi o script e solo dopo una
+  scansione senza minacce). Si valutano una sola volta, all'aggiunta; vince la prima che corrisponde e ciò che scegli tu vince
+  sempre. Anteprima «quale regola si applica a questo indirizzo». I flussi HLS/DASH prendono solo cartella, categoria e coda.
+- **Nuovo: registro delle attività**: richieste dell'API (rifiuti e modifiche), regole applicate e duplicati saltati, per 30
+  giorni o 10.000 righe, senza query string né segreti.
+- Correzioni dalla revisione della 1.4.0: lo storico dei duplicati conserva le voci di un disco scollegato; un «Salta»
+  ricordato non fa più sparire il download in silenzio; il controllo «stesso nome» usa il nome finale.
+- **Comportamento noto dell'aggiornamento dalla 1.3.6**: il suo aggiornatore non sa estrarre un pacchetto che contiene
+  `batonctl.exe`; la 1.4.x, al primo avvio, completa da sé l'installazione (estensione e `batonctl.exe`) e lo scrive nel log.
+  Non serve fare nulla.
+- **Regole e dialogo Aggiungi**: la coda (e la categoria o cartella) preselezionata nel dialogo non è più una scelta
+  esplicita, quindi una regola «sito → coda» funziona anche dal dialogo; il dialogo mostra «Regola: nome» e la coda e la cartella
+  che ne risultano, e ciò che cambi tu vale più della regola.
+- **Regole e dimensione dal browser**: l'estensione invia la dimensione quando il browser la conosce (campo opzionale `size`,
+  retrocompatibile: le estensioni e le app precedenti lo ignorano), così le condizioni sulla dimensione valgono anche per i
+  download intercettati.
+- **Regole in esportazione e importazione**: «Esporta impostazioni…» include le regole (categorie e code per nome, senza id né
+  segreti); all'importazione hanno anteprima e gestione dei duplicati come il resto, non sono preselezionate, e quelle che
+  aprono file o saltano la conferma, o che nominano una categoria o coda inesistente, entrano disattivate.
+- **Registro delle attività nella lingua dell'interfaccia**: azioni, esiti e motivi dei rifiuti sono tradotti (italiano e
+  inglese) al momento della visualizzazione; nel database restano codici stabili.
+- **Regole che questa versione non sa leggere** (per esempio dopo un ritorno a una versione precedente) non vengono più perse:
+  restano nel database com'erano, compaiono disattivate come «Regola non leggibile da questa versione», non si modificano e si
+  eliminano solo con conferma. Le espressioni regolari delle regole sono compilate una sola volta.
+- **Firma**: le release non hanno la firma Authenticode, perché SignPath Foundation ha rifiutato la domanda (non è «in
+  arrivo»). Restano la firma ECDSA della release e lo SHA-256; Windows SmartScreen può avvisare al primo avvio.
+- «Programmazione» in una regola equivale a scegliere una **coda pianificata**: non c'è un orario per singola regola.
+
 ## [1.4.0] — 2026-11-04
 
 Prima tappa di «Automation»: cartelle come in IDM, duplicati, appunti e riga di comando. L'API locale e le regole arrivano

@@ -292,6 +292,50 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- Automation: MCP and local API -->
+            <TabItem Header="{l:Loc SettingsTabAutomation}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel Margin="4,12,22,4">
+                        <TextBlock Text="{l:Loc SettingsAutomationHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+                        <Label Content="{l:Loc SettingsMcpLevel}" Target="{Binding ElementName=McpLevelBox}" Padding="0" Margin="0,8,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <ComboBox x:Name="McpLevelBox" ItemsSource="{Binding AutomationLevels}" SelectedItem="{Binding McpLevelChoice}" DisplayMemberPath="Text"
+                                  HorizontalAlignment="Left" MinWidth="320" AutomationProperties.Name="{l:Loc SettingsMcpLevel}" />
+
+                        <Label Content="{l:Loc SettingsApiLevel}" Target="{Binding ElementName=ApiLevelBox}" Padding="0" Margin="0,14,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <ComboBox x:Name="ApiLevelBox" ItemsSource="{Binding AutomationLevels}" SelectedItem="{Binding ApiLevelChoice}" DisplayMemberPath="Text"
+                                  HorizontalAlignment="Left" MinWidth="320" AutomationProperties.Name="{l:Loc SettingsApiLevel}" />
+
+                        <Label Content="{l:Loc SettingsApiPort}" Target="{Binding ElementName=ApiPortBox}" Padding="0" Margin="0,14,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBox x:Name="ApiPortBox" Text="{Binding ApiPort}" Width="90" HorizontalAlignment="Left" AutomationProperties.Name="{l:Loc SettingsApiPort}" />
+                        <TextBlock Text="{l:Loc SettingsApiPortHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ApiStatus}" Style="{StaticResource NoteText}" AutomationProperties.LiveSetting="Polite" />
+
+                        <Label Content="{l:Loc SettingsApiToken}" Target="{Binding ElementName=ApiTokenBox}" Padding="0" Margin="0,14,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <TextBox x:Name="ApiTokenBox" Text="{Binding TokenText, Mode=OneWay}" IsReadOnly="True" FontFamily="Consolas"
+                                 AutomationProperties.Name="{l:Loc SettingsApiToken}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button Content="{Binding ShowTokenLabel}" Style="{StaticResource DialogButton}" Margin="0" MinWidth="0" Command="{Binding ShowTokenCommand}"
+                                    AutomationProperties.Name="{Binding ShowTokenLabel}" />
+                            <Button Content="{l:Loc SettingsApiTokenCopy}" Style="{StaticResource DialogButton}" MinWidth="0" Command="{Binding CopyTokenCommand}" />
+                            <Button Content="{l:Loc SettingsApiTokenNew}" Style="{StaticResource DialogButton}" MinWidth="0" Command="{Binding NewTokenCommand}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding TokenMessage}" Style="{StaticResource NoteText}" AutomationProperties.LiveSetting="Polite" />
+                        <TextBlock Text="{l:Loc SettingsApiTokenHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
+
+                        <CheckBox IsChecked="{Binding AllowLocalNetworkForAgents}" Margin="0,20,0,2" AutomationProperties.Name="{l:Loc SettingsLocalNetwork}">
+                            <TextBlock Text="{l:Loc SettingsLocalNetwork}" TextWrapping="Wrap" />
+                        </CheckBox>
+                        <TextBlock Text="{l:Loc SettingsLocalNetworkHint}" Foreground="{DynamicResource MutedBrush}" Margin="22,0,0,0" TextWrapping="Wrap" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                            <Button Content="{l:Loc SettingsRules}" Style="{StaticResource DialogButton}" Margin="0,0,8,0" Command="{Binding OpenRulesCommand}" />
+                            <Button Content="{l:Loc SettingsActivityLog}" Style="{StaticResource DialogButton}" Command="{Binding OpenActivityLogCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- Logins and certificates -->
             <TabItem Header="{l:Loc SettingsTabCredentials}">
                 <Grid Margin="4,12,12,4">

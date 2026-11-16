@@ -104,6 +104,24 @@ public static class DuplicateDetector
     }
 
     /// <summary>
+    /// Rule 2 with the <b>final</b> name of the download, known once the server has answered (Content-Disposition, sanitised,
+    /// renamed by a rule): a file with that name is already in the destination folder. Other downloads of the list are not
+    /// looked at here (rule 1 did that), only the file on the disk.
+    /// </summary>
+    public static DuplicateMatch? CheckFinalName(string directory, string fileName, long excludeId, IEnumerable<DownloadRecord> items,
+        Func<string, bool>? fileExists = null)
+    {
+        fileExists ??= File.Exists;
+        if (string.IsNullOrWhiteSpace(fileName))
+            return null;
+        var path = Path.Combine(directory, fileName);
+        if (!fileExists(path))
+            return null;
+        var listed = items.FirstOrDefault(r => r.Id != excludeId && string.Equals(r.FinalPath, path, StringComparison.OrdinalIgnoreCase));
+        return new DuplicateMatch(DuplicateReason.SameName, listed?.Id, path);
+    }
+
+    /// <summary>
     /// Rule 3, once the server has answered: the same size <b>and</b> the same ETag (without one, the same Last-Modified) as a
     /// finished download or a remembered one whose file is still on the disk. The size alone is never enough.
     /// </summary>

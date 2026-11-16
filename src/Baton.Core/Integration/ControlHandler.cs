@@ -19,12 +19,6 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
             or Messages.Open or Messages.QueueStart or Messages.QueueStop or Messages.Version
         || (message.Type == Messages.Add && (message.Origin ?? Origins.Browser) != Origins.Browser);
 
-    private static readonly HashSet<string> Runnable = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".exe", ".com", ".bat", ".cmd", ".ps1", ".psm1", ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh", ".msi", ".msp", ".scr", ".lnk",
-        ".hta", ".jar", ".reg", ".cpl", ".dll", ".appx", ".msix", ".url",
-    };
-
     /// <summary>
     /// Answers one message. A failure inside (a file type with no program, a database error) is an error reply: a connection closed
     /// without an answer would look like "Baton is not running" to the command line, which would start it and send the message again.
@@ -55,7 +49,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
             case Messages.Status:
                 return Find(message, out found, out error) ? Ok(download: Info(found)) : error;
             case Messages.Add:
-                return Add(message);
+                return await AddAsync(message);
             case Messages.Pause:
                 if (message.All == true)
                 {
@@ -101,7 +95,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
                 if (found.Status != DownloadStatus.Completed || found.FinalPath is not { } path || !File.Exists(path))
                     return Fail("The file is not there.");
                 // The command line is the user's own terminal; MCP and the API could chain "add" and "open" into running a download.
-                if (message.Origin != Origins.Cli && Runnable.Contains(Path.GetExtension(path)))
+                if (message.Origin != Origins.Cli && Rules.ExecutableTypes.IsRunnable(path))
                     return Fail("Only the command line may open a program or script.");
                 openFile(path);
                 return Ok(id: found.Id);
@@ -113,7 +107,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
                     : service.Queues.FirstOrDefault(q => string.Equals(q.Name, wantedName, StringComparison.CurrentCultureIgnoreCase)
                                                          || string.Equals(q.DisplayName, wantedName, StringComparison.CurrentCultureIgnoreCase));
                 if (queue is null)
-                    return Fail("No queue with this name.");
+                    return Fail(NoQueueError);
                 if (message.Type == Messages.QueueStart)
                     service.StartQueue(queue.Id);
                 else
@@ -124,9 +118,28 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         }
     }
 
-    private ChannelReply Add(ChannelMessage message)
+    /// <summary>Refusal texts the local API turns into status codes.</summary>
+    public const string PrivateNetworkError = "This address is on this computer or a private network; turn on \"Allow addresses of the local network\" in the settings to allow it.";
+    public const string NoDownloadError = "No download with this number.";
+    public const string NoQueueError = "No queue with this name.";
+
+    private async Task<ChannelReply> AddAsync(ChannelMessage message)
     {
         var d = message.Download!;
+        var context = d.ToContext();
+        // MCP and the API are programs the user did not type: only http, https and ftp, and nothing on this computer or the local
+        // network unless the user allowed it (the same guard as for videos, applied to every request of the download).
+        if (message.Origin is Origins.Api or Origins.Mcp)
+        {
+            if (!Uri.TryCreate(d.Url, UriKind.Absolute, out var target) || target.Scheme is not ("http" or "https" or "ftp"))
+                return Fail("Only http, https and ftp addresses can be downloaded.");
+            if (!service.Settings.AllowLocalNetworkForAgents)
+            {
+                if (await Net.UrlGuard.IsPrivateHostAsync(target.IdnHost, CancellationToken.None))
+                    return Fail(PrivateNetworkError);
+                context = context with { PublicOnly = true };
+            }
+        }
         // Only the command line chooses a folder: MCP and the API go through categories, so they cannot write elsewhere.
         if (d.Folder is not null && message.Origin != Origins.Cli)
             return Fail("Only the command line may choose a folder; use a category.");
@@ -139,8 +152,9 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
             if (categoryId is null)
                 return Fail("No category with this name.");
         }
-        var added = service.AddAutomatic(d.Url, d.Folder, string.IsNullOrWhiteSpace(d.FileName) ? null : Path.GetFileName(d.FileName), d.Start ?? true,
-            d.ToContext(), categoryId, service.ResolveQueue(d.Queue), allowDuplicate: d.AllowDuplicate == true, paused: d.Start == false);
+        var added = service.AddAutomatic(d.Url, d.Folder, string.IsNullOrWhiteSpace(d.FileName) ? null : Path.GetFileName(d.FileName), d.Start,
+            context, categoryId, d.Queue is null ? null : service.ResolveQueue(d.Queue), allowDuplicate: d.AllowDuplicate == true, paused: d.Start == false,
+            ruleOrigin: Rules.RuleOrigins.FromProtocol(message.Origin));
         if (added.Id is { } id)
             return Ok(id: id, result: "added");
         return new ChannelReply(true, Protocol: Messages.ProtocolVersion, Result: "duplicate",
@@ -158,7 +172,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
             return false;
         if (service.GetSnapshot(id) is not { } found)
         {
-            error = Fail("No download with this number.");
+            error = Fail(NoDownloadError);
             return false;
         }
         snapshot = found;

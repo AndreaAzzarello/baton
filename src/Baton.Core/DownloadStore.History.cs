@@ -178,11 +178,14 @@ public sealed partial class DownloadStore : IDuplicateHistory
 
     /// <summary>
     /// Drops the entries whose file is gone, those older than <see cref="HistoryMaxAge"/> and whatever passes
-    /// <see cref="HistoryMaxEntries"/> (the oldest first). Returns how many went.
+    /// <see cref="HistoryMaxEntries"/> (the oldest first). Returns how many went. An entry is dropped for a missing file
+    /// only when the root of its drive is reachable: with an external or network drive unplugged the file is not "gone",
+    /// so the entry stays.
     /// </summary>
-    public int PruneHistory(DateTime nowUtc, Func<string, bool>? fileExists = null)
+    public int PruneHistory(DateTime nowUtc, Func<string, bool>? fileExists = null, Func<string, bool>? rootExists = null)
     {
         fileExists ??= File.Exists;
+        rootExists ??= RootReachable;
         List<(long Id, string Path)> rows = [];
         lock (_lock)
         {
@@ -192,7 +195,18 @@ public sealed partial class DownloadStore : IDuplicateHistory
                 rows.Add((reader.GetInt64(0), reader.GetString(1)));
         }
         // Outside the lock: a slow or disconnected drive must not stop the list.
-        var missing = rows.Where(r => !fileExists(r.Path)).Select(r => r.Id).ToList();
+        // One reachability test per drive or share, not per row: an unreachable share can take its timeout for each of thousands of entries.
+        var roots = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        bool Reachable(string path)
+        {
+            string key;
+            try { key = System.IO.Path.GetPathRoot(path) ?? path; }
+            catch (ArgumentException) { key = path; }
+            if (!roots.TryGetValue(key, out var ok))
+                roots[key] = ok = rootExists(path);
+            return ok;
+        }
+        var missing = rows.Where(r => !fileExists(r.Path) && Reachable(r.Path)).Select(r => r.Id).ToList();
         lock (_lock)
         {
             using var tx = _db.BeginTransaction();
@@ -215,6 +229,20 @@ public sealed partial class DownloadStore : IDuplicateHistory
                 removed += excess.ExecuteNonQuery();
             tx.Commit();
             return removed;
+        }
+    }
+
+    /// <summary>True when the root of the drive (or share) the path lives on can be reached; a path with no root counts as unreachable.</summary>
+    private static bool RootReachable(string path)
+    {
+        try
+        {
+            var root = Path.GetPathRoot(path);
+            return !string.IsNullOrEmpty(root) && Directory.Exists(root);
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 }

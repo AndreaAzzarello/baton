@@ -16,7 +16,7 @@ namespace Baton.Core;
 /// limit; "Queued" downloads are started in order by their queue while it runs, within the queue's limit, the
 /// global limit and the hourly quotas. Queues are started and stopped by the user or by their schedule.
 /// </summary>
-public sealed class DownloadService : IAsyncDisposable
+public sealed partial class DownloadService : IAsyncDisposable
 {
     private sealed class ActiveJob(IDownloadJob job, bool fromQueue)
     {
@@ -62,6 +62,7 @@ public sealed class DownloadService : IAsyncDisposable
         IClock? clock = null, bool autoTick = true)
     {
         _store = store;
+        AutomationLog = new Automation.AutomationLog(store);
         _ownsHttp = false;
         _fixedHttp = http;
         _engineTemplate = engineTemplate ?? new EngineOptions();
@@ -77,6 +78,7 @@ public sealed class DownloadService : IAsyncDisposable
         _items = store.LoadAll();
         _categories = store.LoadCategories();
         _queues = store.LoadQueues();
+        _rules = store.LoadRules();
 
         var main = MainQueue;
         foreach (var item in _items)
@@ -167,6 +169,12 @@ public sealed class DownloadService : IAsyncDisposable
     /// was written. Not raised when the remembered choice is to add it anyway or to skip it.
     /// </summary>
     public event Action<DuplicateNotice>? DuplicateFound;
+
+    /// <summary>What the local API, MCP and the rules did, for the activity log window.</summary>
+    public Automation.AutomationLog AutomationLog { get; }
+
+    /// <summary>A download left out because the remembered choice is "Skip" (it is already removed from the list when this is raised).</summary>
+    public event Action<DuplicateNotice>? DuplicateSkipped;
 
     /// <summary>The checks of a finished download changed (also when run again from Properties).</summary>
     public event Action<DownloadSnapshot>? CheckCompleted;
@@ -300,8 +308,9 @@ public sealed class DownloadService : IAsyncDisposable
     /// </summary>
     /// <param name="expectedHash">A hash to verify once the file is downloaded (see <see cref="FileHash.TryParse"/>).</param>
     /// <param name="skipDuplicateCheck">Added "anyway" (or by a source that has its own check, like the grabber): the server's answer is not compared with finished downloads.</param>
-    public long Add(string url, string? directory = null, string? fileName = null, bool startNow = true, RequestContext? context = null,
-        long? categoryId = null, long? queueId = null, string? expectedHash = null, bool skipDuplicateCheck = false, bool paused = false)
+    public long Add(string url, string? directory = null, string? fileName = null, bool? startNow = null, RequestContext? context = null,
+        long? categoryId = null, long? queueId = null, string? expectedHash = null, bool skipDuplicateCheck = false, bool paused = false,
+        string? ruleOrigin = null, long? knownSize = null)
     {
         PostCheck? check = null;
         if (!string.IsNullOrWhiteSpace(expectedHash))
@@ -320,13 +329,17 @@ public sealed class DownloadService : IAsyncDisposable
         lock (_lock)
         {
             var name = string.IsNullOrWhiteSpace(fileName) ? null : FileNames.Sanitize(fileName);
+            // The rules fill in only what the entry left open: its own folder, name, category, queue and start always stand.
+            var ruled = ApplyRulesLocked(uri, ruleOrigin, name ?? GuessName(uri), name is not null, knownSize, directory, categoryId, queueId, startNow, context);
+            (directory, categoryId, queueId, context, paused) = (ruled.Directory, ruled.CategoryId, ruled.QueueId, ruled.Context, paused || ruled.Paused);
+            var start = ruled.StartNow ?? true;
             var category = _categories.FirstOrDefault(c => c.Id == categoryId) ?? Core.Categories.MatchUrl(_categories, uri.AbsoluteUri, name);
             var record = new DownloadRecord
             {
                 Url = uri.AbsoluteUri,
                 Directory = string.IsNullOrWhiteSpace(directory) ? category.ResolveFolder(_settings) : directory,
                 FileName = name,
-                Status = startNow || paused ? DownloadStatus.Paused : DownloadStatus.Queued,
+                Status = start || paused ? DownloadStatus.Paused : DownloadStatus.Queued,
                 SortOrder = NextSortOrder(),
                 AddedUtc = _clock.UtcNow,
                 Context = context is { IsEmpty: false } ? context : null,
@@ -334,12 +347,15 @@ public sealed class DownloadService : IAsyncDisposable
                 AutoCategory = categoryId is null && name is null,
                 QueueId = _queues.FirstOrDefault(q => q.Id == queueId)?.Id ?? MainQueue.Id,
                 Check = check,
+                Rule = ruled.Applied,
             };
             _store.Insert(record);
             _items.Add(record);
+            if (ruled.Applied is { } applied)
+                AutomationLog.Record(Automation.AutomationLog.RulesOrigin, Automation.ActivityText.RuleApplied, "ok", applied.Name, record.Id);
             if (skipDuplicateCheck)
                 _skipProbeCheck.Add(record.Id);
-            if (startNow)
+            if (start)
                 StartLocked(record, fromQueue: false);
             else
                 Pump();
@@ -352,18 +368,25 @@ public sealed class DownloadService : IAsyncDisposable
     /// (the category's, unless <paramref name="directory"/> is given). The file name is the given one, or the one the address
     /// ends with when it has an extension; otherwise rule 2 waits for the server's answer.
     /// </summary>
-    public DuplicateMatch? FindDuplicate(string url, string? directory = null, string? fileName = null, long? categoryId = null)
+    public DuplicateMatch? FindDuplicate(string url, string? directory = null, string? fileName = null, long? categoryId = null,
+        string? ruleOrigin = null, long? knownSize = null)
     {
         if (!Urls.TryParseDownload(url, out var parsed))
             return null;
         var (uri, _, _) = Urls.SplitLogin(parsed);
         var name = string.IsNullOrWhiteSpace(fileName) ? null : FileNames.Sanitize(fileName);
-        if (name is null && FileNames.FromUrl(uri) is { } guessed && Path.HasExtension(guessed))
+        // A name guessed from the address is the final one only without a query string ("get.php?id=3" is named by the server).
+        if (name is null && uri.Query.Length == 0 && FileNames.FromUrl(uri) is { } guessed && Path.HasExtension(guessed))
             name = guessed;
         lock (_lock)
         {
-            var category = _categories.FirstOrDefault(c => c.Id == categoryId) ?? Core.Categories.MatchUrl(_categories, uri.AbsoluteUri, name);
-            var folder = string.IsNullOrWhiteSpace(directory) ? category.ResolveFolder(_settings) : directory;
+            // The same folder and name the add would give, with the rules that would apply.
+            var explicitName = !string.IsNullOrWhiteSpace(fileName);
+            var ruled = ApplyRulesLocked(uri, ruleOrigin, name, explicitName, knownSize, directory, categoryId, null, null, null);
+            var category = _categories.FirstOrDefault(c => c.Id == ruled.CategoryId) ?? Core.Categories.MatchUrl(_categories, uri.AbsoluteUri, name);
+            var folder = string.IsNullOrWhiteSpace(ruled.Directory) ? category.ResolveFolder(_settings) : ruled.Directory;
+            if (!explicitName && name is not null && ruled.Applied?.Rename is { } pattern)
+                name = RenameFor(pattern, name, uri, category.Id, null, folder);
             return DuplicateDetector.CheckBeforeAdd(uri.AbsoluteUri, folder, name, _items, _store);
         }
     }
@@ -379,10 +402,11 @@ public sealed class DownloadService : IAsyncDisposable
     /// answers "duplicate", with the existing download or file), unless <paramref name="allowDuplicate"/> asks to add it anyway
     /// or the remembered choice is to add it numbered. Never overwrites: "Overwrite" and "Ask" both skip.
     /// </summary>
-    public AutomaticAdd AddAutomatic(string url, string? directory = null, string? fileName = null, bool startNow = true,
-        RequestContext? context = null, long? categoryId = null, long? queueId = null, string? expectedHash = null, bool allowDuplicate = false, bool paused = false)
+    public AutomaticAdd AddAutomatic(string url, string? directory = null, string? fileName = null, bool? startNow = null,
+        RequestContext? context = null, long? categoryId = null, long? queueId = null, string? expectedHash = null, bool allowDuplicate = false, bool paused = false,
+        string? ruleOrigin = null, long? knownSize = null)
     {
-        var duplicate = FindDuplicate(url, directory, fileName, categoryId);
+        var duplicate = FindDuplicate(url, directory, fileName, categoryId, ruleOrigin, knownSize);
         var action = Settings.DuplicateAction;
         var addAnyway = duplicate is null || allowDuplicate || action == DuplicateAction.AddNumbered;
         if (!addAnyway)
@@ -392,7 +416,8 @@ public sealed class DownloadService : IAsyncDisposable
         }
         if (duplicate is not null)
             Log.Info("duplicate", $"added anyway ({(allowDuplicate ? "requested" : "remembered choice")}) {duplicate.Reason}: {Log.Url(url)}");
-        return new AutomaticAdd(Add(url, directory, fileName, startNow, context, categoryId, queueId, expectedHash, skipDuplicateCheck: duplicate is not null, paused: paused), duplicate);
+        return new AutomaticAdd(Add(url, directory, fileName, startNow, context, categoryId, queueId, expectedHash, skipDuplicateCheck: duplicate is not null, paused: paused,
+            ruleOrigin: ruleOrigin, knownSize: knownSize), duplicate);
     }
 
     /// <summary>"Download anyway" for a download that stopped on a duplicate: it starts again without comparing the answer.</summary>
@@ -447,7 +472,7 @@ public sealed class DownloadService : IAsyncDisposable
     /// and put together at the end. Without a file name it is named after the page title.
     /// </summary>
     public long AddMedia(MediaRequest request, string kind, string? label, string? directory = null, string? fileName = null,
-        bool startNow = true, long? categoryId = null, long? queueId = null)
+        bool startNow = true, long? categoryId = null, long? queueId = null, string? ruleOrigin = null)
     {
         if (!Uri.TryCreate(request.Url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
             throw new ArgumentException(Strings.ErrorStreamScheme);
@@ -460,6 +485,9 @@ public sealed class DownloadService : IAsyncDisposable
         var context = request.ToContext();
         lock (_lock)
         {
+            // A stream takes only the folder, the category and the queue of a rule (no rename, scan or limits).
+            var ruled = ApplyRulesLocked(uri, ruleOrigin, name, true, null, directory, categoryId, queueId, null, context, fileActions: false);
+            (directory, categoryId, queueId) = (ruled.Directory, ruled.CategoryId, ruled.QueueId);
             var category = _categories.FirstOrDefault(c => c.Id == categoryId) ?? Core.Categories.Match(_categories, name, "video/mp4");
             var record = new DownloadRecord
             {
@@ -485,6 +513,8 @@ public sealed class DownloadService : IAsyncDisposable
             };
             _store.Insert(record);
             _items.Add(record);
+            if (ruled.Applied is { } applied)
+                AutomationLog.Record(Automation.AutomationLog.RulesOrigin, Automation.ActivityText.RuleApplied, "ok", applied.Name, record.Id);
             if (startNow)
                 StartLocked(record, fromQueue: false);
             else
@@ -1521,7 +1551,7 @@ public sealed class DownloadService : IAsyncDisposable
 
         var options = new EngineOptions
         {
-            MaxConnections = _settings.MaxConnections,
+            MaxConnections = record.Rule?.Connections is { } own ? Math.Clamp(own, 1, 32) : _settings.MaxConnections,
             MinSegmentSize = _engineTemplate.MinSegmentSize,
             BufferSize = _engineTemplate.BufferSize,
             ReadTimeout = _customEngine ? _engineTemplate.ReadTimeout : _network.Timeout,
@@ -1531,7 +1561,7 @@ public sealed class DownloadService : IAsyncDisposable
         };
         IDownloadJob job = record.Media is not null
             ? new MediaJob(record.Clone(), _http, _limiter, options, OnCheckpoint, _network, () => Ffmpeg.Find(Settings.FfmpegPath))
-            : new DownloadJob(record.Clone(), _http, _limiter, options, OnCheckpoint, OnProbed, _network);
+            : new DownloadJob(record.Clone(), _http, record.Rule?.SpeedLimitKBps is > 0 and var kbps ? new RateLimiter { Parent = _limiter, BytesPerSecond = kbps * 1024 } : _limiter, options, OnCheckpoint, OnProbed, _network);
         var active = new ActiveJob(job, fromQueue) { CountedBytes = job.BytesDownloaded };
         _active[record.Id] = active;
         active.Task = Task.Run(() => RunJobAsync(active));
@@ -1631,12 +1661,22 @@ public sealed class DownloadService : IAsyncDisposable
             var job = active.Job.Record;
             Log.Info("duplicate", $"{job.Id} {duplicate.Reason}");
             if (Settings.DuplicateAction == DuplicateAction.Skip)
-                await RemoveAsync(job.Id, deleteFile: false); // the remembered choice: not downloaded, nothing kept
+            {
+                // The remembered choice: not downloaded, nothing kept, but never in silence: the app says what was skipped.
+                var notice = new DuplicateNotice(job.Id, job.FileName ?? FileNames.FromUrl(new Uri(job.Url)), duplicate);
+                await RemoveAsync(job.Id, deleteFile: false);
+                AutomationLog.Record(Automation.AutomationLog.Duplicates, Automation.ActivityText.DuplicateSkip, "skipped",
+                    Automation.ActivityText.Reason(Integration.ControlHandler.ReasonCode(duplicate.Reason), $"{notice.FileName} = {Path.GetFileName(duplicate.ExistingPath)}"));
+                DuplicateSkipped?.Invoke(notice);
+            }
             else
                 DuplicateFound?.Invoke(new DuplicateNotice(job.Id, job.FileName ?? FileNames.FromUrl(new Uri(job.Url)), duplicate));
         }
         if (completed is not null)
+        {
             DownloadCompleted?.Invoke(completed);
+            RaiseRuleFileActions(completed);
+        }
         if (finished.Count > 0)
             QueuesChanged?.Invoke();
         foreach (var queue in finished)
@@ -1657,7 +1697,7 @@ public sealed class DownloadService : IAsyncDisposable
     }
 
     private bool NeedsChecks(DownloadRecord record) =>
-        record.Check?.ExpectedHash is not null || _settings.ComputeHashOnCompletion || _settings.ScanOnCompletion;
+        record.Check?.ExpectedHash is not null || _settings.ComputeHashOnCompletion || _settings.ScanOnCompletion || record.Rule?.Scan == true;
 
     /// <summary>
     /// Hash and antivirus scan of a finished file, on a worker thread, one file at a time. Nothing here runs the file:
@@ -1688,6 +1728,7 @@ public sealed class DownloadService : IAsyncDisposable
                 started = record.Check;
                 check = record.Check?.Clone() ?? new PostCheck();
                 settings = _settings.Clone();
+                settings.ScanOnCompletion |= record.Rule?.Scan == true; // a rule can ask for the scan of its own downloads
             }
 
             try
@@ -1730,7 +1771,10 @@ public sealed class DownloadService : IAsyncDisposable
             }
             CheckCompleted?.Invoke(snapshot);
             if (announce)
+            {
                 DownloadCompleted?.Invoke(snapshot);
+                RaiseRuleFileActions(snapshot);
+            }
             if (finished.Count > 0)
                 QueuesChanged?.Invoke();
             foreach (var queue in finished)
@@ -1859,9 +1903,16 @@ public sealed class DownloadService : IAsyncDisposable
                 record.CategoryId = category.Id;
                 record.AutoCategory = false;
             }
+            // The rename of a rule works on the name the server revealed, before the duplicate check below compares it.
+            ApplyRename(record);
             // Rule 3, before any byte or .part file exists. A form (POST) download is its own probe: its answer is compared before the body is read.
             if (!_skipProbeCheck.Contains(record.Id) && _settings.DuplicateAction != DuplicateAction.AddNumbered)
+            {
                 duplicate = DuplicateDetector.CheckProbe(probe, record.Id, _items, _store);
+                // Rule 2 with the name the file will really get (the server's, sanitised): a guess made from the address is not it.
+                var finalName = record.FileName ?? FileNames.FromUrl(new Uri(record.Url));
+                duplicate ??= DuplicateDetector.CheckFinalName(record.Directory, finalName, record.Id, _items);
+            }
         }
         if (duplicate is not null)
             throw new DuplicateFoundException(duplicate);
@@ -1901,6 +1952,7 @@ public sealed class DownloadService : IAsyncDisposable
         to.Segments = from.Segments.Select(s => s.Clone()).ToList();
         to.CompletedUtc = from.CompletedUtc;
         to.Media = from.Media?.Clone();
+        to.Rule = from.Rule?.Clone();
     }
 
     /// <summary>Starts waiting downloads, queue by queue in list order, within every limit and quota.</summary>

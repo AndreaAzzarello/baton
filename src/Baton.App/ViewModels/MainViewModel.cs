@@ -13,6 +13,7 @@ using Baton.Core.Duplicates;
 using Baton.Core.Integration;
 using Baton.Core.Portable;
 using Baton.Core.Resources;
+using Baton.Core.Rules;
 
 namespace Baton.App.ViewModels;
 
@@ -73,6 +74,7 @@ public sealed class MainViewModel : ObservableObject
         MoveDownCommand = new RelayCommand(() => Move(1), () => _selected.Count == 1 && IsQueueOrder);
         ToggleQueueCommand = new RelayCommand(ToggleQueue);
         QueuesCommand = new RelayCommand(p => ShowQueues(p as long?, addNew: false));
+        RulesCommand = new RelayCommand(ShowRules);
         NewQueueCommand = new RelayCommand(() => ShowQueues(null, addNew: true));
         DeleteQueueCommand = new RelayCommand(p => DeleteQueue(p as long?), p => p is long id && _queues.Any(q => q.Id == id && !q.IsMain));
         StartQueueCommand = new RelayCommand(p => { if (p is long id) _service.StartQueue(id); Refresh(); }, p => p is long id && !IsRunning(id));
@@ -91,7 +93,7 @@ public sealed class MainViewModel : ObservableObject
             () => PortableData.Serialize(PortableData.ExportDownloads(_service.ExportRecords(), _service.Categories, _service.Queues, _service.UtcNow))));
         ExportUrlsCommand = new RelayCommand(() => Export(Strings.ExportUrlsFilter, "downloads.txt", () => PortableData.ExportUrls(_service.ExportRecords())));
         ExportSettingsCommand = new RelayCommand(() => Export(Strings.ExportListFilter, "baton-settings.json",
-            () => PortableData.Serialize(PortableData.ExportSettings(_service.Settings, _service.Categories, _service.Queues, _grabber.Service.Projects, _service.UtcNow))));
+            () => PortableData.Serialize(PortableData.ExportSettings(_service.Settings, _service.Categories, _service.Queues, _grabber.Service.Projects, _service.UtcNow, _service.Rules))));
         ImportCommand = new RelayCommand(Import);
         CustomizeToolbarCommand = new RelayCommand(CustomizeToolbar);
         OpenFileCommand = new RelayCommand(OpenFile, () => _selected.Any(i => i.IsCompleted));
@@ -140,6 +142,7 @@ public sealed class MainViewModel : ObservableObject
     public ICommand EnableStartupCommand { get; }
     public ICommand SettingsCommand { get; }
     public ICommand CategoriesCommand { get; }
+    public ICommand RulesCommand { get; }
     public ICommand NewCategoryCommand { get; }
     public ICommand DeleteCategoryCommand { get; }
     public ICommand OpenDownloadFolderCommand { get; }
@@ -191,7 +194,7 @@ public sealed class MainViewModel : ObservableObject
         List<ImportItem> items;
         try
         {
-            items = PortableImport.Plan(PortableData.Read(path), _service.GetSnapshots(), _service.Categories, _service.Queues, _grabber.Service.Projects);
+            items = PortableImport.Plan(PortableData.Read(path), _service.GetSnapshots(), _service.Categories, _service.Queues, _grabber.Service.Projects, _service.Rules);
         }
         catch (Exception ex) when (ex is FormatException or IOException or UnauthorizedAccessException)
         {
@@ -415,7 +418,7 @@ public sealed class MainViewModel : ObservableObject
         if (FilterDuplicates(urls, null, null) is not { } plan)
             return;
         foreach (var (url, anyway) in plan)
-            _service.Add(url, startNow: false, queueId: CurrentQueueId, skipDuplicateCheck: anyway);
+            _service.Add(url, startNow: false, queueId: CurrentQueueId, skipDuplicateCheck: anyway, ruleOrigin: RuleOrigins.Batch);
         Refresh();
     }
 
@@ -443,9 +446,10 @@ public sealed class MainViewModel : ObservableObject
     /// The remembered choice answers without a dialog, except that overwriting is always confirmed. A form (POST) is not
     /// compared by address: the same address with other fields is another download; the server's answer decides.
     /// </summary>
-    private DuplicateOutcome ResolveDuplicate(string url, string? folder, string? fileName, long? categoryId, bool isPost, bool standalone)
+    private DuplicateOutcome ResolveDuplicate(string url, string? folder, string? fileName, long? categoryId, bool isPost, bool standalone,
+        string? ruleOrigin = null, long? knownSize = null)
     {
-        if (isPost || _service.FindDuplicate(url, folder, fileName, categoryId) is not { } match)
+        if (isPost || _service.FindDuplicate(url, folder, fileName, categoryId, ruleOrigin, knownSize) is not { } match)
             return DuplicateOutcome.Add;
         var choice = ChoiceOf(_service.Settings.DuplicateAction);
         if (_service.Settings.DuplicateAction == DuplicateAction.Ask)
@@ -485,7 +489,7 @@ public sealed class MainViewModel : ObservableObject
     /// </summary>
     private List<(string Url, bool Anyway)>? FilterDuplicates(IReadOnlyList<string> urls, string? folder, long? categoryId)
     {
-        var known = urls.Where(u => _service.FindDuplicate(u, folder, null, categoryId) is not null).ToHashSet();
+        var known = urls.Where(u => _service.FindDuplicate(u, folder, null, categoryId, RuleOrigins.Batch) is not null).ToHashSet();
         List<(string, bool)> All(bool anyway) => urls.Select(u => (u, anyway && known.Contains(u))).ToList();
         if (known.Count == 0)
             return All(false);
@@ -552,10 +556,18 @@ public sealed class MainViewModel : ObservableObject
 
     private void HandleClipboardOffer(ClipboardOffer offer)
     {
+        if (_service.RuleSkipsConfirmation(offer.Url, RuleOrigins.Clipboard))
+        {
+            var outcome = ResolveDuplicate(offer.Url, null, null, null, isPost: false, standalone: true, RuleOrigins.Clipboard);
+            if (outcome != DuplicateOutcome.Cancel)
+                _service.Add(offer.Url, ruleOrigin: RuleOrigins.Clipboard, skipDuplicateCheck: outcome == DuplicateOutcome.AddAnyway);
+            return;
+        }
         var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings, offer.Url,
-            queues: _service.Queues, queueId: CurrentQueueId) { EditCategory = EditCategoryFolder };
+            queues: _service.Queues, queueId: CurrentQueueId,
+            ruleLookup: (address, name) => _service.PreviewRules(address, RuleOrigins.Clipboard, null, name)) { EditCategory = EditCategoryFolder };
         if (_dialogs.ShowAddDownload(dialog, standalone: true))
-            Submit(dialog, null, standalone: true);
+            Submit(dialog, null, standalone: true, RuleOrigins.Clipboard);
     }
 
     /// <summary>"Capture this site": a new grabber project for the page, with its cookies.</summary>
@@ -609,11 +621,14 @@ public sealed class MainViewModel : ObservableObject
         var queueId = _service.ResolveQueue(next.Queue);
         var context = next.ToContext();
         // A form from another site is always confirmed, even with confirmations turned off.
-        if (!_service.Settings.ConfirmBrowserDownloads && !next.IsCrossSitePost)
+        // A rule that skips the confirmation adds right away, as turning the confirmations off does.
+        if (!next.IsCrossSitePost && (!_service.Settings.ConfirmBrowserDownloads || _service.RuleSkipsConfirmation(next.Url, RuleOrigins.Browser, next.Size, fileName)))
         {
-            var outcome = ResolveDuplicate(next.Url, null, fileName, null, context.IsPost, standalone: true);
+            var outcome = ResolveDuplicate(next.Url, null, fileName, null, context.IsPost, standalone: true, RuleOrigins.Browser, next.Size);
+            // The queue the extension named is its own default: only a named queue stands over a rule.
             if (outcome != DuplicateOutcome.Cancel)
-                _service.Add(next.Url, null, fileName, startNow: true, context, queueId: queueId, skipDuplicateCheck: outcome == DuplicateOutcome.AddAnyway);
+                _service.Add(next.Url, null, fileName, startNow: null, context, queueId: next.Queue is null ? null : queueId,
+                    skipDuplicateCheck: outcome == DuplicateOutcome.AddAnyway, ruleOrigin: RuleOrigins.Browser, knownSize: next.Size);
             return;
         }
 
@@ -622,14 +637,14 @@ public sealed class MainViewModel : ObservableObject
             : context.IsPost ? Strings.FromBrowserForm
             : next.Cookies is { Count: > 0 } ? Strings.FromBrowserWithCookies : Strings.FromBrowser;
         var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings, next.Url, fileName, note,
-            _service.Queues, queueId)
+            _service.Queues, queueId, ruleLookup: (address, name) => _service.PreviewRules(address, RuleOrigins.Browser, next.Size, name))
         {
             // A form's address only makes sense with the form's data.
             UrlReadOnly = context.IsPost,
             EditCategory = EditCategoryFolder,
         };
         if (_dialogs.ShowAddDownload(dialog, standalone: true))
-            Submit(dialog, context, standalone: true);
+            Submit(dialog, context, standalone: true, RuleOrigins.Browser, next.Size);
     }
 
     private void HandleMedia(MediaRequest media)
@@ -647,7 +662,7 @@ public sealed class MainViewModel : ObservableObject
         if (!_service.Settings.ConfirmBrowserDownloads)
         {
             if (ResolveDuplicate(media.Url, null, fileName, null, isPost: false, standalone: true) != DuplicateOutcome.Cancel)
-                _service.AddMedia(media, kind, media.Label, fileName: fileName, queueId: queueId);
+                _service.AddMedia(media, kind, media.Label, fileName: fileName, queueId: media.Queue is null ? null : queueId, ruleOrigin: RuleOrigins.Browser);
             return;
         }
 
@@ -676,7 +691,7 @@ public sealed class MainViewModel : ObservableObject
             return;
         try
         {
-            _service.AddMedia(media, kind, media.Label, folder, name, dialog.StartNow, categoryId, chosenQueue);
+            _service.AddMedia(media, kind, media.Label, folder, name, dialog.StartNow, categoryId, chosenQueue, RuleOrigins.Browser);
             if (dialog.FolderChosen)
                 _service.RememberCategoryFolder(dialog.Category.Id, dialog.Folder.Trim());
         }
@@ -707,7 +722,7 @@ public sealed class MainViewModel : ObservableObject
         if (FilterDuplicates(dialog.Selected.Select(i => i.Url).ToList(), folder, category) is not { } plan)
             return;
         foreach (var (url, anyway) in plan)
-            _service.Add(url, folder, null, startNow: false, context, category, queue, skipDuplicateCheck: anyway);
+            _service.Add(url, folder, null, startNow: false, context, category, queue, skipDuplicateCheck: anyway, ruleOrigin: RuleOrigins.Batch);
         // "Download now" starts the queue, so the files still respect its limit instead of all starting at once.
         if (dialog.StartNow)
             _service.StartQueue(queue);
@@ -896,19 +911,21 @@ public sealed class MainViewModel : ObservableObject
     private void ShowAddDialog(string? url)
     {
         var dialog = new AddDownloadViewModel(_dialogs, _service.Categories, _service.Settings, url,
-            queues: _service.Queues, queueId: CurrentQueueId) { EditCategory = EditCategoryFolder };
+            queues: _service.Queues, queueId: CurrentQueueId,
+            ruleLookup: (address, name) => _service.PreviewRules(address, RuleOrigins.Dialog, null, name)) { EditCategory = EditCategoryFolder };
         if (_dialogs.ShowAddDownload(dialog, standalone: false))
             Submit(dialog, null);
     }
 
-    private void Submit(AddDownloadViewModel dialog, RequestContext? context, bool standalone = false)
+    private void Submit(AddDownloadViewModel dialog, RequestContext? context, bool standalone = false, string ruleOrigin = RuleOrigins.Dialog,
+        long? knownSize = null)
     {
         var (url, folder, fileName, categoryId, queueId) = dialog.ToRequest();
-        var outcome = ResolveDuplicate(url, folder, fileName, categoryId, context?.IsPost == true, standalone);
+        var outcome = ResolveDuplicate(url, folder, fileName, categoryId, context?.IsPost == true, standalone, ruleOrigin, knownSize);
         if (outcome == DuplicateOutcome.Cancel)
             return;
         _service.Add(url, folder, fileName, dialog.StartNow, context, categoryId, queueId, dialog.ExpectedHashOrNull,
-            skipDuplicateCheck: outcome == DuplicateOutcome.AddAnyway);
+            skipDuplicateCheck: outcome == DuplicateOutcome.AddAnyway, ruleOrigin: ruleOrigin, knownSize: knownSize);
         if (dialog.FolderChosen)
             _service.RememberCategoryFolder(dialog.Category.Id, dialog.Folder.Trim());
         Refresh();
@@ -1016,6 +1033,14 @@ public sealed class MainViewModel : ObservableObject
         Refresh();
     }
 
+    /// <summary>The automatic rules window; saving replaces the rules, in the order shown.</summary>
+    public void ShowRules()
+    {
+        var dialog = new RulesViewModel(_dialogs, _service.Rules, _service.Categories, _service.Queues, _service.Settings.DownloadFolder);
+        if (_dialogs.ShowRules(dialog))
+            _service.SaveRules(dialog.Result);
+    }
+
     private void ShowQueues(long? selectId, bool addNew)
     {
         var dialog = new QueuesViewModel(_dialogs, _service.Queues, () => _service.UtcNow, _startup.IsEnabled, () => _startup.Set(true),
@@ -1053,6 +1078,16 @@ public sealed class MainViewModel : ObservableObject
                 return _service.Categories;
             },
             ClearDuplicateHistory = _service.ClearDuplicateHistory,
+            CopyText = _shell.SetClipboardText,
+            ApiStatus = ApiStatus?.Invoke(),
+            OpenActivityLog = () => _dialogs.ShowActivityLog(new ActivityLogViewModel(_dialogs, _service.AutomationLog)),
+            OpenRules = ShowRules,
+            SaveApiToken = token =>
+            {
+                var settings = _service.Settings.Clone();
+                settings.ApiToken = token;
+                _service.UpdateSettings(settings);
+            },
         };
         if (!_dialogs.ShowSettings(dialog) || dialog.Result is null)
             return;
@@ -1064,6 +1099,9 @@ public sealed class MainViewModel : ObservableObject
         SettingsSaved?.Invoke(dialog.Result);
         Refresh();
     }
+
+    /// <summary>Set by the app: what the local API is doing ("listening on…", port in use), for Settings › Automation; null text when it is off.</summary>
+    public Func<string?>? ApiStatus { get; set; }
 
     /// <summary>Set by the app: update checks and "restore previous version".</summary>
     public UpdateService? Updates { get; set; }

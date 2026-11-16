@@ -43,6 +43,19 @@ test("accepted by the app: the browser's copy is cancelled and erased, never rel
   assert.equal(r.suggested(), 0);
 });
 
+test("the size the browser knows goes to the app (totalBytes, else fileSize); an unknown size is sent as null", async () => {
+  reply = async () => ({ ok: true });
+  run(download({ totalBytes: 8 * 1024 * 1024 }));
+  await settle();
+  assert.equal(named("native")[0][1].download.size, 8 * 1024 * 1024);
+  run(download({ totalBytes: -1, fileSize: 4321 }));
+  await settle();
+  assert.equal(named("native")[0][1].download.size, 4321);
+  run(download({ totalBytes: -1 }));
+  await settle();
+  assert.equal(named("native")[0][1].download.size, null);
+});
+
 test("app missing: the download continues in the browser, nothing cancelled, the user is told", async () => {
   reply = async () => {
     throw new Error("Specified native messaging host not found.");

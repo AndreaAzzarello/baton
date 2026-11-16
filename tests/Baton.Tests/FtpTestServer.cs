@@ -63,6 +63,12 @@ public sealed class FtpTestServer : IAsyncDisposable
 
     public bool RestSupported { get; set; } = true;
 
+    /// <summary>The address PASV announces (a hostile server can name any host).</summary>
+    public string PasvHost { get; set; } = "127.0.0.1";
+
+    /// <summary>False: EPSV is refused, so a client has to use PASV (and its announced address).</summary>
+    public bool EpsvSupported { get; set; } = true;
+
     public ConcurrentQueue<FtpRetr> Retrs { get; } = new();
     public int LoginCount;
     public int MaxSeenConnections;
@@ -193,7 +199,9 @@ public sealed class FtpTestServer : IAsyncDisposable
                 await ReplyAsync(s, "200 OK.");
                 return true;
             case "FEAT":
-                var features = new List<string> { "SIZE", "MDTM", "EPSV", "PASV", "UTF8" };
+                var features = new List<string> { "SIZE", "MDTM", "PASV", "UTF8" };
+                if (EpsvSupported)
+                    features.Add("EPSV");
                 if (RestSupported)
                     features.Add("REST STREAM");
                 if (Tls != FtpTestTls.None)
@@ -247,6 +255,9 @@ public sealed class FtpTestServer : IAsyncDisposable
                 s.Rest = long.Parse(arg, CultureInfo.InvariantCulture);
                 await ReplyAsync(s, $"350 Restarting at {s.Rest}.");
                 break;
+            case "EPSV" when !EpsvSupported:
+                await ReplyAsync(s, "500 EPSV not understood.");
+                break;
             case "PASV":
             case "EPSV":
                 s.Passive?.Stop();
@@ -256,7 +267,7 @@ public sealed class FtpTestServer : IAsyncDisposable
                 s.Active = null;
                 await ReplyAsync(s, verb == "EPSV"
                     ? $"229 Entering Extended Passive Mode (|||{port}|)"
-                    : $"227 Entering Passive Mode (127,0,0,1,{port / 256},{port % 256})");
+                    : $"227 Entering Passive Mode ({PasvHost.Replace('.', ',')},{port / 256},{port % 256})");
                 break;
             case "PORT":
                 var n = arg.Split(',').Select(int.Parse).ToArray();

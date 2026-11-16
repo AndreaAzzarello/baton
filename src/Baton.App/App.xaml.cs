@@ -23,6 +23,7 @@ public partial class App : Application
     private Core.Grabber.GrabberService? _grabber;
     private MainViewModel? _viewModel;
     private ControlHandler? _control;
+    private LocalApiServer? _api;
     private LinkActions? _linkActions;
     private ClipboardWatcher? _clipboard;
     private ToastService? _toasts;
@@ -100,13 +101,32 @@ public partial class App : Application
         service.CompletedCleared += ids => _toasts.Remove(ids);
 
         var shell = new ShellService();
+        // A rule asked to show a finished file or open it; Baton has already checked that opening is safe.
+        service.RuleFileActionRequested += request => Dispatcher.InvokeAsync(() =>
+        {
+            try
+            {
+                if (request.Open)
+                    shell.OpenFile(request.Path);
+                if (request.ShowInFolder)
+                    shell.Reveal(request.Path, Path.GetDirectoryName(request.Path) ?? "");
+            }
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or IOException)
+            {
+                Log.Warning("rules", "could not open or show the file: " + ex.GetType().Name);
+            }
+        });
         var dialogs = new DialogService(() => service, shell);
         _grabber = new Core.Grabber.GrabberService(service, _store);
         service.ResumePendingChecks(); // now that the notifications and the grabber listen
         _viewModel = new MainViewModel(service, _store, dialogs, shell, new StartupService(), new GrabberUi(_grabber, service, dialogs, shell));
         // A duplicate found by the server's answer: a notification with buttons; the dialog stays as the fallback when notifications are off.
         _viewModel.NotifyDuplicate = notice => _toasts.ShowDuplicate(notice);
-        _control = new ControlHandler(service, () => AutomationLevel.Off, () => AutomationLevel.Off, path => shell.OpenFile(path), AppVersion);
+        _control = new ControlHandler(service, () => service.Settings.McpLevel, () => service.Settings.ApiLevel, path => shell.OpenFile(path), AppVersion);
+        _api = new LocalApiServer(service, _control);
+        _viewModel.ApiStatus = () => _api.IsRunning ? string.Format(CultureInfo.CurrentCulture, Strings.SettingsApiRunning, _api.Port)
+            : _api.StartError == "port-in-use" ? string.Format(CultureInfo.CurrentCulture, Strings.SettingsApiPortBusy, service.Settings.ApiPort)
+            : _api.StartError is not null ? Strings.SettingsApiFailed : null;
         _linkActions = new LinkActions(service, _toasts.Links, _toasts.Offers, path => Dispatcher.InvokeAsync(() => shell.OpenFile(path)),
             url => Dispatcher.InvokeAsync(() => _viewModel?.OfferFromClipboard(url)),
             host =>
@@ -117,9 +137,13 @@ public partial class App : Application
             });
         // A download the server's answer showed to be a file already there waits for the user's choice (never more than one dialog at a time).
         service.DuplicateFound += notice => Dispatcher.InvokeAsync(() => _viewModel?.ReceiveDuplicate(notice));
+        // "Skip" remembered: the download is dropped, and a quiet hint says which one and why.
+        service.DuplicateSkipped += notice => Dispatcher.InvokeAsync(() => _tray?.ShowHint(string.Format(CultureInfo.CurrentCulture,
+            Strings.DuplicateSkippedHint, Path.GetFileName(notice.Match.ExistingPath), notice.FileName)));
         var portableHost = service.Settings.PortableBrowserHost;
         _viewModel.SettingsSaved += settings =>
         {
+            ApplyApi(settings);
             themes.Apply(settings.Theme);
             _clipboard?.Apply(settings.MonitorClipboard);
             if (Localizer.Apply(settings.Language))
@@ -137,6 +161,7 @@ public partial class App : Application
         _tray = new TrayIcon(service, () => window.BringToFront(), window.ExitApp, current => dialogs.AskSpeedLimit(current));
         _clipboard = new ClipboardWatcher(_tray, service, _toasts, url => Dispatcher.InvokeAsync(() => _viewModel?.OfferFromClipboard(url)));
         _clipboard.Apply(service.Settings.MonitorClipboard);
+        ApplyApi(service.Settings);
         var hintShown = false;
         window.HiddenToTray += () =>
         {
@@ -412,8 +437,25 @@ public partial class App : Application
         }
     }
 
+    /// <summary>Starts, restarts or stops the local API to match the settings; a port in use only costs a hint, never the app.</summary>
+    private void ApplyApi(AppSettings settings)
+    {
+        if (_api is null)
+            return;
+        if (settings.ApiLevel == AutomationLevel.Off || settings.ApiToken.Length == 0)
+        {
+            _api.Stop();
+            return;
+        }
+        if (_api.IsRunning && _api.Port == settings.ApiPort)
+            return;
+        if (!_api.Start(settings.ApiPort))
+            _tray?.ShowHint(_viewModel?.ApiStatus?.Invoke() ?? Strings.SettingsApiFailed);
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
+        _api?.Dispose();
         _channelCts.Cancel();
         _systemTimer.Stop();
         // Running grabber projects stop; what they found so far is saved.

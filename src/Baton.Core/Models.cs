@@ -83,6 +83,9 @@ public sealed class DownloadRecord
     /// <summary>Hash and antivirus checks of the finished file; null when none were asked for.</summary>
     public PostCheck? Check { get; set; }
 
+    /// <summary>What the automatic rule that matched this download still has to do (rename, connections, limit, scan, open); null when none matched.</summary>
+    public Rules.AppliedRule? Rule { get; set; }
+
     public long DownloadedBytes =>
         Status == DownloadStatus.Completed && TotalSize is { } size ? size : Segments.Sum(s => s.Written);
 
@@ -96,6 +99,7 @@ public sealed class DownloadRecord
         copy.Segments = Segments.Select(s => s.Clone()).ToList();
         copy.Media = Media?.Clone();
         copy.Check = Check?.Clone();
+        copy.Rule = Rule?.Clone();
         return copy;
     }
 }
@@ -199,6 +203,25 @@ public sealed class AppSettings
 
     /// <summary>Sites whose copied links are no longer offered ("Not for this site" on the notification), separated by spaces.</summary>
     public string ClipboardIgnoredHosts { get; set; } = "";
+
+    // Automation (1.4.1). Off by default; the command line is not subject to these levels.
+
+    /// <summary>What MCP may do (used by 1.4.2). Off, read only, read and add, or extended control.</summary>
+    public Integration.AutomationLevel McpLevel { get; set; } = Integration.AutomationLevel.Off;
+
+    /// <summary>What the local API may do; anything but Off also starts its server.</summary>
+    public Integration.AutomationLevel ApiLevel { get; set; } = Integration.AutomationLevel.Off;
+
+    /// <summary>Port of the local API (127.0.0.1 and localhost only).</summary>
+    public int ApiPort { get; set; } = DefaultApiPort;
+
+    public const int DefaultApiPort = 7745;
+
+    /// <summary>The secret every API request carries (Bearer). Kept in memory in clear, stored encrypted with DPAPI; empty until the API is first turned on.</summary>
+    public string ApiToken { get; set; } = "";
+
+    /// <summary>Let the API (and MCP) add or probe addresses on the local network and on this computer. Off: private, link-local, CGNAT and loopback addresses are refused.</summary>
+    public bool AllowLocalNetworkForAgents { get; set; }
 
     /// <summary>Removed downloads are remembered (a keyed hash of the address, name, size) to recognise them again.</summary>
     public bool RememberRemovedForDuplicates { get; set; } = true;

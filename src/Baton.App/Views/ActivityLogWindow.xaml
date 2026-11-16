@@ -1,0 +1,76 @@
+<Window x:Class="Baton.App.Views.ActivityLogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:Baton.App.Services"
+        Title="{l:Loc ActivityLogTitle}" Width="900" Height="520" MinWidth="640" MinHeight="340"
+        Style="{StaticResource AppWindow}" WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="{l:Loc ActivityLogHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" />
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,12,0,8">
+            <Label Content="{l:Loc ActivityLogFilter}" Target="{Binding ElementName=FilterBox}" Padding="0" Margin="0,0,10,0" VerticalAlignment="Center"
+                   Foreground="{DynamicResource MutedBrush}" />
+            <ComboBox x:Name="FilterBox" ItemsSource="{Binding Filters}" SelectedItem="{Binding Filter}" DisplayMemberPath="Text" MinWidth="180"
+                      AutomationProperties.Name="{l:Loc ActivityLogFilter}" />
+            <Button Content="{l:Loc ActivityLogRefresh}" Style="{StaticResource DialogButton}" Command="{Binding RefreshCommand}" MinWidth="0" />
+        </StackPanel>
+
+        <Grid Grid.Row="2">
+            <DataGrid x:Name="List" ItemsSource="{Binding Rows}" AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single" SelectionUnit="FullRow"
+                      HeadersVisibility="Column" GridLinesVisibility="None" CanUserResizeRows="False"
+                      Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" RowHeight="32"
+                      AutomationProperties.Name="{l:Loc ActivityLogName}">
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+                        <Setter Property="Padding" Value="10,8,4,8" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                        <Setter Property="BorderThickness" Value="0,0,0,1" />
+                    </Style>
+                    <Style TargetType="DataGridCell" BasedOn="{StaticResource ListCell}" />
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource ListRow}">
+                        <Setter Property="ToolTip" Value="{Binding Detail}" />
+                        <Setter Property="AutomationProperties.Name" Value="{Binding Action}" />
+                        <Setter Property="AutomationProperties.ItemStatus" Value="{Binding Outcome}" />
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{l:Loc ActivityLogColumnTime}" Binding="{Binding Time}" Width="150" />
+                    <DataGridTextColumn Header="{l:Loc ActivityLogColumnOrigin}" Binding="{Binding Origin}" Width="110" />
+                    <DataGridTextColumn Header="{l:Loc ActivityLogColumnAction}" Binding="{Binding Action}" Width="*" MinWidth="120">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                <Setter Property="ToolTip" Value="{Binding Action}" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="{l:Loc ActivityLogColumnResult}" Binding="{Binding Outcome}" Width="110" />
+                    <DataGridTextColumn Header="{l:Loc ActivityLogColumnDetail}" Binding="{Binding Detail}" Width="2*" MinWidth="160">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                <Setter Property="ToolTip" Value="{Binding Detail}" />
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+            <TextBlock Text="{l:Loc ActivityLogEmpty}" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       IsHitTestVisible="False" Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+        </Grid>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="{l:Loc ActivityLogClear}" Style="{StaticResource DialogButton}" Command="{Binding ClearCommand}" />
+            <Button Content="{l:Loc Close}" Style="{StaticResource DialogButton}" IsCancel="True" Click="OnClose" />
+        </StackPanel>
+    </Grid>
+</Window>

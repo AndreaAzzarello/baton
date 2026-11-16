@@ -12,6 +12,7 @@ public static class MessageValidator
     public const int MaxCookies = 300;
     public const int MaxCookieValue = 8192;
     public const int MaxBodyLength = 1024 * 1024;
+    public const long MaxSizeBytes = 1L << 50; // 1 PiB: anything above is not a real file size
     public const int MaxBatchItems = 10_000;
     public const int MaxCookieSitesInBatch = 50;
     public const int MaxSubtitles = 20;
@@ -83,6 +84,8 @@ public static class MessageValidator
             return textError;
         if (d.Folder is { Length: > 0 } folder && !Path.IsPathFullyQualified(folder))
             return "The folder must be a full path.";
+        if (d.Size is < 0 or > MaxSizeBytes)
+            return "Invalid size.";
         if (d.Referrer is { Length: > 0 } referrer && !IsWeb(referrer))
             return "The referrer must be an http or https address.";
         if (Cookies(d.Cookies) is { } cookieError)

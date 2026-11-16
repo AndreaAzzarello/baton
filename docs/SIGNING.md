@@ -1,9 +1,9 @@
 # Code signing policy
 
-Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
-
-*Until the releases are signed with a code-signing certificate, releases carry only the release-key signature described below, and
-Windows SmartScreen may warn on first run.*
+**Status (2026-11-16): releases carry no Authenticode signature.** SignPath Foundation declined the application, so there is no
+code-signing certificate and nothing is signed by SignPath. Releases carry only the release-key signature (ECDSA) and the SHA-256
+described below, and Windows SmartScreen may warn on first run. The SignPath parts of this page and of the workflow are kept
+disabled for the case a certificate becomes available; none of them applies today.
 
 ## What is signed
 
@@ -61,7 +61,7 @@ only when the user turns on "Check for updates at startup" (off by default), to 
 The private release key never leaves the author's PC and never reaches CI (it is encrypted with Windows DPAPI in
 `%LOCALAPPDATA%`); the public keys are built into the app (`src/Baton.Core/Updates/release-keys.txt`).
 
-Until the releases are signed with a code-signing certificate, step 2 is skipped (no SignPath variables; the integration stays ready): the workflow produces the
+Today step 2 is always skipped (no SignPath variables; the application was declined): the workflow produces the
 same files without Authenticode, and steps 3–5 are the same.
 
 ## Verifying a download
