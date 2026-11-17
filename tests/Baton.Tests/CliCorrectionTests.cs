@@ -226,6 +226,25 @@ public sealed class CliCorrectionTests
         Assert.Equal(2, await new Run().ExecuteAsync(["categories", "extra"], App));
     }
 
+    [Fact]
+    public async Task B8_Categories_AgainstAnAppOlderThan142_IsAppTooOld()
+    {
+        // 1.4.1 (protocol 4) answers a type it does not know with an error and no code.
+        ChannelReply Old(ChannelMessage m) => new(false, Protocol: 4, Error: "Unknown message type.");
+        var text = new Run();
+        Assert.Equal(1, await text.ExecuteAsync(["categories"], Old));
+        Assert.Contains("older than 1.4.2", text.Err.ToString());
+        Assert.Single(text.Sent);
+        var json = new Run();
+        Assert.Equal(1, await json.ExecuteAsync(["categories", "--json"], Old));
+        using var doc = json.OutJson();
+        Assert.Equal("appTooOld", doc.RootElement.GetProperty("code").GetString());
+        // A current app that refuses keeps its own error.
+        var other = new Run();
+        Assert.Equal(1, await other.ExecuteAsync(["categories"], _ => new ChannelReply(false, Protocol: 5, Code: ReplyCode.AutomationOff, Error: "off")));
+        Assert.DoesNotContain("older than", other.Err.ToString());
+    }
+
     // ------------------------------------------------------------------ B1: docs/CLI.md describes the JSON each command really prints
 
     private static string RepoRoot()

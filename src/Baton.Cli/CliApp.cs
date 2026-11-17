@@ -348,6 +348,9 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         if (parsed.Words.Count > 0)
             return Usage(parsed, $"{parsed.Command} takes no arguments here" + (type == Messages.Queues ? " (queues start|stop [name] starts or stops one)." : "."));
         var (reply, code) = await CallAsync(new ChannelMessage(type, Origin: Origins.Cli));
+        // "categories" is new in 1.4.2: an older app answers an unknown type with an error, protocol 4 or less and no code.
+        if (type == Messages.Categories && reply is { Ok: false, Code: null } && reply.Protocol is null or < 5)
+            return TooOld(parsed, "categories");
         if (reply is null || !reply.Ok)
             return Failed(parsed, code, Why(reply));
         var names = (type == Messages.Queues ? reply.Queues : reply.Categories) ?? [];
