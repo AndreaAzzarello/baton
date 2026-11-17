@@ -1,7 +1,7 @@
 namespace Baton.Cli;
 
 /// <summary>The command line, split into the command, its words and its options (checked against what each command accepts).</summary>
-internal sealed record ParsedArgs(string Command, List<string> Words, Dictionary<string, string?> Options, bool Json, string? Error)
+internal sealed record ParsedArgs(string Command, List<string> Words, Dictionary<string, string?> Options, bool Json, Msg? Error)
 {
     public bool Has(string option) => Options.ContainsKey(option);
 
@@ -45,7 +45,7 @@ internal static class ArgParser
             if (arg.StartsWith("--", StringComparison.Ordinal) && arg.Length > 2)
             {
                 if (command.Length == 0)
-                    return Fail(command, json, $"Unknown command or option: {arg}");
+                    return Fail(command, json, new Msg($"Unknown command or option: {arg}", $"Comando od opzione sconosciuti: {arg}"));
                 var name = arg[2..];
                 string? value = null;
                 var equals = name.IndexOf('=');
@@ -58,7 +58,7 @@ internal static class ArgParser
                 if (flags.Contains(name))
                 {
                     if (value is not null)
-                        return Fail(command, json, $"--{name} takes no value.");
+                        return Fail(command, json, new Msg($"--{name} takes no value.", $"--{name} non accetta un valore."));
                     options[name] = null;
                 }
                 else if (values.Contains(name))
@@ -66,23 +66,23 @@ internal static class ArgParser
                     if (value is null)
                     {
                         if (i + 1 >= args.Length)
-                            return Fail(command, json, $"--{name} needs a value.");
+                            return Fail(command, json, NeedsValue(name));
                         value = args[++i];
                     }
                     if (value.Length == 0)
-                        return Fail(command, json, $"--{name} needs a value.");
+                        return Fail(command, json, NeedsValue(name));
                     options[name] = value;
                 }
                 else
                 {
-                    return Fail(command, json, $"Unknown option for {command}: --{name}");
+                    return Fail(command, json, new Msg($"Unknown option for {command}: --{name}", $"Opzione sconosciuta per {command}: --{name}"));
                 }
                 continue;
             }
             if (command.Length == 0)
             {
                 if (!Commands.ContainsKey(arg))
-                    return Fail(command, json, $"Unknown command: {arg}");
+                    return Fail(command, json, new Msg($"Unknown command: {arg}", $"Comando sconosciuto: {arg}"));
                 command = arg;
                 continue;
             }
@@ -91,5 +91,7 @@ internal static class ArgParser
         return new ParsedArgs(command.Length == 0 ? "help" : command, words, options, json, null);
     }
 
-    private static ParsedArgs Fail(string command, bool json, string error) => new(command, [], new Dictionary<string, string?>(), json, error);
+    private static Msg NeedsValue(string name) => new($"--{name} needs a value.", $"--{name} richiede un valore.");
+
+    private static ParsedArgs Fail(string command, bool json, Msg error) => new(command, [], new Dictionary<string, string?>(), json, error);
 }

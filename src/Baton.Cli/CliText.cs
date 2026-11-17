@@ -3,9 +3,23 @@ using System.Runtime.InteropServices;
 namespace Baton.Cli;
 
 /// <summary>
-/// The few messages of batonctl that are translated (English, and Italian when Windows is in Italian). The protocol carries stable
-/// codes (<c>sameUrl</c>, <c>sameName</c>, <c>sameFile</c>); the words are only for people reading the terminal. With --json
-/// the codes are printed as they are.
+/// A message for people in both languages. <c>--json</c> and MCP always print <see cref="En"/> (stable, with the codes next to it);
+/// the terminal shows <see cref="It"/> when Windows is in Italian. A text that comes from the app or from a user (already what it is)
+/// converts from a plain string and is shown as it is in both.
+/// </summary>
+internal sealed record Msg(string En, string It)
+{
+    public static implicit operator Msg(string text) => new(text, text);
+
+    public string For(bool italian) => italian ? It : En;
+
+    public override string ToString() => En;
+}
+
+/// <summary>
+/// The messages of batonctl for people reading the terminal (English, and Italian when Windows is in Italian). The protocol carries
+/// stable codes (<c>sameUrl</c>, <c>sameName</c>, <c>sameFile</c>); the words are only for the terminal. With --json the codes and
+/// the English texts are printed as they are.
 /// </summary>
 internal static class CliText
 {

@@ -46,6 +46,12 @@ Options of `add`:
 
 `--json` (any command) prints one JSON object with the same fields every time; `--help` prints the usage.
 
+## Language
+
+Every message meant for people (errors, `--help`, the labels of `status` and `probe`, «Starting Baton...») is in Italian when Windows' display
+language is Italian, and in English otherwise. `--json` and `batonctl mcp` are always in English, with stable codes (`appTooOld`, `sameUrl`, …)
+next to the words: a script should read the codes, not the words.
+
 ## Duplicates
 
 `add` never asks questions. An address that is already in the list, a file with the same name in the destination folder,

@@ -245,6 +245,86 @@ public sealed class CliCorrectionTests
         Assert.DoesNotContain("older than", other.Err.ToString());
     }
 
+    // ------------------------------------------------------------------ B9: the texts for people are in Italian when Windows is
+
+    public static TheoryData<string, string> B9Scenarios() => new()
+    {
+        { "add", "" },
+        { "list x", "" },
+        { "status", "" },
+        { "frobnicate", "" },
+        { "list --nope", "" },
+        { "add --folder", "" },
+        { "add not-an-address", "" },
+        { "list --status bad", "" },
+        { "pause", "" },
+        { "probe", "" },
+        { "remove", "" },
+        { "queues a b c", "" },
+        { "categories x", "" },
+        { "add https://a.test/x --start --no-start", "" },
+        { "list", "unreachable" },
+        { "list", "empty" },
+        { "version", "unreachable" },
+        { "pause all", "ok" },
+        { "remove 1", "ok" },
+        { "status 1", "download" },
+        { "probe https://a.test/f.zip", "probe" },
+        { "categories", "old" },
+        { "add https://a.test/x", "added" },
+        { "list", "closed" },
+    };
+
+    private static ChannelReply? B9App(string kind, ChannelMessage m) => kind switch
+    {
+        "unreachable" => null,
+        "empty" => new ChannelReply(true, Downloads: []),
+        "ok" => new ChannelReply(true, Id: 1),
+        "download" => new ChannelReply(true, Download: new DownloadInfo(1, "a.zip", "https://a.test/a.zip", "C:\\x", null, "downloading", 10, 100, null, "Main", "General", new DateTime(2026, 11, 17, 0, 0, 0, DateTimeKind.Utc), null)),
+        "probe" => new ChannelReply(true, Protocol: 5, Probe: new ProbeInfo("f.zip", "application/zip", 5, true)),
+        "old" => new ChannelReply(false, Protocol: 4, Error: "Unknown message type."),
+        "added" => new ChannelReply(true, Id: 7, Result: "added"),
+        _ => new ChannelReply(true),
+    };
+
+    [Theory]
+    [MemberData(nameof(B9Scenarios))]
+    public async Task B9_TheTextsForPeople_AreItalianWhenWindowsIs_AndJsonStaysEnglishAndEqual(string line, string kind)
+    {
+        var args = line.Split(' ');
+        var en = new Run();
+        var it = new Run();
+        Assert.Equal(await en.ExecuteAsync(args, m => B9App(kind, m)), await it.ExecuteAsync(args, m => B9App(kind, m), italian: true));
+        Assert.NotEqual(en.Out.ToString() + en.Err.ToString(), it.Out.ToString() + it.Err.ToString());
+        var jsonEn = new Run();
+        var jsonIt = new Run();
+        await jsonEn.ExecuteAsync([.. args, "--json"], m => B9App(kind, m));
+        await jsonIt.ExecuteAsync([.. args, "--json"], m => B9App(kind, m), italian: true);
+        Assert.Equal(jsonEn.Out.ToString(), jsonIt.Out.ToString());
+    }
+
+    [Fact]
+    public void B9_TheHelp_HasAnItalianVersion_WithTheSameCommands()
+    {
+        Assert.NotEqual(CliApp.Help, CliApp.HelpItalian);
+        foreach (var command in new[] { "add", "list", "status", "probe", "pause", "resume", "retry", "queues", "categories", "open", "remove", "version", "mcp", "--json" })
+            Assert.Contains(command, CliApp.HelpItalian);
+    }
+
+    [Fact]
+    public void B9_EveryDuplicateReasonOfTheApp_HasWordsInBothLanguages()
+    {
+        foreach (var reason in Enum.GetValues<Baton.Core.Duplicates.DuplicateReason>())
+        {
+            var code = ControlHandler.ReasonCode(reason);
+            var en = CliText.DuplicateReason(code, italian: false);
+            var it = CliText.DuplicateReason(code, italian: true);
+            Assert.NotEqual(code, en);
+            Assert.NotEqual(code, it);
+            Assert.NotEqual(en, it);
+        }
+    }
+
     // ------------------------------------------------------------------ B1: docs/CLI.md describes the JSON each command really prints
 
     private static string RepoRoot()
