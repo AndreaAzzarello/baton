@@ -21,6 +21,7 @@ for it to answer; `batonctl version` never starts it.
 | `add <url…\|->` | Adds downloads. `-` reads one address per line from the input. |
 | `list [--status <s>]` | Lists downloads. Status: `queued`, `downloading`, `paused`, `completed`, `failed`. |
 | `status <id>` | Shows one download. |
+| `probe <url>` | Asks the running Baton what an address is (file name, type, size, whether it can resume) without adding a download. With `--json`: `{"ok":true,"probe":{"name","contentType","size","resumable"}}`. |
 | `pause <id\|all>` | Pauses a download, or all. |
 | `resume <id\|all>` | Starts a download again, or all paused and failed ones (through the queues, in order). |
 | `retry <id\|all>` | Tries a failed download again, or all failed ones. |

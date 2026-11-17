@@ -110,15 +110,24 @@ public sealed record ChannelMessage(
     long? Id = null,
     bool? All = null,
     string? Queue = null,
-    string? Link = null);
+    string? Link = null,
+    string? Url = null,
+    int? Limit = null,
+    long? After = null);
 
 /// <summary>A download as the command line, the API and MCP see it. Never holds cookies, passwords, tokens or form fields; the address has no login or query.</summary>
 public sealed record DownloadInfo(long Id, string Name, string Url, string Folder, string? Path, string Status, long Downloaded, long? TotalSize,
     string? Error, string? Queue, string? Category, DateTime AddedUtc, DateTime? CompletedUtc);
 
+/// <summary>What "probe" found at an address (protocol 5): the name the server gives, the type, the size when known and whether it resumes.</summary>
+public sealed record ProbeInfo(string Name, string? ContentType, long? Size, bool Resumable);
+
 /// <summary>The download already there that made an automatic add skip (protocol 4).</summary>
 public sealed record DuplicateInfo(string Reason, long? ExistingId, string ExistingPath);
 
+/// <param name="Probe">For "probe" (protocol 5).</param>
+/// <param name="Level">For "capabilities" (protocol 5): "off", "readOnly", "readAdd" or "extended".</param>
+/// <param name="NextCursor">For "list" with a limit (protocol 5): the "after" of the next page; absent on the last page.</param>
 /// <param name="Queues">For "queues": the names of the app's queues, the main one first (added in 0.5).</param>
 /// <param name="Protocol">The protocol version the app speaks (2 from 0.6; absent from older apps, which speak 1).</param>
 /// <param name="AppVersion">The app's version, for the extension's connection check.</param>
@@ -140,16 +149,20 @@ public sealed record ChannelReply(
     string? Result = null,
     long? Id = null,
     DuplicateInfo? Duplicate = null,
-    int? Count = null);
+    int? Count = null,
+    ProbeInfo? Probe = null,
+    string? Level = null,
+    long? NextCursor = null);
 
 public static class Messages
 {
     /// <summary>
     /// Version 1: ping, add, queues (extension 0.2–0.5). Version 2: hello, POST downloads, probeMedia, addMedia, batch.
     /// Version 3: grab, audio languages and subtitles of videos. Version 4: the command line (origin, list, status, pause, resume,
-    /// retry, remove, open, queue start/stop, version) and the buttons of notifications (link). A newer app keeps answering older messages unchanged.
+    /// retry, remove, open, queue start/stop, version) and the buttons of notifications (link). Version 5: MCP (probe, capabilities, a page of
+    /// the list with limit and after). A newer app keeps answering older messages unchanged.
     /// </summary>
-    public const int ProtocolVersion = 4;
+    public const int ProtocolVersion = 5;
 
     public const string Ping = "ping";
     public const string Add = "add";
@@ -183,6 +196,12 @@ public static class Messages
     public const string QueueStart = "queueStart";
     public const string QueueStop = "queueStop";
     public const string Version = "version";
+
+    /// <summary>What a download address is (name, type, size, ranges) without downloading it (protocol 5).</summary>
+    public const string Probe = "probe";
+
+    /// <summary>The level the caller's origin has in the settings, so MCP can offer only the tools that would work (protocol 5).</summary>
+    public const string Capabilities = "capabilities";
 
     /// <summary>A button of a notification, forwarded by the process Windows started with its "baton:" link; the app checks the signature.</summary>
     public const string Link = "link";

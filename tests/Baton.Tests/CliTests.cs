@@ -176,6 +176,26 @@ public sealed class CliTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Probe_ShowsWhatTheAddressIs_AsTextAndAsJson_AndNeedsOneAddress()
+    {
+        ChannelReply App(ChannelMessage m) => m.Type == Messages.Probe && m.Url == "https://a.test/f.zip"
+            ? new ChannelReply(true, Probe: new ProbeInfo("f.zip", "application/zip", 1234, true))
+            : new ChannelReply(false, Error: "no");
+        var text = new Run();
+        Assert.Equal(0, await text.ExecuteAsync(["probe", "https://a.test/f.zip"], App));
+        Assert.Contains("f.zip", text.Out.ToString());
+        Assert.Contains("1234 bytes", text.Out.ToString());
+        Assert.Equal(Origins.Cli, text.Sent.Single().Origin);
+        var json = new Run();
+        Assert.Equal(0, await json.ExecuteAsync(["probe", "https://a.test/f.zip", "--json"], App));
+        using (var doc = JsonDocument.Parse(json.Out.ToString()))
+            Assert.Equal(1234, doc.RootElement.GetProperty("probe").GetProperty("size").GetInt64());
+        Assert.Equal(2, await new Run().ExecuteAsync(["probe"], App));
+        Assert.Equal(2, await new Run().ExecuteAsync(["probe", "not an address"], App));
+        Assert.Equal(1, await new Run().ExecuteAsync(["probe", "https://other.test/x"], App));
+    }
+
+    [Fact]
     public async Task DuplicateMessage_WithACodeFromANewerBaton_ShowsTheCodeAsItIs()
     {
         var run = new Run();

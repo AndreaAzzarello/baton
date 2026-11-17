@@ -7,16 +7,29 @@ namespace Baton.Core.Integration;
 /// an origin that cannot show a dialog). The answers carry <see cref="DownloadInfo"/>, never the secrets of a download.
 /// </summary>
 public sealed class ControlHandler(DownloadService service, Func<AutomationLevel> mcpLevel, Func<AutomationLevel> apiLevel,
-    Action<string> openFile, string appVersion)
+    Action<string> openFile, string appVersion, Func<DateTime>? clock = null)
 {
+    /// <summary>The most requests MCP may send in a minute (every message counts; asking for the level does not).</summary>
+    public const int McpRequestsPerMinute = 120;
+    public const string TooManyRequestsError = "Too many requests: wait a moment and try again.";
+
+    private readonly RateWindow _mcpRate = new(McpRequestsPerMinute, clock);
+
     /// <summary>Null when the message may go on; otherwise the refusal to send back.</summary>
-    public ChannelReply? Authorize(ChannelMessage message) =>
-        OriginPolicy.Check(message, mcpLevel(), apiLevel()) is { } error ? Fail(error) : null;
+    public ChannelReply? Authorize(ChannelMessage message)
+    {
+        if (OriginPolicy.Check(message, mcpLevel(), apiLevel()) is { } error)
+            return Fail(error);
+        // MCP is an agent that can loop: its budget is kept here, in the app, whatever the client does.
+        if (message.Origin == Origins.Mcp && message.Type != Messages.Capabilities && !_mcpRate.TryTake())
+            return Fail(TooManyRequestsError);
+        return null;
+    }
 
     /// <summary>True for the types this handler answers (everything but the browser's own).</summary>
     public static bool Handles(ChannelMessage message) =>
         message.Type is Messages.List or Messages.Status or Messages.Pause or Messages.Resume or Messages.Retry or Messages.Remove
-            or Messages.Open or Messages.QueueStart or Messages.QueueStop or Messages.Version
+            or Messages.Open or Messages.QueueStart or Messages.QueueStop or Messages.Version or Messages.Probe or Messages.Capabilities
         || (message.Type == Messages.Add && (message.Origin ?? Origins.Browser) != Origins.Browser);
 
     /// <summary>
@@ -44,8 +57,12 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         {
             case Messages.Version:
                 return Ok(version: appVersion);
+            case Messages.Capabilities:
+                return new ChannelReply(true, Protocol: Messages.ProtocolVersion, AppVersion: appVersion, Level: LevelName(message.Origin));
+            case Messages.Probe:
+                return await ProbeAsync(message);
             case Messages.List:
-                return Ok(downloads: service.GetSnapshots().Select(Info).ToList());
+                return ListPage(message);
             case Messages.Status:
                 return Find(message, out found, out error) ? Ok(download: Info(found)) : error;
             case Messages.Add:
@@ -118,6 +135,69 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         }
     }
 
+    /// <summary>The level of the caller's origin as the protocol names it; the command line has no level and may do everything.</summary>
+    private string LevelName(string? origin) => (origin switch { Origins.Mcp => mcpLevel(), Origins.Api => apiLevel(), _ => AutomationLevel.Extended }) switch
+    {
+        AutomationLevel.Off => "off",
+        AutomationLevel.ReadOnly => "readOnly",
+        AutomationLevel.ReadAdd => "readAdd",
+        _ => "extended",
+    };
+
+    public const int DefaultPageSize = 50;
+
+    /// <summary>Everything, as before, or with a limit or a cursor one page in order of number; "nextCursor" is the "after" of the next page.</summary>
+    private ChannelReply ListPage(ChannelMessage message)
+    {
+        var snapshots = service.GetSnapshots();
+        if (message.Limit is null && message.After is null)
+            return Ok(downloads: snapshots.Select(Info).ToList());
+        var limit = message.Limit ?? DefaultPageSize;
+        var page = snapshots.Where(s => s.Id > (message.After ?? 0)).OrderBy(s => s.Id).Take(limit + 1).ToList();
+        var more = page.Count > limit;
+        if (more)
+            page.RemoveAt(limit);
+        return new ChannelReply(true, Protocol: Messages.ProtocolVersion, Downloads: page.Select(Info).ToList(), NextCursor: more ? page[^1].Id : null);
+    }
+
+    public static readonly TimeSpan ProbeTimeout = TimeSpan.FromSeconds(25);
+
+    private async Task<ChannelReply> ProbeAsync(ChannelMessage message)
+    {
+        var (context, refusal) = await GuardAgentAddressAsync(message.Origin, message.Url!, new RequestContext(null, null, []));
+        if (refusal is not null)
+            return refusal;
+        using var timeout = new CancellationTokenSource(ProbeTimeout);
+        try
+        {
+            var found = await service.Network.ProbeAsync(new DownloadRecord { Url = message.Url!, Context = context }, timeout.Token);
+            return new ChannelReply(true, Protocol: Messages.ProtocolVersion,
+                Probe: new ProbeInfo(found.FileName, found.ContentType, found.TotalSize, found.SupportsRanges));
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            return Fail("The address did not answer: " + Log.Redact(ex is OperationCanceledException ? "no answer in time." : ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// For MCP and the API (programs the user did not type): only http, https and ftp, and nothing on this computer or the local
+    /// network unless the user allowed it; the context then carries the flag that checks every connection and redirect again.
+    /// Shared by "add" and "probe". The command line and the browser are not restricted.
+    /// </summary>
+    private async Task<(RequestContext Context, ChannelReply? Refusal)> GuardAgentAddressAsync(string? origin, string url, RequestContext context)
+    {
+        if (origin is not (Origins.Api or Origins.Mcp))
+            return (context, null);
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var target) || target.Scheme is not ("http" or "https" or "ftp"))
+            return (context, Fail("Only http, https and ftp addresses can be downloaded."));
+        if (service.Settings.AllowLocalNetworkForAgents)
+            return (context, null);
+        if (await Net.UrlGuard.IsPrivateHostAsync(target.IdnHost, CancellationToken.None))
+            return (context, Fail(PrivateNetworkError));
+        return (context with { PublicOnly = true }, null);
+    }
+
     /// <summary>Refusal texts the local API turns into status codes.</summary>
     public const string PrivateNetworkError = "This address is on this computer or a private network; turn on \"Allow addresses of the local network\" in the settings to allow it.";
     public const string NoDownloadError = "No download with this number.";
@@ -126,20 +206,9 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
     private async Task<ChannelReply> AddAsync(ChannelMessage message)
     {
         var d = message.Download!;
-        var context = d.ToContext();
-        // MCP and the API are programs the user did not type: only http, https and ftp, and nothing on this computer or the local
-        // network unless the user allowed it (the same guard as for videos, applied to every request of the download).
-        if (message.Origin is Origins.Api or Origins.Mcp)
-        {
-            if (!Uri.TryCreate(d.Url, UriKind.Absolute, out var target) || target.Scheme is not ("http" or "https" or "ftp"))
-                return Fail("Only http, https and ftp addresses can be downloaded.");
-            if (!service.Settings.AllowLocalNetworkForAgents)
-            {
-                if (await Net.UrlGuard.IsPrivateHostAsync(target.IdnHost, CancellationToken.None))
-                    return Fail(PrivateNetworkError);
-                context = context with { PublicOnly = true };
-            }
-        }
+        var (context, refusal) = await GuardAgentAddressAsync(message.Origin, d.Url, d.ToContext());
+        if (refusal is not null)
+            return refusal;
         // Only the command line chooses a folder: MCP and the API go through categories, so they cannot write elsewhere.
         if (d.Folder is not null && message.Origin != Origins.Cli)
             return Fail("Only the command line may choose a folder; use a category.");

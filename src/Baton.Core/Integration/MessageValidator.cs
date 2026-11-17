@@ -16,11 +16,12 @@ public static class MessageValidator
     public const int MaxBatchItems = 10_000;
     public const int MaxCookieSitesInBatch = 50;
     public const int MaxSubtitles = 20;
+    public const int MaxPageSize = 200;
 
     private static readonly string[] KnownTypes =
         [Messages.Ping, Messages.Add, Messages.Activate, Messages.Queues, Messages.Hello, Messages.ProbeMedia, Messages.AddMedia, Messages.Batch, Messages.Grab,
          Messages.List, Messages.Status, Messages.Pause, Messages.Resume, Messages.Retry, Messages.Remove, Messages.Open, Messages.QueueStart,
-         Messages.QueueStop, Messages.Version, Messages.Link];
+         Messages.QueueStop, Messages.Version, Messages.Link, Messages.Probe, Messages.Capabilities];
 
     public const int MaxLinkLength = 8192;
 
@@ -41,6 +42,10 @@ public static class MessageValidator
             return queueError;
         if (message.Id is < 1)
             return "Invalid download number.";
+        if (message.Limit is < 1 or > MaxPageSize)
+            return "Invalid page size.";
+        if (message.After is < 1)
+            return "Invalid page cursor.";
 
         switch (message.Type)
         {
@@ -60,6 +65,8 @@ public static class MessageValidator
             case Messages.Retry:
             case Messages.Remove:
                 return message.Id is null && message.All != true ? "Missing download number." : null;
+            case Messages.Probe:
+                return message.Url is null ? "Missing address." : DownloadUrl(message.Url);
             case Messages.Link:
                 return message.Link is { Length: > 0 and <= MaxLinkLength } link && NotificationLinks.IsLink(link) && !HasControl(link) ? null : "Invalid link.";
             case Messages.ProbeMedia:

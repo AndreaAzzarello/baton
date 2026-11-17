@@ -16,6 +16,7 @@ internal static class ArgParser
         ["add"] = (["folder", "category", "queue"], ["start", "no-start", "allow-duplicate"]),
         ["list"] = (["status"], []),
         ["status"] = ([], []),
+        ["probe"] = ([], []),
         ["pause"] = ([], []),
         ["resume"] = ([], []),
         ["retry"] = ([], []),

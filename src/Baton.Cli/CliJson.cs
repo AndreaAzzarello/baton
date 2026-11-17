@@ -13,6 +13,8 @@ internal sealed record AddResult(string Url, string Status, long? Id, DuplicateI
 
 internal sealed record AddOutput(bool Ok, List<AddResult> Results);
 
+internal sealed record ProbeOutput(bool Ok, ProbeInfo? Probe);
+
 internal sealed record ListOutput(bool Ok, List<DownloadInfo> Downloads);
 
 internal sealed record DownloadOutput(bool Ok, DownloadInfo? Download, long? Id)
@@ -24,6 +26,7 @@ internal sealed record DownloadOutput(bool Ok, DownloadInfo? Download, long? Id)
 [JsonSerializable(typeof(VersionOutput))]
 [JsonSerializable(typeof(AddOutput))]
 [JsonSerializable(typeof(ListOutput))]
+[JsonSerializable(typeof(ProbeOutput))]
 [JsonSerializable(typeof(DownloadOutput))]
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web, DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
 internal sealed partial class CliJson : JsonSerializerContext;

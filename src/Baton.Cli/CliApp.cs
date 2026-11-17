@@ -38,6 +38,7 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
               --allow-duplicate     add it even if it is a duplicate
           list [--status <s>]     The downloads (status: queued, downloading, paused, completed, failed)
           status <id>             One download
+          probe <url>             What an address is (name, type, size, ranges) without downloading it
           pause <id|all>          Pause a download, or all
           resume <id|all>         Resume (start) a download, or all paused and failed ones
           retry <id|all>          Try a failed download again, or all failed ones
@@ -77,6 +78,8 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
                 return await ListAsync(parsed);
             case "status":
                 return await OneAsync(parsed, Messages.Status, withProgress: true);
+            case "probe":
+                return await ProbeAsync(parsed);
             case "open":
                 return await OneAsync(parsed, Messages.Open, withProgress: false);
             case "pause":
@@ -201,6 +204,26 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
             output.WriteLine($"{d.Id,5}  {d.Status,-11} {Progress(d),5}  {d.Name}");
         if (downloads.Count == 0)
             output.WriteLine("No downloads.");
+        return ExitCodes.Ok;
+    }
+
+    /// <summary>probe: asks the app what an address is, without adding anything.</summary>
+    private async Task<int> ProbeAsync(ParsedArgs parsed)
+    {
+        if (parsed.Words.Count != 1 || !Urls.TryParseDownload(parsed.Words[0], out _))
+            return Usage(parsed, "probe needs one download address.");
+        var (reply, code) = await CallAsync(new ChannelMessage(Messages.Probe, Origin: Origins.Cli, Url: parsed.Words[0]));
+        if (reply is null || !reply.Ok || reply.Probe is not { } probe)
+            return Failed(parsed, code, reply is { Ok: true } ? "Baton is older and does not know \"probe\"." : Why(reply));
+        if (parsed.Json)
+        {
+            Json(new ProbeOutput(true, probe));
+            return ExitCodes.Ok;
+        }
+        output.WriteLine(probe.Name);
+        output.WriteLine($"  type    {probe.ContentType ?? "-"}");
+        output.WriteLine($"  size    {(probe.Size is { } size ? size.ToString(CultureInfo.InvariantCulture) + " bytes" : "unknown")}");
+        output.WriteLine($"  ranges  {(probe.Resumable ? "yes (can resume)" : "no")}");
         return ExitCodes.Ok;
     }
 

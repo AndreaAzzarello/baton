@@ -24,7 +24,9 @@ public static class OriginPolicy
     public static AutomationLevel? RequiredLevel(string type) => type switch
     {
         Messages.Ping or Messages.Hello or Messages.Queues or Messages.Version or Messages.List or Messages.Status => AutomationLevel.ReadOnly,
-        Messages.Add => AutomationLevel.ReadAdd,
+        Messages.Capabilities => AutomationLevel.ReadOnly,
+        // Probe sends a request to an address the caller chose: more than reading, so not at the read-only level.
+        Messages.Add or Messages.Probe => AutomationLevel.ReadAdd,
         Messages.Pause or Messages.Resume or Messages.Retry or Messages.Remove or Messages.Open or Messages.QueueStart or Messages.QueueStop => AutomationLevel.Extended,
         _ => null,
     };
@@ -45,6 +47,9 @@ public static class OriginPolicy
             case Origins.Mcp:
             case Origins.Api:
                 var level = origin == Origins.Mcp ? mcp : api;
+                // Asking which level it has is how MCP learns that it has none: always answered, to these two origins only.
+                if (message.Type == Messages.Capabilities)
+                    return null;
                 if (level == AutomationLevel.Off)
                     return "Automation is turned off in the settings.";
                 // Opening a file or a program on the desktop is for the user's own command line only, whatever the level.
