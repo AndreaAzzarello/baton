@@ -316,6 +316,9 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
     {
         // An answer that does not come in time means Baton is running but busy: not "unreachable", and not to be sent twice.
         static (ChannelReply, int) Late() => (new ChannelReply(false, Protocol: Messages.ProtocolVersion, Error: "Baton did not answer in time."), ExitCodes.Ok);
+        // Reached, but the connection closed before an answer: the command may have been done, so it is never sent again.
+        static (ChannelReply, int) Closed() => (new ChannelReply(false, Protocol: Messages.ProtocolVersion,
+            Error: "Baton closed the connection without answering; the command may have been done. Check with \"batonctl list\" before trying again."), ExitCodes.Ok);
         ChannelReply? reply;
         try
         {
@@ -324,6 +327,10 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         catch (OperationCanceledException)
         {
             return Late();
+        }
+        catch (ChannelNoReplyException)
+        {
+            return Closed();
         }
         if (reply is not null)
             return (reply, ExitCodes.Ok);
@@ -336,6 +343,10 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         catch (OperationCanceledException)
         {
             return Late();
+        }
+        catch (ChannelNoReplyException)
+        {
+            return Closed();
         }
         return reply is null ? (null, ExitCodes.NotRunning) : (reply, ExitCodes.Ok);
     }

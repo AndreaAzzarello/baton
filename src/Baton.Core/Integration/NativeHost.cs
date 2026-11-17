@@ -64,7 +64,17 @@ public static class NativeHost
     public static async Task<ChannelReply> ForwardAsync(ChannelMessage message, string pipeName, Func<bool> launchApp, TimeSpan startupTimeout,
         string? appVersion = null, string? extensionVersion = null, Action? useAppLanguage = null)
     {
-        var reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromMilliseconds(500));
+        ChannelReply? reply;
+        try
+        {
+            reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromMilliseconds(500));
+        }
+        catch (ChannelNoReplyException)
+        {
+            // The app took the message and did not answer: it is running, and the message may have been acted on. No relaunch, no resend.
+            useAppLanguage?.Invoke();
+            return new ChannelReply(false, Running: true, Error: Strings.ErrorAppNoAnswer);
+        }
         if (reply is not null)
             return reply;
         // Questions from the popup and the connection check never start the app.
@@ -83,7 +93,15 @@ public static class NativeHost
         var deadline = DateTime.UtcNow + startupTimeout;
         while (DateTime.UtcNow < deadline)
         {
-            reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromSeconds(1));
+            try
+            {
+                reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromSeconds(1));
+            }
+            catch (ChannelNoReplyException)
+            {
+                useAppLanguage?.Invoke();
+                return new ChannelReply(false, Running: true, Error: Strings.ErrorAppNoAnswer);
+            }
             if (reply is not null)
                 return reply;
         }

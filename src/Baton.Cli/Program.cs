@@ -16,7 +16,9 @@ async Task<bool> StartApp()
         return false;
     try
     {
-        using var process = Process.Start(new ProcessStartInfo(exe, "--tray") { UseShellExecute = false });
+        // Through the shell: Baton must not inherit batonctl's redirected output (a script waiting for the end of the output, or the
+        // JSON-RPC stream of "batonctl mcp", would wait for Baton to exit), nor keep the terminal's folder locked as its own.
+        using var process = Process.Start(new ProcessStartInfo(exe, "--tray") { UseShellExecute = true, WorkingDirectory = exeFolder });
         if (process is null)
             return false;
     }
@@ -28,8 +30,15 @@ async Task<bool> StartApp()
     while (DateTime.UtcNow < deadline)
     {
         await Task.Delay(300);
-        if (await ChannelClient.SendAsync(pipe, new ChannelMessage(Messages.Ping), TimeSpan.FromMilliseconds(300)) is { Ok: true })
-            return true;
+        try
+        {
+            if (await ChannelClient.SendAsync(pipe, new ChannelMessage(Messages.Ping), TimeSpan.FromMilliseconds(300)) is { Ok: true })
+                return true;
+        }
+        catch (ChannelNoReplyException)
+        {
+            // still starting up: ask again
+        }
     }
     return false;
 }

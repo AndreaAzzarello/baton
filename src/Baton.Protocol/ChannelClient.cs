@@ -5,6 +5,12 @@ using System.Text.Json;
 
 namespace Baton.Core.Integration;
 
+/// <summary>
+/// The app was reached and took the message, but no answer came back (the connection closed or broke). The message may have been
+/// carried out, so it must not be sent again: unlike "nobody is listening", which is when starting the app and trying again is safe.
+/// </summary>
+public sealed class ChannelNoReplyException(string message, Exception? inner = null) : IOException(message, inner);
+
 /// <summary>The client side of the local pipe the running app listens on: one JSON line each way, per connection.</summary>
 public static class ChannelClient
 {
@@ -13,8 +19,13 @@ public static class ChannelClient
     public static string DefaultPipeName { get; } =
         "Baton." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{Environment.UserDomainName}\\{Environment.UserName}")))[..16];
 
-    /// <summary>Sends one message; returns null when no app is listening.</summary>
-    public static async Task<ChannelReply?> SendAsync(string pipeName, ChannelMessage message, TimeSpan connectTimeout, CancellationToken ct = default)
+    /// <summary>
+    /// Sends one message; returns null when no app is listening (nothing was sent). Throws <see cref="ChannelNoReplyException"/> when it
+    /// connected and the answer never came, and <see cref="OperationCanceledException"/> when the answer took longer than
+    /// <paramref name="replyTimeout"/> (30 s by default).
+    /// </summary>
+    public static async Task<ChannelReply?> SendAsync(string pipeName, ChannelMessage message, TimeSpan connectTimeout, CancellationToken ct = default,
+        TimeSpan? replyTimeout = null)
     {
         await using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         try
@@ -26,11 +37,19 @@ public static class ChannelClient
             return null;
         }
 
-        await WriteLineAsync(pipe, JsonSerializer.SerializeToUtf8Bytes(message, ProtocolJson.Default.ChannelMessage), ct);
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeout.CancelAfter(TimeSpan.FromSeconds(30));
-        var line = await ReadLineAsync(pipe, timeout.Token);
-        return line is null ? null : JsonSerializer.Deserialize(line, ProtocolJson.Default.ChannelReply);
+        try
+        {
+            await WriteLineAsync(pipe, JsonSerializer.SerializeToUtf8Bytes(message, ProtocolJson.Default.ChannelMessage), ct);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(replyTimeout ?? TimeSpan.FromSeconds(30));
+            var line = await ReadLineAsync(pipe, timeout.Token);
+            return line is null ? throw new ChannelNoReplyException("The connection closed without an answer.")
+                : JsonSerializer.Deserialize(line, ProtocolJson.Default.ChannelReply);
+        }
+        catch (Exception ex) when (ex is IOException and not ChannelNoReplyException or JsonException)
+        {
+            throw new ChannelNoReplyException("The connection broke before an answer came.", ex);
+        }
     }
 
     public static async Task WriteLineAsync(Stream stream, byte[] json, CancellationToken ct)
