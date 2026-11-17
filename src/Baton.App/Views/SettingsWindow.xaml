@@ -373,8 +373,9 @@
                             <Label Content="{l:Loc LoginPasswordLabel}" Target="{Binding ElementName=LoginPasswordBox}" Padding="0" Margin="0,10,0,4" Foreground="{DynamicResource MutedBrush}" />
                             <PasswordBox x:Name="LoginPasswordBox" PasswordChanged="OnLoginPasswordChanged" AutomationProperties.Name="{l:Loc LoginPasswordName}"
                                          ToolTip="{l:Loc LoginPasswordKeep}" />
-                            <CheckBox Content="{l:Loc LoginWindowsAccount}" IsChecked="{Binding LoginWindowsAccount}" Margin="0,10,0,0"
-                                      ToolTip="{l:Loc LoginWindowsAccountToolTip}" />
+                            <CheckBox IsChecked="{Binding LoginWindowsAccount}" Margin="0,10,0,0" ToolTip="{l:Loc LoginWindowsAccountToolTip}">
+                                <AccessText Text="{l:Loc LoginWindowsAccount}" TextWrapping="Wrap" />
+                            </CheckBox>
                             <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                                 <Button Content="{l:Loc LoginNew}" Style="{StaticResource DialogButton}" Margin="0" MinWidth="0" Command="{Binding NewLoginCommand}" />
                                 <Button Content="{l:Loc LoginSave}" Style="{StaticResource DialogButton}" MinWidth="0" Command="{Binding SaveLoginCommand}" />

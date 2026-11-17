@@ -176,6 +176,16 @@ public sealed class WindowGalleryTests : IDisposable
         // Lists show data (file names, addresses): trimmed on purpose.
         if (node is DataGrid or ListBox or TreeView or ComboBox or ToolTip or TextBox)
             return;
+        // The text of a check box or button with an access key ("_Windows") is an AccessText, not a TextBlock.
+        if (node is System.Windows.Controls.AccessText { Text.Length: > 0 } access && access.TextWrapping == TextWrapping.NoWrap && access.ActualWidth > 0)
+        {
+            var shown = access.Text.Replace("_", "", StringComparison.Ordinal);
+            var formatted = new FormattedText(shown, CultureInfo.CurrentUICulture, access.FlowDirection,
+                new Typeface(access.FontFamily, access.FontStyle, access.FontWeight, access.FontStretch), access.FontSize, Brushes.Black,
+                VisualTreeHelper.GetDpi(access).PixelsPerDip);
+            if (formatted.WidthIncludingTrailingWhitespace > access.ActualWidth + 1)
+                problems.Add($"\"{shown}\" needs {formatted.WidthIncludingTrailingWhitespace:0} px, has {access.ActualWidth:0}");
+        }
         if (node is TextBlock { Text.Length: > 0 } text && text.TextWrapping == TextWrapping.NoWrap && text.ActualWidth > 0)
         {
             var formatted = new FormattedText(text.Text, CultureInfo.CurrentUICulture, text.FlowDirection,
@@ -304,6 +314,10 @@ public sealed class WindowGalleryTests : IDisposable
             tabs.SelectedIndex = 5; // General, Save in, Network, After download, Updates, Automation
             ((SettingsViewModel)automation.DataContext).ShowTokenCommand.Execute(null);
             yield return (automation, "settings-automation");
+            // The Credentials tab too (C1: "Use my Windows account..." was cut).
+            var credentials = new SettingsWindow(new SettingsViewModel(_dialogs, new AppSettings { DownloadFolder = folder }, runAtStartup: false));
+            ((System.Windows.Controls.TabControl)credentials.FindName("Tabs")).SelectedIndex = 6;
+            yield return (credentials, "settings-credentials");
             var log = _service.AutomationLog;
             log.Record(Baton.Core.Automation.AutomationLog.Api, "api.add", "201", "https://downloads.example.com/files/archive.zip");
             log.Record(Baton.Core.Automation.AutomationLog.Api, "api.list", "401", Baton.Core.Automation.ActivityText.Reason("wrongToken"));
