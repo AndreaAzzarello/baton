@@ -84,6 +84,27 @@ public sealed class CliCorrectionTests
         }
     }
 
+    // ------------------------------------------------------------------ Baton started as administrator: its pipe is not ours
+
+    [Theory]
+    [InlineData(false, "administrator")]
+    [InlineData(true, "amministratore")]
+    public async Task AnElevatedBaton_IsExitCode3_WithAClearText_AndNoResourceKey(bool italian, string word)
+    {
+        var run = new Run();
+        Assert.Equal(3, await run.ExecuteAsync(["list"], _ => throw new AppElevatedException("UnauthorizedAccess_NotOwnedByCurrentUser"), italian: italian));
+        Assert.Contains(word, run.Err.ToString());
+        Assert.DoesNotContain("UnauthorizedAccess_", run.Err.ToString());
+
+        var json = new Run();
+        Assert.Equal(3, await json.ExecuteAsync(["list", "--json"], _ => throw new AppElevatedException("UnauthorizedAccess_NotOwnedByCurrentUser"), italian: italian));
+        using var doc = json.OutJson();
+        Assert.False(doc.RootElement.GetProperty("ok").GetBoolean());
+        Assert.Equal("appElevated", doc.RootElement.GetProperty("code").GetString());
+        Assert.Contains("administrator", doc.RootElement.GetProperty("error").GetString()); // --json stays English
+        Assert.DoesNotContain("UnauthorizedAccess_", doc.RootElement.GetProperty("error").GetString());
+    }
+
     // ------------------------------------------------------------------ B6: a folder that cannot be a folder is refused, with the likely cause
 
     [Theory]

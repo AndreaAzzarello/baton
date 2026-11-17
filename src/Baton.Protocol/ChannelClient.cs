@@ -11,6 +11,9 @@ namespace Baton.Core.Integration;
 /// </summary>
 public sealed class ChannelNoReplyException(string message, Exception? inner = null) : IOException(message, inner);
 
+/// <summary>The pipe exists but its owner is not the current user's own (limited) token: Baton was started with administrator rights.</summary>
+public sealed class AppElevatedException(string message, Exception? inner = null) : IOException(message, inner);
+
 /// <summary>The client side of the local pipe the running app listens on: one JSON line each way, per connection.</summary>
 public static class ChannelClient
 {
@@ -43,6 +46,12 @@ public static class ChannelClient
         catch (TimeoutException)
         {
             return null;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // The pipe is there but not owned by this user's own token: Baton runs with administrator rights (its pipe belongs to the
+            // Administrators group), and a normal program refuses it (CurrentUserOnly). .NET words that with a resource key; say what it means.
+            throw new AppElevatedException("The pipe of Baton belongs to an elevated process.", ex);
         }
 
         try

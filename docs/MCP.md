@@ -80,11 +80,14 @@ These do not depend on the level and are not settings:
 
 A failed call returns `isError` with `{"error":{"code","message"}}`. Codes: `automationOff`, `levelTooLow`, `notAllowed`,
 `tooManyRequests`, `noDownload`, `noQueue`, `noCategory`, `privateNetwork`, `unresolvable`, `notFinished`, `badScheme`, `invalid`, `invalidArguments`, `timeout`,
-`appUnavailable`, `appTooOld`, `unknownTool`, `failed`.
+`appUnavailable`, `appElevated`, `appTooOld`, `unknownTool`, `failed`.
 
 - `timeout`: Baton is busy; a change may have been made, so check with `list_downloads` before trying again.
 - `appUnavailable`: Baton is not running and could not be started, or closed the connection without answering. A call is never sent
   twice when the connection broke after it was sent.
+- `appElevated`: Baton was started with administrator rights. Its pipe then belongs to the Administrators group and a normal program
+  (such as `batonctl mcp` started by your agent) refuses it; MCP is off in that state anyway. Start Baton normally, or run `batonctl` from an
+  administrator terminal. (How the browser's native host behaves toward an elevated Baton is not verified.)
 - `appTooOld`: Baton is older than 1.4.2; update it. With the app unreachable, `tools/list` shows every tool (a shorter list
   would stay shorter for the whole session) and each call says why it fails.
 

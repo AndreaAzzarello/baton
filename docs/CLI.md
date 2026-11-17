@@ -78,7 +78,7 @@ codes above and stays the same across versions (a script should compare the code
 | 0 | Done. |
 | 1 | The app refused or failed (unknown download, no such category…). |
 | 2 | Wrong arguments. |
-| 3 | Baton could not be reached or started. |
+| 3 | Baton could not be reached or started, or it runs as administrator (its pipe is not reachable from a normal terminal: start Baton normally, or use an administrator terminal; with `--json`, `"code":"appElevated"`). |
 | 4 | At least one duplicate was skipped (and nothing failed). |
 
 ## JSON answers

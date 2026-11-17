@@ -234,6 +234,25 @@ public sealed class McpTests : IAsyncLifetime
             Task.FromResult(new LinkResult(new ChannelReply(false, Error: "Unknown message type.", Protocol: 4)));
     }
 
+    [Fact]
+    public async Task ABatonStartedAsAdministrator_GivesAStructuredAppElevatedError_NotAGenericOne()
+    {
+        await using var s = await ConnectAsync(new ElevatedAppLink());
+        Assert.NotEmpty(await s.Client.ListToolsAsync()); // no answer: the whole list, calls say why they fail
+        var result = await Call(s, "list_queues");
+        Assert.True(result.IsError);
+        var error = Structured(result).GetProperty("error");
+        Assert.Equal("appElevated", error.GetProperty("code").GetString());
+        Assert.Contains("administrator", error.GetProperty("message").GetString());
+        Assert.DoesNotContain("UnauthorizedAccess_", error.GetProperty("message").GetString());
+    }
+
+    private sealed class ElevatedAppLink : IAppLink
+    {
+        public Task<LinkResult> SendAsync(ChannelMessage message, TimeSpan replyTimeout, CancellationToken ct) =>
+            Task.FromResult(new LinkResult(null, LinkFailure.Elevated));
+    }
+
     // ------------------------------------------------------------------ add, probe, list
 
     [Fact]

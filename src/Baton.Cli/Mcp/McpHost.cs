@@ -63,6 +63,10 @@ internal sealed class PipeAppLink(string pipe, Func<Task<bool>> startApp, Action
             }
             return reply is null ? new LinkResult(null, LinkFailure.Unavailable) : new LinkResult(reply);
         }
+        catch (AppElevatedException)
+        {
+            return new LinkResult(null, LinkFailure.Elevated);
+        }
         catch (ChannelNoReplyException)
         {
             // Connected, but the answer never came: the message may have been done, so it is not sent again.

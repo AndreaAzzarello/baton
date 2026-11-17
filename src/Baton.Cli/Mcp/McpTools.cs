@@ -6,7 +6,7 @@ using ModelContextProtocol.Protocol;
 
 namespace Baton.Cli.Mcp;
 
-internal enum LinkFailure { None, Unavailable, Timeout }
+internal enum LinkFailure { None, Unavailable, Timeout, Elevated }
 
 /// <summary>What came back from the app: a reply, or why there is none.</summary>
 internal sealed record LinkResult(ChannelReply? Reply, LinkFailure Failure = LinkFailure.None);
@@ -261,7 +261,7 @@ internal sealed class McpTools(IAppLink link, Action<string> log)
                 var (code, message) = ErrorOf(error);
                 results.Add(new AddItem(shown, "failed", null, null, null, code, message));
                 // No answer means the rest would wait as long; a spent budget of requests means the same.
-                stop = code is "timeout" or "appUnavailable" or "tooManyRequests" or "appTooOld";
+                stop = code is "timeout" or "appUnavailable" or "appElevated" or "tooManyRequests" or "appTooOld";
                 continue;
             }
             if (reply!.Result == "duplicate")
@@ -297,7 +297,7 @@ internal sealed class McpTools(IAppLink link, Action<string> log)
             }
             var (code, message) = ErrorOf(error);
             results.Add(new IdItem(id, "failed", code, message));
-            stop = code is "timeout" or "appUnavailable" or "tooManyRequests" or "appTooOld" or "automationOff" or "levelTooLow";
+            stop = code is "timeout" or "appUnavailable" or "appElevated" or "tooManyRequests" or "appTooOld" or "automationOff" or "levelTooLow";
         }
         return Ok(new IdsResult(results, results.Count(r => r.Status == "ok"), results.Count(r => r.Status == "failed")), McpJsonContext.Default.IdsResult);
     }
@@ -324,6 +324,9 @@ internal sealed class McpTools(IAppLink link, Action<string> log)
             case LinkFailure.Unavailable:
                 return (null, Fail("appUnavailable", "Baton is not running and could not be started, or it closed the connection without answering. " +
                                                      "A change may have been made: check with list_downloads before trying again."));
+            case LinkFailure.Elevated:
+                return (null, Fail("appElevated", "Baton is running as administrator, so a normal program cannot reach it (and MCP is off while it does). " +
+                                                  "Start Baton normally, or run batonctl from an administrator terminal."));
             case LinkFailure.Timeout:
                 return (null, Fail("timeout", "Baton did not answer in time. It is busy; a change may have been made: check with list_downloads before trying again."));
         }

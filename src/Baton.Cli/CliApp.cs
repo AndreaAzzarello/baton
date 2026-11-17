@@ -112,6 +112,17 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         {
             return await RunCoreAsync(args);
         }
+        catch (AppElevatedException)
+        {
+            // Baton runs as administrator: its pipe is not reachable from a normal program. Not a .NET resource key: what to do.
+            var problem = new Msg("Baton is running as administrator: start it normally, or run batonctl from an administrator terminal.",
+                "Baton è avviato come amministratore: avvialo normalmente oppure usa batonctl da un terminale amministratore.");
+            if (args.Contains("--json"))
+                Json(new CodedErrorOutput(false, problem.En, "appElevated"));
+            else
+                error.WriteLine($"batonctl: {problem.For(italian)}");
+            return ExitCodes.NotRunning;
+        }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // Never an unhandled exception (exit code 0xE0434352 and a stack trace): a pipe that cannot be used is "not reached", the rest is an error.
