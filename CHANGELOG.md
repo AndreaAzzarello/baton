@@ -33,6 +33,10 @@ Terza tappa di «Automation»: il server MCP.
   nome del file, senza utente, password, query e frammento) accanto a `url`, che resta com'era: gli script esistenti non cambiano.
   Se Baton è aperto ma ha tutte le connessioni occupate, l'estensione riceve «Baton è occupato» (non lo riavvia né aspetta l'avvio).
   Le richieste senza il token non riempiono più il registro delle attività: sono contate in una riga al minuto.
+- **Cambiamento visibile nei nomi dei file nuovi**: i caratteri invisibili vengono tolti, e tra questi c'è il selettore «mostra come
+  emoji» (U+FE0F) che segue molte emoji. Un file chiamato «❤️.jpg» viene salvato come «❤.jpg» (stesso disegno, senza il selettore);
+  nelle sequenze unite da ZWJ (U+200D), come la bandiera arcobaleno, le parti restano separate. I download già nell'elenco non cambiano
+  nome. Un test fissa il comportamento.
 - Righe di fine riga uniformi (LF) in tutto il repository, con controlli in `/fine-fase`.
 
 ## [1.4.1] — 2026-11-16
