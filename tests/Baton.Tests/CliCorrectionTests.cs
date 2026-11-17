@@ -291,4 +291,73 @@ public sealed class CliCorrectionTests
         Assert.True(shapes.TryGetValue("error (appTooOld)", out var coded));
         Assert.Equal(["code", "error", "ok"], coded);
     }
+
+    // ------------------------------------------------------------------ B10: remove never deletes a finished file; an unfinished download loses only its temporary files
+
+    private static async Task Until(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (!condition())
+        {
+            Assert.True(DateTime.UtcNow < deadline, "timed out");
+            await Task.Delay(50);
+        }
+    }
+
+    [Fact]
+    public async Task B10_Remove_FromTheCommandLine_KeepsFinishedFiles_AndClearsOnlyTheTemporaryFilesOfAnUnfinishedDownload()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "dm-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        await using var server = await TestFileServer.StartAsync();
+        try
+        {
+            using var store = new Baton.Core.DownloadStore(Path.Combine(dir, "state.db"));
+            store.SaveSettings(new Baton.Core.AppSettings { DownloadFolder = dir, MaxConnections = 4, ProxyMode = Baton.Core.ProxyMode.None });
+            await using var service = new Baton.Core.DownloadService(store, engineTemplate: new Baton.Core.EngineOptions
+            {
+                MinSegmentSize = 64 * 1024, RetryBaseDelay = TimeSpan.FromMilliseconds(50), ReadTimeout = TimeSpan.FromSeconds(10),
+                CheckpointInterval = TimeSpan.FromMilliseconds(100),
+            });
+            var control = new ControlHandler(service, () => AutomationLevel.Off, () => AutomationLevel.Off, _ => { }, "9.9.9");
+
+            var doneId = service.Add(server.Add("done.bin", new ServedFile { Content = new byte[1000] }));
+            await Until(() => service.GetSnapshot(doneId)!.Status == Baton.Core.DownloadStatus.Completed);
+            var donePath = service.GetSnapshot(doneId)!.FinalPath!;
+            var slowId = service.Add(server.Add("slow.bin", new ServedFile { Content = TestFileServer.RandomBytes(1024 * 1024, 31), Throttle = _ => 64 * 1024 }));
+            await Until(() => Directory.GetFiles(dir, "*.part", SearchOption.AllDirectories).Length == 1);
+
+            // A finished download: gone from the list, its file stays.
+            Assert.True((await control.HandleAsync(new ChannelMessage(Messages.Remove, Origin: Origins.Cli, Id: doneId))).Ok);
+            Assert.Null(service.GetSnapshot(doneId));
+            Assert.True(File.Exists(donePath));
+
+            // "all completed" never touches an unfinished download or its partial file.
+            var all = await control.HandleAsync(new ChannelMessage(Messages.Remove, Origin: Origins.Cli, All: true));
+            Assert.Equal(0, all.Count);
+            Assert.NotNull(service.GetSnapshot(slowId));
+            Assert.Single(Directory.GetFiles(dir, "*.part", SearchOption.AllDirectories));
+
+            // An unfinished one removed by number from the command line: only its temporary files go (the same call from MCP or the API is refused, A8).
+            Assert.True((await control.HandleAsync(new ChannelMessage(Messages.Remove, Origin: Origins.Cli, Id: slowId))).Ok);
+            Assert.Null(service.GetSnapshot(slowId));
+            Assert.Empty(Directory.GetFiles(dir, "*.part", SearchOption.AllDirectories));
+            Assert.True(File.Exists(donePath));
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            try { Directory.Delete(dir, recursive: true); } catch (IOException) { }
+        }
+    }
+
+    [Fact]
+    public void B10_TheDocs_SayWhatRemoveDoesToFiles()
+    {
+        var text = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "CLI.md"));
+        Assert.Contains("never deletes a finished file", text);
+        Assert.Contains("temporary files", text);
+        Assert.DoesNotContain("it never deletes files from\nthe disk", text.Replace("\r\n", "\n"));
+        Assert.Contains("no confirmation", text);              // the mass commands (pause all, remove --all-completed) ask nothing: documented
+    }
 }

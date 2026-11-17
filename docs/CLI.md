@@ -29,8 +29,8 @@ for it to answer; `batonctl version` never starts it.
 | `queues start\|stop [name]` | Starts or stops a queue (the main queue without a name). |
 | `categories` | Lists the names of the categories (the names `--category` takes, as the interface shows them). |
 | `open <id>` | Opens the finished file with its default program. |
-| `remove <id>` | Removes a download **from the list**; the file stays on the disk. |
-| `remove --all-completed` | Removes all completed downloads from the list. |
+| `remove <id>` | Removes a download **from the list**. A finished download keeps its file on the disk; an unfinished one loses only its temporary files (the `.part` file and the segments). |
+| `remove --all-completed` | Removes all completed downloads from the list (their files stay). |
 | `version` | Versions of `batonctl` and of the running Baton. |
 | `mcp` | Runs as an MCP server on standard input and output, for AI agents: see [MCP.md](MCP.md). |
 
@@ -138,10 +138,15 @@ messages have control, invisible and direction-changing characters removed.
 
 ## Limits that always apply
 
-The command line can do what the app's window does with downloads and queues, and no more: it never deletes files from
-the disk (`remove` only changes the list) and it cannot change settings, credentials, proxy, rules, folders of the
-categories or updates. A folder can be chosen only by the command line (the browser extension, and later the local API and
-MCP, go through categories).
+The command line can do what the app's window does with downloads and queues, and no more: `remove` never deletes a finished file
+(a finished download only leaves the list) and, for a download that is not finished, deletes only its temporary files; it
+cannot change settings, credentials, proxy, rules, folders of the categories or updates. A folder can be chosen only by the
+command line (the browser extension, the local API and MCP go through categories). MCP and the local API are stricter: they
+refuse to remove a download that is not finished (see [MCP.md](MCP.md) and [API.md](API.md)).
+
+The commands that act on many downloads (`pause all`, `resume all`, `retry all`, `remove --all-completed`) ask for no confirmation:
+the command line is the user's own terminal and a script must not stop to ask. They are as far-reaching as the same buttons
+in the window, and `remove --all-completed` leaves unfinished downloads alone.
 
 ## Examples
 

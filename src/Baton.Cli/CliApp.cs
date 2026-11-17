@@ -46,7 +46,7 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
           queues start|stop [name]  Start or stop a queue (the main queue without a name)
           categories              The names of the categories (for --category)
           open <id>               Open the finished file
-          remove <id>             Remove a download from the list (the file stays on the disk)
+          remove <id>             Remove a download from the list (a finished file stays on the disk)
           remove --all-completed  Remove all completed downloads from the list
           version                 Versions of batonctl and of the running Baton
           mcp                     Run as an MCP server on standard input and output, for AI agents (see docs/MCP.md)
