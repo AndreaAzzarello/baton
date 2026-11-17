@@ -122,7 +122,7 @@ public partial class App : Application
         _viewModel = new MainViewModel(service, _store, dialogs, shell, new StartupService(), new GrabberUi(_grabber, service, dialogs, shell));
         // A duplicate found by the server's answer: a notification with buttons; the dialog stays as the fallback when notifications are off.
         _viewModel.NotifyDuplicate = notice => _toasts.ShowDuplicate(notice);
-        _control = new ControlHandler(service, () => service.Settings.McpLevel, () => service.Settings.ApiLevel, path => shell.OpenFile(path), AppVersion);
+        _control = new ControlHandler(service, () => Elevation.Effective(service.Settings.McpLevel, Elevation.IsElevated), () => Elevation.Effective(service.Settings.ApiLevel, Elevation.IsElevated), path => shell.OpenFile(path), AppVersion);
         _api = new LocalApiServer(service, _control);
         _viewModel.ApiStatus = () => _api.IsRunning ? string.Format(CultureInfo.CurrentCulture, Strings.SettingsApiRunning, _api.Port)
             : _api.StartError == "port-in-use" ? string.Format(CultureInfo.CurrentCulture, Strings.SettingsApiPortBusy, service.Settings.ApiPort)
@@ -442,7 +442,7 @@ public partial class App : Application
     {
         if (_api is null)
             return;
-        if (settings.ApiLevel == AutomationLevel.Off || settings.ApiToken.Length == 0)
+        if (Elevation.Effective(settings.ApiLevel, Elevation.IsElevated) == AutomationLevel.Off || settings.ApiToken.Length == 0)
         {
             _api.Stop();
             return;

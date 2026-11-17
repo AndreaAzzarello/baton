@@ -20,7 +20,8 @@ Terza tappa di «Automation»: il server MCP.
   aggiunta) e avvia Baton senza fargli ereditare l'output.
 - **Sicurezza** (revisione indipendente): i download chiesti da agenti (MCP e API) non usano i login salvati in Baton e rifiutano
   i nomi che non si risolvono entro 5 secondi; gli agenti non rimuovono dalla lista i download non finiti (si cancellerebbe il file
-  parziale); se un agente avvia una coda, l'azione di fine coda (spegni, sospendi…) non parte da sola: chiede un clic.
+  parziale); se un agente avvia una coda, l'azione di fine coda (spegni, sospendi…) non parte da sola: chiede un clic. La pipe dell'app rifiuta esplicitamente i client di rete (gruppo NETWORK) e, se Baton gira
+  con diritti di amministratore, MCP e API sono spenti (un programma qualsiasi dello stesso utente non deve comandare un processo con più diritti).
   «Apri a fine download» vale per MCP e API solo se la regola
   elenca quell'origine; più tipi di file contano come eseguibili (script, pagine HTML/SVG, file RDP…).
 - Righe di fine riga uniformi (LF) in tutto il repository, con controlli in `/fine-fase`.

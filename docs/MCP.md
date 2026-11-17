@@ -42,6 +42,9 @@ The level is chosen in the settings, separately for MCP and for the local API. T
 
 `probe_url` sends a request to the address it is given, so it needs "Read and add" and not "Read only".
 
+While Baton runs **with administrator rights** MCP and the local API are off whatever the setting says: any program of the same user could
+send them orders, and an elevated process must not take them. The pipe also refuses connections that arrive over the network.
+
 ## Tools
 
 Results are structured data (with an output schema) and the same JSON as text. Keys and codes are English and stable. Names,

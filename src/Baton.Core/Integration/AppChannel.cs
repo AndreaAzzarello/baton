@@ -37,8 +37,7 @@ public static class AppChannel
             NamedPipeServerStream pipe;
             try
             {
-                pipe = new NamedPipeServerStream(pipeName, PipeDirection.InOut, maxConnections,
-                    PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+                pipe = CreateServerPipe(pipeName, maxConnections);
             }
             catch (IOException)
             {
@@ -66,6 +65,32 @@ public static class AppChannel
             }
             _ = HandleConnectionAsync(pipe, handler, readTimeout ?? TimeSpan.FromSeconds(10), ct).ContinueWith(_ => slots.Release(), TaskScheduler.Default);
         }
+    }
+
+    /// <summary>
+    /// The pipe only the current user may open, and never a remote client: besides the current user's own entry the
+    /// access list has an explicit refusal for the NETWORK group (S-1-5-2), so a connection that arrives over the
+    /// network is turned away even with the same account's credentials.
+    /// </summary>
+    public static NamedPipeServerStream CreateServerPipe(string pipeName, int maxConnections)
+    {
+        if (!OperatingSystem.IsWindows())
+            return new NamedPipeServerStream(pipeName, PipeDirection.InOut, maxConnections,
+                PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+        return NamedPipeServerStreamAcl.Create(pipeName, PipeDirection.InOut, maxConnections,
+            PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 0, 0, BuildSecurity());
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    internal static PipeSecurity BuildSecurity()
+    {
+        var security = new PipeSecurity();
+        security.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+        var network = new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.NetworkSid, null);
+        security.AddAccessRule(new PipeAccessRule(network, PipeAccessRights.FullControl, System.Security.AccessControl.AccessControlType.Deny));
+        var me = System.Security.Principal.WindowsIdentity.GetCurrent().User!;
+        security.AddAccessRule(new PipeAccessRule(me, PipeAccessRights.ReadWrite | PipeAccessRights.Synchronize | PipeAccessRights.CreateNewInstance, System.Security.AccessControl.AccessControlType.Allow));
+        return security;
     }
 
     /// <summary>Sends one message; returns null when no app is listening.</summary>
