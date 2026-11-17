@@ -153,6 +153,27 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task AQueueStartedByAnAgent_IsMarked_SoItsEndActionNeedsAClick_A11()
+    {
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        var control = Handler(service, mcp: AutomationLevel.Extended, api: AutomationLevel.Extended);
+        var main = service.Queues.First(q => q.Key == DownloadQueue.MainKey).Id;
+
+        foreach (var origin in new[] { Origins.Mcp, Origins.Api })
+        {
+            Assert.True((await control.HandleAsync(new ChannelMessage(Messages.QueueStart, Origin: origin))).Ok);
+            Assert.True(service.TakeAgentStart(main));   // the mark is taken once...
+            Assert.False(service.TakeAgentStart(main));  // ...and is gone after
+        }
+
+        // The user's own start (command line, window, tray) clears the mark an agent left.
+        await control.HandleAsync(new ChannelMessage(Messages.QueueStart, Origin: Origins.Mcp));
+        Assert.True((await control.HandleAsync(new ChannelMessage(Messages.QueueStart, Origin: Origins.Cli))).Ok);
+        Assert.False(service.TakeAgentStart(main));
+    }
+
+    [Fact]
     public async Task EveryRefusal_CarriesAStableCode_AndTheWireNameIsCamelCase()
     {
         using var store = Store();

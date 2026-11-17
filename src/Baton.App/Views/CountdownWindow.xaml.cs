@@ -18,7 +18,7 @@ public partial class CountdownWindow : Window
     private int _remaining;
     private bool _confirmed;
 
-    public CountdownWindow(EndAction action, string queueName, TimeSpan length)
+    public CountdownWindow(EndAction action, string queueName, TimeSpan length, bool needsClick = false)
     {
         InitializeComponent();
         _remaining = (int)length.TotalSeconds;
@@ -28,6 +28,8 @@ public partial class CountdownWindow : Window
         NowButton.Content = string.Format(CultureInfo.CurrentCulture, Strings.CountdownNow, _actionText);
         Progress.Maximum = _remaining;
         Show(_remaining);
+        if (needsClick)
+            ShowNeedsClick();
         _timer.Tick += (_, _) =>
         {
             Show(--_remaining);
@@ -38,7 +40,8 @@ public partial class CountdownWindow : Window
         {
             Activate();
             CancelButton.Focus();
-            _timer.Start();
+            if (!needsClick)
+                _timer.Start();
         };
         Closed += (_, _) => _timer.Stop();
     }
@@ -54,6 +57,15 @@ public partial class CountdownWindow : Window
         EndAction.Shutdown => Strings.EndActionShutdown,
         _ => Strings.EndActionNone,
     };
+
+    /// <summary>An agent started the queue: nothing counts down, the action happens only if the user clicks.</summary>
+    private void ShowNeedsClick()
+    {
+        Message.Text = string.Format(CultureInfo.CurrentCulture, Strings.CountdownAgentMessage, LowerFirst(_actionText));
+        Seconds.Visibility = Visibility.Collapsed;
+        Progress.Visibility = Visibility.Collapsed;
+        Announcement.Visibility = Visibility.Collapsed;
+    }
 
     private void Show(int seconds)
     {

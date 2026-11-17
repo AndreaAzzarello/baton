@@ -305,6 +305,7 @@ I download in corso vengono fermati e i dati parziali eliminati. Dal Cestino i f
   <data name="ConfirmOpenMany" xml:space="preserve"><value>Aprire {0} file insieme?</value></data>
   <data name="ConfirmRemove" xml:space="preserve"><value>Rimuovere {0} download dalla lista? I file già scaricati restano sul disco; i dati parziali vengono eliminati.</value></data>
   <data name="ConnectionTitle" xml:space="preserve"><value>Connessioni</value></data>
+  <data name="CountdownAgentMessage" xml:space="preserve"><value>Questa coda è stata avviata da un agente IA, quindi Baton non lo farà da solo. Azione prevista: {0}, solo se premi il pulsante.</value></data>
   <data name="CountdownAnnouncement" xml:space="preserve"><value>{0} secondi</value></data>
   <data name="CountdownCancel" xml:space="preserve"><value>_Annulla</value></data>
   <data name="CountdownHeading" xml:space="preserve"><value>La coda «{0}» ha finito</value></data>

@@ -45,8 +45,9 @@ public interface IDialogService
     /// <summary>The automatic rules window; true when saved.</summary>
     bool ShowRules(RulesViewModel viewModel);
 
-    /// <summary>The countdown before a queue's end action; true when it ran out or the user chose to go ahead.</summary>
-    bool ShowCountdown(Core.EndAction action, string queueName, TimeSpan length);
+    /// <summary>The countdown before a queue's end action; true when it ran out or the user chose to go ahead.
+    /// With <paramref name="needsClick"/> (an agent started the queue) it never runs out: only a click goes ahead.</summary>
+    bool ShowCountdown(Core.EndAction action, string queueName, TimeSpan length, bool needsClick = false);
 
     /// <summary>Asks for a speed limit in KB/s; null when cancelled.</summary>
     long? AskSpeedLimit(long current);

@@ -24,7 +24,7 @@ Refusals and every request that changes something are written to the activity lo
 | `POST /downloads/{id}/pause` `resume` `retry` | extended | Control |
 | `DELETE /downloads/{id}` | extended | Remove a **finished** download from the list (the file stays on the disk); an unfinished one is refused with 400, because removing it would delete its partial file |
 | `GET /queues` | read | Queues |
-| `POST /queues/{name}/start` `stop` | extended | Control a queue |
+| `POST /queues/{name}/start` `stop` | extended | Control a queue; a queue started this way never runs its end action (shut down, sleep…) by itself, Baton asks for a click |
 
 Unknown JSON fields are rejected with 400.
 

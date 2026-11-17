@@ -372,6 +372,7 @@ S = {
  "CountdownTitle": ("{0} shortly", "{0} tra poco"),
  "CountdownHeading": ("The queue “{0}” has finished", "La coda «{0}» ha finito"),
  "CountdownMessage": ("Planned action: {0} in {1} seconds. You can cancel it.", "Azione prevista: {0} tra {1} secondi. Puoi annullarla."),
+ "CountdownAgentMessage": ("An AI agent started this queue, so Baton will not do this by itself. Planned action: {0}, only if you click the button.", "Questa coda è stata avviata da un agente IA, quindi Baton non lo farà da solo. Azione prevista: {0}, solo se premi il pulsante."),
  "CountdownAnnouncement": ("{0} seconds", "{0} secondi"),
  "CountdownSecondsName": ("Seconds left", "Secondi rimanenti"),
  "CountdownCancel": ("_Cancel", "_Annulla"),

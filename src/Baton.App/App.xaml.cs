@@ -472,11 +472,13 @@ public partial class App : Application
         if (queue.EndAction == EndAction.None || _runningEndAction || _service is null)
             return;
         _runningEndAction = true;
+        // A queue an agent (API or MCP) started must not switch the PC off on its own: that takes a click.
+        var needsClick = _service.TakeAgentStart(queue.Id);
         try
         {
             var runner = new EndActionRunner(
                 power,
-                (action, length) => Task.FromResult(dialogs.ShowCountdown(action, queue.DisplayName, length)),
+                (action, length) => Task.FromResult(dialogs.ShowCountdown(action, queue.DisplayName, length, needsClick)),
                 _service.ShutdownAsync,
                 window.ExitApp);
             if (await runner.RunAsync(queue.EndAction) && queue.EndAction == EndAction.Shutdown)

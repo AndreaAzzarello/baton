@@ -167,7 +167,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
                 if (queue is null)
                     return Fail(ReplyCode.NoQueue, NoQueueError);
                 if (message.Type == Messages.QueueStart)
-                    service.StartQueue(queue.Id);
+                    service.StartQueue(queue.Id, byAgent: message.Origin is Origins.Api or Origins.Mcp);
                 else
                     await service.StopQueueAsync(queue.Id);
                 return Ok();

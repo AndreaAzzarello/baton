@@ -56,7 +56,7 @@ length) and are only ever the value of a field.
 | `add_downloads` | `urls` (1–50), `category`, `queue`, `start`, `allowDuplicate` | One result per address: `added`, `duplicate`, `failed` or `notAttempted` (a budget of 60 seconds). No folder: only categories. |
 | `probe_url` | `url` | Name, type, size and whether the server can resume; nothing is downloaded. |
 | `pause_downloads`, `resume_downloads`, `retry_downloads`, `remove_from_list` | `ids` (1–50) | Each download is named; there is no "all". One result per number. `remove_from_list` removes finished downloads from the list only (unfinished ones are refused: `notFinished`). |
-| `start_queue`, `stop_queue` | `queue` | The main queue without a name. |
+| `start_queue`, `stop_queue` | `queue` | The main queue without a name. A queue an agent started never runs its end action (shut down, sleep…) by itself: Baton asks for a click. |
 
 Addresses must be http, https or ftp, and never on this computer or a private network unless "Allow addresses of the local
 network" is on; the download itself is checked again at every connection and redirect. The address in a result is reduced to

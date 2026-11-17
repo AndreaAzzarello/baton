@@ -689,12 +689,29 @@ public sealed partial class DownloadService : IAsyncDisposable
     /// <summary>Stops the main queue; downloads it started go back to waiting.</summary>
     public Task StopQueueAsync() => StopQueueAsync(MainQueueId);
 
-    public void StartQueue(long queueId)
+    private readonly HashSet<long> _agentStartedQueues = [];
+
+    /// <summary>
+    /// True once, when the queue's current run was started by an agent (API or MCP) and nobody started it since:
+    /// its end action (shut down, sleep…) then needs a click instead of a countdown that goes ahead by itself.
+    /// </summary>
+    public bool TakeAgentStart(long queueId)
+    {
+        lock (_lock)
+            return _agentStartedQueues.Remove(queueId);
+    }
+
+    /// <param name="byAgent">The run was asked for by an agent; a start by the user clears that mark.</param>
+    public void StartQueue(long queueId, bool byAgent = false)
     {
         lock (_lock)
         {
             if (_queues.FirstOrDefault(q => q.Id == queueId) is not { } queue)
                 return;
+            if (byAgent)
+                _agentStartedQueues.Add(queueId);
+            else
+                _agentStartedQueues.Remove(queueId);
             SetRunning(queue, true);
             Pump();
         }

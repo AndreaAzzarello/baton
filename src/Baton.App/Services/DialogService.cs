@@ -138,10 +138,10 @@ public sealed class DialogService(Func<DownloadService> service, IShellService s
 
     public bool ShowRules(RulesViewModel viewModel) => new RulesWindow(viewModel) { Owner = Owner }.ShowDialog() == true;
 
-    public bool ShowCountdown(EndAction action, string queueName, TimeSpan length)
+    public bool ShowCountdown(EndAction action, string queueName, TimeSpan length, bool needsClick = false)
     {
         // Topmost and without an owner: it must be seen even when the main window is hidden in the notification area.
-        var window = new CountdownWindow(action, queueName, length);
+        var window = new CountdownWindow(action, queueName, length, needsClick);
         window.ShowDialog();
         return window.Confirmed;
     }
