@@ -179,20 +179,32 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         }
 
         var results = new List<AddResult>();
+        var unreachable = ExitCodes.Ok;
         foreach (var url in urls)
         {
+            if (unreachable != ExitCodes.Ok)
+            {
+                // Baton went away: what was added stays reported, the rest says it was never sent.
+                results.Add(new AddResult(url, "notAttempted", null, null, null));
+                continue;
+            }
             var download = new BrowserDownload(url, Folder: folder, Category: parsed.Value("category"), Queue: parsed.Value("queue"),
                 Start: parsed.Has("no-start") ? false : null, AllowDuplicate: parsed.Has("allow-duplicate") ? true : null);
             var (reply, code) = await CallAsync(new ChannelMessage(Messages.Add, Download: download, Origin: Origins.Cli));
             if (reply is null)
-                return Failed(parsed, code, "Baton could not be reached.");
+            {
+                unreachable = code;
+                results.Add(new AddResult(url, "error", null, null, "Baton could not be reached."));
+                continue;
+            }
             results.Add(!reply.Ok
                 ? new AddResult(url, "error", null, null, AgentText.Clean(reply.Error, AgentText.MaxMessage))
                 : reply.Result == "duplicate"
                     ? new AddResult(url, "duplicate", reply.Duplicate?.ExistingId, reply.Duplicate is null ? null : AgentText.Safe(reply.Duplicate), null)
                     : new AddResult(url, "added", reply.Id, null, null));
         }
-        var exit = results.Any(r => r.Status == "error") ? ExitCodes.Error : results.Any(r => r.Status == "duplicate") ? ExitCodes.Duplicate : ExitCodes.Ok;
+        var exit = unreachable != ExitCodes.Ok ? unreachable
+            : results.Any(r => r.Status == "error") ? ExitCodes.Error : results.Any(r => r.Status == "duplicate") ? ExitCodes.Duplicate : ExitCodes.Ok;
         if (parsed.Json)
         {
             Json(new AddOutput(exit == ExitCodes.Ok, results));
@@ -204,6 +216,8 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
                 output.WriteLine($"added #{r.Id}  {r.Url}");
             else if (r.Status == "duplicate")
                 error.WriteLine($"{CliText.Skipped(CliText.DuplicateReason(r.Duplicate?.Reason, italian), r.Id, italian)}  {r.Url}");
+            else if (r.Status == "notAttempted")
+                error.WriteLine($"not attempted  {r.Url}");
             else
                 error.WriteLine($"error: {r.Error}  {r.Url}");
         }

@@ -109,4 +109,34 @@ public sealed class CliCorrectionTests
         Assert.Equal(0, await run.ExecuteAsync(["add", "https://a.test/f.zip", "--folder", "D:\\x\\"], _ => new ChannelReply(true, Result: "added", Id: 1)));
         Assert.Equal("D:\\x\\",run.Sent.Single().Download!.Folder);
     }
+
+    // ------------------------------------------------------------------ B4: results already obtained are not lost
+
+    [Fact]
+    public async Task B4_WhenBatonDisappearsInTheMiddleOfAnAdd_TheDownloadsAlreadyAdded_AreReported_AndTheRestAreNotAttempted()
+    {
+        var calls = 0;
+        ChannelReply? App(ChannelMessage _) => ++calls == 1 ? new ChannelReply(true, Result: "added", Id: 11) : null;
+        string[] urls = ["https://a.test/1.zip", "https://a.test/2.zip", "https://a.test/3.zip"];
+
+        var json = new Run();
+        Assert.Equal(3, await json.ExecuteAsync(["add", ..urls, "--json"], App));
+        using (var doc = json.OutJson())
+        {
+            Assert.False(doc.RootElement.GetProperty("ok").GetBoolean());
+            var results = doc.RootElement.GetProperty("results");
+            Assert.Equal(3, results.GetArrayLength());
+            Assert.Equal("added", results[0].GetProperty("status").GetString());
+            Assert.Equal(11, results[0].GetProperty("id").GetInt64());
+            Assert.Equal("error", results[1].GetProperty("status").GetString());
+            Assert.Equal("notAttempted", results[2].GetProperty("status").GetString());
+        }
+
+        calls = 0;
+        var text = new Run();
+        Assert.Equal(3, await text.ExecuteAsync(["add", ..urls], App));
+        Assert.Contains("added #11  https://a.test/1.zip", text.Out.ToString());
+        Assert.Contains("https://a.test/2.zip", text.Err.ToString());
+        Assert.Contains("not attempted", text.Err.ToString());
+    }
 }
