@@ -56,7 +56,7 @@ internal static class Program
             if (args.Contains(Core.Platform.SystemRegistration.TrayArgument))
                 return 0;
             BrowserIntegration.AllowForeground();
-            AppChannel.SendAsync(AppEnvironment.PipeName, new ChannelMessage(Messages.Activate), TimeSpan.FromSeconds(3))
+            LinkLauncher.TryActivateAsync(message => AppChannel.SendAsync(AppEnvironment.PipeName, message, TimeSpan.FromSeconds(3)))
                 .GetAwaiter().GetResult();
             return 0;
         }
@@ -119,7 +119,12 @@ internal static class Program
                 StartApp, TimeSpan.FromSeconds(30)).GetAwaiter().GetResult();
             if (outcome == LinkOutcome.Done)
                 return 0;
-            MessageBox.Show(outcome == LinkOutcome.AppNotReachable ? Strings.ErrorAppNotStarted : Strings.ErrorNotificationExpired,
+            MessageBox.Show(outcome switch
+                {
+                    LinkOutcome.AppNotReachable => Strings.ErrorAppNotStarted,
+                    LinkOutcome.NoAnswer => Strings.ErrorAppNoAnswer,
+                    _ => Strings.ErrorNotificationExpired,
+                },
                 Strings.AppName, MessageBoxButton.OK, MessageBoxImage.Information);
             return 1;
         }

@@ -1,5 +1,6 @@
 using System.IO.Pipes;
 using Baton.Cli;
+using Baton.Core;
 using Baton.Core.Integration;
 
 namespace Baton.Tests;
@@ -92,6 +93,54 @@ public sealed class NoReplyTests
         await serving;
         Assert.False(reply.Ok);
         Assert.True(reply.Running);
+        Assert.Equal(0, launches);
+    }
+}
+
+/// <summary>
+/// <see cref="ChannelClient.SendAsync"/> throws <see cref="ChannelNoReplyException"/> (closed without an answer) and
+/// <see cref="AppElevatedException"/> (the pipe belongs to an elevated Baton) instead of returning null. Every caller must treat both:
+/// the second start of Baton, the notification buttons and the native host.
+/// </summary>
+public sealed class NoReplyEveryCallerTests
+{
+    [Fact]
+    public async Task SecondStart_WhenTheRunningInstanceClosesWithoutAnswering_DoesNotThrow()
+    {
+        await LinkLauncher.TryActivateAsync(_ => throw new ChannelNoReplyException("closed"));
+        await LinkLauncher.TryActivateAsync(_ => throw new AppElevatedException("elevated"));
+    }
+
+    [Theory]
+    [InlineData(NotificationAction.DuplicateDownload)]
+    [InlineData(NotificationAction.ClipboardDownload)]
+    public async Task ANotificationButton_WhenTheAppTakesItAndDoesNotAnswer_IsNoAnswer_NotAnException_AndNotSentAgain(NotificationAction action)
+    {
+        var sent = 0;
+        var starts = 0;
+        var outcome = await LinkLauncher.ForwardAsync(action, "baton:x", _ => { sent++; throw new ChannelNoReplyException("closed"); },
+            () => { starts++; return true; }, TimeSpan.FromSeconds(1));
+        Assert.Equal(LinkOutcome.NoAnswer, outcome);
+        Assert.Equal((1, 0), (sent, starts));
+    }
+
+    [Fact]
+    public async Task ANotificationButton_AgainstAnElevatedApp_IsNoAnswer()
+    {
+        var outcome = await LinkLauncher.ForwardAsync(NotificationAction.DuplicateDownload, "baton:x", _ => throw new AppElevatedException("elevated"),
+            () => true, TimeSpan.FromSeconds(1));
+        Assert.Equal(LinkOutcome.NoAnswer, outcome);
+    }
+
+    [Fact]
+    public async Task NativeHost_AgainstAnElevatedApp_SaysSo_AndDoesNotLaunchOrThrow()
+    {
+        var launches = 0;
+        var reply = await NativeHost.ForwardAsync(new ChannelMessage(Messages.Add, Origin: Origins.Browser), "Baton.test.elevated", () => { launches++; return true; },
+            TimeSpan.FromSeconds(1), send: (_, _) => throw new AppElevatedException("elevated"));
+        Assert.False(reply.Ok);
+        Assert.True(reply.Running);
+        Assert.Equal(Baton.Core.Resources.Strings.ErrorAppElevated, reply.Error);
         Assert.Equal(0, launches);
     }
 }

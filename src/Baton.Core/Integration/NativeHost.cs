@@ -62,12 +62,19 @@ public static class NativeHost
     }
 
     public static async Task<ChannelReply> ForwardAsync(ChannelMessage message, string pipeName, Func<bool> launchApp, TimeSpan startupTimeout,
-        string? appVersion = null, string? extensionVersion = null, Action? useAppLanguage = null)
+        string? appVersion = null, string? extensionVersion = null, Action? useAppLanguage = null,
+        Func<ChannelMessage, TimeSpan, Task<ChannelReply?>>? send = null)
     {
         ChannelReply? reply;
+        send ??= (m, wait) => AppChannel.SendAsync(pipeName, m, wait);
         try
         {
-            reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromMilliseconds(500));
+            reply = await send(message, TimeSpan.FromMilliseconds(500));
+        }
+        catch (AppElevatedException)
+        {
+            useAppLanguage?.Invoke();
+            return new ChannelReply(false, Running: true, Error: Strings.ErrorAppElevated);
         }
         catch (ChannelNoReplyException)
         {
@@ -108,7 +115,12 @@ public static class NativeHost
         {
             try
             {
-                reply = await AppChannel.SendAsync(pipeName, message, TimeSpan.FromSeconds(1));
+                reply = await send(message, TimeSpan.FromSeconds(1));
+            }
+            catch (AppElevatedException)
+            {
+                useAppLanguage?.Invoke();
+                return new ChannelReply(false, Running: true, Error: Strings.ErrorAppElevated);
             }
             catch (ChannelNoReplyException)
             {

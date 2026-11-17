@@ -1221,6 +1221,7 @@ S = {
  "ErrorPacFunction": ("The PAC file has no FindProxyForURL function.", "Il file PAC non contiene la funzione FindProxyForURL."),
  "ErrorProjectGone": ("The project no longer exists.", "Il progetto non esiste più."),
  "ErrorAppNoAnswer": ("Baton did not answer in time.", "Baton non ha risposto in tempo."),
+ "ErrorAppElevated": ("Baton is running as administrator: start it normally.", "Baton è avviato come amministratore: avvialo normalmente."),
  "ErrorAppBusy": ("Baton is busy; try again in a moment.", "Baton è occupato; riprova tra un momento."),
  "ErrorAppNotStarted": ("Baton could not be started.", "Impossibile avviare Baton."),
  # The extension next to Baton.exe, updated with the program (1.3.3)
