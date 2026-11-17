@@ -34,6 +34,8 @@ public enum ReplyCode
     CannotRestart,
     UnknownType,
     ProbeFailed,
+    /// <summary>The name of the address cannot be resolved (or took too long), so it cannot be shown to be public.</summary>
+    Unresolvable,
     /// <summary>The app speaks a protocol older than the caller needs (set by the caller, never by the app).</summary>
     AppTooOld,
 }

@@ -32,6 +32,8 @@ Unknown JSON fields are rejected with 400.
 
 Only `http`, `https` and `ftp` (also `ftps`, `ftpes`). Addresses on this computer or a private network (loopback, RFC 1918, link-local, shared address space, unique-local IPv6) are refused unless Settings › Automation › "Allow addresses of the local network" is on (off by default).
 
+Downloads asked for through the API never use the logins saved in Baton. A name that does not resolve within 5 seconds is refused (HTTP 400, as it cannot be shown to be public).
+
 The check is not only made when the download is added: it is made again every time a connection is made, so a name whose DNS answer changes afterwards (DNS rebinding) or a redirect cannot lead to a private address.
 
 - **HTTP(S)**: every request and every redirect is checked, and the connection goes only to public addresses.

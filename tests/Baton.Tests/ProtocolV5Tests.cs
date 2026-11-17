@@ -145,6 +145,8 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
         Assert.Equal(ReplyCode.NoQueue, (await control.HandleAsync(new ChannelMessage(Messages.QueueStart, Origin: Origins.Cli, Queue: "nope"))).Code);
         Assert.Equal(ReplyCode.BadScheme, (await control.HandleAsync(Msg(Messages.Probe, Origins.Mcp, "gopher://example.com/x"))).Code);
         Assert.Equal(ReplyCode.PrivateNetwork, (await control.HandleAsync(Msg(Messages.Probe, Origins.Mcp, "http://192.168.1.1/x"))).Code);
+        // A7: a name that does not resolve cannot be shown to be public: refused for agents (the command line is not restricted).
+        Assert.Equal(ReplyCode.Unresolvable, (await control.HandleAsync(Msg(Messages.Probe, Origins.Mcp, "http://no-such-host.invalid/x"))).Code);
         Assert.Equal(ReplyCode.UnknownType, (await control.HandleAsync(new ChannelMessage("nonsense", Origin: Origins.Cli))).Code);
         Assert.Equal(ReplyCode.LevelTooLow, control.Authorize(Msg(Messages.Pause, Origins.Api))!.Code);
         Assert.Equal(ReplyCode.AutomationOff, Handler(service).Authorize(Msg(Messages.List, Origins.Mcp))!.Code);

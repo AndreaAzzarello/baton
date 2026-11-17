@@ -231,13 +231,19 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
             return (context, Fail(ReplyCode.BadScheme, "Only http, https and ftp addresses can be downloaded."));
         if (service.Settings.AllowLocalNetworkForAgents)
             return (context, null);
-        if (await Net.UrlGuard.IsPrivateHostAsync(target.IdnHost, CancellationToken.None))
-            return (context, Fail(ReplyCode.PrivateNetwork, PrivateNetworkError));
+        switch (await Net.UrlGuard.ClassifyHostAsync(target.IdnHost, Net.UrlGuard.AgentResolveTimeout))
+        {
+            case Net.HostKind.Private:
+                return (context, Fail(ReplyCode.PrivateNetwork, PrivateNetworkError));
+            case Net.HostKind.Unresolvable:   // not shown to be public: refused, never guessed at (a name that only a proxy could resolve included)
+                return (context, Fail(ReplyCode.Unresolvable, UnresolvableError));
+        }
         return (context with { PublicOnly = true }, null);
     }
 
     /// <summary>Refusal texts the local API turns into status codes.</summary>
     public const string PrivateNetworkError = "This address is on this computer or a private network; turn on \"Allow addresses of the local network\" in the settings to allow it.";
+    public const string UnresolvableError = "The name of this address could not be resolved in time, so it cannot be shown to be public.";
     public const string NoDownloadError = "No download with this number.";
     public const string NoQueueError = "No queue with this name.";
 

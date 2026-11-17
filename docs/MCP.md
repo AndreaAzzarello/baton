@@ -60,7 +60,8 @@ length) and are only ever the value of a field.
 
 Addresses must be http, https or ftp, and never on this computer or a private network unless "Allow addresses of the local
 network" is on; the download itself is checked again at every connection and redirect. The address in a result is reduced to
-scheme, host and file name.
+scheme, host and file name. Downloads an agent asks for never use the logins you saved in Baton, and a name that does not
+resolve within 5 seconds is refused (`unresolvable`): it cannot be shown to be public.
 
 ## Fixed limits
 
@@ -75,7 +76,7 @@ These do not depend on the level and are not settings:
 ## Errors
 
 A failed call returns `isError` with `{"error":{"code","message"}}`. Codes: `automationOff`, `levelTooLow`, `notAllowed`,
-`tooManyRequests`, `noDownload`, `noQueue`, `noCategory`, `privateNetwork`, `badScheme`, `invalid`, `invalidArguments`, `timeout`,
+`tooManyRequests`, `noDownload`, `noQueue`, `noCategory`, `privateNetwork`, `unresolvable`, `badScheme`, `invalid`, `invalidArguments`, `timeout`,
 `appUnavailable`, `appTooOld`, `unknownTool`, `failed`.
 
 - `timeout`: Baton is busy; a change may have been made, so check with `list_downloads` before trying again.

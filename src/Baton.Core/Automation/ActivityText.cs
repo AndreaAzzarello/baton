@@ -87,6 +87,7 @@ public static class ActivityText
         ReplyCode.NoFile => "noFile",
         ReplyCode.CliOnly => "cliOnly",
         ReplyCode.BadScheme => "badScheme",
+        ReplyCode.Unresolvable => "unresolvable",
         ReplyCode.FolderRefused => "folderRefused",
         ReplyCode.NoCategory => "noCategory",
         ReplyCode.UnknownType => "unknownType",

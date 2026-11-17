@@ -5,6 +5,9 @@ using Baton.Core.Resources;
 
 namespace Baton.Core.Net;
 
+/// <summary>Where an address leads, as far as DNS can tell.</summary>
+public enum HostKind { Public, Private, Unresolvable }
+
 /// <summary>
 /// Limits the requests the app makes on behalf of a web page's video (manifests, playlists, segments, subtitles):
 /// only http and https, and never this computer, the local network or link-local addresses unless the page itself is
@@ -54,6 +57,33 @@ public sealed class UrlGuard
         await CheckAsync(request.RequestUri!, ct);
         if (!AllowsPrivate)
             request.Options.Set(PublicOnly, true);
+    }
+
+    /// <summary>How long an agent's address may take to resolve: a name that does not answer in time is refused, not waited for.</summary>
+    public static readonly TimeSpan AgentResolveTimeout = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// Whether a host is private, public or cannot be told: a name that does not resolve (or not in <paramref name="timeout"/>)
+    /// is neither, so a caller that must be sure it is public (an agent's request) refuses it.
+    /// </summary>
+    public static async Task<HostKind> ClassifyHostAsync(string host, TimeSpan timeout, CancellationToken ct = default)
+    {
+        var name = host.Trim('[', ']');
+        if (IPAddress.TryParse(name, out var literal))
+            return IsPrivate(literal) ? HostKind.Private : HostKind.Public;
+        if (name.Equals("localhost", StringComparison.OrdinalIgnoreCase) || name.EndsWith(".localhost", StringComparison.OrdinalIgnoreCase))
+            return HostKind.Private;
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        limit.CancelAfter(timeout);
+        try
+        {
+            var found = await Dns.GetHostAddressesAsync(name, limit.Token);
+            return found.Length == 0 ? HostKind.Unresolvable : found.Any(IsPrivate) ? HostKind.Private : HostKind.Public;
+        }
+        catch (Exception ex) when (ex is SocketException or OperationCanceledException && !ct.IsCancellationRequested)
+        {
+            return HostKind.Unresolvable;
+        }
     }
 
     /// <summary>A host name that is, or resolves to, this computer, a private or a link-local address.</summary>
