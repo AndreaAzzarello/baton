@@ -214,8 +214,11 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         if (parsed.Words.Count != 1 || !Urls.TryParseDownload(parsed.Words[0], out _))
             return Usage(parsed, "probe needs one download address.");
         var (reply, code) = await CallAsync(new ChannelMessage(Messages.Probe, Origin: Origins.Cli, Url: parsed.Words[0]));
+        // An app of protocol 4 (1.4.1) answers an unknown type with an error and no code; a reply that is Ok without a probe is as old.
+        if (reply is { Ok: true, Probe: null } || (reply is { Ok: false, Code: null } && reply.Protocol is null or < 5))
+            return TooOld(parsed, "probe");
         if (reply is null || !reply.Ok || reply.Probe is not { } probe)
-            return Failed(parsed, code, reply is { Ok: true } ? "Baton is older and does not know \"probe\"." : Why(reply));
+            return Failed(parsed, code, Why(reply));
         if (parsed.Json)
         {
             Json(new ProbeOutput(true, AgentText.Safe(probe)));
@@ -378,6 +381,17 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         else
             error.WriteLine($"batonctl: {problem}\nTry: batonctl --help");
         return ExitCodes.Usage;
+    }
+
+    /// <summary>The app is older than the command needs: the exit code is 1 and, with --json, the code is "appTooOld" (as in MCP).</summary>
+    private int TooOld(ParsedArgs parsed, string command)
+    {
+        var problem = $"This Baton is older than 1.4.2 and does not know \"{command}\": update it.";
+        if (parsed.Json)
+            Json(new CodedErrorOutput(false, problem, "appTooOld"));
+        else
+            error.WriteLine($"batonctl: {problem}");
+        return ExitCodes.Error;
     }
 
     private int Failed(ParsedArgs parsed, int code, string problem)

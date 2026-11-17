@@ -7,6 +7,9 @@ namespace Baton.Cli;
 // The shapes printed by --json. Every field is always there (null when empty), so scripts can rely on them.
 internal sealed record ErrorOutput(bool Ok, string Error);
 
+/// <summary>An error with a stable code, for the cases a script can act on ("appTooOld"); other errors keep <see cref="ErrorOutput"/>.</summary>
+internal sealed record CodedErrorOutput(bool Ok, string Error, string Code);
+
 internal sealed record VersionOutput(string Cli, string? App, bool Running);
 
 internal sealed record AddResult(string Url, string Status, long? Id, DuplicateInfo? Duplicate, string? Error);
@@ -23,6 +26,7 @@ internal sealed record DownloadOutput(bool Ok, DownloadInfo? Download, long? Id)
 }
 
 [JsonSerializable(typeof(ErrorOutput))]
+[JsonSerializable(typeof(CodedErrorOutput))]
 [JsonSerializable(typeof(VersionOutput))]
 [JsonSerializable(typeof(AddOutput))]
 [JsonSerializable(typeof(ListOutput))]

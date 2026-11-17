@@ -196,6 +196,24 @@ public sealed class CliTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Probe_AgainstAnAppOfProtocol4_IsAppTooOld_WithoutRetrying_A20()
+    {
+        // 1.4.1 answers a type it does not know with an error, protocol 4 and no code.
+        ChannelReply Old(ChannelMessage m) => new(false, Protocol: 4, Error: "Unknown message type.");
+        var text = new Run();
+        Assert.Equal(1, await text.ExecuteAsync(["probe", "https://a.test/f.zip"], Old));
+        Assert.Contains("older than 1.4.2", text.Err.ToString());
+        Assert.Single(text.Sent);
+        var json = new Run();
+        Assert.Equal(1, await json.ExecuteAsync(["probe", "https://a.test/f.zip", "--json"], Old));
+        using var doc = JsonDocument.Parse(json.Out.ToString());
+        Assert.False(doc.RootElement.GetProperty("ok").GetBoolean());
+        Assert.Equal("appTooOld", doc.RootElement.GetProperty("code").GetString());
+        // A current app that refuses (a private address, say) is not "too old": its own error is shown.
+        Assert.Equal(1, await new Run().ExecuteAsync(["probe", "https://a.test/f.zip"], _ => new ChannelReply(false, Protocol: 5, Code: ReplyCode.PrivateNetwork, Error: "private")));
+    }
+
+    [Fact]
     public async Task DuplicateMessage_WithACodeFromANewerBaton_ShowsTheCodeAsItIs()
     {
         var run = new Run();
