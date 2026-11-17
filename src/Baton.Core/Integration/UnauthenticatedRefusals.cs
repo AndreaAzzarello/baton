@@ -3,11 +3,11 @@
 namespace Baton.Core.Integration;
 
 /// <summary>
-/// Refusals of API requests that did not show the token (wrong host, a web page, no token, a wrong one) can come in thousands.
+/// Refusals (of API requests that did not show the token (wrong host, a web page, no token, a wrong one) or of an MCP client above its level) can come in thousands.
 /// The first of each reason in a minute is written at once; the others are counted and written as one line ("×N") when the
 /// minute is over (at the next refusal of that reason, or when the API stops), so a loop cannot fill the activity log.
 /// </summary>
-public sealed class UnauthenticatedRefusals(AutomationLog log, Func<DateTime> clock)
+public sealed class UnauthenticatedRefusals(AutomationLog log, Func<DateTime> clock, string origin = AutomationLog.Api)
 {
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
 
@@ -48,9 +48,9 @@ public sealed class UnauthenticatedRefusals(AutomationLog log, Func<DateTime> cl
             }
         }
         if (summaryDetail is not null)
-            log.Record(AutomationLog.Api, summaryAction, summaryOutcome, summaryDetail);
+            log.Record(origin, summaryAction, summaryOutcome, summaryDetail);
         if (writeNow)
-            log.Record(AutomationLog.Api, action, outcome, detail);
+            log.Record(origin, action, outcome, detail);
     }
 
     /// <summary>Writes the counts still waiting (the API is stopping).</summary>
@@ -67,7 +67,7 @@ public sealed class UnauthenticatedRefusals(AutomationLog log, Func<DateTime> cl
             }
         }
         foreach (var (action, outcome, detail) in pending)
-            log.Record(AutomationLog.Api, action, outcome, detail);
+            log.Record(origin, action, outcome, detail);
     }
 
     private static string Summary(string reason, int count) => ActivityText.Reason(reason, "×" + count.ToString(System.Globalization.CultureInfo.InvariantCulture));

@@ -342,6 +342,45 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
         Assert.Null(control.Authorize(list));                                    // a minute later the window has moved on
     }
 
+    // ------------------------------------------------------------------ the activity log cannot be flooded by MCP
+
+    [Fact]
+    public async Task McpRefusalsOfPolicy_AreCountedInOneLinePerMinute_NotWrittenOneByOne()
+    {
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        var now = new DateTime(2026, 11, 17, 10, 0, 0, DateTimeKind.Utc);
+        var control = Handler(service, mcp: AutomationLevel.Off, clock: () => now);   // MCP off: every message is refused by policy
+
+        for (var i = 0; i < 5000; i++)
+            Assert.NotNull(control.Authorize(Msg(Messages.List, Origins.Mcp)));
+        Assert.Single(service.AutomationLog.Read("mcp"));                              // the first one, at once
+
+        now = now.AddSeconds(61);
+        control.Authorize(Msg(Messages.List, Origins.Mcp));                            // the minute is over: the count is written
+        var rows = service.AutomationLog.Read("mcp");
+        Assert.True(rows.Count <= 3, $"{rows.Count} lines");
+        Assert.Contains(rows, r => r.Detail.Contains("4999"));
+    }
+
+    [Fact]
+    public async Task McpReads_ThatWork_AreNotInTheActivityLog_ButWhatChangesSomethingIs()
+    {
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        var control = Handler(service, mcp: AutomationLevel.Extended);
+        for (var i = 0; i < 50; i++)
+        {
+            Assert.True((await control.HandleAsync(Msg(Messages.List, Origins.Mcp))).Ok);
+            Assert.True((await control.HandleAsync(Msg(Messages.Categories, Origins.Mcp))).Ok);
+        }
+        Assert.Empty(service.AutomationLog.Read("mcp"));
+        // a read that fails (an id that is not there) is still a line, and a flood of them is counted
+        for (var i = 0; i < 200; i++)
+            Assert.False((await control.HandleAsync(new ChannelMessage(Messages.Status, Origin: Origins.Mcp, Id: 999))).Ok);
+        Assert.Single(service.AutomationLog.Read("mcp"));
+    }
+
     // ------------------------------------------------------------------ probe
 
     [Fact]

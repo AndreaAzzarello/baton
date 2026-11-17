@@ -184,7 +184,7 @@ public sealed class McpTests : IAsyncLifetime
         var refused = Assert.Single(rows, r => r.Action == "mcp.probe");
         Assert.Equal("refused", refused.Outcome);
         Assert.StartsWith("!level", refused.Detail);
-        Assert.Contains(rows, r => r.Action == "mcp.list" && r.Outcome == "ok");
+        Assert.DoesNotContain(rows, r => r.Action == "mcp.list" && r.Outcome == "ok");   // a read that works is not written
         Assert.DoesNotContain(rows, r => r.Action.Contains("capabilities"));
 
         // 200 more calls than the budget allows: refused each time, but the log gets one line for them.

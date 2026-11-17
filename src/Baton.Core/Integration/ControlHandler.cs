@@ -29,28 +29,36 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         return null;
     }
 
-    private DateTime _lastRateLine = DateTime.MinValue;
+    // An agent can loop: refusals come in thousands. The first of each reason in a minute is written, the rest counted in one line.
+    private readonly UnauthenticatedRefusals _refusals = new(service.AutomationLog, clock ?? (() => DateTime.UtcNow), Automation.AutomationLog.Mcp);
 
-    /// <summary>An MCP refusal goes to the activity log (one line per minute for the rate limit, so a loop cannot fill the log).</summary>
+    /// <summary>Writes the counts of refusals still waiting (the app is closing).</summary>
+    public void FlushLog() => _refusals.Flush();
+
+    /// <summary>An MCP refusal goes to the activity log (the first of each reason in a minute, then one counted line).</summary>
     private ChannelReply Refused(ChannelMessage message, ChannelReply reply)
     {
-        if (message.Origin != Origins.Mcp || message.Type == Messages.Capabilities)
-            return reply;
-        if (reply.Code == ReplyCode.TooManyRequests)
-        {
-            var now = (clock ?? (() => DateTime.UtcNow))();
-            if (now - _lastRateLine < TimeSpan.FromMinutes(1))
-                return reply;
-            _lastRateLine = now;
-        }
-        LogMcp(message, "refused", Automation.ActivityText.Reason(Automation.ActivityText.ReasonOf(reply.Code)));
+        if (message.Origin == Origins.Mcp && message.Type != Messages.Capabilities)
+            NoteMcpRefusal(message, reply);
         return reply;
     }
 
+    private void NoteMcpRefusal(ChannelMessage message, ChannelReply reply)
+    {
+        var key = Automation.ActivityText.ReasonOf(reply.Code);
+        var reason = Automation.ActivityText.Reason(key);
+        var what = What(message);
+        _refusals.Note(key, Automation.ActivityText.McpAction(message.Type), "refused",
+            reason.Length > 0 && what.Length > 0 ? reason + " " + what : reason.Length > 0 ? reason : what);
+    }
+
+    private static string What(ChannelMessage message) =>
+        message.Download is { } d ? Automation.AutomationLog.Clean(d.Url) : message.Url is { } u ? Automation.AutomationLog.Clean(u)
+            : message.Id is { } id ? "#" + id : message.Queue ?? "";
+
     private void LogMcp(ChannelMessage message, string outcome, string reason)
     {
-        var what = message.Download is { } d ? Automation.AutomationLog.Clean(d.Url) : message.Url is { } u ? Automation.AutomationLog.Clean(u)
-            : message.Id is { } id ? "#" + id : message.Queue ?? "";
+        var what = What(message);
         service.AutomationLog.Record(Automation.AutomationLog.Mcp, Automation.ActivityText.McpAction(message.Type), outcome,
             reason.Length > 0 && what.Length > 0 ? reason + " " + what : reason.Length > 0 ? reason : what, message.Id);
     }
@@ -81,11 +89,11 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         if (message.Origin == Origins.Mcp && message.Type != Messages.Capabilities)
         {
             if (!reply.Ok)
-                LogMcp(message, "refused", Automation.ActivityText.Reason(Automation.ActivityText.ReasonOf(reply.Code)));
+                NoteMcpRefusal(message, reply);
             else if (reply.Result == "duplicate")
                 LogMcp(message, "skipped", Automation.ActivityText.Reason("duplicate"));
-            else
-                LogMcp(message, "ok", "");
+            else if (message.Type is not (Messages.List or Messages.Status or Messages.Version or Messages.Categories))
+                LogMcp(message, "ok", "");   // a read that worked is not written (it would drown the rest); what changes something is
         }
         return reply;
     }

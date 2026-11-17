@@ -46,6 +46,11 @@ Where Baton is heading. There are no dates: each item ships when it is ready, te
 - **Refinements** after the 1.4.2 review: a wider window gallery (every settings tab, minimum widths, error states), text that is cut
   in a few windows, a check that the generated texts match their sources, uniform terminology, small command-line fixes, and
   network errors shown in the language of the interface.
+- Left over from the 1.4.2 review: window gallery and cut texts (C2, C3), checks on the generated texts (C6), terminology (C7),
+  small command-line fixes (B11), network errors in the interface language (C8), the `PublicOnly` flag kept in its own column (A27),
+  a confirmation in the interface for `open` from the command line (A23), the rule "Rename" for downloads from the browser (it does not
+  apply when the browser already gives the name, while the preview shows it), the trial scripts (`*-trial.ps1`) that call `ui.ps1`
+  without `-ProcessId`, the project guard blocking a read-only `reg query` of the Run key, and the "What" column of the activity log cut.
 
 ### 1.5 — "AI, optional and privacy-first"
 
@@ -80,7 +85,7 @@ Dove va Baton, senza date: ogni punto esce quando è pronto, provato e firmato. 
 - **Fatto — 1.4.0**: riga di comando (`batonctl`), rilevamento dei duplicati, monitor degli appunti, cartelle «alla IDM».
 - **Fatto — 1.4.1**: API locale, regole automatiche e registro delle attività.
 - **Fatto — 1.4.2**: server MCP (`batonctl mcp`) perché gli agenti AI (Claude Code, Claude Desktop…) possano comandare Baton.
-- **Planned — 1.4.3**: rifiniture dopo la revisione della 1.4.2 (galleria delle finestre più ampia, testi tagliati, controllo dei testi generati, terminologia, piccole correzioni della riga di comando, errori di rete nella lingua dell'interfaccia).
+- **Planned — 1.4.3**: rifiniture dopo la revisione della 1.4.2 (galleria delle finestre più ampia, testi tagliati, controllo dei testi generati, terminologia, piccole correzioni della riga di comando, errori di rete nella lingua dell'interfaccia; inoltre C2, C3, C6, C7, B11, C8, A27, A23 (conferma in interfaccia per `open` dalla riga di comando), la rinomina delle regole per i download del browser (non vale se il browser dà già il nome, ma l'anteprima la mostra), gli script `*-trial.ps1` da aggiornare con `-ProcessId`, il falso positivo del guard su `reg query` in sola lettura e la colonna «Che cosa» troncata nel Registro attività).
 - **Planned — 1.5 "AI, opzionale e rispettosa della privacy"**: comandi in linguaggio naturale, filtri del grabber
   assistiti, nomi dei file intelligenti, spiegazione degli errori in parole semplici. Spenta all'inizio, con la tua chiave
   API; cookie e password mai inviati.

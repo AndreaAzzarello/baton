@@ -456,6 +456,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _api?.Dispose();
+        _control?.FlushLog();
         _channelCts.Cancel();
         _systemTimer.Stop();
         // Running grabber projects stop; what they found so far is saved.

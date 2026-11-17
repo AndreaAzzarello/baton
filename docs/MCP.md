@@ -74,7 +74,9 @@ These do not depend on the level and are not settings:
 - at most 50 items per call, at most 2 calls in flight, 120 requests per minute (every call counts; the rate limit is written to
   the activity log at most once a minute);
 - timeouts: 10 seconds per call, 30 seconds for `probe_url`, 60 seconds in total for `add_downloads`;
-- everything an agent does through MCP is in Settings › Automation › Activity log (origin `mcp`), refused calls included.
+- what an agent changes through MCP is in Settings › Automation › Activity log (origin `mcp`), refused calls included. A read that
+  worked (`list_downloads`, `get_download`) is not written, and refusals are written once per reason in a minute, then counted in
+  one line ("×N"), so a loop cannot empty the log.
 
 ## Errors
 

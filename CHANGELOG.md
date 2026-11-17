@@ -39,6 +39,13 @@ Terza tappa di «Automation»: il server MCP.
   nome. Un test fissa il comportamento.
 - Riga di comando e MCP, dopo le prove reali: con Baton avviato come amministratore `batonctl` dice «Baton è avviato come amministratore: avvialo normalmente oppure usa batonctl da un terminale amministratore» (esito 3, `"code":"appElevated"` con `--json`) e MCP risponde con l'errore `appElevated`, invece di una chiave di risorsa .NET o di «An error occurred.»; gli errori che arrivano da Baton (`noDownload`, `noCategory`, `noQueue`, ogni codice) sono scritti in italiano quando Windows lo è (`--json` resta in inglese); la finestra di fine coda di una coda avviata da un agente si intitola «Coda finita» invece di «… tra poco», perché non parte da sola. Il comportamento del collegamento del browser verso un Baton avviato come amministratore non è verificato.
 - Registro delle attività: l'utente e la password di un indirizzo non restavano tolti quando nel percorso c'era una «@» (per esempio `ftp://utente:segreto@host/dir/file@2x.png`); ora vengono tolti sempre (trovato dalla revisione finale).
+- Revisione finale: il registro delle attività non si riempie più con un ciclo di richieste MCP (i rifiuti sono una riga al minuto per
+  motivo, poi contati; le letture riuscite non sono scritte); il secondo avvio di Baton, i pulsanti delle notifiche e il collegamento del
+  browser non vanno più in errore quando l'app chiude la connessione senza rispondere o è avviata come amministratore; un codice di
+  rifiuto che questa versione non conosce (un Baton più nuovo con un `batonctl` più vecchio) è letto come rifiuto generico, non come
+  «connessione interrotta».
+- **Limite noto**: l'azione «Rinomina» di una regola non si applica ai download del browser quando il browser fornisce già il nome del
+  file (l'anteprima della regola, invece, mostra il nome rinominato). Da correggere nella 1.4.3 (comportamento o anteprima).
 - Righe di fine riga uniformi (LF) in tutto il repository, con controlli in `/fine-fase`.
 
 ## [1.4.1] — 2026-11-16
