@@ -40,6 +40,8 @@ public enum ReplyCode
     NotFinished,
     /// <summary>Too many downloads of the agents are still waiting: an agent may not add more until some finish.</summary>
     TooManyPending,
+    /// <summary>The app is running but cannot take the message now (every connection of its pipe is in use); try again in a moment.</summary>
+    Busy,
     /// <summary>The app speaks a protocol older than the caller needs (set by the caller, never by the app).</summary>
     AppTooOld,
 }

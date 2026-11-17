@@ -1219,6 +1219,7 @@ S = {
  "ErrorPacFunction": ("The PAC file has no FindProxyForURL function.", "Il file PAC non contiene la funzione FindProxyForURL."),
  "ErrorProjectGone": ("The project no longer exists.", "Il progetto non esiste più."),
  "ErrorAppNoAnswer": ("Baton did not answer in time.", "Baton non ha risposto in tempo."),
+ "ErrorAppBusy": ("Baton is busy; try again in a moment.", "Baton è occupato; riprova tra un momento."),
  "ErrorAppNotStarted": ("Baton could not be started.", "Impossibile avviare Baton."),
  # The extension next to Baton.exe, updated with the program (1.3.3)
  "ExtensionUpdateFailed": ("Baton {0} is installed, but the browser extension next to it was not updated: {1}\n\nThe extension you have keeps working. To update it, run the {0} installer or extract baton-extension-{0}.zip from the release page.", "Baton {0} è installato, ma l'estensione del browser accanto al programma non è stata aggiornata: {1}\n\nL'estensione che hai continua a funzionare. Per aggiornarla esegui l'installer della {0} o estrai baton-extension-{0}.zip dalla pagina della release."),

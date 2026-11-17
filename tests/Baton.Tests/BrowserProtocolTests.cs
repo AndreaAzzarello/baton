@@ -219,6 +219,39 @@ public sealed class BrowserProtocolTests : IAsyncLifetime
         return replies;
     }
 
+    // ------------------------------------------------------------------ a busy app (A16)
+
+    [Fact]
+    public async Task ARunningAppWithEveryConnectionInUse_AnswersBusy_AndIsNotStartedAgain_A16()
+    {
+        var release = new TaskCompletionSource();
+        using var cts = new CancellationTokenSource();
+        var server = AppChannel.ServeAsync(_pipe, async _ => { await release.Task; return new ChannelReply(true); }, cts.Token, maxConnections: 1);
+        // The one connection is taken by a message the app is still working on.
+        var held = AppChannel.SendAsync(_pipe, new ChannelMessage(Messages.Ping), TimeSpan.FromSeconds(5));
+        await Task.Delay(300);
+        try
+        {
+            var launched = 0;
+            var replies = await RunHostAsync([new ChannelMessage(Messages.Queues), new ChannelMessage(Messages.Hello),
+                new ChannelMessage(Messages.Add, new BrowserDownload("https://example.com/a.zip"))], () => { launched++; return true; });
+
+            Assert.Equal(0, launched); // running, not closed: no second start, no waiting for the start-up time
+            Assert.True(replies[0].Ok && replies[0].Running == true);
+            Assert.True(replies[1].Ok && replies[1].Running == true && replies[1].AppVersion == "9.9.9");
+            Assert.False(replies[2].Ok);
+            Assert.Equal(ReplyCode.Busy, replies[2].Code);
+            Assert.True(replies[2].Running);
+        }
+        finally
+        {
+            release.SetResult();
+            await held;
+            await cts.CancelAsync();
+            try { await server; } catch (OperationCanceledException) { }
+        }
+    }
+
     // ------------------------------------------------------------------ forms (POST)
 
     [Fact]

@@ -77,6 +77,19 @@ public static class NativeHost
         }
         if (reply is not null)
             return reply;
+        // No connection in time, yet the pipe is there: the app is running and every connection is in use. It must not be started
+        // again (nothing would change, and the browser would wait for the start-up time), and it is not "closed" either.
+        if (PipeExists(pipeName))
+        {
+            if (message.Type == Messages.Ping)
+                return new ChannelReply(true, Running: true);
+            if (message.Type == Messages.Queues)
+                return new ChannelReply(true, Running: true, Queues: []);
+            if (message.Type == Messages.Hello)
+                return new ChannelReply(true, Running: true, Protocol: Messages.ProtocolVersion, AppVersion: appVersion, ExtensionVersion: extensionVersion);
+            useAppLanguage?.Invoke();
+            return new ChannelReply(false, Running: true, Protocol: Messages.ProtocolVersion, Code: ReplyCode.Busy, Error: Strings.ErrorAppBusy);
+        }
         // Questions from the popup and the connection check never start the app.
         if (message.Type == Messages.Ping)
             return new ChannelReply(true, Running: false);
@@ -108,6 +121,9 @@ public static class NativeHost
         useAppLanguage?.Invoke();
         return new ChannelReply(false, Running: false, Error: Strings.ErrorAppNoAnswer);
     }
+
+    /// <summary>True when the app's pipe exists (looking at the name connects to nothing and takes no instance).</summary>
+    public static bool PipeExists(string pipeName) => OperatingSystem.IsWindows() && File.Exists(@"\\.\pipe\" + pipeName);
 
     public static async Task<byte[]?> ReadMessageAsync(Stream input)
     {

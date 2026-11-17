@@ -351,6 +351,7 @@ Running downloads are stopped and their partial data deleted. Files can be resto
   <data name="EndActionSleep" xml:space="preserve"><value>Sleep</value></data>
   <data name="ErrorAllConnectionsRefused" xml:space="preserve"><value>The server refused every connection.</value></data>
   <data name="ErrorApiPort" xml:space="preserve"><value>The API port must be between 1024 and 65535.</value></data>
+  <data name="ErrorAppBusy" xml:space="preserve"><value>Baton is busy; try again in a moment.</value></data>
   <data name="ErrorAppNoAnswer" xml:space="preserve"><value>Baton did not answer in time.</value></data>
   <data name="ErrorAppNotStarted" xml:space="preserve"><value>Baton could not be started.</value></data>
   <data name="ErrorCategoryDuplicate" xml:space="preserve"><value>A category called "{0}" already exists.</value></data>

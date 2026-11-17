@@ -351,6 +351,7 @@ I download in corso vengono fermati e i dati parziali eliminati. Dal Cestino i f
   <data name="EndActionSleep" xml:space="preserve"><value>Sospendi</value></data>
   <data name="ErrorAllConnectionsRefused" xml:space="preserve"><value>Il server ha rifiutato tutte le connessioni.</value></data>
   <data name="ErrorApiPort" xml:space="preserve"><value>La porta dell'API deve essere tra 1024 e 65535.</value></data>
+  <data name="ErrorAppBusy" xml:space="preserve"><value>Baton è occupato; riprova tra un momento.</value></data>
   <data name="ErrorAppNoAnswer" xml:space="preserve"><value>Baton non ha risposto in tempo.</value></data>
   <data name="ErrorAppNotStarted" xml:space="preserve"><value>Impossibile avviare Baton.</value></data>
   <data name="ErrorCategoryDuplicate" xml:space="preserve"><value>Esiste già una categoria chiamata "{0}".</value></data>

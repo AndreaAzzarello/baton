@@ -31,6 +31,7 @@ Terza tappa di «Automation»: il server MCP.
   nascosti (controllo, bidirezionali, a larghezza zero, selettori di variante, tag); gli stessi caratteri non entrano più nei nomi dei
   file scaricati. Gli agenti non possono lasciare più di 1000 download in attesa. L'API ha un campo nuovo `displayUrl` (schema, host e
   nome del file, senza utente, password, query e frammento) accanto a `url`, che resta com'era: gli script esistenti non cambiano.
+  Se Baton è aperto ma ha tutte le connessioni occupate, l'estensione riceve «Baton è occupato» (non lo riavvia né aspetta l'avvio).
   Le richieste senza il token non riempiono più il registro delle attività: sono contate in una riga al minuto.
 - Righe di fine riga uniformi (LF) in tutto il repository, con controlli in `/fine-fase`.
 
