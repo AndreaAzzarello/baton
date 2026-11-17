@@ -31,8 +31,15 @@ public static class FileNames
     /// Characters that change how a name is displayed without being visible: bidirectional overrides and isolates
     /// ("invoice‮fdp.exe" shows as "invoiceexe.pdf"), zero-width characters, marks and the byte order mark.
     /// </summary>
-    public static bool IsInvisible(char c) => c is (>= '‪' and <= '‮') or (>= '⁦' and <= '⁩') or (>= '​' and <= '‏')
-        or '﻿' or '؜' or '⁠';
+    public static bool IsInvisible(char c) => c is (>= '\u202a' and <= '\u202e') or (>= '\u2066' and <= '\u2069') or (>= '\u200b' and <= '\u200f')
+        or '\ufeff' or '\u061c' or '\u2060'
+        // Soft hyphen, combining grapheme joiner, Hangul and Khmer fillers, Mongolian and ordinary variation selectors,
+        // invisible math operators and the deprecated format characters.
+        or '\u00ad' or '\u034f' or '\u115f' or '\u1160' or '\u17b4' or '\u17b5' or (>= '\u180b' and <= '\u180f') or (>= '\u2061' and <= '\u2064')
+        or (>= '\u206a' and <= '\u206f') or '\u3164' or (>= '\ufe00' and <= '\ufe0f') or '\uffa0';
+
+    /// <summary>Plane 14: tag characters (U+E0000-E007F, used to hide text) and the variation selectors supplement.</summary>
+    public static bool IsInvisible(System.Text.Rune rune) => rune.Value is >= 0xE0000 and <= 0xE01EF || (rune.IsBmp && IsInvisible((char)rune.Value));
 
     /// <summary>
     /// One file or folder name made valid and safe for Windows: reserved and control characters replaced, invisible and
@@ -42,10 +49,16 @@ public static class FileNames
     public static string CleanSegment(string name)
     {
         var builder = new System.Text.StringBuilder(name.Length);
-        foreach (var c in name)
+        foreach (var rune in name.EnumerateRunes())
         {
-            if (IsInvisible(c))
+            if (IsInvisible(rune))
                 continue;
+            if (!rune.IsBmp)
+            {
+                builder.Append(rune.ToString());
+                continue;
+            }
+            var c = (char)rune.Value;
             builder.Append(c < 32 || c is '<' or '>' or ':' or '"' or '/' or '\\' or '|' or '?' or '*' or '\u007f' ? '_' : c);
         }
         var cleaned = builder.ToString().TrimEnd('.', ' ').TrimStart(' ');

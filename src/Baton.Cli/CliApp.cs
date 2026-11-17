@@ -162,9 +162,9 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
             if (reply is null)
                 return Failed(parsed, code, "Baton could not be reached.");
             results.Add(!reply.Ok
-                ? new AddResult(url, "error", null, null, reply.Error)
+                ? new AddResult(url, "error", null, null, AgentText.Clean(reply.Error, AgentText.MaxMessage))
                 : reply.Result == "duplicate"
-                    ? new AddResult(url, "duplicate", reply.Duplicate?.ExistingId, reply.Duplicate, null)
+                    ? new AddResult(url, "duplicate", reply.Duplicate?.ExistingId, reply.Duplicate is null ? null : AgentText.Safe(reply.Duplicate), null)
                     : new AddResult(url, "added", reply.Id, null, null));
         }
         var exit = results.Any(r => r.Status == "error") ? ExitCodes.Error : results.Any(r => r.Status == "duplicate") ? ExitCodes.Duplicate : ExitCodes.Ok;
@@ -195,7 +195,7 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         var (reply, code) = await CallAsync(new ChannelMessage(Messages.List, Origin: Origins.Cli));
         if (reply is null || !reply.Ok)
             return Failed(parsed, code, Why(reply));
-        var downloads = (reply.Downloads ?? []).Where(d => status is null || d.Status == status).ToList();
+        var downloads = (reply.Downloads ?? []).Select(AgentText.Safe).Where(d => status is null || d.Status == status).ToList();
         if (parsed.Json)
         {
             Json(new ListOutput(true, downloads));
@@ -218,10 +218,10 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
             return Failed(parsed, code, reply is { Ok: true } ? "Baton is older and does not know \"probe\"." : Why(reply));
         if (parsed.Json)
         {
-            Json(new ProbeOutput(true, probe));
+            Json(new ProbeOutput(true, AgentText.Safe(probe)));
             return ExitCodes.Ok;
         }
-        output.WriteLine(probe.Name);
+        output.WriteLine(AgentText.Clean(probe.Name));
         output.WriteLine($"  type    {probe.ContentType ?? "-"}");
         output.WriteLine($"  size    {(probe.Size is { } size ? size.ToString(CultureInfo.InvariantCulture) + " bytes" : "unknown")}");
         output.WriteLine($"  ranges  {(probe.Resumable ? "yes (can resume)" : "no")}");
@@ -238,10 +238,10 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
             return Failed(parsed, code, Why(reply));
         if (parsed.Json)
         {
-            Json(new DownloadOutput(true, reply.Download, reply.Id ?? reply.Download?.Id));
+            Json(new DownloadOutput(true, Safe(reply.Download), reply.Id ?? reply.Download?.Id));
             return ExitCodes.Ok;
         }
-        if (withProgress && reply.Download is { } d)
+        if (withProgress && Safe(reply.Download) is { } d)
         {
             output.WriteLine($"#{d.Id}  {d.Name}");
             output.WriteLine($"  status   {d.Status}{(d.Error is null ? "" : " - " + d.Error)}");
@@ -269,7 +269,7 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         if (reply is null || !reply.Ok)
             return Failed(parsed, code, Why(reply));
         if (parsed.Json)
-            Json(new DownloadOutput(true, reply.Download, reply.Id) { Count = reply.Count });
+            Json(new DownloadOutput(true, Safe(reply.Download), reply.Id) { Count = reply.Count });
         else
             output.WriteLine(reply.Count is { } count ? $"{count} download(s)" : "done");
         return ExitCodes.Ok;
@@ -368,8 +368,8 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
     /// <summary>Why a reply is not a success. An app older than 1.4 answers the new commands with an error and no protocol number.</summary>
     private static string Why(ChannelReply? reply) =>
         reply?.Error is not { } text ? "Baton could not be reached."
-        : reply.Protocol is null ? text + " (this Baton is older than 1.4 and does not know the command line: update it)"
-        : text;
+        : reply.Protocol is null ? AgentText.Clean(text, AgentText.MaxMessage) + " (this Baton is older than 1.4 and does not know the command line: update it)"
+        : AgentText.Clean(text, AgentText.MaxMessage);
 
     private int Usage(ParsedArgs parsed, string problem)
     {
@@ -388,6 +388,9 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
             error.WriteLine($"batonctl: {problem}");
         return code == ExitCodes.Ok ? ExitCodes.Error : code;
     }
+
+    /// <summary>A download with the texts a server or a user chose cleaned (a terminal and a script must not get control characters).</summary>
+    private static DownloadInfo? Safe(DownloadInfo? d) => d is null ? null : AgentText.Safe(d);
 
     private void Json<T>(T value) where T : class => output.WriteLine(JsonSerializer.Serialize(value, typeof(T), CliJson.Default));
 }

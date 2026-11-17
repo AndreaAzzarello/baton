@@ -15,6 +15,7 @@ public static class AgentText
     public const int MaxName = 255;
     public const int MaxUrl = 2048;
     public const int MaxMessage = 500;
+    public const int MaxPath = 4096;
     public const string Ellipsis = "…";
 
     /// <summary>The text without hidden or reordering characters, at most <paramref name="max"/> UTF-16 units (a cut ends with "…").</summary>
@@ -88,6 +89,25 @@ public static class AgentText
                 return v == 0xFFFD ? null : rune;
         }
     }
+
+    /// <summary>
+    /// A download as the API and the command line hand it out: every text that came from a server or a user (name, error, queue,
+    /// category, folder, path) cleaned. The address is left as it is (the API keeps <c>url</c> for scripts; see <see cref="Address"/>).
+    /// </summary>
+    public static DownloadInfo Safe(DownloadInfo d) => d with
+    {
+        Name = Clean(d.Name),
+        Folder = Clean(d.Folder, MaxPath),
+        Path = d.Path is null ? null : Clean(d.Path, MaxPath),
+        Status = Clean(d.Status, 40),
+        Error = d.Error is null ? null : Clean(d.Error, MaxMessage),
+        Queue = d.Queue is null ? null : Clean(d.Queue),
+        Category = d.Category is null ? null : Clean(d.Category),
+    };
+
+    public static ProbeInfo Safe(ProbeInfo p) => p with { Name = Clean(p.Name), ContentType = p.ContentType is null ? null : Clean(p.ContentType, 200) };
+
+    public static DuplicateInfo Safe(DuplicateInfo d) => d with { ExistingPath = Clean(d.ExistingPath, MaxPath) };
 
     /// <summary>An address reduced to what an agent needs: scheme, host and the name of the file ("https://example.com/…/file.zip").</summary>
     public static string Address(string? url)

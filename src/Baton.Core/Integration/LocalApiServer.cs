@@ -253,14 +253,14 @@ public sealed class LocalApiServer : IDisposable
         if (message.Type == Messages.Add)
         {
             if (reply.Result == "duplicate")
-                return (409, new { result = "duplicate", duplicate = reply.Duplicate }, ActivityText.Reason("duplicate", Automation.AutomationLog.Clean(message.Download!.Url)));
+                return (409, new { result = "duplicate", duplicate = reply.Duplicate is null ? null : AgentText.Safe(reply.Duplicate) }, ActivityText.Reason("duplicate", Automation.AutomationLog.Clean(message.Download!.Url)));
             return (201, new { id = reply.Id, result = "added" }, detail);
         }
         return message.Type switch
         {
             Messages.Version => (200, new { version = reply.AppVersion, protocol = Messages.ProtocolVersion }, null),
-            Messages.List => (200, message.Limit is null && message.After is null ? new { downloads = reply.Downloads } : new { downloads = reply.Downloads, nextCursor = reply.NextCursor }, null),
-            Messages.Status or Messages.Pause or Messages.Resume or Messages.Retry => (200, (object?)reply.Download ?? new { }, detail),
+            Messages.List => (200, message.Limit is null && message.After is null ? new { downloads = reply.Downloads?.Select(AgentText.Safe).ToList() } : new { downloads = reply.Downloads?.Select(AgentText.Safe).ToList(), nextCursor = reply.NextCursor }, null),
+            Messages.Status or Messages.Pause or Messages.Resume or Messages.Retry => (200, (object?)(reply.Download is null ? null : AgentText.Safe(reply.Download)) ?? new { }, detail),
             Messages.Remove => (200, new { removed = reply.Id }, detail),
             _ => (200, new { ok = true }, detail),
         };
