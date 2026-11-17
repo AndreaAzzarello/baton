@@ -69,7 +69,10 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         switch (parsed.Command)
         {
             case "help":
-                output.WriteLine(Help);
+                if (parsed.Json)
+                    Json(new HelpOutput(true, Help));
+                else
+                    output.WriteLine(Help);
                 return ExitCodes.Ok;
             case "version":
                 return await VersionAsync(parsed);

@@ -32,17 +32,15 @@ internal static class ArgParser
         var command = "";
         var words = new List<string>();
         var options = new Dictionary<string, string?>();
-        var json = false;
+        // Read first: an error found before --json is reached (an unknown option, say) must still be answered as JSON.
+        var json = args.Contains("--json");
         for (var i = 0; i < args.Length; i++)
         {
             var arg = args[i];
             if (arg is "--help" or "-h" or "-?")
                 return new ParsedArgs("help", [], options, json, null);
             if (arg == "--json")
-            {
-                json = true;
                 continue;
-            }
             if (arg.StartsWith("--", StringComparison.Ordinal) && arg.Length > 2)
             {
                 if (command.Length == 0)
