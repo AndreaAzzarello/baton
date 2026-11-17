@@ -10,6 +10,9 @@ Segui i passi in ordine; se uno fallisce, correggi e riparti da quel passo. Non 
 1. **Versione**: aggiorna `<Version>` in `src/Baton.App/Baton.App.csproj` e `version` in
    `extension/manifest.json`; `AppSettings.DefaultUserAgent` se cambia la versione minore.
 2. **Testi**: `python tools/make_resx.py src` e `python tools/make_locales.py extension` — nessuna chiave mancante o inutilizzata.
+3-bis. **Fine riga (bloccante)**: `git ls-files --eol | Select-String 'w/crlf'` deve essere vuoto. Se elenca file, riportali a LF
+   (`sed -i 's/\r$//' <file>`) e riparti dal passo 3: un XAML in CRLF cambia il BAML e quindi l'exe, che non sarebbe più
+   identico a quello della CI (lezione `baton-working-tree-crlf-exe-diverso-dalla-ci`).
 3. **Build e test**: `"C:\Program Files\dotnet\dotnet.exe" build Baton.slnx` con zero avvisi, poi
    `dotnet test Baton.slnx` **due volte** (include i test Node dell'estensione). Anche `node tools/build-extension.mjs`.
 4. **Revisione**: esegui `/code-review` sul diff della fase (rispetto all'ultimo commit di fase) e poi `/security-review`.

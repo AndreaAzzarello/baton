@@ -1,3 +1,14 @@
 # The same bytes on every checkout (CI runners use core.autocrlf=true): text files always LF, so a build of a commit
 # gives the same Baton.exe here and on GitHub Actions.
 * text=auto eol=lf
+
+# Binary files: never converted. (Without this, only git's heuristic decides, which is fragile on small files.)
+*.png  binary
+*.ico  binary
+*.gif  binary
+*.jpg  binary
+*.zip  binary
+*.exe  binary
+*.dll  binary
+*.db   binary
+# Files that must stay CRLF would go here (none today).

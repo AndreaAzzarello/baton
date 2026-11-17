@@ -16,7 +16,14 @@ function Block([string]$reason) {
   exit 2
 }
 
-try { $command = ([Console]::In.ReadToEnd() | ConvertFrom-Json).tool_input.command } catch { Block "richiesta dell'hook non leggibile, quindi non controllabile." }
+try { $hookInput = [Console]::In.ReadToEnd() | ConvertFrom-Json } catch { Block "richiesta dell'hook non leggibile, quindi non controllabile." }
+$command = $hookInput.tool_input.command
+
+# Edit/Write: architectural decisions live in the owner's vault, never in docs/adr/ (docs/agents/domain.md).
+$target = $hookInput.tool_input.file_path
+if ($target -and ($target -replace '\\', '/') -match '(?i)/docs/adr(/|$)') {
+  Block "gli ADR vanno in ClaudeVault\decisioni, non in docs/adr/ (vedi docs/agents/domain.md)."
+}
 if (-not $command) { exit 0 }
 
 # Commands that write to the registry (reg.exe, PowerShell cmdlets, .NET RegistryKey calls).

@@ -96,5 +96,30 @@ $okOther = $other.Code -eq 0 -and $other.Ms -lt 1500
 "{0} extension-check ignora ({1} ms) file C#" -f ($(if ($okOther) { "OK  " } else { "FAIL" })), $other.Ms
 if (-not ($okValid -and $okBad -and $okOther)) { $failures++ }
 
+# guard: ADR files go to the vault, not docs/adr/.
+foreach ($adr in @(@{ Path = "$root\docs\adr\0001-x.md"; Expect = 2 }, @{ Path = "$root\docs\API.md"; Expect = 0 })) {
+  $r = Invoke-Hook "guard.ps1" (@{ tool_name = "Write"; tool_input = @{ file_path = $adr.Path } } | ConvertTo-Json -Compress)
+  $ok = $r.Code -eq $adr.Expect
+  if (-not $ok) { $failures++ }
+  "{0} guard {1} Write {2}" -f ($(if ($ok) { "OK  " } else { "FAIL" })), ($(if ($adr.Expect -eq 2) { "blocca" } else { "passa " })), $adr.Path
+}
+
+# lf.ps1: CRLF text goes back to LF (BOM kept), a binary file and a file outside the project stay untouched.
+$tmp = Join-Path $root "zz-lf-test"
+New-Item -ItemType Directory -Force $tmp | Out-Null
+try {
+  $text = Join-Path $tmp "a.cs"; $png = Join-Path $tmp "a.png"
+  $outside = Join-Path $env:TEMP "zz-lf-outside.txt"
+  [IO.File]::WriteAllBytes($text, [byte[]](0xEF, 0xBB, 0xBF, 0x61, 0x0D, 0x0A, 0x62, 0x0D, 0x0A))
+  [IO.File]::WriteAllBytes($png, [byte[]](0x89, 0x50, 0x0D, 0x0A, 0x00, 0x0D, 0x0A))
+  [IO.File]::WriteAllBytes($outside, [byte[]](0x61, 0x0D, 0x0A))
+  foreach ($f in $text, $png, $outside) { Invoke-Hook "lf.ps1" (@{ tool_name = "Write"; tool_input = @{ file_path = $f } } | ConvertTo-Json -Compress) | Out-Null }
+  $okText = ([BitConverter]::ToString([IO.File]::ReadAllBytes($text))) -eq "EF-BB-BF-61-0A-62-0A"
+  $okPng = ([BitConverter]::ToString([IO.File]::ReadAllBytes($png))) -eq "89-50-0D-0A-00-0D-0A"
+  $okOutside = ([BitConverter]::ToString([IO.File]::ReadAllBytes($outside))) -eq "61-0D-0A"
+  "{0} lf.ps1 CRLF -> LF con BOM conservato; {1} binario intatto; {2} file fuori dal progetto intatto" -f ($(if ($okText) { "OK  " } else { "FAIL" })), ($(if ($okPng) { "OK" } else { "FAIL" })), ($(if ($okOutside) { "OK" } else { "FAIL" }))
+  if (-not ($okText -and $okPng -and $okOutside)) { $failures++ }
+} finally { Remove-Item $tmp -Recurse -Force; Remove-Item $outside -Force -ErrorAction SilentlyContinue }   # the test's own temporary files
+
 "`n$(if ($failures) { "$failures caso/i FALLITO/I" } else { 'tutti i casi superati' })"
 exit $failures

@@ -20,6 +20,14 @@ if ($apps.Count -or $site.Count) {
   $messages += "Processi di prova ancora aperti: $($list -join '; '). Chiudili con tools\trials\finish.ps1 -Apply (prima senza -Apply per vedere cosa farebbe)."
 }
 
+# --- CRLF in the working tree (the repository is LF only; a CRLF XAML changes the compiled BAML and so the exe)
+Push-Location $root
+$crlf = @(& git ls-files --eol 2>$null | Where-Object { $_ -match '\bw/crlf\b' } | ForEach-Object { ($_ -split "`t")[-1] })
+Pop-Location
+if ($crlf.Count) {
+  $messages += "File con fine riga CRLF nella copia di lavoro ($($crlf.Count)): $((($crlf | Select-Object -First 8) -join ', ')). Riportali a LF: sed -i 's/\r$//' <file>."
+}
+
 # --- incremental build, only when C#/XAML/project/resource files changed since the last good build
 $stamp = Join-Path $state "build.stamp"
 $last = if (Test-Path $stamp) { (Get-Item $stamp).LastWriteTimeUtc } else { [datetime]::MinValue }

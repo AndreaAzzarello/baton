@@ -53,7 +53,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|PowerShell",
+        "matcher": "Bash|PowerShell|Edit|Write",
         "hooks": [
           {
             "type": "command",
@@ -73,6 +73,16 @@
             "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/extension-check.ps1\"",
             "timeout": 30,
             "statusMessage": "Controllo dell'estensione…"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/lf.ps1\"",
+            "timeout": 10
           }
         ]
       }

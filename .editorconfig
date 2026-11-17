@@ -1,0 +1,14 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+# charset only where every tracked file of that type agrees today (no BOM): .cs, .xaml, .csproj and .ps1 are mixed, so unset.
+[*.{resx,md,mjs,js,json,py,yml,iss,props,slnx,xml,html,css,txt,svg}]
+charset = utf-8
+
+[*.{png,ico,gif,jpg,zip,exe,dll,db}]
+end_of_line = unset
+insert_final_newline = unset
+charset = unset
