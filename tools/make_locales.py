@@ -79,7 +79,7 @@ M = {
  "queueHint": ("The queues are those created in the app.", "Le code sono quelle create nell'app."),
  "siteTitle": ("On $1", "Su $1"),
  "siteRuleLabel": ("Downloads from this site", "Download da questo sito"),
- "siteRuleNormal": ("Follow the rules", "Segui le regole"),
+ "siteRuleNormal": ("Follow “When to intercept”", "Segui «Quando intercettare»"),
  "siteRuleAlways": ("Always intercept", "Intercetta sempre"),
  "siteRuleNever": ("Never intercept", "Non intercettare mai"),
  "siteButton": ("“Download this video” button", "Pulsante «Scarica questo video»"),

@@ -448,9 +448,11 @@ public sealed class McpTests : IAsyncLifetime
                 using var doc = JsonDocument.Parse(line);
                 Assert.Equal("2.0", doc.RootElement.GetProperty("jsonrpc").GetString());
             }
-            Assert.Contains("add_downloads", lines[1]);
-            Assert.DoesNotContain("pause_downloads", lines[1]); // level readAdd
-            Assert.Contains("Main", lines[2]);
+            // Responses may come out of order (two calls can be in flight): match them by id.
+            string ById(int id) => lines.Single(l => { using var d = JsonDocument.Parse(l); return d.RootElement.GetProperty("id").GetInt32() == id; });
+            Assert.Contains("add_downloads", ById(2));
+            Assert.DoesNotContain("pause_downloads", ById(2)); // level readAdd
+            Assert.Contains("Main", ById(3));
             Assert.Contains("[batonctl mcp]", await stderr);
             lock (seen)
             {

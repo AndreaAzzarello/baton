@@ -198,7 +198,7 @@
     "message": "Download da questo sito"
   },
   "siteRuleNormal": {
-    "message": "Segui le regole"
+    "message": "Segui «Quando intercettare»"
   },
   "siteRuleAlways": {
     "message": "Intercetta sempre"

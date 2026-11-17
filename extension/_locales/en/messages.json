@@ -198,7 +198,7 @@
     "message": "Downloads from this site"
   },
   "siteRuleNormal": {
-    "message": "Follow the rules"
+    "message": "Follow “When to intercept”"
   },
   "siteRuleAlways": {
     "message": "Always intercept"
