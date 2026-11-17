@@ -9,6 +9,7 @@ Le regole generali (piano, conferme, report finale) e il vault delle lezioni sta
 
 ## Finito quando
 `dotnet build Baton.slnx` e `dotnet test Baton.slnx` passano con zero avvisi; il test include i test Node dell'estensione, `HardCodedTextTests` e `WindowGalleryTests`. Nel report dichiara ciò che non hai provato: prove reali nei browser, installer, firma, Firefox/AMO. A fine fase usa la skill `fine-fase`.
+Prima di ogni commit: `dotnet build Baton.slnx --no-incremental` (la build incrementale nasconde gli avvisi CA1416).
 
 ## Vincoli permanenti
 - Usa solo codice originale, grafica, icone e nomi propri: niente materiale di altri prodotti.
