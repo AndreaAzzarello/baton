@@ -23,7 +23,7 @@ public partial class CountdownWindow : Window
         InitializeComponent();
         _remaining = (int)length.TotalSeconds;
         _actionText = ActionText(action);
-        Title = string.Format(CultureInfo.CurrentCulture, Strings.CountdownTitle, _actionText);
+        Title = TitleFor(_actionText, needsClick);
         Heading.Text = string.Format(CultureInfo.CurrentCulture, Strings.CountdownHeading, queueName);
         NowButton.Content = string.Format(CultureInfo.CurrentCulture, Strings.CountdownNow, _actionText);
         Progress.Maximum = _remaining;
@@ -45,6 +45,10 @@ public partial class CountdownWindow : Window
         };
         Closed += (_, _) => _timer.Stop();
     }
+
+    /// <summary>"{action} shortly" while a countdown runs; neutral when only a click does it (a queue an agent started: nothing is "shortly").</summary>
+    public static string TitleFor(string actionText, bool needsClick) =>
+        needsClick ? Strings.CountdownAgentTitle : string.Format(CultureInfo.CurrentCulture, Strings.CountdownTitle, actionText);
 
     /// <summary>True when the countdown reached zero or the user chose to go ahead now.</summary>
     public bool Confirmed => _confirmed;

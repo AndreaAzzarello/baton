@@ -345,6 +345,7 @@ public sealed class WindowGalleryTests : IDisposable
             yield return (new CategoriesWindow(new CategoriesViewModel(_dialogs, categories, folder)), "categories");
             yield return (new QueuesWindow(new QueuesViewModel(_dialogs, queues, () => DateTime.UtcNow, startupEnabled: false, () => { })), "queues");
             yield return (new CountdownWindow(EndAction.Shutdown, queues[0].DisplayName, TimeSpan.FromSeconds(60)), "countdown");
+            yield return (new CountdownWindow(EndAction.Shutdown, queues[0].DisplayName, TimeSpan.FromSeconds(60), needsClick: true), "countdown-agent");
             yield return (new SpeedLimitWindow(512), "speedlimit");
             yield return (new LoginWindow(new LoginRequest(1, new Uri("http://intranet.example.com/"), false, "Basic", "Company files", "report.pdf")), "login");
             yield return (new CertificateWindow(new CertificateQuestion("ftp.example.com", 990, "CN=ftp.example.com", "CN=Example Self-Signed",

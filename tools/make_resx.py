@@ -370,6 +370,7 @@ S = {
  "EndActionHibernate": ("Hibernate", "Iberna"),
  "EndActionShutdown": ("Shut down the PC", "Spegni il PC"),
  "CountdownTitle": ("{0} shortly", "{0} tra poco"),
+ "CountdownAgentTitle": ("Queue finished", "Coda finita"),
  "CountdownHeading": ("The queue “{0}” has finished", "La coda «{0}» ha finito"),
  "CountdownMessage": ("Planned action: {0} in {1} seconds. You can cancel it.", "Azione prevista: {0} tra {1} secondi. Puoi annullarla."),
  "CountdownAgentMessage": ("An AI agent started this queue, so Baton will not do this by itself. Planned action: {0}, only if you click the button.", "Questa coda è stata avviata da un agente IA, quindi Baton non lo farà da solo. Azione prevista: {0}, solo se premi il pulsante."),

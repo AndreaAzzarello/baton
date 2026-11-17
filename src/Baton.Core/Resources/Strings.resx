@@ -309,6 +309,7 @@ Running downloads are stopped and their partial data deleted. Files can be resto
   <data name="ConfirmRemove" xml:space="preserve"><value>Remove {0} downloads from the list? Files already downloaded stay on disk; partial data is deleted.</value></data>
   <data name="ConnectionTitle" xml:space="preserve"><value>Connections</value></data>
   <data name="CountdownAgentMessage" xml:space="preserve"><value>An AI agent started this queue, so Baton will not do this by itself. Planned action: {0}, only if you click the button.</value></data>
+  <data name="CountdownAgentTitle" xml:space="preserve"><value>Queue finished</value></data>
   <data name="CountdownAnnouncement" xml:space="preserve"><value>{0} seconds</value></data>
   <data name="CountdownCancel" xml:space="preserve"><value>_Cancel</value></data>
   <data name="CountdownHeading" xml:space="preserve"><value>The queue “{0}” has finished</value></data>
