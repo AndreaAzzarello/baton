@@ -44,9 +44,12 @@ public sealed class NetworkContext
     /// <paramref name="followRedirects"/> each redirect comes back to the caller, which checks where it leads (the grabber).
     /// </summary>
     public HttpClient CreateHttpClient(CookieContainer? cookies = null, NetworkCredential? ownLogin = null, Uri? ownLoginFor = null,
-        bool followRedirects = true)
+        bool followRedirects = true, bool useSavedLogins = true)
     {
-        ICredentials credentials = ownLogin is not null && ownLoginFor is not null ? new OneHostCredential(ownLoginFor, ownLogin, _stored) : _stored;
+        // An agent's request (PublicOnly) never uses the logins the user saved: a download an agent asked for could otherwise
+        // present them to any server it names.
+        ICredentials saved = useSavedLogins ? _stored : new CredentialCache();
+        ICredentials credentials = ownLogin is not null && ownLoginFor is not null ? new OneHostCredential(ownLoginFor, ownLogin, saved) : saved;
         SocketsHttpHandler Handler(bool redirects)
         {
             var handler = new SocketsHttpHandler
@@ -89,7 +92,7 @@ public sealed class NetworkContext
 
         if (FtpTransport.IsFtp(url))
         {
-            var saved = Credentials.Find(url.Scheme, url.Host, FtpTransport.PortOf(url));
+            var saved = context?.PublicOnly == true ? null : Credentials.Find(url.Scheme, url.Host, FtpTransport.PortOf(url));
             // FTP without TLS sends the password readable: only a login the user confirmed for that.
             if (saved is not null && url.Scheme == "ftp" && !saved.PlainConfirmed)
                 saved = null;
@@ -100,9 +103,9 @@ public sealed class NetworkContext
         }
 
         var cookies = context is { Cookies.Count: > 0 } ? RequestContexts.ToCookieContainer(context.Cookies) : null;
-        if (cookies is null && ownLogin is null)
+        if (cookies is null && ownLogin is null && context?.PublicOnly != true)
             return new HttpTransport(shared ?? SharedHttp, false, record.Url, context, Timeout);
-        return new HttpTransport(CreateHttpClient(cookies, ownLogin, url), true, record.Url, context, Timeout);
+        return new HttpTransport(CreateHttpClient(cookies, ownLogin, url, useSavedLogins: context?.PublicOnly != true), true, record.Url, context, Timeout);
     }
 
     /// <summary>Probes an address the way a download would, with this network (used by "update address").</summary>

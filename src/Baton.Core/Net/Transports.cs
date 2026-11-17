@@ -30,6 +30,9 @@ public interface ITransport : IDisposable
 /// </summary>
 public sealed class HttpTransport(HttpClient http, bool ownsClient, string url, RequestContext? context, TimeSpan timeout) : ITransport
 {
+    /// <summary>True when the transport has a client of its own (cookies, a login, or an agent's request that must not use saved logins).</summary>
+    public bool OwnsClient => ownsClient;
+
     private HttpResponseMessage? _pending; // a POST response kept from the probe for the first OpenAsync
 
     public async Task<ProbeResult> ProbeAsync(CancellationToken ct)
