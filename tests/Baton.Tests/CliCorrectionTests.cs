@@ -54,4 +54,33 @@ public sealed class CliCorrectionTests
         Assert.True(helpDoc.RootElement.GetProperty("ok").GetBoolean());
         Assert.Contains("Usage: batonctl", helpDoc.RootElement.GetProperty("help").GetString());
     }
+
+    // ------------------------------------------------------------------ B3: an exception is an exit code, never a crash
+
+    [Theory]
+    [InlineData(typeof(IOException), 3)]
+    [InlineData(typeof(UnauthorizedAccessException), 3)]
+    [InlineData(typeof(TimeoutException), 3)]
+    [InlineData(typeof(InvalidOperationException), 1)]
+    [InlineData(typeof(FormatException), 1)]
+    public async Task B3_AnExceptionFromTheCall_IsExitCode3_WhenBatonCannotBeReached_Otherwise1(Type exception, int exit)
+    {
+        foreach (var json in new[] { false, true })
+        {
+            var run = new Run();
+            string[] args = json ? ["list", "--json"] : ["list"];
+            var code = await run.ExecuteAsync(args, _ => throw (Exception)Activator.CreateInstance(exception, "boom")!);
+            Assert.Equal(exit, code);
+            if (json)
+            {
+                using var doc = run.OutJson();
+                Assert.False(doc.RootElement.GetProperty("ok").GetBoolean());
+                Assert.Contains("boom", doc.RootElement.GetProperty("error").GetString());
+            }
+            else
+            {
+                Assert.Contains("boom", run.Err.ToString());
+            }
+        }
+    }
 }

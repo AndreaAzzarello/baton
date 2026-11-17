@@ -63,6 +63,26 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
 
     public async Task<int> RunAsync(string[] args)
     {
+        try
+        {
+            return await RunCoreAsync(args);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Never an unhandled exception (exit code 0xE0434352 and a stack trace): a pipe that cannot be used is "not reached", the rest is an error.
+            var unreachable = ex is IOException or UnauthorizedAccessException or TimeoutException;
+            var problem = unreachable ? $"Baton could not be reached: {AgentText.Clean(ex.Message, AgentText.MaxMessage)}"
+                : $"Unexpected error ({ex.GetType().Name}): {AgentText.Clean(ex.Message, AgentText.MaxMessage)}";
+            if (args.Contains("--json"))
+                Json(new ErrorOutput(false, problem));
+            else
+                error.WriteLine($"batonctl: {problem}");
+            return unreachable ? ExitCodes.NotRunning : ExitCodes.Error;
+        }
+    }
+
+    private async Task<int> RunCoreAsync(string[] args)
+    {
         var parsed = ArgParser.Parse(args);
         if (parsed.Error is { } problem)
             return Usage(parsed, problem);
