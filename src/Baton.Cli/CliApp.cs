@@ -166,6 +166,8 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         string? folder = null;
         if (parsed.Value("folder") is { } given)
         {
+            if (BadFolderCharacters(given) is { } why)
+                return Usage(parsed, why);
             try
             {
                 folder = Path.GetFullPath(given, workingDirectory);
@@ -386,6 +388,23 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
             return true;
         exit = Usage(parsed, $"{parsed.Command} needs a download number.");
         return false;
+    }
+
+    /// <summary>
+    /// Why a --folder value cannot be a folder, or null. The usual cause is <c>--folder "D:\x\"</c>: Windows reads the backslash
+    /// before the closing quote as an escaped quote, so the value arrives as <c>D:\x"</c>.
+    /// </summary>
+    private static string? BadFolderCharacters(string folder)
+    {
+        if (folder.Contains('"'))
+            return "--folder contains a quote. A backslash before the closing quote escapes it: write \"D:\\x\" without the last backslash, or double it (\"D:\\x\\\\\").";
+        for (var i = 0; i < folder.Length; i++)
+        {
+            var c = folder[i];
+            if (c is '*' or '?' or '<' or '>' or '|' || char.IsControl(c) || (c == ':' && i != 1))
+                return $"--folder contains a character that cannot be in a path: U+{(int)c:X4} ({(char.IsControl(c) ? "control" : c.ToString())})";
+        }
+        return null;
     }
 
     private static string Progress(DownloadInfo d) =>

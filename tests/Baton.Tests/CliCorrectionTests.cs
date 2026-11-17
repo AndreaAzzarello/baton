@@ -83,4 +83,30 @@ public sealed class CliCorrectionTests
             }
         }
     }
+
+    // ------------------------------------------------------------------ B6: a folder that cannot be a folder is refused, with the likely cause
+
+    [Theory]
+    [InlineData("D:\\x\"")]        // what the Windows command line makes of  --folder "D:\x\"  (the \" is a quote)
+    [InlineData("D:\\x*")]
+    [InlineData("D:\\x?y")]
+    [InlineData("D:\\a<b")]
+    [InlineData("D:\\a|b")]
+    public async Task B6_AFolderWithCharactersThatCannotBeInAPath_IsRefused_AndNothingIsSent(string folder)
+    {
+        var run = new Run();
+        Assert.Equal(2, await run.ExecuteAsync(["add", "https://a.test/f.zip", "--folder", folder], _ => new ChannelReply(true, Result: "added", Id: 1)));
+        Assert.Empty(run.Sent);
+        Assert.Contains("--folder", run.Err.ToString());
+        if (folder.Contains('"'))
+            Assert.Contains("backslash", run.Err.ToString());  // the hint about a trailing backslash before the closing quote
+    }
+
+    [Fact]
+    public async Task B6_AFolderWithATrailingBackslash_IsAccepted_WhenTheCommandLineKeptItWhole()
+    {
+        var run = new Run();
+        Assert.Equal(0, await run.ExecuteAsync(["add", "https://a.test/f.zip", "--folder", "D:\\x\\"], _ => new ChannelReply(true, Result: "added", Id: 1)));
+        Assert.Equal("D:\\x\\",run.Sent.Single().Download!.Folder);
+    }
 }
