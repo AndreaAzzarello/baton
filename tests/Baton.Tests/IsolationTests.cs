@@ -12,6 +12,10 @@ internal static class TestIsolation
     [ModuleInitializer]
     internal static void ForbidRealRegistry() => WindowsUserRegistry.Forbidden = true;
 
+    /// <summary>Same for the user's own pipe: a test that would message the installed app fails instead.</summary>
+    [ModuleInitializer]
+    internal static void ForbidRealPipe() => Baton.Core.Integration.ChannelClient.ForbidDefaultPipe = true;
+
     /// <summary>
     /// The engine's texts and formats in Italian, whatever the language of the machine (CI runs in English): many tests
     /// check messages as the Italian user reads them. Strings.Culture wins over the thread's culture: a test about another

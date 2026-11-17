@@ -20,6 +20,12 @@ public static class ChannelClient
         "Baton." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{Environment.UserDomainName}\\{Environment.UserName}")))[..16];
 
     /// <summary>
+    /// Set by the test projects: connecting to the user's own pipe (the one the installed app listens on) then throws instead of
+    /// sending, so a test can never talk to the real app. Sandboxed and portable pipes have a suffix and stay allowed.
+    /// </summary>
+    public static bool ForbidDefaultPipe { get; set; }
+
+    /// <summary>
     /// Sends one message; returns null when no app is listening (nothing was sent). Throws <see cref="ChannelNoReplyException"/> when it
     /// connected and the answer never came, and <see cref="OperationCanceledException"/> when the answer took longer than
     /// <paramref name="replyTimeout"/> (30 s by default).
@@ -27,6 +33,8 @@ public static class ChannelClient
     public static async Task<ChannelReply?> SendAsync(string pipeName, ChannelMessage message, TimeSpan connectTimeout, CancellationToken ct = default,
         TimeSpan? replyTimeout = null)
     {
+        if (ForbidDefaultPipe && string.Equals(pipeName, DefaultPipeName, StringComparison.Ordinal))
+            throw new InvalidOperationException("Refusing the user's own pipe in a test: set BATON_DATA or use a pipe of your own.");
         await using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
         try
         {

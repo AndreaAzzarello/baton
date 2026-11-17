@@ -8,4 +8,8 @@ internal static class TestIsolation
 {
     [ModuleInitializer]
     internal static void ForbidRealRegistry() => WindowsUserRegistry.Forbidden = true;
+
+    /// <summary>Same for the user's own pipe: a test that would message the installed app fails instead.</summary>
+    [ModuleInitializer]
+    internal static void ForbidRealPipe() => Baton.Core.Integration.ChannelClient.ForbidDefaultPipe = true;
 }
