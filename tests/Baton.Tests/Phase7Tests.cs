@@ -480,7 +480,8 @@ public sealed class Phase7Tests
             cts.Cancel(); // the app closes while the answer is still being prepared
             await server;
             gate.SetResult(new ChannelReply(true));
-            await send;
+            // Since A15 a connection that closes without an answer is reported, not hidden.
+            try { await send; } catch (ChannelNoReplyException) { }
             await Task.Delay(300);
             GC.Collect();
             GC.WaitForPendingFinalizers();

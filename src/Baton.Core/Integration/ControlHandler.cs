@@ -18,11 +18,11 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
     /// <summary>Null when the message may go on; otherwise the refusal to send back.</summary>
     public ChannelReply? Authorize(ChannelMessage message)
     {
-        if (OriginPolicy.Check(message, mcpLevel(), apiLevel()) is { } error)
-            return Fail(error);
+        if (OriginPolicy.Refusal(message, mcpLevel(), apiLevel()) is { } refusal)
+            return Fail(refusal.Code, refusal.Text);
         // MCP is an agent that can loop: its budget is kept here, in the app, whatever the client does.
         if (message.Origin == Origins.Mcp && message.Type != Messages.Capabilities && !_mcpRate.TryTake())
-            return Fail(TooManyRequestsError);
+            return Fail(ReplyCode.TooManyRequests, TooManyRequestsError);
         return null;
     }
 
@@ -45,7 +45,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception
                                        or ArgumentException or Microsoft.Data.Sqlite.SqliteException)
         {
-            return Fail("Baton could not do that: " + Log.Redact(ex.Message));
+            return Fail(ReplyCode.Failed, "Baton could not do that: " + Log.Redact(ex.Message));
         }
     }
 
@@ -92,7 +92,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
                 if (!Find(message, out found, out error))
                     return error;
                 if (found.Status == DownloadStatus.Completed || (message.Type == Messages.Retry && found.Status != DownloadStatus.Failed))
-                    return Fail("This download cannot be started again.");
+                    return Fail(ReplyCode.CannotRestart, "This download cannot be started again.");
                 service.Start(found.Id);
                 return Ok(download: Info(service.GetSnapshot(found.Id)!));
             case Messages.Remove:
@@ -110,10 +110,10 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
                 if (!Find(message, out found, out error))
                     return error;
                 if (found.Status != DownloadStatus.Completed || found.FinalPath is not { } path || !File.Exists(path))
-                    return Fail("The file is not there.");
+                    return Fail(ReplyCode.NoFile, "The file is not there.");
                 // The command line is the user's own terminal; MCP and the API could chain "add" and "open" into running a download.
                 if (message.Origin != Origins.Cli && Rules.ExecutableTypes.IsRunnable(path))
-                    return Fail("Only the command line may open a program or script.");
+                    return Fail(ReplyCode.CliOnly, "Only the command line may open a program or script.");
                 openFile(path);
                 return Ok(id: found.Id);
             case Messages.QueueStart:
@@ -124,14 +124,14 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
                     : service.Queues.FirstOrDefault(q => string.Equals(q.Name, wantedName, StringComparison.CurrentCultureIgnoreCase)
                                                          || string.Equals(q.DisplayName, wantedName, StringComparison.CurrentCultureIgnoreCase));
                 if (queue is null)
-                    return Fail(NoQueueError);
+                    return Fail(ReplyCode.NoQueue, NoQueueError);
                 if (message.Type == Messages.QueueStart)
                     service.StartQueue(queue.Id);
                 else
                     await service.StopQueueAsync(queue.Id);
                 return Ok();
             default:
-                return Fail("Unknown message type.");
+                return Fail(ReplyCode.UnknownType, "Unknown message type.");
         }
     }
 
@@ -176,7 +176,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
-            return Fail("The address did not answer: " + Log.Redact(ex is OperationCanceledException ? "no answer in time." : ex.Message));
+            return Fail(ReplyCode.ProbeFailed, "The address did not answer: " + Log.Redact(ex is OperationCanceledException ? "no answer in time." : ex.Message));
         }
     }
 
@@ -190,11 +190,11 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         if (origin is not (Origins.Api or Origins.Mcp))
             return (context, null);
         if (!Uri.TryCreate(url, UriKind.Absolute, out var target) || target.Scheme is not ("http" or "https" or "ftp"))
-            return (context, Fail("Only http, https and ftp addresses can be downloaded."));
+            return (context, Fail(ReplyCode.BadScheme, "Only http, https and ftp addresses can be downloaded."));
         if (service.Settings.AllowLocalNetworkForAgents)
             return (context, null);
         if (await Net.UrlGuard.IsPrivateHostAsync(target.IdnHost, CancellationToken.None))
-            return (context, Fail(PrivateNetworkError));
+            return (context, Fail(ReplyCode.PrivateNetwork, PrivateNetworkError));
         return (context with { PublicOnly = true }, null);
     }
 
@@ -211,7 +211,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
             return refusal;
         // Only the command line chooses a folder: MCP and the API go through categories, so they cannot write elsewhere.
         if (d.Folder is not null && message.Origin != Origins.Cli)
-            return Fail("Only the command line may choose a folder; use a category.");
+            return Fail(ReplyCode.FolderRefused, "Only the command line may choose a folder; use a category.");
         long? categoryId = null;
         if (!string.IsNullOrWhiteSpace(d.Category))
         {
@@ -219,7 +219,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
             categoryId = service.Categories.FirstOrDefault(c => string.Equals(c.Name, wanted, StringComparison.CurrentCultureIgnoreCase)
                                                                || string.Equals(c.Key, wanted, StringComparison.OrdinalIgnoreCase))?.Id;
             if (categoryId is null)
-                return Fail("No category with this name.");
+                return Fail(ReplyCode.NoCategory, "No category with this name.");
         }
         var added = service.AddAutomatic(d.Url, d.Folder, string.IsNullOrWhiteSpace(d.FileName) ? null : Path.GetFileName(d.FileName), d.Start,
             context, categoryId, d.Queue is null ? null : service.ResolveQueue(d.Queue), allowDuplicate: d.AllowDuplicate == true, paused: d.Start == false,
@@ -236,12 +236,12 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
     private bool Find(ChannelMessage message, out DownloadSnapshot snapshot, out ChannelReply error)
     {
         snapshot = null!;
-        error = Fail("Missing download number.");
+        error = Fail(ReplyCode.MissingId, "Missing download number.");
         if (message.Id is not { } id)
             return false;
         if (service.GetSnapshot(id) is not { } found)
         {
-            error = Fail(NoDownloadError);
+            error = Fail(ReplyCode.NoDownload, NoDownloadError);
             return false;
         }
         snapshot = found;
@@ -253,7 +253,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         service.Queues.FirstOrDefault(q => q.Id == s.QueueId)?.DisplayName,
         service.Categories.FirstOrDefault(c => c.Id == s.CategoryId)?.Name, s.AddedUtc, s.CompletedUtc);
 
-    private static ChannelReply Fail(string error) => new(false, Error: error, Protocol: Messages.ProtocolVersion);
+    private static ChannelReply Fail(ReplyCode code, string error) => new(false, Error: error, Protocol: Messages.ProtocolVersion, Code: code);
 
     private static ChannelReply Ok(string? version = null, List<DownloadInfo>? downloads = null, DownloadInfo? download = null, long? id = null,
         int? count = null, string? result = null) =>

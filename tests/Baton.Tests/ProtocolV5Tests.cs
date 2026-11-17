@@ -131,6 +131,50 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
         Assert.Equal(Messages.ProtocolVersion, (await control.HandleAsync(Msg(Messages.Capabilities, Origins.Mcp))).Protocol);
     }
 
+    // ------------------------------------------------------------------ stable error codes (A3)
+
+    [Fact]
+    public async Task EveryRefusal_CarriesAStableCode_AndTheWireNameIsCamelCase()
+    {
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        var control = Handler(service, mcp: AutomationLevel.Extended, api: AutomationLevel.ReadOnly);
+
+        Assert.Equal(ReplyCode.NoDownload, (await control.HandleAsync(new ChannelMessage(Messages.Status, Origin: Origins.Cli, Id: 99))).Code);
+        Assert.Equal(ReplyCode.MissingId, (await control.HandleAsync(new ChannelMessage(Messages.Status, Origin: Origins.Cli))).Code);
+        Assert.Equal(ReplyCode.NoQueue, (await control.HandleAsync(new ChannelMessage(Messages.QueueStart, Origin: Origins.Cli, Queue: "nope"))).Code);
+        Assert.Equal(ReplyCode.BadScheme, (await control.HandleAsync(Msg(Messages.Probe, Origins.Mcp, "gopher://example.com/x"))).Code);
+        Assert.Equal(ReplyCode.PrivateNetwork, (await control.HandleAsync(Msg(Messages.Probe, Origins.Mcp, "http://192.168.1.1/x"))).Code);
+        Assert.Equal(ReplyCode.UnknownType, (await control.HandleAsync(new ChannelMessage("nonsense", Origin: Origins.Cli))).Code);
+        Assert.Equal(ReplyCode.LevelTooLow, control.Authorize(Msg(Messages.Pause, Origins.Api))!.Code);
+        Assert.Equal(ReplyCode.AutomationOff, Handler(service).Authorize(Msg(Messages.List, Origins.Mcp))!.Code);
+        Assert.Equal(ReplyCode.NotAllowed, control.Authorize(Msg(Messages.List, Origins.Browser))!.Code);
+        Assert.Equal(ReplyCode.CliOnly, control.Authorize(Msg(Messages.Open, Origins.Mcp))!.Code);
+        Assert.Null((await control.HandleAsync(Msg(Messages.Capabilities, Origins.Mcp))).Code);
+
+        var failed = new ChannelReply(false, Error: "x", Code: ReplyCode.NoDownload);
+        var json = System.Text.Encoding.UTF8.GetString(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(failed, ProtocolJson.Default.ChannelReply));
+        Assert.Contains("\"code\":\"noDownload\"", json);
+        // An older app never sends a code.
+        var old = System.Text.Json.JsonSerializer.Deserialize("""{"ok":false,"error":"x"}"""u8, ProtocolJson.Default.ChannelReply)!;
+        Assert.Null(old.Code);
+    }
+
+    [Fact]
+    public async Task TheApiStatus_FollowsTheCode_NotTheWordsOfTheError()
+    {
+        // A rephrased message must not change the status: the same code, other words, gives the same answer.
+        Assert.Equal(404, StatusOf(ReplyCode.NoDownload));
+        Assert.Equal(404, StatusOf(ReplyCode.NoQueue));
+        Assert.Equal(403, StatusOf(ReplyCode.PrivateNetwork));
+        Assert.Equal(403, StatusOf(ReplyCode.LevelTooLow));
+        Assert.Equal(403, StatusOf(ReplyCode.AutomationOff));
+        Assert.Equal(400, StatusOf(ReplyCode.BadScheme));
+        Assert.Equal(400, StatusOf(null));
+        await Task.CompletedTask;
+        static int StatusOf(ReplyCode? code) => Baton.Core.Integration.LocalApiServer.StatusFor(code);
+    }
+
     // ------------------------------------------------------------------ the list in pages
 
     [Fact]

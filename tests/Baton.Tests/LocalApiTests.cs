@@ -222,6 +222,55 @@ public sealed class LocalApiTests : IAsyncLifetime
         Assert.Empty(_service.GetSnapshots());
     }
 
+    /// <summary>The API published in 1.4.1: same status per cause, same fields. A3 added a code to the pipe reply only; this must not change.</summary>
+    [Fact]
+    public async Task Compatibility_ErrorsAndFields_AreThoseOf141()
+    {
+        var url = _server.Add("c.bin", new ServedFile { Content = new byte[1000] });
+        var (created, added) = await Call(HttpMethod.Post, "downloads", new { url });
+        Assert.Equal(HttpStatusCode.Created, created);
+        Assert.Equal(["id", "result"], Names(added));
+        var id = added.GetProperty("id").GetInt64();
+        await WaitFor(() => _service.GetSnapshot(id)!.Status is DownloadStatus.Completed or DownloadStatus.Failed);
+
+        var (_, one) = await Call(HttpMethod.Get, $"downloads/{id}");
+        // A null field may be left out; nothing outside this set may appear and the core ones must be there.
+        string[] known = ["addedUtc", "category", "completedUtc", "downloaded", "error", "folder", "id", "name", "path", "queue", "status", "totalSize", "url"];
+        Assert.Empty(Names(one).Except(known));
+        Assert.Empty(new[] { "addedUtc", "downloaded", "folder", "id", "name", "status", "url" }.Except(Names(one)));
+
+        var (dupStatus, dup) = await Call(HttpMethod.Post, "downloads", new { url });
+        Assert.Equal(HttpStatusCode.Conflict, dupStatus);
+        Assert.Equal(["duplicate", "result"], Names(dup));
+        Assert.Equal(["existingId", "existingPath", "reason"], Names(dup.GetProperty("duplicate")));
+
+        foreach (var (method, path, body, expected) in new (HttpMethod, string, object?, HttpStatusCode)[]
+                 {
+                     (HttpMethod.Get, "downloads/9999", null, HttpStatusCode.NotFound),
+                     (HttpMethod.Post, "downloads/9999/pause", null, HttpStatusCode.NotFound),
+                     (HttpMethod.Post, "queues/nope/start", null, HttpStatusCode.NotFound),
+                     (HttpMethod.Post, "downloads", new { url = "http://127.0.0.1:1/x.bin", category = "nope" }, HttpStatusCode.BadRequest),
+                     (HttpMethod.Post, "downloads", new { url = "gopher://example.com/x" }, HttpStatusCode.BadRequest),
+                     (HttpMethod.Post, $"downloads/{id}/retry", null, HttpStatusCode.BadRequest),
+                 })
+        {
+            var (status, json) = await Call(method, path, body);
+            Assert.Equal(expected, status);
+            Assert.Equal(["error"], Names(json));
+        }
+
+        Configure(AutomationLevel.Extended, allowLocal: false);
+        var (privateStatus, privateJson) = await Call(HttpMethod.Post, "downloads", new { url = "http://192.168.1.1/x.bin" });
+        Assert.Equal(HttpStatusCode.Forbidden, privateStatus);
+        Assert.Equal(["error"], Names(privateJson));
+        Configure(AutomationLevel.ReadOnly, allowLocal: true);
+        var (levelStatus, levelJson) = await Call(HttpMethod.Post, "downloads", new { url });
+        Assert.Equal(HttpStatusCode.Forbidden, levelStatus);
+        Assert.Equal(["error"], Names(levelJson));
+    }
+
+    private static string[] Names(JsonElement e) => e.EnumerateObject().Select(p => p.Name).OrderBy(n => n, StringComparer.Ordinal).ToArray();
+
     [Theory]
     [InlineData("http://127.0.0.1:1/x.bin")]
     [InlineData("http://localhost/x.bin")]

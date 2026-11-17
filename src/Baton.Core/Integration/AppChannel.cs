@@ -92,12 +92,12 @@ public static class AppChannel
                                   ?? throw new JsonException("Empty message.");
                     // The pipe is reachable by any program of this user, not only the native host: checked again.
                     reply = MessageValidator.Validate(message) is { } error
-                        ? new ChannelReply(false, Error: error, Protocol: Messages.ProtocolVersion)
+                        ? new ChannelReply(false, Error: error, Protocol: Messages.ProtocolVersion, Code: ReplyCode.Invalid)
                         : await handler(message);
                 }
                 catch (Exception ex) when (ex is JsonException or ArgumentException)
                 {
-                    reply = new ChannelReply(false, Error: ex.Message);
+                    reply = new ChannelReply(false, Error: ex.Message, Code: ReplyCode.Invalid);
                 }
                 using var writing = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 writing.CancelAfter(TimeSpan.FromSeconds(10));

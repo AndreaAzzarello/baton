@@ -206,6 +206,14 @@ public sealed class LocalApiServer : IDisposable
         return (200, new { queues }, null);
     }
 
+    /// <summary>The HTTP status of a failure, chosen from its code (published in 1.4.1: 404, 403 or 400).</summary>
+    public static int StatusFor(ReplyCode? code) => code switch
+    {
+        ReplyCode.NoDownload or ReplyCode.NoQueue => 404,
+        ReplyCode.PrivateNetwork or ReplyCode.AutomationOff or ReplyCode.LevelTooLow => 403,
+        _ => 400,
+    };
+
     private async Task<(int Status, object Body, string? Detail)> Run(ChannelMessage message, string[] route)
     {
         if (MessageValidator.Validate(message) is { } invalid)
@@ -216,14 +224,8 @@ public sealed class LocalApiServer : IDisposable
         var detail = message.Download is { } d ? Automation.AutomationLog.Clean(d.Url) : message.Id is { } id ? "#" + id : message.Queue;
         if (!reply.Ok)
         {
-            var status = reply.Error switch
-            {
-                ControlHandler.NoDownloadError or ControlHandler.NoQueueError => 404,
-                ControlHandler.PrivateNetworkError => 403,
-                { } text when text.StartsWith("The level", StringComparison.Ordinal) || text.StartsWith("Automation is turned off", StringComparison.Ordinal) => 403,
-                _ => 400,
-            };
-            return (status, new { error = reply.Error }, ActivityText.Reason(ActivityText.ReasonOf(reply.Error)));
+            var status = StatusFor(reply.Code);
+            return (status, new { error = reply.Error }, ActivityText.Reason(ActivityText.ReasonOf(reply.Code)));
         }
         if (message.Type == Messages.Add)
         {

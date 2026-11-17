@@ -32,7 +32,10 @@ public static class OriginPolicy
     };
 
     /// <summary>Null when allowed; otherwise why not.</summary>
-    public static string? Check(ChannelMessage message, AutomationLevel mcp, AutomationLevel api)
+    public static string? Check(ChannelMessage message, AutomationLevel mcp, AutomationLevel api) => Refusal(message, mcp, api)?.Text;
+
+    /// <summary>Null when allowed; otherwise the stable code and the text of the refusal.</summary>
+    public static (ReplyCode Code, string Text)? Refusal(ChannelMessage message, AutomationLevel mcp, AutomationLevel api)
     {
         // A notification's button is authorised by its signature, whoever forwards it.
         if (message.Type == Messages.Link)
@@ -41,9 +44,9 @@ public static class OriginPolicy
         switch (origin)
         {
             case Origins.Browser:
-                return BrowserTypes.Contains(message.Type) ? null : "The browser may not do this.";
+                return BrowserTypes.Contains(message.Type) ? null : (ReplyCode.NotAllowed, "The browser may not do this.");
             case Origins.Cli:
-                return RequiredLevel(message.Type) is null ? "The command line may not do this." : null;
+                return RequiredLevel(message.Type) is null ? (ReplyCode.NotAllowed, "The command line may not do this.") : null;
             case Origins.Mcp:
             case Origins.Api:
                 var level = origin == Origins.Mcp ? mcp : api;
@@ -51,13 +54,13 @@ public static class OriginPolicy
                 if (message.Type == Messages.Capabilities)
                     return null;
                 if (level == AutomationLevel.Off)
-                    return "Automation is turned off in the settings.";
+                    return (ReplyCode.AutomationOff, "Automation is turned off in the settings.");
                 // Opening a file or a program on the desktop is for the user's own command line only, whatever the level.
                 if (message.Type == Messages.Open)
-                    return "Opening a file is only for the command line.";
-                return RequiredLevel(message.Type) is { } needed && level >= needed ? null : "The level chosen in the settings does not allow this.";
+                    return (ReplyCode.CliOnly, "Opening a file is only for the command line.");
+                return RequiredLevel(message.Type) is { } needed && level >= needed ? null : (ReplyCode.LevelTooLow, "The level chosen in the settings does not allow this.");
             default:
-                return "Unknown origin.";
+                return (ReplyCode.NotAllowed, "Unknown origin.");
         }
     }
 }

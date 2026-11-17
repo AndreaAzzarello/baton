@@ -127,6 +127,7 @@ public sealed record DuplicateInfo(string Reason, long? ExistingId, string Exist
 
 /// <param name="Probe">For "probe" (protocol 5).</param>
 /// <param name="Level">For "capabilities" (protocol 5): "off", "readOnly", "readAdd" or "extended".</param>
+/// <param name="Code">Why a request failed (protocol 5; absent on success and from older apps). Stable; <c>Error</c> is the text for people.</param>
 /// <param name="NextCursor">For "list" with a limit (protocol 5): the "after" of the next page; absent on the last page.</param>
 /// <param name="Queues">For "queues": the names of the app's queues, the main one first (added in 0.5).</param>
 /// <param name="Protocol">The protocol version the app speaks (2 from 0.6; absent from older apps, which speak 1).</param>
@@ -152,7 +153,8 @@ public sealed record ChannelReply(
     int? Count = null,
     ProbeInfo? Probe = null,
     string? Level = null,
-    long? NextCursor = null);
+    long? NextCursor = null,
+    ReplyCode? Code = null);
 
 public static class Messages
 {

@@ -55,21 +55,20 @@ public static class ActivityText
         };
     }
 
-    /// <summary>The stable reason code of a refusal text from the control handler.</summary>
-    public static string ReasonOf(string? error) => error switch
+    /// <summary>The reason code the activity log keeps for the <see cref="ReplyCode"/> of a failure.</summary>
+    public static string ReasonOf(ReplyCode? code) => code switch
     {
-        ControlHandler.NoDownloadError => "noDownload",
-        ControlHandler.NoQueueError => "noQueue",
-        ControlHandler.PrivateNetworkError => "privateNetwork",
-        null => "failed",
-        _ when error.StartsWith("The level", StringComparison.Ordinal) || error.StartsWith("Automation is turned off", StringComparison.Ordinal) => "level",
-        _ when error.StartsWith("This download cannot be started", StringComparison.Ordinal) => "cannotRestart",
-        _ when error.StartsWith("The file is not there", StringComparison.Ordinal) => "noFile",
-        _ when error.StartsWith("Only the command line may open", StringComparison.Ordinal) => "cliOnly",
-        _ when error.StartsWith("Only http, https and ftp", StringComparison.Ordinal) => "badScheme",
-        _ when error.StartsWith("Only the command line may choose", StringComparison.Ordinal) => "folderRefused",
-        _ when error.StartsWith("No category", StringComparison.Ordinal) => "noCategory",
-        _ when error.StartsWith("Unknown message", StringComparison.Ordinal) => "unknownType",
+        ReplyCode.NoDownload => "noDownload",
+        ReplyCode.NoQueue => "noQueue",
+        ReplyCode.PrivateNetwork => "privateNetwork",
+        ReplyCode.AutomationOff or ReplyCode.LevelTooLow => "level",
+        ReplyCode.CannotRestart => "cannotRestart",
+        ReplyCode.NoFile => "noFile",
+        ReplyCode.CliOnly => "cliOnly",
+        ReplyCode.BadScheme => "badScheme",
+        ReplyCode.FolderRefused => "folderRefused",
+        ReplyCode.NoCategory => "noCategory",
+        ReplyCode.UnknownType => "unknownType",
         _ => "failed",
     };
 
