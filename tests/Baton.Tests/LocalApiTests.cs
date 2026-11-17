@@ -257,9 +257,15 @@ public sealed class LocalApiTests : IAsyncLifetime
 
         var (_, one) = await Call(HttpMethod.Get, $"downloads/{id}");
         // A null field may be left out; nothing outside this set may appear and the core ones must be there.
-        string[] known = ["addedUtc", "category", "completedUtc", "downloaded", "error", "folder", "id", "name", "path", "queue", "status", "totalSize", "url"];
+        // "displayUrl" is new in 1.4.2 (A14): the address without user info, query or fragment; "url" is unchanged.
+        string[] known = ["addedUtc", "category", "completedUtc", "displayUrl", "downloaded", "error", "folder", "id", "name", "path", "queue", "status", "totalSize", "url"];
         Assert.Empty(Names(one).Except(known));
-        Assert.Empty(new[] { "addedUtc", "downloaded", "folder", "id", "name", "status", "url" }.Except(Names(one)));
+        Assert.Empty(new[] { "addedUtc", "displayUrl", "downloaded", "folder", "id", "name", "status", "url" }.Except(Names(one)));
+        Assert.Equal(url, one.GetProperty("url").GetString());
+        var shown = one.GetProperty("displayUrl").GetString()!;
+        Assert.StartsWith("http://" + new Uri(url).Authority, shown);
+        Assert.EndsWith("/c.bin", shown);
+        Assert.DoesNotContain("?", shown);
 
         var (dupStatus, dup) = await Call(HttpMethod.Post, "downloads", new { url });
         Assert.Equal(HttpStatusCode.Conflict, dupStatus);

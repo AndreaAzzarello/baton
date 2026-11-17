@@ -259,8 +259,8 @@ public sealed class LocalApiServer : IDisposable
         return message.Type switch
         {
             Messages.Version => (200, new { version = reply.AppVersion, protocol = Messages.ProtocolVersion }, null),
-            Messages.List => (200, message.Limit is null && message.After is null ? new { downloads = reply.Downloads?.Select(AgentText.Safe).ToList() } : new { downloads = reply.Downloads?.Select(AgentText.Safe).ToList(), nextCursor = reply.NextCursor }, null),
-            Messages.Status or Messages.Pause or Messages.Resume or Messages.Retry => (200, (object?)(reply.Download is null ? null : AgentText.Safe(reply.Download)) ?? new { }, detail),
+            Messages.List => (200, message.Limit is null && message.After is null ? new { downloads = reply.Downloads?.Select(ApiDownload.From).ToList() } : new { downloads = reply.Downloads?.Select(ApiDownload.From).ToList(), nextCursor = reply.NextCursor }, null),
+            Messages.Status or Messages.Pause or Messages.Resume or Messages.Retry => (200, (object?)(reply.Download is null ? null : ApiDownload.From(reply.Download)) ?? new { }, detail),
             Messages.Remove => (200, new { removed = reply.Id }, detail),
             _ => (200, new { ok = true }, detail),
         };

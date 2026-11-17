@@ -28,6 +28,8 @@ Refusals and every request that changes something are written to the activity lo
 | `GET /queues` | read | Queues |
 | `POST /queues/{name}/start` `stop` | extended | Control a queue; a queue started this way never runs its end action (shut down, sleep…) by itself, Baton asks for a click |
 
+Every download carries `url` (the full address, as given) and `displayUrl` (scheme, host and file name only: no user name, password, query or fragment), for a script or agent that only needs to say which download it means. Texts that came from a server (name, error, queue, category, folder, path) have hidden and control characters removed.
+
 Unknown JSON fields are rejected with 400.
 
 ## Addresses an agent may ask for

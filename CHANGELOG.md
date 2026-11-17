@@ -27,6 +27,11 @@ Terza tappa di «Automation»: il server MCP.
 - Controlli più stretti per gli agenti: niente cookie né moduli (POST) da MCP e API, l'origine `clipboard` non è accettata sulla pipe,
   caratteri di controllo C1 rifiutati nei testi, indirizzi IPv6 Teredo trattati come privati, il token dell'API copiato negli appunti
   resta fuori dalla cronologia degli appunti di Windows, `GET /downloads?limit=&after=` dà l'elenco a pagine (senza parametri è tutto, come prima).
+- Testi puliti per gli agenti: nomi, errori, code, categorie e percorsi che l'API e `batonctl` restituiscono perdono i caratteri
+  nascosti (controllo, bidirezionali, a larghezza zero, selettori di variante, tag); gli stessi caratteri non entrano più nei nomi dei
+  file scaricati. Gli agenti non possono lasciare più di 1000 download in attesa. L'API ha un campo nuovo `displayUrl` (schema, host e
+  nome del file, senza utente, password, query e frammento) accanto a `url`, che resta com'era: gli script esistenti non cambiano.
+  Le richieste senza il token non riempiono più il registro delle attività: sono contate in una riga al minuto.
 - Righe di fine riga uniformi (LF) in tutto il repository, con controlli in `/fine-fase`.
 
 ## [1.4.1] — 2026-11-16
