@@ -134,6 +134,25 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
     // ------------------------------------------------------------------ stable error codes (A3)
 
     [Fact]
+    public async Task Remove_ByAnAgent_IsRefusedForUnfinishedDownloads_AndAllowedForFinishedOnes()
+    {
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        var control = Handler(service, mcp: AutomationLevel.Extended, api: AutomationLevel.Extended);
+        var url = _server.Add("remove-me.bin", new ServedFile { Content = TestFileServer.RandomBytes(5_000, 8) });
+        var id = service.Add(url, paused: true);
+
+        foreach (var origin in new[] { Origins.Mcp, Origins.Api })
+        {
+            var refused = await control.HandleAsync(new ChannelMessage(Messages.Remove, Origin: origin, Id: id));
+            Assert.Equal(ReplyCode.NotFinished, refused.Code);
+        }
+        Assert.NotNull(service.GetSnapshot(id));                                                                  // still listed, nothing deleted
+        Assert.True((await control.HandleAsync(new ChannelMessage(Messages.Remove, Origin: Origins.Cli, Id: id))).Ok); // the user's own terminal may
+        Assert.Null(service.GetSnapshot(id));
+    }
+
+    [Fact]
     public async Task EveryRefusal_CarriesAStableCode_AndTheWireNameIsCamelCase()
     {
         using var store = Store();

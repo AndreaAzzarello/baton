@@ -19,7 +19,8 @@ Terza tappa di «Automation»: il server MCP.
 - `batonctl probe <url>`; `batonctl` non reinvia più un comando se la connessione si è chiusa dopo l'invio (rischio di doppia
   aggiunta) e avvia Baton senza fargli ereditare l'output.
 - **Sicurezza** (revisione indipendente): i download chiesti da agenti (MCP e API) non usano i login salvati in Baton e rifiutano
-  i nomi che non si risolvono entro 5 secondi.
+  i nomi che non si risolvono entro 5 secondi; gli agenti non rimuovono dalla lista i download non finiti (si cancellerebbe il file
+  parziale).
 - Righe di fine riga uniformi (LF) in tutto il repository, con controlli in `/fine-fase`.
 
 ## [1.4.1] — 2026-11-16

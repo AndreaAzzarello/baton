@@ -142,6 +142,9 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
                 }
                 if (!Find(message, out found, out error))
                     return error;
+                // Removing an unfinished download also deletes its partial file and segments: that is the user's decision, not an agent's.
+                if (message.Origin is Origins.Api or Origins.Mcp && found.Status != DownloadStatus.Completed)
+                    return Fail(ReplyCode.NotFinished, "Only finished downloads can be removed from the list by an agent; pause or leave the others.");
                 await service.RemoveAsync(found.Id, deleteFile: false);
                 return Ok(id: found.Id);
             case Messages.Open:

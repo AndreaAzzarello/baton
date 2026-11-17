@@ -88,6 +88,7 @@ public static class ActivityText
         ReplyCode.CliOnly => "cliOnly",
         ReplyCode.BadScheme => "badScheme",
         ReplyCode.Unresolvable => "unresolvable",
+        ReplyCode.NotFinished => "notFinished",
         ReplyCode.FolderRefused => "folderRefused",
         ReplyCode.NoCategory => "noCategory",
         ReplyCode.UnknownType => "unknownType",

@@ -36,6 +36,8 @@ public enum ReplyCode
     ProbeFailed,
     /// <summary>The name of the address cannot be resolved (or took too long), so it cannot be shown to be public.</summary>
     Unresolvable,
+    /// <summary>The download is not finished: an agent may not remove it from the list (that would delete its partial file).</summary>
+    NotFinished,
     /// <summary>The app speaks a protocol older than the caller needs (set by the caller, never by the app).</summary>
     AppTooOld,
 }

@@ -55,7 +55,7 @@ length) and are only ever the value of a field.
 | `list_queues` | | Names, the main queue first. |
 | `add_downloads` | `urls` (1–50), `category`, `queue`, `start`, `allowDuplicate` | One result per address: `added`, `duplicate`, `failed` or `notAttempted` (a budget of 60 seconds). No folder: only categories. |
 | `probe_url` | `url` | Name, type, size and whether the server can resume; nothing is downloaded. |
-| `pause_downloads`, `resume_downloads`, `retry_downloads`, `remove_from_list` | `ids` (1–50) | Each download is named; there is no "all". One result per number. `remove_from_list` removes from the list only. |
+| `pause_downloads`, `resume_downloads`, `retry_downloads`, `remove_from_list` | `ids` (1–50) | Each download is named; there is no "all". One result per number. `remove_from_list` removes finished downloads from the list only (unfinished ones are refused: `notFinished`). |
 | `start_queue`, `stop_queue` | `queue` | The main queue without a name. |
 
 Addresses must be http, https or ftp, and never on this computer or a private network unless "Allow addresses of the local
@@ -76,7 +76,7 @@ These do not depend on the level and are not settings:
 ## Errors
 
 A failed call returns `isError` with `{"error":{"code","message"}}`. Codes: `automationOff`, `levelTooLow`, `notAllowed`,
-`tooManyRequests`, `noDownload`, `noQueue`, `noCategory`, `privateNetwork`, `unresolvable`, `badScheme`, `invalid`, `invalidArguments`, `timeout`,
+`tooManyRequests`, `noDownload`, `noQueue`, `noCategory`, `privateNetwork`, `unresolvable`, `notFinished`, `badScheme`, `invalid`, `invalidArguments`, `timeout`,
 `appUnavailable`, `appTooOld`, `unknownTool`, `failed`.
 
 - `timeout`: Baton is busy; a change may have been made, so check with `list_downloads` before trying again.

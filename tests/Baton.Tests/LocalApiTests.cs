@@ -327,7 +327,10 @@ public sealed class LocalApiTests : IAsyncLifetime
         var (_, added) = await Call(HttpMethod.Post, "downloads", new { url, start = false });
         var id = added.GetProperty("id").GetInt64();
         Assert.Equal(HttpStatusCode.OK, (await Call(HttpMethod.Post, $"downloads/{id}/pause")).Status);
-        Assert.Equal(HttpStatusCode.OK, (await Call(HttpMethod.Delete, $"downloads/{id}")).Status);
+        // A8: an unfinished download is not removed by the API (that would delete its partial file); the user removes it.
+        Assert.Equal(HttpStatusCode.BadRequest, (await Call(HttpMethod.Delete, $"downloads/{id}")).Status);
+        Assert.NotNull(_service.GetSnapshot(id));
+        await _service.RemoveAsync(id, deleteFile: false);
         Assert.Null(_service.GetSnapshot(id));
         Assert.Equal(HttpStatusCode.NotFound, (await Call(HttpMethod.Get, $"downloads/{id}")).Status);
         Assert.Equal(HttpStatusCode.NotFound, (await Call(HttpMethod.Delete, "downloads/9999")).Status);

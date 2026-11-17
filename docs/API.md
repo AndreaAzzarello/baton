@@ -22,7 +22,7 @@ Refusals and every request that changes something are written to the activity lo
 | `GET /downloads`, `GET /downloads/{id}` | read | List, status of one |
 | `POST /downloads` | read and add | Add `{ "url": ..., "category": ..., "allowDuplicate": false }`; 201 added, 409 `duplicate`, 400 invalid, 403 refused |
 | `POST /downloads/{id}/pause` `resume` `retry` | extended | Control |
-| `DELETE /downloads/{id}` | extended | Remove from the list (the file stays on the disk) |
+| `DELETE /downloads/{id}` | extended | Remove a **finished** download from the list (the file stays on the disk); an unfinished one is refused with 400, because removing it would delete its partial file |
 | `GET /queues` | read | Queues |
 | `POST /queues/{name}/start` `stop` | extended | Control a queue |
 
