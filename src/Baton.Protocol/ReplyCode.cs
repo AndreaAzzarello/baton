@@ -46,5 +46,25 @@ public enum ReplyCode
     AppTooOld,
 }
 
-/// <summary>Writes the codes as camelCase words.</summary>
-public sealed class ReplyCodeConverter() : JsonStringEnumConverter<ReplyCode>(JsonNamingPolicy.CamelCase);
+/// <summary>
+/// Writes the codes as camelCase words. A word this version does not know (a newer Baton answering an older <c>batonctl.exe</c>) is read
+/// as <see cref="ReplyCode.Failed"/>: the refusal and its text still arrive, and the caller does not take it for a broken connection.
+/// </summary>
+public sealed class ReplyCodeConverter : JsonConverter<ReplyCode>
+{
+    public override ReplyCode Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.String)
+        {
+            reader.Skip();
+            return ReplyCode.Failed;
+        }
+        return Enum.TryParse<ReplyCode>(reader.GetString(), ignoreCase: true, out var code) && Enum.IsDefined(code) ? code : ReplyCode.Failed;
+    }
+
+    public override void Write(Utf8JsonWriter writer, ReplyCode value, JsonSerializerOptions options)
+    {
+        var name = value.ToString();
+        writer.WriteStringValue(char.ToLowerInvariant(name[0]) + name[1..]);
+    }
+}
