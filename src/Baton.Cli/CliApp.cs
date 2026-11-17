@@ -42,7 +42,9 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
           pause <id|all>          Pause a download, or all
           resume <id|all>         Resume (start) a download, or all paused and failed ones
           retry <id|all>          Try a failed download again, or all failed ones
+          queues                  The names of the queues (for --queue)
           queues start|stop [name]  Start or stop a queue (the main queue without a name)
+          categories              The names of the categories (for --category)
           open <id>               Open the finished file
           remove <id>             Remove a download from the list (the file stays on the disk)
           remove --all-completed  Remove all completed downloads from the list
@@ -114,6 +116,8 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
                 return await RemoveAsync(parsed);
             case "queues":
                 return await QueuesAsync(parsed);
+            case "categories":
+                return await NamesAsync(parsed, Messages.Categories);
             default:
                 return Usage(parsed, "Unknown command.");
         }
@@ -338,8 +342,28 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         return ExitCodes.Ok;
     }
 
+    /// <summary>queues (no word) and categories: the names to give to --queue and --category.</summary>
+    private async Task<int> NamesAsync(ParsedArgs parsed, string type)
+    {
+        if (parsed.Words.Count > 0)
+            return Usage(parsed, $"{parsed.Command} takes no arguments here" + (type == Messages.Queues ? " (queues start|stop [name] starts or stops one)." : "."));
+        var (reply, code) = await CallAsync(new ChannelMessage(type, Origin: Origins.Cli));
+        if (reply is null || !reply.Ok)
+            return Failed(parsed, code, Why(reply));
+        var names = (type == Messages.Queues ? reply.Queues : reply.Categories) ?? [];
+        names = names.Select(n => AgentText.Clean(n, AgentText.MaxName)).ToList();
+        if (parsed.Json)
+            Json(type == Messages.Queues ? new NamesOutput(true, names, null) : new NamesOutput(true, null, names));
+        else
+            foreach (var name in names)
+                output.WriteLine(name);
+        return ExitCodes.Ok;
+    }
+
     private async Task<int> QueuesAsync(ParsedArgs parsed)
     {
+        if (parsed.Words.Count == 0)
+            return await NamesAsync(parsed, Messages.Queues);
         if (parsed.Words.Count is < 1 or > 2 || parsed.Words[0] is not ("start" or "stop"))
             return Usage(parsed, "queues needs start or stop, and optionally a queue name.");
         var type = parsed.Words[0] == "start" ? Messages.QueueStart : Messages.QueueStop;

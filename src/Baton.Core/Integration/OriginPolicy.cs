@@ -24,7 +24,7 @@ public static class OriginPolicy
     public static AutomationLevel? RequiredLevel(string type) => type switch
     {
         Messages.Ping or Messages.Hello or Messages.Queues or Messages.Version or Messages.List or Messages.Status => AutomationLevel.ReadOnly,
-        Messages.Capabilities => AutomationLevel.ReadOnly,
+        Messages.Capabilities or Messages.Categories => AutomationLevel.ReadOnly,
         // Probe sends a request to an address the caller chose: more than reading, so not at the read-only level.
         Messages.Add or Messages.Probe => AutomationLevel.ReadAdd,
         Messages.Pause or Messages.Resume or Messages.Retry or Messages.Remove or Messages.Open or Messages.QueueStart or Messages.QueueStop => AutomationLevel.Extended,

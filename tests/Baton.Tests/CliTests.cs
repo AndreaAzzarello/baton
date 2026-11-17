@@ -242,7 +242,7 @@ public sealed class CliTests : IAsyncLifetime
     public async Task CommandsThatNeedANumber_RefuseAnythingElse()
     {
         foreach (var args in new[] { new[] { "status" }, ["status", "abc"], ["status", "0"], ["pause"], ["pause", "1", "2"], ["open", "-5"], ["remove"], ["remove", "--all-completed", "3"],
-                     ["queues"], ["queues", "pause"], ["list", "x"], ["list", "--status", "weird"] })
+                     ["queues", "pause"], ["queues", "start", "a", "b"], ["list", "x"], ["list", "--status", "weird"] })
             Assert.Equal(2, await new Run().ExecuteAsync(args, _ => new ChannelReply(true)));
         var run = new Run();
         Assert.Equal(0, await run.ExecuteAsync(["pause", "ALL"], _ => new ChannelReply(true, Count: 3)));

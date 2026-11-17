@@ -129,6 +129,7 @@ public sealed record DuplicateInfo(string Reason, long? ExistingId, string Exist
 /// <param name="Level">For "capabilities" (protocol 5): "off", "readOnly", "readAdd" or "extended".</param>
 /// <param name="Code">Why a request failed (protocol 5; absent on success and from older apps). Stable; <c>Error</c> is the text for people.</param>
 /// <param name="NextCursor">For "list" with a limit (protocol 5): the "after" of the next page; absent on the last page.</param>
+/// <param name="Categories">For "categories" (1.4.2): the names of the categories as the interface shows them.</param>
 /// <param name="Queues">For "queues": the names of the app's queues, the main one first (added in 0.5).</param>
 /// <param name="Protocol">The protocol version the app speaks (2 from 0.6; absent from older apps, which speak 1).</param>
 /// <param name="AppVersion">The app's version, for the extension's connection check.</param>
@@ -154,7 +155,8 @@ public sealed record ChannelReply(
     ProbeInfo? Probe = null,
     string? Level = null,
     long? NextCursor = null,
-    ReplyCode? Code = null);
+    ReplyCode? Code = null,
+    List<string>? Categories = null);
 
 public static class Messages
 {
@@ -198,6 +200,9 @@ public static class Messages
     public const string QueueStart = "queueStart";
     public const string QueueStop = "queueStop";
     public const string Version = "version";
+
+    /// <summary>The names of the categories, for <c>batonctl categories</c> (1.4.2); a read-only question, not for the browser.</summary>
+    public const string Categories = "categories";
 
     /// <summary>What a download address is (name, type, size, ranges) without downloading it (protocol 5).</summary>
     public const string Probe = "probe";

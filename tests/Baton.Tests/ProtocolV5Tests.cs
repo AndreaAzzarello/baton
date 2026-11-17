@@ -151,6 +151,24 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
         Assert.Equal("added", reply.Result);
     }
 
+    [Fact]
+    public async Task Categories_AreListedByTheirDisplayNames_AtTheReadOnlyLevel_NeverForTheBrowser_B8()
+    {
+        Assert.Null(Check(Messages.Categories, Origins.Cli, AutomationLevel.Off));
+        foreach (var origin in new[] { Origins.Mcp, Origins.Api })
+        {
+            Assert.NotNull(Check(Messages.Categories, origin, AutomationLevel.Off));
+            Assert.Null(Check(Messages.Categories, origin, AutomationLevel.ReadOnly));
+        }
+        Assert.NotNull(Check(Messages.Categories, Origins.Browser, AutomationLevel.Extended));
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        var reply = await Handler(service).HandleAsync(Msg(Messages.Categories, Origins.Cli));
+        Assert.True(reply.Ok);
+        Assert.Equal(service.Categories.Select(c => c.DisplayName), reply.Categories);
+        Assert.Contains("Musica", reply.Categories!);                   // the tests run in Italian
+    }
+
     // ------------------------------------------------------------------ stable error codes (A3)
 
     [Fact]

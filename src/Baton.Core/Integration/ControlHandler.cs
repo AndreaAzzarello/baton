@@ -58,7 +58,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
     /// <summary>True for the types this handler answers (everything but the browser's own).</summary>
     public static bool Handles(ChannelMessage message) =>
         message.Type is Messages.List or Messages.Status or Messages.Pause or Messages.Resume or Messages.Retry or Messages.Remove
-            or Messages.Open or Messages.QueueStart or Messages.QueueStop or Messages.Version or Messages.Probe or Messages.Capabilities
+            or Messages.Open or Messages.QueueStart or Messages.QueueStop or Messages.Version or Messages.Probe or Messages.Capabilities or Messages.Categories
         || (message.Type == Messages.Add && (message.Origin ?? Origins.Browser) != Origins.Browser);
 
     /// <summary>
@@ -98,6 +98,9 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         {
             case Messages.Version:
                 return Ok(version: appVersion);
+            case Messages.Categories:
+                // The names a person (or an agent) gives to --category / "category", as the interface shows them: a read-only question.
+                return new ChannelReply(true, Protocol: Messages.ProtocolVersion, Categories: service.Categories.Select(c => c.DisplayName).ToList());
             case Messages.Capabilities:
                 return new ChannelReply(true, Protocol: Messages.ProtocolVersion, AppVersion: appVersion, Level: LevelName(message.Origin));
             case Messages.Probe:

@@ -18,6 +18,9 @@ internal sealed record AddResult(string Url, string Status, long? Id, DuplicateI
 
 internal sealed record AddOutput(bool Ok, List<AddResult> Results);
 
+/// <summary>queues and categories: one of the two lists is filled, the other is null.</summary>
+internal sealed record NamesOutput(bool Ok, List<string>? Queues, List<string>? Categories);
+
 internal sealed record ProbeOutput(bool Ok, ProbeInfo? Probe);
 
 internal sealed record ListOutput(bool Ok, List<DownloadInfo> Downloads);
@@ -34,6 +37,7 @@ internal sealed record DownloadOutput(bool Ok, DownloadInfo? Download, long? Id)
 [JsonSerializable(typeof(AddOutput))]
 [JsonSerializable(typeof(ListOutput))]
 [JsonSerializable(typeof(ProbeOutput))]
+[JsonSerializable(typeof(NamesOutput))]
 [JsonSerializable(typeof(DownloadOutput))]
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web, DefaultIgnoreCondition = JsonIgnoreCondition.Never)]
 internal sealed partial class CliJson : JsonSerializerContext;

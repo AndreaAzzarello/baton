@@ -195,4 +195,34 @@ public sealed class CliCorrectionTests
         Assert.Contains("batonctl list", run.Err.ToString());
         Assert.Contains("busy", run.Err.ToString());
     }
+
+    // ------------------------------------------------------------------ B8: the names a person must type are discoverable
+
+    [Fact]
+    public async Task B8_Queues_WithoutAWord_ListsTheQueueNames_AsTextAndAsJson()
+    {
+        ChannelReply App(ChannelMessage m) => m.Type == Messages.Queues ? new ChannelReply(true, Queues: ["Main", "Night"]) : new ChannelReply(false, Error: "no");
+        var text = new Run();
+        Assert.Equal(0, await text.ExecuteAsync(["queues"], App));
+        Assert.Equal(["Main", "Night"], text.Out.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+        Assert.Equal(Origins.Cli, text.Sent.Single().Origin);
+        var json = new Run();
+        Assert.Equal(0, await json.ExecuteAsync(["queues", "--json"], App));
+        using var doc = json.OutJson();
+        Assert.Equal(["Main", "Night"], doc.RootElement.GetProperty("queues").EnumerateArray().Select(e => e.GetString()));
+    }
+
+    [Fact]
+    public async Task B8_Categories_ListsTheCategoryNames_AsTextAndAsJson()
+    {
+        ChannelReply App(ChannelMessage m) => m.Type == Messages.Categories ? new ChannelReply(true, Categories: ["General", "Music"]) : new ChannelReply(false, Error: "no");
+        var text = new Run();
+        Assert.Equal(0, await text.ExecuteAsync(["categories"], App));
+        Assert.Equal(["General", "Music"], text.Out.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries));
+        var json = new Run();
+        Assert.Equal(0, await json.ExecuteAsync(["categories", "--json"], App));
+        using var doc = json.OutJson();
+        Assert.Equal(["General", "Music"], doc.RootElement.GetProperty("categories").EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(2, await new Run().ExecuteAsync(["categories", "extra"], App));
+    }
 }

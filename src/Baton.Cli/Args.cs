@@ -21,6 +21,7 @@ internal static class ArgParser
         ["resume"] = ([], []),
         ["retry"] = ([], []),
         ["queues"] = ([], []),
+        ["categories"] = ([], []),
         ["open"] = ([], []),
         ["remove"] = ([], ["all-completed"]),
         ["version"] = ([], []),

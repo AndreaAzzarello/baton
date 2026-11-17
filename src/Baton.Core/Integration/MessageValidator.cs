@@ -21,7 +21,7 @@ public static class MessageValidator
     private static readonly string[] KnownTypes =
         [Messages.Ping, Messages.Add, Messages.Activate, Messages.Queues, Messages.Hello, Messages.ProbeMedia, Messages.AddMedia, Messages.Batch, Messages.Grab,
          Messages.List, Messages.Status, Messages.Pause, Messages.Resume, Messages.Retry, Messages.Remove, Messages.Open, Messages.QueueStart,
-         Messages.QueueStop, Messages.Version, Messages.Link, Messages.Probe, Messages.Capabilities];
+         Messages.QueueStop, Messages.Version, Messages.Link, Messages.Probe, Messages.Capabilities, Messages.Categories];
 
     public const int MaxLinkLength = 8192;
 
