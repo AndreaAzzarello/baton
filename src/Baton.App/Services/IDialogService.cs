@@ -135,4 +135,7 @@ public interface IShellService
     string? GetClipboardText();
 
     void SetClipboardText(string text);
+
+    /// <summary>Copies a secret (a token): kept out of the clipboard history and the cloud clipboard where Windows allows it.</summary>
+    void SetClipboardSecret(string text) => SetClipboardText(text);
 }

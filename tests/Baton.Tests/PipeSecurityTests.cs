@@ -10,6 +10,7 @@ namespace Baton.Tests;
 public sealed class PipeSecurityTests
 {
     [Fact]
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
     public void ThePipe_DeniesTheNetworkGroup_AndAllowsOnlyTheCurrentUser()
     {
         Assert.True(OperatingSystem.IsWindows());

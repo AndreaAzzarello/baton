@@ -113,9 +113,9 @@ public sealed class SettingsViewModel : ObservableObject
         }, () => _apiToken.Length > 0);
         CopyTokenCommand = new RelayCommand(() =>
         {
-            CopyText?.Invoke(_apiToken);
+            (CopySecret ?? CopyText)?.Invoke(_apiToken);
             TokenMessage = Strings.SettingsApiTokenCopied;
-        }, () => _apiToken.Length > 0 && CopyText is not null);
+        }, () => _apiToken.Length > 0 && (CopySecret ?? CopyText) is not null);
         NewTokenCommand = new RelayCommand(() =>
         {
             if (_apiToken.Length > 0 && !_dialogs.Confirm(Strings.SettingsApiTokenNewConfirm, Strings.SettingsTabAutomation))
@@ -423,6 +423,9 @@ public sealed class SettingsViewModel : ObservableObject
 
     /// <summary>Puts text on the clipboard.</summary>
     public Action<string>? CopyText { get; init; }
+
+    /// <summary>Copies the API token: kept out of the clipboard history. Falls back to <see cref="CopyText"/>.</summary>
+    public Action<string>? CopySecret { get; init; }
 
     /// <summary>What the local API is doing now (listening, port in use…); null when it is off.</summary>
     public string? ApiStatus { get; init; }

@@ -24,6 +24,9 @@ Terza tappa di «Automation»: il server MCP.
   con diritti di amministratore, MCP e API sono spenti (un programma qualsiasi dello stesso utente non deve comandare un processo con più diritti).
   «Apri a fine download» vale per MCP e API solo se la regola
   elenca quell'origine; più tipi di file contano come eseguibili (script, pagine HTML/SVG, file RDP…).
+- Controlli più stretti per gli agenti: niente cookie né moduli (POST) da MCP e API, l'origine `clipboard` non è accettata sulla pipe,
+  caratteri di controllo C1 rifiutati nei testi, indirizzi IPv6 Teredo trattati come privati, il token dell'API copiato negli appunti
+  resta fuori dalla cronologia degli appunti di Windows, `GET /downloads?limit=&after=` dà l'elenco a pagine (senza parametri è tutto, come prima).
 - Righe di fine riga uniformi (LF) in tutto il repository, con controlli in `/fine-fase`.
 
 ## [1.4.1] — 2026-11-16

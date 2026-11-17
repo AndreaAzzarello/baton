@@ -1079,6 +1079,7 @@ public sealed class MainViewModel : ObservableObject
             },
             ClearDuplicateHistory = _service.ClearDuplicateHistory,
             CopyText = _shell.SetClipboardText,
+            CopySecret = _shell.SetClipboardSecret,
             McpCommandPath = Path.Combine(AppContext.BaseDirectory, "batonctl.exe"),
             ApiStatus = ApiStatus?.Invoke(),
             OpenActivityLog = () => _dialogs.ShowActivityLog(new ActivityLogViewModel(_dialogs, _service.AutomationLog)),

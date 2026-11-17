@@ -125,6 +125,9 @@ public sealed class UrlGuard
                 && (b.AsSpan(4, 8).IndexOfAnyExcept((byte)0) < 0 || b[4] == 0 && b[5] == 1)
                 || b.AsSpan(0, 12).IndexOfAnyExcept((byte)0) < 0)
                 return IsPrivate(new IPAddress(b.AsSpan(12, 4)));
+            // Teredo (2001:0::/32) tunnels through a server and hides the client's IPv4 address: never a plain public address.
+            if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0 && b[3] == 0)
+                return true;
             // 6to4 (2002::/16): bytes 2 to 5.
             if (b[0] == 0x20 && b[1] == 0x02)
                 return IsPrivate(new IPAddress(b.AsSpan(2, 4)));

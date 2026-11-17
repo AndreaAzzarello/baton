@@ -10,7 +10,7 @@
   "paths": {
     "/version": { "get": { "summary": "App and protocol version", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "version": { "type": "string" }, "protocol": { "type": "integer" } } } } } } } } },
     "/downloads": {
-      "get": { "summary": "List downloads (read only)", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "downloads": { "type": "array", "items": { "$ref": "#/components/schemas/Download" } } } } } } } } },
+      "get": { "summary": "List downloads (read only)", "description": "Without parameters the whole list. With `limit` (1-200) and/or `after` (the nextCursor of the previous page) a page; nextCursor is missing on the last page.", "parameters": [{ "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 200 } }, { "name": "after", "in": "query", "schema": { "type": "integer", "minimum": 1 } }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "downloads": { "type": "array", "items": { "$ref": "#/components/schemas/Download" } }, "nextCursor": { "type": "integer" } } } } } } } },
       "post": {
         "summary": "Add a download (read and add)",
         "description": "Only http, https, ftp, ftps and ftpes. Addresses on this computer or a private network are refused unless the setting 'Allow addresses of the local network' is on. The API cannot choose a folder: use `category`.",

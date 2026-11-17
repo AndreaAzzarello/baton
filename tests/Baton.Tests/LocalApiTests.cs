@@ -95,6 +95,28 @@ public sealed class LocalApiTests : IAsyncLifetime
         return (response.StatusCode, text.Length > 0 ? JsonDocument.Parse(text).RootElement.Clone() : default);
     }
 
+    [Fact]
+    public async Task ListDownloads_WithoutParameters_IsTheWholeList_AndWithThem_APageWithNextCursor_A26()
+    {
+        for (var i = 0; i < 3; i++)
+            _service.Add(_server.Add($"page{i}.bin", new ServedFile { Content = TestFileServer.RandomBytes(2_000, i) }), paused: true);
+
+        var all = await Call(HttpMethod.Get, "downloads");
+        Assert.Equal(3, all.Json.GetProperty("downloads").GetArrayLength());
+        Assert.False(all.Json.TryGetProperty("nextCursor", out _));   // the 1.4.1 shape is unchanged
+
+        var first = await Call(HttpMethod.Get, "downloads?limit=2");
+        Assert.Equal(2, first.Json.GetProperty("downloads").GetArrayLength());
+        var cursor = first.Json.GetProperty("nextCursor").GetInt64();
+        var second = await Call(HttpMethod.Get, $"downloads?limit=2&after={cursor}");
+        Assert.Equal(1, second.Json.GetProperty("downloads").GetArrayLength());
+        Assert.False(second.Json.TryGetProperty("nextCursor", out var none) && none.ValueKind != JsonValueKind.Null);   // absent on the last page
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await Call(HttpMethod.Get, "downloads?limit=0")).Status);
+        Assert.Equal(HttpStatusCode.BadRequest, (await Call(HttpMethod.Get, "downloads?limit=201")).Status);
+        Assert.Equal(HttpStatusCode.BadRequest, (await Call(HttpMethod.Get, "downloads?after=abc")).Status);
+    }
+
     private static async Task WaitFor(Func<bool> condition)
     {
         var deadline = DateTime.UtcNow.AddSeconds(30);

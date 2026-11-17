@@ -22,6 +22,7 @@ Refusals and every request that changes something are written to the activity lo
 | `GET /downloads`, `GET /downloads/{id}` | read | List, status of one |
 | `POST /downloads` | read and add | Add `{ "url": ..., "category": ..., "allowDuplicate": false }`; 201 added, 409 `duplicate`, 400 invalid, 403 refused |
 | `POST /downloads/{id}/pause` `resume` `retry` | extended | Control |
+| `GET /downloads?limit=50&after=<id>` | read only | The same list in pages (`limit` 1–200, `after` = the `nextCursor` of the previous page; `nextCursor` is missing on the last page). Without `limit` and `after` the whole list, as in 1.4.1 |
 | `DELETE /downloads/{id}` | extended | Remove a **finished** download from the list (the file stays on the disk); an unfinished one is refused with 400, because removing it would delete its partial file |
 | `GET /queues` | read | Queues |
 | `POST /queues/{name}/start` `stop` | extended | Control a queue; a queue started this way never runs its end action (shut down, sleep…) by itself, Baton asks for a click |

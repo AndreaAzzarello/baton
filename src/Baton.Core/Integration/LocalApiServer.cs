@@ -184,7 +184,7 @@ public sealed class LocalApiServer : IDisposable
             body = read;
         }
 
-        var (message, error) = Translate(method, route, body);
+        var (message, error) = Translate(method, route, body, http.Request.QueryString);
         if (error is not null)
             return error.Value;
         if (message is null)
@@ -236,7 +236,7 @@ public sealed class LocalApiServer : IDisposable
         return message.Type switch
         {
             Messages.Version => (200, new { version = reply.AppVersion, protocol = Messages.ProtocolVersion }, null),
-            Messages.List => (200, new { downloads = reply.Downloads }, null),
+            Messages.List => (200, message.Limit is null && message.After is null ? new { downloads = reply.Downloads } : new { downloads = reply.Downloads, nextCursor = reply.NextCursor }, null),
             Messages.Status or Messages.Pause or Messages.Resume or Messages.Retry => (200, (object?)reply.Download ?? new { }, detail),
             Messages.Remove => (200, new { removed = reply.Id }, detail),
             _ => (200, new { ok = true }, detail),
@@ -244,7 +244,7 @@ public sealed class LocalApiServer : IDisposable
     }
 
     /// <summary>The route as a message (null message and no error: answered here), or the error response.</summary>
-    private static (ChannelMessage? Message, (int, object, string?)? Error) Translate(string method, string[] route, byte[] body)
+    private static (ChannelMessage? Message, (int, object, string?)? Error) Translate(string method, string[] route, byte[] body, System.Collections.Specialized.NameValueCollection query)
     {
         (ChannelMessage?, (int, object, string?)?) NotFound() => (null, (404, new { error = "Not found." }, null));
         (ChannelMessage?, (int, object, string?)?) Wrong() => (null, (405, new { error = "Method not allowed." }, null));
@@ -265,7 +265,24 @@ public sealed class LocalApiServer : IDisposable
                 return method == "POST" ? (Msg(action == "start" ? Messages.QueueStart : Messages.QueueStop, queue: name), null) : Wrong();
             case ["downloads"]:
                 if (method == "GET")
-                    return (Msg(Messages.List), null);
+                {
+                    // Without limit and after: the whole list, as since 1.4.1. With them: a page, and nextCursor when there is more.
+                    int? limit = null;
+                    long? after = null;
+                    if (query["limit"] is { } limitText)
+                    {
+                        if (!int.TryParse(limitText, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var l) || l is < 1 or > MessageValidator.MaxPageSize)
+                            return Bad($"limit must be a number from 1 to {MessageValidator.MaxPageSize}.", "invalid");
+                        limit = l;
+                    }
+                    if (query["after"] is { } afterText)
+                    {
+                        if (!long.TryParse(afterText, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var a) || a < 1)
+                            return Bad("after must be the nextCursor of a previous page.", "invalid");
+                        after = a;
+                    }
+                    return (new ChannelMessage(Messages.List, Version: Messages.ProtocolVersion, Origin: Origins.Api, Limit: limit, After: after), null);
+                }
                 if (method != "POST")
                     return Wrong();
                 ApiAddRequest? add;

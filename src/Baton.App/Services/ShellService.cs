@@ -33,6 +33,23 @@ public sealed class ShellService : IShellService
         }
     }
 
+    public void SetClipboardSecret(string text)
+    {
+        try
+        {
+            var data = new DataObject();
+            data.SetText(text);
+            // The formats Windows reads before it records a copy in the history, syncs it to the cloud or shows it to clipboard monitors.
+            data.SetData("ExcludeClipboardContentFromMonitorProcessing", new MemoryStream([1, 0, 0, 0]));
+            data.SetData("CanIncludeInClipboardHistory", new MemoryStream([0, 0, 0, 0]));
+            data.SetData("CanUploadToCloudClipboard", new MemoryStream([0, 0, 0, 0]));
+            Clipboard.SetDataObject(data, copy: true);
+        }
+        catch (COMException)
+        {
+        }
+    }
+
     public void SetClipboardText(string text)
     {
         try

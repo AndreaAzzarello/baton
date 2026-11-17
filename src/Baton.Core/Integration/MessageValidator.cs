@@ -36,7 +36,8 @@ public static class MessageValidator
             return $"Unknown message type: {Clip(message.Type)}";
         if (message.Version is < 1 or > 1000)
             return "Invalid protocol version.";
-        if (message.Origin is { } origin && !Origins.Known.Contains(origin))
+        // "clipboard" is the origin of an offer made inside the app (a rule's condition), never of a message on the pipe.
+        if (message.Origin is { } origin && (!Origins.Known.Contains(origin) || origin == Origins.Clipboard))
             return "Unknown origin.";
         if (Text(message.Queue, 200) is { } queueError)
             return queueError;
@@ -56,6 +57,10 @@ public static class MessageValidator
                 if ((message.Origin ?? Origins.Browser) == Origins.Browser
                     && (download.Folder is not null || download.Category is not null || download.Start is not null || download.AllowDuplicate is not null))
                     return "These options are not for the browser.";
+                // MCP and the API carry no cookies and send no forms: an agent has no session of the user to borrow.
+                if (message.Origin is Origins.Mcp or Origins.Api
+                    && (download.Cookies is { Count: > 0 } || download.Method is not null || download.Body is not null || download.BodyType is not null))
+                    return "Cookies and forms are not for agents.";
                 return ValidateDownload(download);
             case Messages.Status:
             case Messages.Open:
@@ -192,7 +197,7 @@ public static class MessageValidator
     private static string? Text(string? value, int max) =>
         value is null ? null : value.Length > max ? "A text field is too long." : HasControl(value) ? "A text field contains control characters." : null;
 
-    private static bool HasControl(string? value) => value is not null && value.Any(c => c < 0x20 || c == 0x7F);
+    private static bool HasControl(string? value) => value is not null && value.Any(c => c < 0x20 || c is >= (char)0x7F and <= (char)0x9F);
 
     private static bool IsWeb(string value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https";
 

@@ -518,6 +518,9 @@ public partial class App : Application
     private async Task<ChannelReply> OnChannelMessage(ChannelMessage message)
     {
         // Messages were validated by the channel (known types, sizes, address schemes) before reaching here.
+        // Without the handler nobody checks what an origin may do: refuse everything but the browser's own greeting.
+        if (_control is null && message.Type is not (Messages.Ping or Messages.Hello))
+            return new ChannelReply(false, Error: "Baton is still starting.", Code: ReplyCode.Failed);
         if (_control is not null)
         {
             // What the origin may do (the extension is always "browser"; MCP and the API stay off until their settings exist).
