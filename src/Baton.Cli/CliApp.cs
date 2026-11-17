@@ -562,6 +562,13 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         if (_synthetic is { } made && text == made.En)
             return made;
         var clean = AgentText.Clean(text, AgentText.MaxMessage);
+        // A refusal with a code the CLI knows is worded in the language of Windows; what the app said stays for --json and an English terminal.
+        // The codes that carry a detail of their own (why a probe failed, what was not valid) keep it next to the Italian words.
+        if (reply.Protocol is not null && reply.Code is { } known)
+        {
+            var words = CliText.ForCode(known).It;
+            return new Msg(clean, known is ReplyCode.Failed or ReplyCode.Invalid or ReplyCode.ProbeFailed ? $"{words} ({clean})" : words);
+        }
         return reply.Protocol is null
             ? new Msg(clean + " (this Baton is older than 1.4 and does not know the command line: update it)",
                 clean + " (questo Baton è più vecchio della 1.4 e non conosce la riga di comando: aggiornalo)")

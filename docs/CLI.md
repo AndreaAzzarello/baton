@@ -51,6 +51,7 @@ Options of `add`:
 Every message meant for people (errors, `--help`, the labels of `status` and `probe`, «Starting Baton...») is in Italian when Windows' display
 language is Italian, and in English otherwise. `--json` and `batonctl mcp` are always in English, with stable codes (`appTooOld`, `sameUrl`, …)
 next to the words: a script should read the codes, not the words.
+The refusals that come from Baton (`noDownload`, `noCategory`, `noQueue`, …: every code of the protocol) are worded in Italian from their code; a code the command line does not know shows the English text Baton sent.
 
 ## Duplicates
 

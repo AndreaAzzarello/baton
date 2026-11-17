@@ -105,6 +105,51 @@ public sealed class CliCorrectionTests
         Assert.DoesNotContain("UnauthorizedAccess_", doc.RootElement.GetProperty("error").GetString());
     }
 
+    // ------------------------------------------------------------------ the app's refusals in the language of Windows
+
+    [Fact]
+    public void EveryReplyCode_HasAnItalianAndAnEnglishText_ThatDiffer()
+    {
+        foreach (var code in Enum.GetValues<ReplyCode>())
+        {
+            var text = CliText.ForCode(code);
+            Assert.False(string.IsNullOrWhiteSpace(text.En), $"{code}: no English text");
+            Assert.False(string.IsNullOrWhiteSpace(text.It), $"{code}: no Italian text");
+            Assert.NotEqual(text.En, text.It);
+            Assert.DoesNotContain(code.ToString(), text.It); // words, not the name of the enum
+        }
+    }
+
+    [Theory]
+    [InlineData(ReplyCode.NoDownload, "No download with this number.", "Nessun download")]
+    [InlineData(ReplyCode.NoCategory, "No category with this name.", "Nessuna categoria")]
+    [InlineData(ReplyCode.NoQueue, "No queue with this name.", "Nessuna coda")]
+    public async Task AnErrorFromTheApp_IsInItalian_WhenWindowsIs_AndJsonStaysEnglish(ReplyCode code, string english, string italianStart)
+    {
+        ChannelReply App(ChannelMessage _) => new(false, Error: english, Protocol: Messages.ProtocolVersion, Code: code);
+        var it = new Run();
+        Assert.Equal(1, await it.ExecuteAsync(["status", "7"], App, italian: true));
+        Assert.Contains(italianStart, it.Err.ToString());
+        Assert.DoesNotContain(english, it.Err.ToString());
+
+        var en = new Run();
+        await en.ExecuteAsync(["status", "7"], App);
+        Assert.Contains(english, en.Err.ToString());
+
+        var json = new Run();
+        await json.ExecuteAsync(["status", "7", "--json"], App, italian: true);
+        using var doc = json.OutJson();
+        Assert.Equal(english, doc.RootElement.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task AnErrorWithoutAKnownCode_IsShownAsTheAppSaidIt()
+    {
+        var run = new Run();
+        await run.ExecuteAsync(["status", "7"], _ => new ChannelReply(false, Error: "Something new.", Protocol: Messages.ProtocolVersion), italian: true);
+        Assert.Contains("Something new.", run.Err.ToString());
+    }
+
     // ------------------------------------------------------------------ B6: a folder that cannot be a folder is refused, with the likely cause
 
     [Theory]
