@@ -725,6 +725,7 @@ L'estensione che hai continua a funzionare. Per aggiornarla esegui l'installer d
   <data name="LoginUserLabel" xml:space="preserve"><value>Nome _utente</value></data>
   <data name="LoginUserName" xml:space="preserve"><value>Nome utente</value></data>
   <data name="LoginWindowsAccount" xml:space="preserve"><value>Usa il mio account di _Windows</value></data>
+  <data name="LoginWindowsAccountName" xml:space="preserve"><value>Usa il mio account di Windows</value></data>
   <data name="LoginWindowsAccountToolTip" xml:space="preserve"><value>Per la rete aziendale (NTLM/Kerberos). L'account di Windows viene offerto solo a questo server e solo con NTLM o Negotiate, mai come password in chiaro.</value></data>
   <data name="MediaBlockedDrm" xml:space="preserve"><value>Il video è protetto (DRM o segmenti cifrati): non può essere scaricato e Baton non aggira le protezioni.</value></data>
   <data name="MediaBlockedLive" xml:space="preserve"><value>È una diretta: si possono scaricare solo video completi, non trasmissioni in corso.</value></data>

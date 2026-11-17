@@ -725,6 +725,7 @@ The extension you have keeps working. To update it, run the {0} installer or ext
   <data name="LoginUserLabel" xml:space="preserve"><value>_User name</value></data>
   <data name="LoginUserName" xml:space="preserve"><value>User name</value></data>
   <data name="LoginWindowsAccount" xml:space="preserve"><value>Use my _Windows account</value></data>
+  <data name="LoginWindowsAccountName" xml:space="preserve"><value>Use my Windows account</value></data>
   <data name="LoginWindowsAccountToolTip" xml:space="preserve"><value>For the company network (NTLM/Kerberos). The Windows account is offered only to this server and only with NTLM or Negotiate, never as a plain password.</value></data>
   <data name="MediaBlockedDrm" xml:space="preserve"><value>The video is protected (DRM or encrypted segments): it cannot be downloaded and Baton does not bypass protections.</value></data>
   <data name="MediaBlockedLive" xml:space="preserve"><value>It is a live stream: only complete videos can be downloaded, not broadcasts in progress.</value></data>

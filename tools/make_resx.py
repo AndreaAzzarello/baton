@@ -512,6 +512,7 @@ S = {
  "LoginPasswordName": ("Password", "Password"),
  "LoginPasswordKeep": ("Leave empty to keep the saved password", "Lascia vuoto per mantenere la password salvata"),
  "LoginWindowsAccount": ("Use my _Windows account", "Usa il mio account di _Windows"),
+ "LoginWindowsAccountName": ("Use my Windows account", "Usa il mio account di Windows"),
  "LoginWindowsAccountToolTip": ("For the company network (NTLM/Kerberos). The Windows account is offered only to this server and only with NTLM or Negotiate, never as a plain password.", "Per la rete aziendale (NTLM/Kerberos). L'account di Windows viene offerto solo a questo server e solo con NTLM o Negotiate, mai come password in chiaro."),
  "LoginNew": ("_New", "_Nuova"),
  "LoginSave": ("Sa_ve credentials", "Sa_lva credenziali"),
