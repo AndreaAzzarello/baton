@@ -1004,6 +1004,7 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsApiPortBusy" xml:space="preserve"><value>La porta {0} è usata da un altro programma, quindi l'API è spenta. Scegli un'altra porta.</value></data>
   <data name="SettingsApiPortHint" xml:space="preserve"><value>Solo questo PC può raggiungerla (127.0.0.1). Se un altro programma usa la porta, l'API resta spenta finché non ne scegli un'altra.</value></data>
   <data name="SettingsApiRunning" xml:space="preserve"><value>L'API è in ascolto su http://127.0.0.1:{0}/api/v1/</value></data>
+  <data name="SettingsApiTitle" xml:space="preserve"><value>API locale</value></data>
   <data name="SettingsApiToken" xml:space="preserve"><value>Token dell'API</value></data>
   <data name="SettingsApiTokenCopied" xml:space="preserve"><value>Token copiato negli appunti.</value></data>
   <data name="SettingsApiTokenCopy" xml:space="preserve"><value>_Copia</value></data>
@@ -1053,7 +1054,13 @@ Sì: le cartelle cambiano (i file già scaricati restano dove sono, a meno che t
   <data name="SettingsLanguageName" xml:space="preserve"><value>Lingua dell'interfaccia</value></data>
   <data name="SettingsLocalNetwork" xml:space="preserve"><value>Consenti indirizzi della rete locale</value></data>
   <data name="SettingsLocalNetworkHint" xml:space="preserve"><value>Spento: programmi e agenti non possono far scaricare a Baton da questo stesso PC o da reti private (router, NAS, intranet). Attivalo solo se ti serve.</value></data>
+  <data name="SettingsMcpCopied" xml:space="preserve"><value>Copiata. Incollala nel file dei server MCP del tuo agente.</value></data>
+  <data name="SettingsMcpCopy" xml:space="preserve"><value>Copia la con_figurazione MCP</value></data>
+  <data name="SettingsMcpCopyMissing" xml:space="preserve"><value>batonctl.exe non si trova accanto a Baton.</value></data>
+  <data name="SettingsMcpCopyName" xml:space="preserve"><value>Copia la configurazione MCP</value></data>
+  <data name="SettingsMcpHint" xml:space="preserve"><value>Per Claude Code o Claude Desktop: incolla il testo copiato nel file dei server MCP. Vedi docs/MCP.md.</value></data>
   <data name="SettingsMcpLevel" xml:space="preserve"><value>Server MCP (agenti AI)</value></data>
+  <data name="SettingsMcpTitle" xml:space="preserve"><value>Agenti AI (MCP)</value></data>
   <data name="SettingsNotify" xml:space="preserve"><value>Mostra una notifica di Windows quando un download è completato</value></data>
   <data name="SettingsOverridingCategories" xml:space="preserve"><value>Queste categorie usano una cartella propria al posto di quella predefinita:</value></data>
   <data name="SettingsPortableHost" xml:space="preserve"><value>Collega l'estensione del browser a questa copia portable (la registra come host nativo dei browser)</value></data>

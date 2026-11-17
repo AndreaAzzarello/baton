@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using Baton.App.Services;
 using Baton.App.ViewModels;
@@ -22,6 +23,43 @@ public sealed class AutomationSettingsTabTests
         Dialogs.Answer = confirm;
         var dialogs = DispatchProxy.Create<IDialogService, Dialogs>();
         return new SettingsViewModel(dialogs, settings, runAtStartup: false) { SaveApiToken = saveToken, CopyText = _ => { } };
+    }
+
+    private static SettingsViewModel CreateWithMcp(string? path, List<string> copied)
+    {
+        Dialogs.Answer = true;
+        var dialogs = DispatchProxy.Create<IDialogService, Dialogs>();
+        return new SettingsViewModel(dialogs, Valid(), runAtStartup: false) { CopyText = copied.Add, McpCommandPath = path };
+    }
+
+    [Fact]
+    public void CopyMcpConfiguration_PutsTheRealPathOfBatonctlOnTheClipboard()
+    {
+        var exe = Path.Combine(Path.GetTempPath(), "dm-tests-batonctl-" + Guid.NewGuid().ToString("N") + ".exe");
+        File.WriteAllText(exe, "x");
+        try
+        {
+            var copied = new List<string>();
+            var vm = CreateWithMcp(exe, copied);
+            vm.CopyMcpConfigCommand.Execute(null);
+            var text = Assert.Single(copied);
+            using var json = System.Text.Json.JsonDocument.Parse(text);
+            var server = json.RootElement.GetProperty("mcpServers").GetProperty("baton");
+            Assert.Equal(exe, server.GetProperty("command").GetString());
+            Assert.Equal(["mcp"], server.GetProperty("args").EnumerateArray().Select(a => a.GetString()!).ToArray());
+            Assert.Equal(Baton.Core.Resources.Strings.SettingsMcpCopied, vm.McpMessage);
+        }
+        finally { File.Delete(exe); }
+    }
+
+    [Fact]
+    public void CopyMcpConfiguration_WithoutBatonctl_SaysSo_AndCopiesNothing()
+    {
+        var copied = new List<string>();
+        var vm = CreateWithMcp(Path.Combine(Path.GetTempPath(), "dm-tests-missing", "batonctl.exe"), copied);
+        vm.CopyMcpConfigCommand.Execute(null);
+        Assert.Empty(copied);
+        Assert.Equal(Baton.Core.Resources.Strings.SettingsMcpCopyMissing, vm.McpMessage);
     }
 
     private static AppSettings Valid() => new() { DownloadFolder = @"C:\Users\x\Downloads" };

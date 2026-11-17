@@ -298,11 +298,19 @@
                     <StackPanel Margin="4,12,22,4">
                         <TextBlock Text="{l:Loc SettingsAutomationHint}" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
 
-                        <Label Content="{l:Loc SettingsMcpLevel}" Target="{Binding ElementName=McpLevelBox}" Padding="0" Margin="0,8,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <!-- MCP server: its level, then the button that gives the agent's configuration on a row of its own -->
+                        <TextBlock Text="{l:Loc SettingsMcpTitle}" Style="{StaticResource SectionTitle}" Margin="0,12,0,4" />
+                        <Label Content="{l:Loc SettingsMcpLevel}" Target="{Binding ElementName=McpLevelBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
                         <ComboBox x:Name="McpLevelBox" ItemsSource="{Binding AutomationLevels}" SelectedItem="{Binding McpLevelChoice}" DisplayMemberPath="Text"
                                   HorizontalAlignment="Left" MinWidth="320" AutomationProperties.Name="{l:Loc SettingsMcpLevel}" />
+                        <Button Content="{l:Loc SettingsMcpCopy}" Style="{StaticResource DialogButton}" HorizontalAlignment="Left" Margin="0,10,0,0" MinWidth="0"
+                                Command="{Binding CopyMcpConfigCommand}" AutomationProperties.Name="{l:Loc SettingsMcpCopyName}" />
+                        <TextBlock Text="{Binding McpMessage}" Style="{StaticResource NoteText}" AutomationProperties.LiveSetting="Polite" />
+                        <TextBlock Text="{l:Loc SettingsMcpHint}" Foreground="{DynamicResource MutedBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
 
-                        <Label Content="{l:Loc SettingsApiLevel}" Target="{Binding ElementName=ApiLevelBox}" Padding="0" Margin="0,14,0,4" Foreground="{DynamicResource MutedBrush}" />
+                        <!-- Local API -->
+                        <TextBlock Text="{l:Loc SettingsApiTitle}" Style="{StaticResource SectionTitle}" Margin="0,24,0,4" />
+                        <Label Content="{l:Loc SettingsApiLevel}" Target="{Binding ElementName=ApiLevelBox}" Padding="0" Margin="0,4,0,4" Foreground="{DynamicResource MutedBrush}" />
                         <ComboBox x:Name="ApiLevelBox" ItemsSource="{Binding AutomationLevels}" SelectedItem="{Binding ApiLevelChoice}" DisplayMemberPath="Text"
                                   HorizontalAlignment="Left" MinWidth="320" AutomationProperties.Name="{l:Loc SettingsApiLevel}" />
 

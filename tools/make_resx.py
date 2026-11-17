@@ -842,6 +842,13 @@ S = {
  # Automation (1.4.1)
  "SettingsTabAutomation": ("Automation", "Automazione"),
  "SettingsAutomationHint": ("Lets other programs and AI agents on this PC control Baton. Everything is off by default; the command line is not affected. Opening files is never allowed to them, and nothing here deletes files from the disk.", "Permette ad altri programmi e agenti AI di questo PC di controllare Baton. Tutto è spento per impostazione predefinita; la riga di comando non è coinvolta. Aprire i file non è mai permesso loro e nulla qui cancella file dal disco."),
+ "SettingsMcpTitle": ("AI agents (MCP)", "Agenti AI (MCP)"),
+ "SettingsApiTitle": ("Local API", "API locale"),
+ "SettingsMcpCopy": ("Copy the MCP con_figuration", "Copia la con_figurazione MCP"),
+ "SettingsMcpCopyName": ("Copy the MCP configuration", "Copia la configurazione MCP"),
+ "SettingsMcpCopied": ("Copied. Paste it in the MCP servers file of your agent.", "Copiata. Incollala nel file dei server MCP del tuo agente."),
+ "SettingsMcpCopyMissing": ("batonctl.exe was not found next to Baton.", "batonctl.exe non si trova accanto a Baton."),
+ "SettingsMcpHint": ("For Claude Code or Claude Desktop: paste the copied text in the MCP servers file. See docs/MCP.md.", "Per Claude Code o Claude Desktop: incolla il testo copiato nel file dei server MCP. Vedi docs/MCP.md."),
  "SettingsMcpLevel": ("MCP server (AI agents)", "Server MCP (agenti AI)"),
  "SettingsApiLevel": ("Local API", "API locale"),
  "AutomationLevelOff": ("Off", "Spento"),

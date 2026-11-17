@@ -1004,6 +1004,7 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="SettingsApiPortBusy" xml:space="preserve"><value>Port {0} is used by another program, so the API is off. Choose another port.</value></data>
   <data name="SettingsApiPortHint" xml:space="preserve"><value>Only this PC can reach it (127.0.0.1). If another program uses the port, the API stays off until you choose another.</value></data>
   <data name="SettingsApiRunning" xml:space="preserve"><value>The API is listening on http://127.0.0.1:{0}/api/v1/</value></data>
+  <data name="SettingsApiTitle" xml:space="preserve"><value>Local API</value></data>
   <data name="SettingsApiToken" xml:space="preserve"><value>API token</value></data>
   <data name="SettingsApiTokenCopied" xml:space="preserve"><value>Token copied to the clipboard.</value></data>
   <data name="SettingsApiTokenCopy" xml:space="preserve"><value>_Copy</value></data>
@@ -1053,7 +1054,13 @@ Yes: the folders change (files already downloaded stay where they are, unless yo
   <data name="SettingsLanguageName" xml:space="preserve"><value>Language of the interface</value></data>
   <data name="SettingsLocalNetwork" xml:space="preserve"><value>Allow addresses of the local network</value></data>
   <data name="SettingsLocalNetworkHint" xml:space="preserve"><value>Off: programs and agents cannot make Baton download from this PC itself or from private networks (routers, NAS, intranet). Turn it on only if you need that.</value></data>
+  <data name="SettingsMcpCopied" xml:space="preserve"><value>Copied. Paste it in the MCP servers file of your agent.</value></data>
+  <data name="SettingsMcpCopy" xml:space="preserve"><value>Copy the MCP con_figuration</value></data>
+  <data name="SettingsMcpCopyMissing" xml:space="preserve"><value>batonctl.exe was not found next to Baton.</value></data>
+  <data name="SettingsMcpCopyName" xml:space="preserve"><value>Copy the MCP configuration</value></data>
+  <data name="SettingsMcpHint" xml:space="preserve"><value>For Claude Code or Claude Desktop: paste the copied text in the MCP servers file. See docs/MCP.md.</value></data>
   <data name="SettingsMcpLevel" xml:space="preserve"><value>MCP server (AI agents)</value></data>
+  <data name="SettingsMcpTitle" xml:space="preserve"><value>AI agents (MCP)</value></data>
   <data name="SettingsNotify" xml:space="preserve"><value>Show a Windows notification when a download completes</value></data>
   <data name="SettingsOverridingCategories" xml:space="preserve"><value>These categories use a folder of their own instead of the default folder:</value></data>
   <data name="SettingsPortableHost" xml:space="preserve"><value>Connect the browser extension to this portable copy (registers it as the browsers' native messaging host)</value></data>

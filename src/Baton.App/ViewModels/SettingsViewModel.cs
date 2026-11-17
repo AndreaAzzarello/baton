@@ -129,6 +129,16 @@ public sealed class SettingsViewModel : ObservableObject
             OnPropertyChanged(nameof(HasToken));
             CommandManager.InvalidateRequerySuggested();
         });
+        CopyMcpConfigCommand = new RelayCommand(() =>
+        {
+            if (McpCommandPath is not { } path || !File.Exists(path))
+            {
+                McpMessage = Strings.SettingsMcpCopyMissing;
+                return;
+            }
+            CopyText?.Invoke(Core.Integration.McpConfig.Json(path));
+            McpMessage = Strings.SettingsMcpCopied;
+        }, () => CopyText is not null);
         OpenActivityLogCommand = new RelayCommand(() => OpenActivityLog?.Invoke(), () => OpenActivityLog is not null);
         OpenRulesCommand = new RelayCommand(() => OpenRules?.Invoke(), () => OpenRules is not null);
 
@@ -441,6 +451,13 @@ public sealed class SettingsViewModel : ObservableObject
     public string ShowTokenLabel => _tokenVisible ? Strings.SettingsApiTokenHide : Strings.SettingsApiTokenShow;
 
     public string? TokenMessage { get => _tokenMessage; private set => Set(ref _tokenMessage, value); }
+
+    /// <summary>Where batonctl.exe is (it sits next to Baton.exe, installed or portable); the MCP configuration points at it.</summary>
+    public string? McpCommandPath { get; init; }
+
+    private string? _mcpMessage;
+    public string? McpMessage { get => _mcpMessage; private set => Set(ref _mcpMessage, value); }
+    public ICommand CopyMcpConfigCommand { get; }
 
     public ICommand ShowTokenCommand { get; }
     public ICommand CopyTokenCommand { get; }
