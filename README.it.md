@@ -779,7 +779,7 @@ l'host per tutti i browser. Se l'app non è mai stata avviata, il link non è an
 - **Intercetta automaticamente** (icona colorata): i download avviati dal browser che rispettano le regole passano all'app.
 - **Solo menu contestuale** (icona grigia): il browser scarica come sempre; si usa il tasto destro.
 
-Regole (popup › Regole, e "Su questo sito"): tipi di file, dimensione minima (predefinita 1 MB; se la dimensione non è nota il
+Le impostazioni del popup (popup › Quando intercettare, e "Su questo sito"): tipi di file, dimensione minima (predefinita 1 MB; se la dimensione non è nota il
 download viene intercettato), siti da intercettare **sempre** (qualsiasi tipo e dimensione) o **mai** (vincono sui "sempre"),
 anche per la pagina da cui parte il download. **Alt+clic** su un link: quel download resta al browser, una volta sola.
 Le finestre in incognito non vengono mai intercettate e i loro cookie non vengono mai inviati.
@@ -819,7 +819,7 @@ se `Secure`. Nessun cookie dalle finestre private.
 
 L'estensione nota le risorse video e audio caricate dalla pagina: manifest HLS (`.m3u8`, `application/vnd.apple.mpegurl`) e DASH
 (`.mpd`, `application/dash+xml`) e file `video/*` / `audio/*` caricati da un elemento `<video>`/`<audio>` (non i segmenti che i
-player scaricano a pezzi). Come mostrarli si sceglie nel popup, *Regole* › **Comparsa del pulsante video**:
+player scaricano a pezzi). Come mostrarli si sceglie nel popup, *Quando intercettare* › **Comparsa del pulsante video**:
 - **Ridotto a icona** (predefinito): una piccola linguetta con il logo sul bordo destro; un clic apre il pannello con le
   qualità e le dimensioni stimate (bitrate × durata, o la dimensione esatta per i file);
 - **Sempre visibile**: il pulsante "Scarica questo video" con **⋯** e **×**;

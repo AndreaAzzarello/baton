@@ -83,7 +83,7 @@ M = {
  "siteRuleAlways": ("Always intercept", "Intercetta sempre"),
  "siteRuleNever": ("Never intercept", "Non intercettare mai"),
  "siteButton": ("“Download this video” button", "Pulsante «Scarica questo video»"),
- "rulesTitle": ("Rules", "Regole"),
+ "rulesTitle": ("When to intercept", "Quando intercettare"),
  "extensionsLabel": ("File types to intercept", "Tipi di file da intercettare"),
  "minSizeLabel": ("Only files larger than (MB, 0 = any)", "Solo file più grandi di (MB, 0 = tutti)"),
  "alwaysSitesLabel": ("Always intercept from these sites (any type and size)", "Intercetta sempre da questi siti (qualsiasi tipo e dimensione)"),
