@@ -110,6 +110,7 @@
   <data name="ActivityReason_noFile" xml:space="preserve"><value>Il file non c'è</value></data>
   <data name="ActivityReason_noQueue" xml:space="preserve"><value>Nessuna coda con questo nome</value></data>
   <data name="ActivityReason_noToken" xml:space="preserve"><value>Token mancante</value></data>
+  <data name="ActivityReason_notFinished" xml:space="preserve"><value>Si possono togliere solo i download finiti</value></data>
   <data name="ActivityReason_notLoopback" xml:space="preserve"><value>Non da questo computer</value></data>
   <data name="ActivityReason_privateNetwork" xml:space="preserve"><value>Indirizzo su questo computer o su una rete privata</value></data>
   <data name="ActivityReason_programOrScript" xml:space="preserve"><value>Un programma o uno script non si apre mai</value></data>
@@ -117,7 +118,9 @@
   <data name="ActivityReason_sameFile" xml:space="preserve"><value>Stesso file</value></data>
   <data name="ActivityReason_sameName" xml:space="preserve"><value>Stesso nome</value></data>
   <data name="ActivityReason_sameUrl" xml:space="preserve"><value>Stesso indirizzo</value></data>
+  <data name="ActivityReason_tooManyPending" xml:space="preserve"><value>Troppi download ancora in attesa</value></data>
   <data name="ActivityReason_unknownType" xml:space="preserve"><value>Richiesta sconosciuta</value></data>
+  <data name="ActivityReason_unresolvable" xml:space="preserve"><value>Il nome dell'indirizzo non si risolve</value></data>
   <data name="ActivityReason_webPage" xml:space="preserve"><value>Richiesta da una pagina web</value></data>
   <data name="ActivityReason_wrongToken" xml:space="preserve"><value>Token errato</value></data>
   <data name="ActivityStatus_201" xml:space="preserve"><value>Aggiunto</value></data>

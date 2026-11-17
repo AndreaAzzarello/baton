@@ -211,6 +211,7 @@ public sealed class LocalApiServer : IDisposable
     {
         ReplyCode.NoDownload or ReplyCode.NoQueue => 404,
         ReplyCode.PrivateNetwork or ReplyCode.AutomationOff or ReplyCode.LevelTooLow => 403,
+        ReplyCode.TooManyPending => 400,
         _ => 400,
     };
 

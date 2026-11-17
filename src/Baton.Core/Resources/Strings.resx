@@ -110,6 +110,7 @@
   <data name="ActivityReason_noFile" xml:space="preserve"><value>The file is not there</value></data>
   <data name="ActivityReason_noQueue" xml:space="preserve"><value>No queue with this name</value></data>
   <data name="ActivityReason_noToken" xml:space="preserve"><value>No token</value></data>
+  <data name="ActivityReason_notFinished" xml:space="preserve"><value>Only finished downloads can be removed</value></data>
   <data name="ActivityReason_notLoopback" xml:space="preserve"><value>Not from this computer</value></data>
   <data name="ActivityReason_privateNetwork" xml:space="preserve"><value>Address on this computer or a private network</value></data>
   <data name="ActivityReason_programOrScript" xml:space="preserve"><value>A program or script is never opened</value></data>
@@ -117,7 +118,9 @@
   <data name="ActivityReason_sameFile" xml:space="preserve"><value>Same file</value></data>
   <data name="ActivityReason_sameName" xml:space="preserve"><value>Same name</value></data>
   <data name="ActivityReason_sameUrl" xml:space="preserve"><value>Same address</value></data>
+  <data name="ActivityReason_tooManyPending" xml:space="preserve"><value>Too many downloads are still waiting</value></data>
   <data name="ActivityReason_unknownType" xml:space="preserve"><value>Unknown request</value></data>
+  <data name="ActivityReason_unresolvable" xml:space="preserve"><value>The address name cannot be resolved</value></data>
   <data name="ActivityReason_webPage" xml:space="preserve"><value>Request from a web page</value></data>
   <data name="ActivityReason_wrongToken" xml:space="preserve"><value>Wrong token</value></data>
   <data name="ActivityStatus_201" xml:space="preserve"><value>Added</value></data>

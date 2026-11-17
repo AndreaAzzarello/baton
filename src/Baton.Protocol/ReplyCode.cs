@@ -38,6 +38,8 @@ public enum ReplyCode
     Unresolvable,
     /// <summary>The download is not finished: an agent may not remove it from the list (that would delete its partial file).</summary>
     NotFinished,
+    /// <summary>Too many downloads of the agents are still waiting: an agent may not add more until some finish.</summary>
+    TooManyPending,
     /// <summary>The app speaks a protocol older than the caller needs (set by the caller, never by the app).</summary>
     AppTooOld,
 }

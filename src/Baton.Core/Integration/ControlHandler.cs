@@ -7,10 +7,13 @@ namespace Baton.Core.Integration;
 /// an origin that cannot show a dialog). The answers carry <see cref="DownloadInfo"/>, never the secrets of a download.
 /// </summary>
 public sealed class ControlHandler(DownloadService service, Func<AutomationLevel> mcpLevel, Func<AutomationLevel> apiLevel,
-    Action<string> openFile, string appVersion, Func<DateTime>? clock = null)
+    Action<string> openFile, string appVersion, Func<DateTime>? clock = null, int maxPending = ControlHandler.MaxPendingForAgents)
 {
     /// <summary>The most requests MCP may send in a minute (every message counts; asking for the level does not).</summary>
     public const int McpRequestsPerMinute = 120;
+    /// <summary>The most downloads waiting (queued or paused, not finished) that agents may leave in the list; more are refused.</summary>
+    public const int MaxPendingForAgents = 1000;
+    public const string TooManyPendingError = "Too many downloads are still waiting: let some finish or remove them, then add more.";
     public const string TooManyRequestsError = "Too many requests: wait a moment and try again.";
 
     private readonly RateWindow _mcpRate = new(McpRequestsPerMinute, clock);
@@ -256,6 +259,9 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         var (context, refusal) = await GuardAgentAddressAsync(message.Origin, d.Url, d.ToContext());
         if (refusal is not null)
             return refusal;
+        if (message.Origin is Origins.Mcp or Origins.Api
+            && service.GetSnapshots().Count(s => s.Status is DownloadStatus.Queued or DownloadStatus.Paused or DownloadStatus.Downloading) >= maxPending)
+            return Fail(ReplyCode.TooManyPending, TooManyPendingError);
         // Only the command line chooses a folder: MCP and the API go through categories, so they cannot write elsewhere.
         if (d.Folder is not null && message.Origin != Origins.Cli)
             return Fail(ReplyCode.FolderRefused, "Only the command line may choose a folder; use a category.");

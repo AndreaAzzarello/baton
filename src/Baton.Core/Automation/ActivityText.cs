@@ -89,6 +89,7 @@ public static class ActivityText
         ReplyCode.BadScheme => "badScheme",
         ReplyCode.Unresolvable => "unresolvable",
         ReplyCode.NotFinished => "notFinished",
+        ReplyCode.TooManyPending => "tooManyPending",
         ReplyCode.FolderRefused => "folderRefused",
         ReplyCode.NoCategory => "noCategory",
         ReplyCode.UnknownType => "unknownType",

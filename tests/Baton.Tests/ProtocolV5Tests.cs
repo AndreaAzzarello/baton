@@ -39,8 +39,8 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
     }
 
     private static ControlHandler Handler(DownloadService service, AutomationLevel mcp = AutomationLevel.Off, AutomationLevel api = AutomationLevel.Off,
-        Func<DateTime>? clock = null) =>
-        new(service, () => mcp, () => api, _ => { }, "9.9.9", clock);
+        Func<DateTime>? clock = null, int maxPending = ControlHandler.MaxPendingForAgents) =>
+        new(service, () => mcp, () => api, _ => { }, "9.9.9", clock, maxPending);
 
     private static ChannelMessage Msg(string type, string? origin, string? url = null, int? limit = null, long? after = null,
         BrowserDownload? download = null) =>
@@ -200,6 +200,34 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
         // An older app never sends a code.
         var old = System.Text.Json.JsonSerializer.Deserialize("""{"ok":false,"error":"x"}"""u8, ProtocolJson.Default.ChannelReply)!;
         Assert.Null(old.Code);
+    }
+
+    [Fact]
+    public async Task AgentsCannotLeaveMoreThanTheCapWaiting_ButTheCommandLineCan_A9()
+    {
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        var control = Handler(service, mcp: AutomationLevel.Extended, api: AutomationLevel.Extended, maxPending: 2);
+        var settings = service.Settings;
+        settings.AllowLocalNetworkForAgents = true;   // the test server is on this computer
+        service.UpdateSettings(settings);
+        BrowserDownload Paused(int i) => new(_server.Add($"cap{i}.bin", new ServedFile { Content = TestFileServer.RandomBytes(1_000, i) }), Start: false);
+
+        var first = await control.HandleAsync(Msg(Messages.Add, Origins.Mcp, download: Paused(0)));
+        Assert.True(first.Ok, first.Error);
+        var second = await control.HandleAsync(Msg(Messages.Add, Origins.Api, download: Paused(1)));
+        Assert.True(second.Ok, second.Error);
+        foreach (var origin in new[] { Origins.Mcp, Origins.Api })
+        {
+            var refused = await control.HandleAsync(Msg(Messages.Add, origin, download: Paused(2)));
+            Assert.False(refused.Ok);
+            Assert.Equal(ReplyCode.TooManyPending, refused.Code);
+        }
+        Assert.Equal("tooManyPending", Baton.Core.Automation.ActivityText.ReasonOf(ReplyCode.TooManyPending));
+        Assert.Equal(400, Baton.Core.Integration.LocalApiServer.StatusFor(ReplyCode.TooManyPending));
+        Assert.Equal(2, service.GetSnapshots().Count);
+        // The user's own command line is not limited.
+        Assert.True((await control.HandleAsync(Msg(Messages.Add, Origins.Cli, download: Paused(3)))).Ok);
     }
 
     [Fact]
