@@ -43,6 +43,8 @@ public sealed class AutomationLogTests : IDisposable
     [InlineData("ftp://bob:pa?ss@host/x", "ftp://host/x")]                // ... with "?"
     [InlineData("ftp://bob:pa#ss@host/x", "ftp://host/x")]                // ... with "#"
     [InlineData("https://host/p?mail=a@b.com", "https://host/p")]         // an "@" in the query is not user info
+    [InlineData("ftp://bob:secret@host/dir/file@2x.png", "ftp://host/dir/file@2x.png")]   // "@" in the path must not hide the user info
+    [InlineData("https://u:p@host/f?mail=a@b", "https://host/f")]                          // ... nor an "@" in the query
     public void Clean_NeverKeepsQueryFragmentOrUserInfo(string input, string expected) =>
         Assert.Equal(expected, AutomationLog.Clean(input));
 

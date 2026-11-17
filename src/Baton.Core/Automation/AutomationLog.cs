@@ -61,9 +61,11 @@ public sealed class AutomationLog(DownloadStore store, Func<DateTime>? clock = n
             if (w.Contains("://", StringComparison.Ordinal))
             {
                 var scheme = w.IndexOf("://", StringComparison.Ordinal) + 3;
-                // User info first, taken up to the last "@" before any "/": a password may hold "@", "?" or "#".
-                var at = w.LastIndexOf('@');
-                if (at >= scheme && w.IndexOf('/', scheme, at - scheme) < 0)
+                // User info first, taken up to the last "@" before the first "/" after the scheme: a password may hold
+                // "@", "?" or "#", while an "@" in the path or query (after that "/") is not user info.
+                var slash = w.IndexOf('/', scheme);
+                var at = w.LastIndexOf('@', (slash < 0 ? w.Length : slash) - 1);
+                if (at >= scheme)
                     w = w[..scheme] + w[(at + 1)..];
                 var end = w.IndexOfAny(['?', '#'], scheme);
                 if (end >= 0)
