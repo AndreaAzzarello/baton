@@ -953,7 +953,7 @@ S = {
  "ActivityReason_cannotRestart": ("This download cannot be started again", "Questo download non si può riavviare"),
  "ActivityReason_noFile": ("The file is not there", "Il file non c'è"),
  "ActivityReason_cliOnly": ("Only the command line may do this", "Solo la riga di comando può farlo"),
- "ActivityReason_badScheme": ("Only http, https and ftp addresses", "Solo indirizzi http, https e ftp"),
+ "ActivityReason_badScheme": ("Only http, https, ftp, ftps and ftpes addresses", "Solo indirizzi http, https, ftp, ftps e ftpes"),
  "ActivityReason_folderRefused": ("A folder cannot be chosen; use a category", "Non si può scegliere una cartella; usa una categoria"),
  "ActivityReason_noCategory": ("No category with this name", "Nessuna categoria con questo nome"),
  "ActivityReason_unknownType": ("Unknown request", "Richiesta sconosciuta"),

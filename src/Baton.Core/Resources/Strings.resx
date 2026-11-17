@@ -93,7 +93,7 @@
   <data name="ActivityOutcome_skipped" xml:space="preserve"><value>Skipped</value></data>
   <data name="ActivityReason_badBody" xml:space="preserve"><value>The body is not valid</value></data>
   <data name="ActivityReason_badHost" xml:space="preserve"><value>Unexpected Host header</value></data>
-  <data name="ActivityReason_badScheme" xml:space="preserve"><value>Only http, https and ftp addresses</value></data>
+  <data name="ActivityReason_badScheme" xml:space="preserve"><value>Only http, https, ftp, ftps and ftpes addresses</value></data>
   <data name="ActivityReason_bodyTooLarge" xml:space="preserve"><value>Body larger than 1 MB</value></data>
   <data name="ActivityReason_cannotRestart" xml:space="preserve"><value>This download cannot be started again</value></data>
   <data name="ActivityReason_cliOnly" xml:space="preserve"><value>Only the command line may do this</value></data>

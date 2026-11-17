@@ -93,7 +93,7 @@
   <data name="ActivityOutcome_skipped" xml:space="preserve"><value>Saltato</value></data>
   <data name="ActivityReason_badBody" xml:space="preserve"><value>Il corpo non è valido</value></data>
   <data name="ActivityReason_badHost" xml:space="preserve"><value>Intestazione Host inattesa</value></data>
-  <data name="ActivityReason_badScheme" xml:space="preserve"><value>Solo indirizzi http, https e ftp</value></data>
+  <data name="ActivityReason_badScheme" xml:space="preserve"><value>Solo indirizzi http, https, ftp, ftps e ftpes</value></data>
   <data name="ActivityReason_bodyTooLarge" xml:space="preserve"><value>Corpo più grande di 1 MB</value></data>
   <data name="ActivityReason_cannotRestart" xml:space="preserve"><value>Questo download non si può riavviare</value></data>
   <data name="ActivityReason_cliOnly" xml:space="preserve"><value>Solo la riga di comando può farlo</value></data>

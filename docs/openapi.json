@@ -13,7 +13,7 @@
       "get": { "summary": "List downloads (read only)", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "downloads": { "type": "array", "items": { "$ref": "#/components/schemas/Download" } } } } } } } } },
       "post": {
         "summary": "Add a download (read and add)",
-        "description": "Only http, https and ftp. Addresses on this computer or a private network are refused unless the setting 'Allow addresses of the local network' is on. The API cannot choose a folder: use `category`.",
+        "description": "Only http, https, ftp, ftps and ftpes. Addresses on this computer or a private network are refused unless the setting 'Allow addresses of the local network' is on. The API cannot choose a folder: use `category`.",
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddRequest" } } } },
         "responses": {
           "201": { "description": "Added", "content": { "application/json": { "schema": { "type": "object", "properties": { "id": { "type": "integer" }, "result": { "type": "string", "enum": ["added"] } } } } } },

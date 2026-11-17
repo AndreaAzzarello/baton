@@ -222,7 +222,7 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
     }
 
     /// <summary>
-    /// For MCP and the API (programs the user did not type): only http, https and ftp, and nothing on this computer or the local
+    /// For MCP and the API (programs the user did not type): only http, https, ftp, ftps and ftpes, and nothing on this computer or the local
     /// network unless the user allowed it; the context then carries the flag that checks every connection and redirect again.
     /// Shared by "add" and "probe". The command line and the browser are not restricted.
     /// </summary>
@@ -230,8 +230,8 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
     {
         if (origin is not (Origins.Api or Origins.Mcp))
             return (context, null);
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var target) || target.Scheme is not ("http" or "https" or "ftp"))
-            return (context, Fail(ReplyCode.BadScheme, "Only http, https and ftp addresses can be downloaded."));
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var target) || target.Scheme is not ("http" or "https" or "ftp" or "ftps" or "ftpes"))
+            return (context, Fail(ReplyCode.BadScheme, "Only http, https, ftp, ftps and ftpes addresses can be downloaded."));
         if (service.Settings.AllowLocalNetworkForAgents)
             return (context, null);
         switch (await Net.UrlGuard.ClassifyHostAsync(target.IdnHost, Net.UrlGuard.AgentResolveTimeout))

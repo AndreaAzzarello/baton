@@ -61,7 +61,7 @@ length) and are only ever the value of a field.
 | `pause_downloads`, `resume_downloads`, `retry_downloads`, `remove_from_list` | `ids` (1–50) | Each download is named; there is no "all". One result per number. `remove_from_list` removes finished downloads from the list only (unfinished ones are refused: `notFinished`). |
 | `start_queue`, `stop_queue` | `queue` | The main queue without a name. A queue an agent started never runs its end action (shut down, sleep…) by itself: Baton asks for a click. |
 
-Addresses must be http, https or ftp, and never on this computer or a private network unless "Allow addresses of the local
+Addresses must be http, https, ftp, ftps or ftpes, and never on this computer or a private network unless "Allow addresses of the local
 network" is on; the download itself is checked again at every connection and redirect. The address in a result is reduced to
 scheme, host and file name. Downloads an agent asks for never use the logins you saved in Baton, and a name that does not
 resolve within 5 seconds is refused (`unresolvable`): it cannot be shown to be public.

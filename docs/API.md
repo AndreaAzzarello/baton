@@ -30,7 +30,7 @@ Unknown JSON fields are rejected with 400.
 
 ## Addresses an agent may ask for
 
-Only `http`, `https` and `ftp` (also `ftps`, `ftpes`). Addresses on this computer or a private network (loopback, RFC 1918, link-local, shared address space, unique-local IPv6) are refused unless Settings › Automation › "Allow addresses of the local network" is on (off by default).
+Only `http`, `https`, `ftp`, `ftps` and `ftpes`. Addresses on this computer or a private network (loopback, RFC 1918, link-local, shared address space, unique-local IPv6) are refused unless Settings › Automation › "Allow addresses of the local network" is on (off by default).
 
 Downloads asked for through the API never use the logins saved in Baton. A name that does not resolve within 5 seconds is refused (HTTP 400, as it cannot be shown to be public).
 
@@ -41,4 +41,4 @@ The check is not only made when the download is added: it is made again every ti
 
 ## The pipe and the token
 
-The command line (`batonctl`) and the API server both talk to the app through the same named pipe, with the message `origin` set to `cli` or `api`. A message with `origin=api` on the pipe does **not** need the token: the pipe is reachable only by the current Windows user (its access list), and any program of that user can already do everything the token protects. The token protects the HTTP port, which any local program and any browser tab could otherwise reach. The levels are a rule for well-behaved clients, not a barrier against the user's own programs.
+The command line (`batonctl`) talks to the app through a named pipe with the message `origin` set to `cli`. The API server runs inside the app and turns each HTTP request into the same kind of message with `origin=api`, which it hands to the same handler (it does not go through the pipe). A message with `origin=api` that arrives on the pipe does **not** need the token: the pipe is reachable only by the current Windows user (its access list, which also refuses network clients), and any program of that user can already do everything the token protects. The token protects the HTTP port, which any local program and any browser tab could otherwise reach. The levels are a rule for well-behaved clients, not a barrier against the user's own programs.

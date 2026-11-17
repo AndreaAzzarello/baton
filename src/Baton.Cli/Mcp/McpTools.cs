@@ -77,7 +77,7 @@ internal sealed class McpTools(IAppLink link, Action<string> log)
             """{"type":"object","properties":{},"additionalProperties":false}""",
             """{"type":"object","properties":{"queues":{"type":"array","items":{"type":"string"}}},"required":["queues"]}"""),
         new("add_downloads", "Add downloads",
-            "Adds up to 50 http, https or ftp addresses to Baton. Addresses on this computer or a private network are refused unless the user allowed them. " +
+            "Adds up to 50 http, https, ftp, ftps or ftpes addresses to Baton. Addresses on this computer or a private network are refused unless the user allowed them. " +
             "A known duplicate is skipped and reported, not added, unless allowDuplicate is true. One result per address.",
             "readAdd", false, false, false, true,
             """{"type":"object","properties":{"urls":{"type":"array","items":{"type":"string","maxLength":2048},"minItems":1,"maxItems":50},"category":{"type":"string","maxLength":200},"queue":{"type":"string","maxLength":200},"start":{"type":"boolean","description":"false adds them paused."},"allowDuplicate":{"type":"boolean"}},"required":["urls"],"additionalProperties":false}""",

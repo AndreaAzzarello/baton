@@ -296,6 +296,22 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SecureFtpSchemes_PassTheSchemeCheck_ForAgents_A25()
+    {
+        using var store = Store(allowLocal: false);
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        var control = Handler(service, mcp: AutomationLevel.Extended, api: AutomationLevel.Extended);
+        foreach (var origin in new[] { Origins.Mcp, Origins.Api })
+            foreach (var scheme in new[] { "ftps", "ftpes", "ftp" })
+            {
+                // Past the scheme check the next guard answers: a private address is refused as a private address, not as a bad scheme.
+                var reply = await control.HandleAsync(Msg(Messages.Probe, origin, scheme + "://192.168.1.1/a.bin"));
+                Assert.Equal(ReplyCode.PrivateNetwork, reply.Code);
+            }
+        Assert.Equal(ReplyCode.BadScheme, (await control.HandleAsync(Msg(Messages.Probe, Origins.Mcp, "sftp://example.com/a.bin"))).Code);
+    }
+
+    [Fact]
     public async Task Probe_ForMcp_RefusesThisComputerAndThePrivateNetwork_UnlessTheSettingAllowsIt()
     {
         var url = _server.Add("local.bin", new ServedFile { Content = TestFileServer.RandomBytes(10_000, 5) });
@@ -306,8 +322,8 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
             var refused = await control.HandleAsync(Msg(Messages.Probe, Origins.Mcp, url));
             Assert.False(refused.Ok);
             Assert.Equal(ControlHandler.PrivateNetworkError, refused.Error);
-            var scheme = await control.HandleAsync(Msg(Messages.Probe, Origins.Mcp, "ftps://example.com/a.bin"));
-            Assert.False(scheme.Ok); // only http, https and ftp, as for "add"
+            var scheme = await control.HandleAsync(Msg(Messages.Probe, Origins.Mcp, "gopher://example.com/a.bin"));
+            Assert.False(scheme.Ok); // only http, https, ftp, ftps and ftpes, as for "add"
             Assert.Contains("Only http", scheme.Error);
         }
         using (var store = Store(allowLocal: true))
