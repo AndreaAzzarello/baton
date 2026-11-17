@@ -195,7 +195,7 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
             if (reply is null)
             {
                 unreachable = code;
-                results.Add(new AddResult(url, "error", null, null, "Baton could not be reached."));
+                results.Add(new AddResult(url, "error", null, null, _unreachable ?? "Baton could not be reached."));
                 continue;
             }
             results.Add(!reply.Ok
@@ -359,7 +359,7 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
     private async Task<(ChannelReply? Reply, int Code)> CallAsync(ChannelMessage message)
     {
         // An answer that does not come in time means Baton is running but busy: not "unreachable", and not to be sent twice.
-        static (ChannelReply, int) Late() => (new ChannelReply(false, Protocol: Messages.ProtocolVersion, Error: "Baton did not answer in time."), ExitCodes.Ok);
+        static (ChannelReply, int) Late() => (new ChannelReply(false, Protocol: Messages.ProtocolVersion, Error: "Baton is running but busy: it did not answer in time. The command may still be carried out; check with \"batonctl list\" before trying again."), ExitCodes.Ok);
         // Reached, but the connection closed before an answer: the command may have been done, so it is never sent again.
         static (ChannelReply, int) Closed() => (new ChannelReply(false, Protocol: Messages.ProtocolVersion,
             Error: "Baton closed the connection without answering; the command may have been done. Check with \"batonctl list\" before trying again."), ExitCodes.Ok);
@@ -378,8 +378,13 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         }
         if (reply is not null)
             return (reply, ExitCodes.Ok);
+        // Standard error, so that --json and a script reading standard output see nothing else than the answer.
+        error.WriteLine("batonctl: Starting Baton...");
         if (!await startApp())
+        {
+            _unreachable = "Baton is not running and could not be started. Start Baton from the Start menu, then try again.";
             return (null, ExitCodes.NotRunning);
+        }
         try
         {
             reply = await send(message);
@@ -392,8 +397,13 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         {
             return Closed();
         }
+        if (reply is null)
+            _unreachable = "Baton was started but did not answer. Try again in a moment.";
         return reply is null ? (null, ExitCodes.NotRunning) : (reply, ExitCodes.Ok);
     }
+
+    /// <summary>Why the last call found nobody (set by <see cref="CallAsync"/>), for the message of exit code 3.</summary>
+    private string? _unreachable;
 
     private bool TryId(ParsedArgs parsed, out long id, out int exit)
     {
@@ -426,8 +436,8 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
         d.Status == "completed" ? "100%" : d.TotalSize is > 0 ? $"{Math.Min(100, d.Downloaded * 100 / d.TotalSize.Value)}%" : "-";
 
     /// <summary>Why a reply is not a success. An app older than 1.4 answers the new commands with an error and no protocol number.</summary>
-    private static string Why(ChannelReply? reply) =>
-        reply?.Error is not { } text ? "Baton could not be reached."
+    private string Why(ChannelReply? reply) =>
+        reply?.Error is not { } text ? _unreachable ?? "Baton could not be reached."
         : reply.Protocol is null ? AgentText.Clean(text, AgentText.MaxMessage) + " (this Baton is older than 1.4 and does not know the command line: update it)"
         : AgentText.Clean(text, AgentText.MaxMessage);
 

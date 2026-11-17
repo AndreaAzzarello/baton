@@ -150,4 +150,49 @@ public sealed class CliCorrectionTests
         Assert.Equal(0, code);
         Assert.Equal(["https://a.test/1.zip", "https://a.test/2.zip"], run.Sent.Select(m => m.Download!.Url));
     }
+
+    // ------------------------------------------------------------------ B7: what happened and what to do next, on standard error
+
+    private static async Task<(int Code, Run Run)> Execute(string[] args, Func<ChannelMessage, ChannelReply?> app, bool canStart, Func<Task<bool>>? start = null)
+    {
+        var run = new Run();
+        var cli = new CliApp(run.Out, run.Err, new StringReader(""), m => Task.FromResult(app(m)), start ?? (() => Task.FromResult(canStart)), "1.2.3", "C:\\work");
+        return (await cli.RunAsync(args), run);
+    }
+
+    [Fact]
+    public async Task B7_StartingBaton_IsAnnouncedOnStandardError_NeverOnStandardOutput()
+    {
+        var running = false;
+        var (code, run) = await Execute(["list", "--json"], _ => running ? new ChannelReply(true, Downloads: []) : null, canStart: true,
+            start: () => { running = true; return Task.FromResult(true); });
+        Assert.Equal(0, code);
+        Assert.Contains("Starting Baton", run.Err.ToString());
+        using var doc = run.OutJson();                                   // standard output is still one JSON object
+        Assert.True(doc.RootElement.GetProperty("ok").GetBoolean());
+    }
+
+    [Fact]
+    public async Task B7_ABatonThatCannotBeStarted_AndOneThatStartsButNeverAnswers_AreToldApart_WithTheNextStep()
+    {
+        var (cannot, a) = await Execute(["list"], _ => null, canStart: false);
+        Assert.Equal(3, cannot);
+        Assert.Contains("could not be started", a.Err.ToString());
+        Assert.Contains("Start Baton", a.Err.ToString());
+
+        var (silent, b) = await Execute(["list"], _ => null, canStart: true);
+        Assert.Equal(3, silent);
+        Assert.Contains("was started but did not answer", b.Err.ToString());
+        Assert.DoesNotContain("could not be started", b.Err.ToString());
+    }
+
+    [Fact]
+    public async Task B7_ASlowAnswer_SaysTheCommandMayStillRun_AndHowToCheck()
+    {
+        var run = new Run();
+        var cli = new CliApp(run.Out, run.Err, new StringReader(""), _ => throw new OperationCanceledException(), () => Task.FromResult(true), "1.2.3", "C:\\work");
+        Assert.Equal(1, await cli.RunAsync(["pause", "all"]));
+        Assert.Contains("batonctl list", run.Err.ToString());
+        Assert.Contains("busy", run.Err.ToString());
+    }
 }
