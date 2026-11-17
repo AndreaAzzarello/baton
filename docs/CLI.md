@@ -25,7 +25,9 @@ for it to answer; `batonctl version` never starts it.
 | `pause <id\|all>` | Pauses a download, or all. |
 | `resume <id\|all>` | Starts a download again, or all paused and failed ones (through the queues, in order). |
 | `retry <id\|all>` | Tries a failed download again, or all failed ones. |
+| `queues` | Lists the names of the queues (the names `--queue` takes). |
 | `queues start\|stop [name]` | Starts or stops a queue (the main queue without a name). |
+| `categories` | Lists the names of the categories (the names `--category` takes, as the interface shows them). |
 | `open <id>` | Opens the finished file with its default program. |
 | `remove <id>` | Removes a download **from the list**; the file stays on the disk. |
 | `remove --all-completed` | Removes all completed downloads from the list. |
@@ -73,26 +75,66 @@ codes above and stays the same across versions (a script should compare the code
 | 3 | Baton could not be reached or started. |
 | 4 | At least one duplicate was skipped (and nothing failed). |
 
-## JSON
+## JSON answers
 
-Errors: `{"ok":false,"error":"…"}` (on the standard output with `--json`). Other answers:
+With `--json` (any command, anywhere on the line) the answer is one JSON object on the standard output; messages such as
+"Starting Baton..." go to the standard error. Every field of a shape is always there (`null` when empty), so a script can rely on
+the names. The fields each command prints:
+
+| Command | Fields of the answer |
+| --- | --- |
+| `add` | `ok`, `results` |
+| `list` | `ok`, `downloads` |
+| `status <id>` | `ok`, `download`, `id`, `count` |
+| `probe <url>` | `ok`, `probe` |
+| `pause\|resume\|retry <id>` | `ok`, `download`, `id`, `count` |
+| `pause\|resume\|retry all` | `ok`, `download`, `id`, `count` |
+| `open <id>` | `ok`, `download`, `id`, `count` |
+| `remove <id>` | `ok`, `download`, `id`, `count` |
+| `remove --all-completed` | `ok`, `download`, `id`, `count` |
+| `queues start\|stop` | `ok`, `download`, `id`, `count` |
+| `queues` | `ok`, `queues`, `categories` |
+| `categories` | `ok`, `queues`, `categories` |
+| `version` | `cli`, `app`, `running` |
+| `help` | `ok`, `help` |
+| `error` | `ok`, `error` |
+| `error (appTooOld)` | `ok`, `error`, `code` |
+
+Details:
 
 ```jsonc
-// add
+// add: status is "added" | "duplicate" | "error" | "notAttempted" (Baton went away midway: the downloads already added stay
+// listed, the one that failed is "error" and the rest are "notAttempted"; the exit code is then 3)
 {"ok":true,"results":[{"url":"https://…","status":"added","id":12,"duplicate":null,"error":null}]}
-// status: "added" | "duplicate" | "error"; for a duplicate, "id" is the existing download (if it is in the list) and
-// "duplicate" is {"reason":"sameUrl"|"sameName"|"sameFile","existingId":7,"existingPath":"C:\\…\\file.zip"}
+// for a duplicate, "id" is the existing download (if it is in the list) and
+// "duplicate" is {"reason":"sameUrl"|"sameName"|"sameFile","existingId":7,"existingPath":"C:\…\file.zip"}
 
-// list / status / pause <id> / resume <id>
+// list
 {"ok":true,"downloads":[{"id":12,"name":"file.zip","url":"https://…","folder":"…","path":null,"status":"downloading",
   "downloaded":1048576,"totalSize":5242880,"error":null,"queue":"Main","category":"Archives",
   "addedUtc":"…","completedUtc":null}]}
 
+// status <id>, open <id>: "download" is the download above, "id" its number
+{"ok":true,"download":{…},"id":12,"count":null}
+// pause|resume|retry <id> and remove <id>: "download" is null; "count" is set (the number of downloads touched) only for "all"
+{"ok":true,"download":null,"id":12,"count":null}
+{"ok":true,"download":null,"id":null,"count":3}
+// queues start|stop
+{"ok":true,"download":null,"id":null,"count":null}
+
+// queues / categories: one list is filled, the other is null; the names are the ones --queue and --category take
+{"ok":true,"queues":["Main","Night"],"categories":null}
+
 // version
 {"cli":"1.4.2","app":"1.4.2","running":true}
+
+// errors: always the plain shape, except the one a script can act on, which carries a stable code
+{"ok":false,"error":"…"}
+{"ok":false,"error":"This Baton is older than 1.4.2 and does not know \"probe\": update it.","code":"appTooOld"}
 ```
 
-Downloads in the answers never carry cookies, passwords, tokens, form fields or the query string of the address.
+Downloads in the answers never carry cookies, passwords, tokens, form fields or the query string of the address; names and
+messages have control, invisible and direction-changing characters removed.
 
 ## Limits that always apply
 

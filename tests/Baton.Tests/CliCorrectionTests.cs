@@ -225,4 +225,70 @@ public sealed class CliCorrectionTests
         Assert.Equal(["General", "Music"], doc.RootElement.GetProperty("categories").EnumerateArray().Select(e => e.GetString()));
         Assert.Equal(2, await new Run().ExecuteAsync(["categories", "extra"], App));
     }
+
+    // ------------------------------------------------------------------ B1: docs/CLI.md describes the JSON each command really prints
+
+    private static string RepoRoot()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (!File.Exists(Path.Combine(dir, "Baton.slnx")))
+            dir = Path.GetDirectoryName(dir)!;
+        return dir;
+    }
+
+    /// <summary>The rows of the "JSON answers" table of docs/CLI.md: the command (first cell) and the fields of the answer (second cell).</summary>
+    private static Dictionary<string, string[]> DocumentedShapes()
+    {
+        var lines = File.ReadAllLines(Path.Combine(RepoRoot(), "docs", "CLI.md"));
+        var start = Array.FindIndex(lines, l => l.StartsWith("## JSON answers", StringComparison.Ordinal));
+        Assert.True(start >= 0, "docs/CLI.md has no \"## JSON answers\" section");
+        var shapes = new Dictionary<string, string[]>();
+        foreach (var line in lines.Skip(start + 1).TakeWhile(l => !l.StartsWith("## ", StringComparison.Ordinal)).Where(l => l.StartsWith("| `", StringComparison.Ordinal)))
+        {
+            // The first cell may hold an escaped bar (pause\|resume): take it as the text between the first two backticks.
+            var row = System.Text.RegularExpressions.Regex.Match(line, @"^\| `(?<key>[^`]+)` \| (?<fields>.*) \|$");
+            Assert.True(row.Success, $"unreadable row: {line}");
+            var fields = System.Text.RegularExpressions.Regex.Matches(row.Groups["fields"].Value, "`([A-Za-z]+)`").Select(m => m.Groups[1].Value).Order().ToArray();
+            shapes[row.Groups["key"].Value.Replace("\\|", "|")] = fields;
+        }
+        return shapes;
+    }
+
+    private static DownloadInfo Info() => new(5, "f.zip", "https://a.test/f.zip", "C:/x", null, "queued", 0, null, null, null, null, DateTime.UtcNow, null);
+
+    [Fact]
+    public async Task B1_TheJsonFieldsInTheDocs_AreTheOnesEachCommandPrints()
+    {
+        var shapes = DocumentedShapes();
+        var cases = new (string Key, string[] Args, ChannelReply Reply)[]
+        {
+            ("add", ["add", "https://a.test/f.zip"], new ChannelReply(true, Result: "added", Id: 1)),
+            ("list", ["list"], new ChannelReply(true, Downloads: [Info()])),
+            ("status <id>", ["status", "5"], new ChannelReply(true, Download: Info(), Id: 5)),
+            ("probe <url>", ["probe", "https://a.test/f.zip"], new ChannelReply(true, Probe: new ProbeInfo("f.zip", null, 1, true))),
+            ("pause|resume|retry <id>", ["pause", "5"], new ChannelReply(true, Id: 5)),
+            ("pause|resume|retry all", ["pause", "all"], new ChannelReply(true, Count: 2)),
+            ("open <id>", ["open", "5"], new ChannelReply(true, Download: Info(), Id: 5)),
+            ("remove <id>", ["remove", "5"], new ChannelReply(true, Id: 5)),
+            ("remove --all-completed", ["remove", "--all-completed"], new ChannelReply(true, Count: 2)),
+            ("queues start|stop", ["queues", "start"], new ChannelReply(true)),
+            ("queues", ["queues"], new ChannelReply(true, Queues: ["Main"])),
+            ("categories", ["categories"], new ChannelReply(true, Categories: ["General"])),
+            ("version", ["version"], new ChannelReply(true, AppVersion: "1.4.2")),
+            ("help", ["help"], new ChannelReply(true)),
+            ("error", ["list"], new ChannelReply(false, Error: "no")),
+        };
+        foreach (var (key, args, reply) in cases)
+        {
+            var run = new Run();
+            await run.ExecuteAsync([.. args, "--json"], _ => reply);
+            using var doc = run.OutJson();
+            var actual = doc.RootElement.EnumerateObject().Select(p => p.Name).Order().ToArray();
+            Assert.True(shapes.TryGetValue(key, out var documented), $"docs/CLI.md does not describe the JSON of \"{key}\"");
+            Assert.True(documented!.SequenceEqual(actual), $"\"{key}\": the docs say [{string.Join(", ", documented)}], batonctl prints [{string.Join(", ", actual)}]");
+        }
+        // The one error that carries a code (an app too old for the command), described next to the plain error.
+        Assert.True(shapes.TryGetValue("error (appTooOld)", out var coded));
+        Assert.Equal(["code", "error", "ok"], coded);
+    }
 }
