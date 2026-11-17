@@ -40,6 +40,7 @@ public sealed class LocalApiServer : IDisposable
     private readonly Func<DateTime> _clock;
     private readonly Queue<DateTime> _recent = new();
     private readonly object _rateLock = new();
+    private readonly UnauthenticatedRefusals _unauthenticated;
     private HttpListener? _listener;
     private CancellationTokenSource? _stop;
     private Task? _loop;
@@ -49,6 +50,7 @@ public sealed class LocalApiServer : IDisposable
         _service = service;
         _control = control;
         _clock = clock ?? (() => DateTime.UtcNow);
+        _unauthenticated = new UnauthenticatedRefusals(service.AutomationLog, _clock);
     }
 
     /// <summary>The port being served, or null when stopped.</summary>
@@ -87,8 +89,21 @@ public sealed class LocalApiServer : IDisposable
         return true;
     }
 
+    /// <summary>The reasons of refusals that come before the token is checked (nothing but the shape of the request is known).</summary>
+    private static readonly string[] UnauthenticatedReasons = ["notLoopback", "badHost", "webPage", "noToken", "wrongToken"];
+
+    private static string? UnauthenticatedReason(string? detail)
+    {
+        if (detail is null || !detail.StartsWith('!'))
+            return null;
+        var space = detail.IndexOf(' ');
+        var code = space < 0 ? detail[1..] : detail[1..space];
+        return Array.IndexOf(UnauthenticatedReasons, code) >= 0 ? code : null;
+    }
+
     public void Stop()
     {
+        _unauthenticated.Flush();
         _stop?.Cancel();
         try
         {
@@ -142,7 +157,14 @@ public sealed class LocalApiServer : IDisposable
         var routeName = ActivityText.ApiAction(request.HttpMethod, path);
         // Refusals and everything that changes something are logged; reading is not (it would drown the rest).
         if (status is 401 or 403 or 413 or 429 || (request.HttpMethod is "POST" or "DELETE" && status != 404))
-            _service.AutomationLog.Record(AutomationLog.Api, routeName, status.ToString(System.Globalization.CultureInfo.InvariantCulture), detail ?? "");
+        {
+            var outcome = status.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            // Anyone on this computer can knock without the token: those refusals are counted, not written one by one.
+            if (UnauthenticatedReason(detail) is { } reason)
+                _unauthenticated.Note(reason, routeName, outcome, detail!);
+            else
+                _service.AutomationLog.Record(AutomationLog.Api, routeName, outcome, detail ?? "");
+        }
         Respond(http, status, body);
     }
 

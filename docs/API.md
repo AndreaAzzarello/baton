@@ -8,11 +8,12 @@ Base address: `http://127.0.0.1:7745/api/v1` (the port is a setting, 1024-65535;
 
 - Every request needs `Authorization: Bearer <token>` (the token is in Settings › Automation: Show, Copy, New token; a new token stops the old one at once). The `openapi.json` endpoint needs it too.
 - The caller must be on this computer, the `Host` header must be exactly `127.0.0.1:<port>` or `localhost:<port>`, and a request with an `Origin` header is refused with 403 (so a web page cannot call the API; there is no CORS).
-- Limits: body 1 MB, 120 requests per minute (429 beyond that).
+- A browser also marks a request that comes from a web page with `Sec-Fetch-Site` (this catches "no-cors" requests, which carry no `Origin`): a request with that header is refused with 403 too. Scripts and programs send neither header.
+- Limits: body 1 MB, 120 requests per minute (429 beyond that). Only requests with the right token use the budget, so someone without the token cannot lock the real client out. Agents may leave at most 1000 downloads waiting (queued, paused or running); beyond that `POST /downloads` answers 400 until some finish or are removed.
 - Levels: *Off*, *Read only* (list, status, version, queues), *Read and add downloads*, *Extended* (also pause, resume, retry, remove from the list, start/stop a queue).
 - `open` (opening a finished file) is never available through the API, at any level. `folder` is not accepted when adding: choose a `category` and the app's own folder for it is used.
 
-Refusals and every request that changes something are written to the activity log (Settings › Automation › Activity log); addresses are logged without query string, fragment or user info.
+Refusals and every request that changes something are written to the activity log (Settings › Automation › Activity log); addresses are logged without query string, fragment or user info. Refusals of requests that did not show the token (wrong host, a web page, no token, a wrong one) are not written one by one: the first of each kind in a minute is written, the others are counted in one line (`×N`) when the minute is over.
 
 ## Routes
 

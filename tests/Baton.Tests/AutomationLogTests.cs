@@ -77,4 +77,28 @@ public sealed class AutomationLogTests : IDisposable
         Assert.Empty(log.Read());
         Assert.Equal(2, changed);
     }
+
+    [Fact]
+    public void TwentyThousandUnauthenticatedRefusals_AreFewLines_AndTheCountIsKept_A10()
+    {
+        var log = new AutomationLog(_store, () => _now);
+        var refusals = new Baton.Core.Integration.UnauthenticatedRefusals(log, () => _now);
+        for (var i = 0; i < 20_000; i++)
+            refusals.Note("wrongToken", "GET /downloads", "401", ActivityText.Reason("wrongToken"));
+        // Another reason has its own line; the first refusal of each is written at once.
+        refusals.Note("webPage", "GET /downloads", "403", ActivityText.Reason("webPage"));
+        Assert.Equal(2, log.Read(AutomationLog.Api, 100).Count);
+
+        // A minute later the next refusal closes the count of the minute before.
+        _now += TimeSpan.FromMinutes(1.5);
+        refusals.Note("wrongToken", "GET /downloads", "401", ActivityText.Reason("wrongToken"));
+        var lines = log.Read(AutomationLog.Api, 100);
+        Assert.Equal(4, lines.Count);
+        Assert.Contains(lines, l => l.Detail == "!wrongToken ×19999");
+
+        // Nothing is lost when the API stops with a count still waiting.
+        refusals.Note("wrongToken", "GET /downloads", "401", ActivityText.Reason("wrongToken"));
+        refusals.Flush();
+        Assert.Contains(log.Read(AutomationLog.Api, 100), l => l.Detail == "!wrongToken ×1");
+    }
 }
