@@ -61,6 +61,7 @@ public sealed class RulesViewModelTests
     [Fact]
     public void Edited_Rule_RoundTrips_WithItsConditionsAndActions()
     {
+        using var _ = TestCulture.Use("it-IT"); // "1,5" is a number only where the comma is the decimal separator
         var vm = Create(Make("Work", "example.com"));
         var edit = vm.Items[0];
         edit.Extensions = ".PDF docx";
