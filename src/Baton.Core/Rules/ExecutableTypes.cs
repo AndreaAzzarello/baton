@@ -10,6 +10,8 @@ public static class ExecutableTypes
         ".pif", ".msc", ".chm", ".inf", ".scf", ".sct", ".ws", ".wsc", ".vb", ".gadget", ".application", ".appref-ms", ".xll", ".wll",
         ".diagcab", ".settingcontent-ms", ".theme", ".themepack", ".library-ms", ".search-ms", ".website", ".sys", ".ocx",
         ".iso", ".img", ".vhd", ".vhdx", ".docm", ".dotm", ".xlsm", ".xltm", ".xlam", ".pptm", ".potm", ".ppam", ".ppsm", ".sldm",
+        ".py", ".pyw", ".pyz", ".rb", ".pl", ".php", ".sh", ".bash", ".ps2", ".jnlp", ".xbap", ".rdp", ".appinstaller", ".appxbundle", ".msixbundle",
+        ".htm", ".html", ".xhtml", ".mht", ".mhtml", ".svg", ".xsl", ".xslt", ".slk", ".iqy", ".odc", ".mde", ".ade", ".adp", ".accde", ".accdr",
         ".msh", ".msh1", ".msh2", ".mshxml", ".ps1xml", ".psc1", ".cer", ".crt", ".der",
     };
 

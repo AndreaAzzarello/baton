@@ -113,11 +113,14 @@ public sealed partial class DownloadService
             if (a.UserAgent is { Length: > 0 } agent && context?.UserAgent is null)
                 context = (context ?? new RequestContext(null, null, [])) with { UserAgent = agent };
             // Opening the finished file needs a scan that found nothing, so asking for it asks for the scan.
-            applied.Scan = a.Scan || a.OpenWhenDone;
+            // For MCP and the API (programs the user did not type) a rule opens the file only when it names that origin: a rule
+            // written for downloads in general must not become "an agent can make Baton open a file".
+            var openAllowed = a.OpenWhenDone && (ruleOrigin is not (RuleOrigins.Api or RuleOrigins.Mcp) || rule.Conditions.Origins.Contains(ruleOrigin));
+            applied.Scan = a.Scan || openAllowed;
             applied.Connections = a.Connections is { } n ? Math.Clamp(n, 1, 32) : null;
             applied.SpeedLimitKBps = a.SpeedLimitKBps is > 0 ? a.SpeedLimitKBps : null;
             applied.ShowInFolder = a.ShowInFolder;
-            applied.OpenWhenDone = a.OpenWhenDone;
+            applied.OpenWhenDone = openAllowed;
             applied.Rename = !explicitName && a.Rename is { Length: > 0 } pattern ? pattern : null; // an explicit name is kept as it is
         }
         return new RuleOutcome(directory, chosenCategory, chosenQueue, startNow, paused, context, applied);

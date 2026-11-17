@@ -286,6 +286,30 @@ public sealed class RuleTests : IAsyncLifetime
         Assert.Contains(service.AutomationLog.Read(Core.Automation.AutomationLog.RulesOrigin), e => e.Action == Core.Automation.ActivityText.RuleOpen && e.Outcome == "refused" && e.Detail.StartsWith("!programOrScript", StringComparison.Ordinal));
     }
 
+    private static Core.Rules.AppliedRule Applied(DownloadStore store, long id) => store.LoadAll().Single(r => r.Id == id).Rule!;
+
+    [Fact]
+    public async Task OpenWhenDone_ForAnAgent_NeedsTheRuleToNameThatOrigin()
+    {
+        var url = _server.Add("note.txt", new ServedFile { Content = TestFileServer.RandomBytes(2_000, 5) });
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        service.SaveRules([R(c => c.Domains = ["127.0.0.1"], a => a.OpenWhenDone = true, name: "open-anything")]);   // no origin condition
+
+        var general = service.Add(url, ruleOrigin: RuleOrigins.Mcp, skipDuplicateCheck: true);
+        var browser = service.Add(url, ruleOrigin: RuleOrigins.Browser, skipDuplicateCheck: true);
+        Assert.False(Applied(store, general).OpenWhenDone);   // an agent's add: not opened
+        Assert.True(Applied(store, browser).OpenWhenDone);    // the user's own: as the rule says
+
+        service.SaveRules([R(c => { c.Domains = ["127.0.0.1"]; c.Origins = [RuleOrigins.Mcp]; }, a => a.OpenWhenDone = true, name: "open-for-mcp")]);
+        var named = service.Add(url, ruleOrigin: RuleOrigins.Mcp, skipDuplicateCheck: true);
+        Assert.True(Applied(store, named).OpenWhenDone);      // the rule names mcp: allowed
+    }
+
+    [Theory]
+    [InlineData(".html")] [InlineData(".svg")] [InlineData(".py")] [InlineData(".rdp")] [InlineData(".HTM")]
+    public void MoreFilesThatRun_AreNeverOpenedForAnAgent(string extension) => Assert.True(Core.Rules.ExecutableTypes.IsRunnable("x" + extension));
+
     [Fact]
     public void ImportedRules_ThatOpenFilesOrSkipTheConfirmation_ComeInDisabled()
     {
