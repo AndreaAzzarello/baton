@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Baton.Cli;
+using Baton.Cli.Mcp;
 using Baton.Core.Integration;
 
 var exeFolder = AppContext.BaseDirectory.TrimEnd('\\', '/');
@@ -41,6 +42,16 @@ async Task<bool> StartApp()
         }
     }
     return false;
+}
+
+if (args.Length > 0 && args[0] == "mcp")
+{
+    // Standard output belongs to the JSON-RPC stream: everything we have to say goes to standard error.
+    void Log(string line) => Console.Error.WriteLine($"[batonctl mcp] {line}");
+    using var stop = new CancellationTokenSource();
+    Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.Cancel(); };
+    var link = new PipeAppLink(pipe, StartApp, Log);
+    return await McpHost.RunAsync(Console.OpenStandardInput(), Console.OpenStandardOutput(), link, version, Log, stop.Token);
 }
 
 var app = new CliApp(Console.Out, Console.Error, Console.In, Send, StartApp, version, Environment.CurrentDirectory, CliText.WindowsIsItalian());

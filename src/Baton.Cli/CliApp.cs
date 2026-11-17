@@ -47,6 +47,7 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
           remove <id>             Remove a download from the list (the file stays on the disk)
           remove --all-completed  Remove all completed downloads from the list
           version                 Versions of batonctl and of the running Baton
+          mcp                     Run as an MCP server on standard input and output, for AI agents (see docs/MCP.md)
 
         --json prints the answer as JSON, the same fields every time. Baton is started in the notification area if it is closed.
 

@@ -55,6 +55,18 @@
   <data name="ActivityAction_api_status" xml:space="preserve"><value>Lettura di un download</value></data>
   <data name="ActivityAction_api_version" xml:space="preserve"><value>Lettura della versione</value></data>
   <data name="ActivityAction_duplicate_skip" xml:space="preserve"><value>Duplicato saltato</value></data>
+  <data name="ActivityAction_mcp_add" xml:space="preserve"><value>Aggiunta di un download</value></data>
+  <data name="ActivityAction_mcp_list" xml:space="preserve"><value>Elenco dei download</value></data>
+  <data name="ActivityAction_mcp_pause" xml:space="preserve"><value>Pausa di un download</value></data>
+  <data name="ActivityAction_mcp_probe" xml:space="preserve"><value>Controllo di un indirizzo</value></data>
+  <data name="ActivityAction_mcp_queueStart" xml:space="preserve"><value>Avvio di una coda</value></data>
+  <data name="ActivityAction_mcp_queueStop" xml:space="preserve"><value>Arresto di una coda</value></data>
+  <data name="ActivityAction_mcp_queues" xml:space="preserve"><value>Elenco delle code</value></data>
+  <data name="ActivityAction_mcp_remove" xml:space="preserve"><value>Rimozione dall'elenco</value></data>
+  <data name="ActivityAction_mcp_request" xml:space="preserve"><value>Richiesta</value></data>
+  <data name="ActivityAction_mcp_resume" xml:space="preserve"><value>Ripresa di un download</value></data>
+  <data name="ActivityAction_mcp_retry" xml:space="preserve"><value>Nuovo tentativo di un download</value></data>
+  <data name="ActivityAction_mcp_status" xml:space="preserve"><value>Lettura di un download</value></data>
   <data name="ActivityAction_rule_applied" xml:space="preserve"><value>Regola applicata</value></data>
   <data name="ActivityAction_rule_open" xml:space="preserve"><value>Apertura del file finito</value></data>
   <data name="ActivityLogAll" xml:space="preserve"><value>Tutto</value></data>

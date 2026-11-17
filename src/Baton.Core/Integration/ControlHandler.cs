@@ -19,11 +19,37 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
     public ChannelReply? Authorize(ChannelMessage message)
     {
         if (OriginPolicy.Refusal(message, mcpLevel(), apiLevel()) is { } refusal)
-            return Fail(refusal.Code, refusal.Text);
+            return Refused(message, Fail(refusal.Code, refusal.Text));
         // MCP is an agent that can loop: its budget is kept here, in the app, whatever the client does.
         if (message.Origin == Origins.Mcp && message.Type != Messages.Capabilities && !_mcpRate.TryTake())
-            return Fail(ReplyCode.TooManyRequests, TooManyRequestsError);
+            return Refused(message, Fail(ReplyCode.TooManyRequests, TooManyRequestsError));
         return null;
+    }
+
+    private DateTime _lastRateLine = DateTime.MinValue;
+
+    /// <summary>An MCP refusal goes to the activity log (one line per minute for the rate limit, so a loop cannot fill the log).</summary>
+    private ChannelReply Refused(ChannelMessage message, ChannelReply reply)
+    {
+        if (message.Origin != Origins.Mcp || message.Type == Messages.Capabilities)
+            return reply;
+        if (reply.Code == ReplyCode.TooManyRequests)
+        {
+            var now = (clock ?? (() => DateTime.UtcNow))();
+            if (now - _lastRateLine < TimeSpan.FromMinutes(1))
+                return reply;
+            _lastRateLine = now;
+        }
+        LogMcp(message, "refused", Automation.ActivityText.Reason(Automation.ActivityText.ReasonOf(reply.Code)));
+        return reply;
+    }
+
+    private void LogMcp(ChannelMessage message, string outcome, string reason)
+    {
+        var what = message.Download is { } d ? Automation.AutomationLog.Clean(d.Url) : message.Url is { } u ? Automation.AutomationLog.Clean(u)
+            : message.Id is { } id ? "#" + id : message.Queue ?? "";
+        service.AutomationLog.Record(Automation.AutomationLog.Mcp, Automation.ActivityText.McpAction(message.Type), outcome,
+            reason.Length > 0 && what.Length > 0 ? reason + " " + what : reason.Length > 0 ? reason : what, message.Id);
     }
 
     /// <summary>True for the types this handler answers (everything but the browser's own).</summary>
@@ -38,15 +64,27 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
     /// </summary>
     public async Task<ChannelReply> HandleAsync(ChannelMessage message)
     {
+        ChannelReply reply;
         try
         {
-            return await HandleCoreAsync(message);
+            reply = await HandleCoreAsync(message);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception
                                        or ArgumentException or Microsoft.Data.Sqlite.SqliteException)
         {
-            return Fail(ReplyCode.Failed, "Baton could not do that: " + Log.Redact(ex.Message));
+            reply = Fail(ReplyCode.Failed, "Baton could not do that: " + Log.Redact(ex.Message));
         }
+        // What MCP did is in the activity log, whether it worked or not (asking for the level is not an action).
+        if (message.Origin == Origins.Mcp && message.Type != Messages.Capabilities)
+        {
+            if (!reply.Ok)
+                LogMcp(message, "refused", Automation.ActivityText.Reason(Automation.ActivityText.ReasonOf(reply.Code)));
+            else if (reply.Result == "duplicate")
+                LogMcp(message, "skipped", Automation.ActivityText.Reason("duplicate"));
+            else
+                LogMcp(message, "ok", "");
+        }
+        return reply;
     }
 
     private async Task<ChannelReply> HandleCoreAsync(ChannelMessage message)

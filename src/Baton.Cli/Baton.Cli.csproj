@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Baton.Protocol\Baton.Protocol.csproj" />
+    <!-- Official MCP SDK, the core package only (no hosting): batonctl mcp. Version checked 2026-11-17 (2.3.1, stable). -->
+    <PackageReference Include="ModelContextProtocol.Core" Version="2.3.1" />
   </ItemGroup>
 
   <ItemGroup>

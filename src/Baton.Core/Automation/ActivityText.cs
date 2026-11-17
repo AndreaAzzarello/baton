@@ -21,7 +21,26 @@ public static class ActivityText
     [
         RuleApplied, RuleOpen, DuplicateSkip, ApiRequest, "api.version", "api.openapi", "api.queues", "api.queueStart", "api.queueStop",
         "api.add", "api.list", "api.remove", "api.status", "api.pause", "api.resume", "api.retry",
+        "mcp.request", "mcp.queues", "mcp.queueStart", "mcp.queueStop", "mcp.add", "mcp.list", "mcp.remove", "mcp.status", "mcp.pause", "mcp.resume",
+        "mcp.retry", "mcp.probe",
     ];
+
+    /// <summary>The action code of an MCP call from its message type ("mcp.add"); one a tool never sends is the generic "mcp.request".</summary>
+    public static string McpAction(string type) => type switch
+    {
+        Messages.Queues => "mcp.queues",
+        Messages.QueueStart => "mcp.queueStart",
+        Messages.QueueStop => "mcp.queueStop",
+        Messages.Add => "mcp.add",
+        Messages.List => "mcp.list",
+        Messages.Remove => "mcp.remove",
+        Messages.Status => "mcp.status",
+        Messages.Pause => "mcp.pause",
+        Messages.Resume => "mcp.resume",
+        Messages.Retry => "mcp.retry",
+        Messages.Probe => "mcp.probe",
+        _ => "mcp.request",
+    };
 
     public static readonly string[] AllReasons =
     [
@@ -62,6 +81,8 @@ public static class ActivityText
         ReplyCode.NoQueue => "noQueue",
         ReplyCode.PrivateNetwork => "privateNetwork",
         ReplyCode.AutomationOff or ReplyCode.LevelTooLow => "level",
+        ReplyCode.TooManyRequests => "rateLimit",
+        ReplyCode.Invalid => "invalid",
         ReplyCode.CannotRestart => "cannotRestart",
         ReplyCode.NoFile => "noFile",
         ReplyCode.CliOnly => "cliOnly",

@@ -27,11 +27,15 @@ public static class PipeNames
     public static string For(string? exeFolder)
     {
         if (SandboxFolder() is { } sandbox)
-            return ChannelClient.DefaultPipeName + "." + Hash(sandbox);
+            return ForSandbox(sandbox);
         if (exeFolder is not null && File.Exists(Path.Combine(exeFolder, PortableFlag)))
             return ChannelClient.DefaultPipeName + "." + Hash(Path.Combine(exeFolder, PortableDataFolder));
         return ChannelClient.DefaultPipeName;
     }
+
+    /// <summary>The pipe of an app started with BATON_DATA set to this folder.</summary>
+    public static string ForSandbox(string dataFolder) =>
+        ChannelClient.DefaultPipeName + "." + Hash(Path.TrimEndingDirectorySeparator(Path.GetFullPath(dataFolder)));
 
     private static string Hash(string folder) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(folder.ToLowerInvariant())))[..8];
 }
