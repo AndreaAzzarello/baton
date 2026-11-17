@@ -40,16 +40,31 @@ public sealed class UrlUpdateTests : IAsyncLifetime
         return (store, service, id);
     }
 
-    [Fact]
-    public async Task SameFileAtNewAddress_KeepsDownloadedData_AndCompletesCorrectly()
+    // 0: both connections start at once; 700: the first segment's connection starts late, so the pause comes before it wrote a byte.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(700)]
+    public async Task SameFileAtNewAddress_KeepsDownloadedData_AndCompletesCorrectly(int firstSegmentDelayMs)
     {
         var content = TestFileServer.RandomBytes(1024 * 1024, 90);
         var original = new ServedFile { Content = content, ETag = "\"same\"", Throttle = _ => 512 * 1024 };
+        if (firstSegmentDelayMs > 0)
+        {
+            original.Authorize = request =>
+            {
+                var range = request.Headers.Range.ToString();
+                if (range.StartsWith("bytes=0-", StringComparison.Ordinal) && range != "bytes=0-0")
+                    Thread.Sleep(firstSegmentDelayMs);
+                return true;
+            };
+        }
         var (store, service, id) = await PartialDownloadAsync(original, "old-link.bin");
         await using (service)
         using (store)
         {
             var kept = service.GetSnapshot(id)!.Downloaded;
+            var written = service.GetSegments(id).Where(s => s.Written > 0).ToList(); // the bytes already on disk, per segment
+            Assert.NotEmpty(written);
             var mirror = _server.Add("new-link.bin", new ServedFile { Content = content, ETag = "\"same\"" });
 
             var check = await service.CheckNewUrlAsync(id, mirror);
@@ -62,8 +77,10 @@ public sealed class UrlUpdateTests : IAsyncLifetime
             service.Start(id);
             await WaitUntil(() => service.GetSnapshot(id)!.Status == DownloadStatus.Completed);
 
-            // The new address only served what was missing.
-            Assert.DoesNotContain(_server.Requests, r => r.Path == "new-link.bin" && r.From == 0 && r.To != 0);
+            // The new address only served what was missing: no request (the probe's 0-0 apart) covers a byte that was already written.
+            // (It used to say "no request starts at 0", which is wrong when the first segment had written nothing at the pause.)
+            Assert.DoesNotContain(_server.Requests, r => r.Path == "new-link.bin" && !(r.From == 0 && r.To == 0)
+                && written.Any(s => (r.From ?? 0) < s.Start + s.Written && (r.To ?? long.MaxValue) >= s.Start));
             Assert.Equal(Convert.ToHexString(SHA256.HashData(content)),
                 Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(Path.Combine(_dir, "target.bin")))));
         }
