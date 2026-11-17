@@ -41,6 +41,12 @@ Where Baton is heading. There are no dates: each item ships when it is ready, te
 - **MCP server** (`batonctl mcp`), so AI agents (Claude Code, Claude Desktop and others) can control Baton: add downloads, read
   their state, manage queues, with levels, fixed limits and an activity log. See [docs/MCP.md](docs/MCP.md).
 
+### 1.4.3 — polish
+
+- **Refinements** after the 1.4.2 review: a wider window gallery (every settings tab, minimum widths, error states), text that is cut
+  in a few windows, a check that the generated texts match their sources, uniform terminology, small command-line fixes, and
+  network errors shown in the language of the interface.
+
 ### 1.5 — "AI, optional and privacy-first"
 
 - **Natural-language commands**: "download all PDFs from this page into Invoices".
@@ -74,6 +80,7 @@ Dove va Baton, senza date: ogni punto esce quando è pronto, provato e firmato. 
 - **Fatto — 1.4.0**: riga di comando (`batonctl`), rilevamento dei duplicati, monitor degli appunti, cartelle «alla IDM».
 - **Fatto — 1.4.1**: API locale, regole automatiche e registro delle attività.
 - **Fatto — 1.4.2**: server MCP (`batonctl mcp`) perché gli agenti AI (Claude Code, Claude Desktop…) possano comandare Baton.
+- **Planned — 1.4.3**: rifiniture dopo la revisione della 1.4.2 (galleria delle finestre più ampia, testi tagliati, controllo dei testi generati, terminologia, piccole correzioni della riga di comando, errori di rete nella lingua dell'interfaccia).
 - **Planned — 1.5 "AI, opzionale e rispettosa della privacy"**: comandi in linguaggio naturale, filtri del grabber
   assistiti, nomi dei file intelligenti, spiegazione degli errori in parole semplici. Spenta all'inizio, con la tua chiave
   API; cookie e password mai inviati.
