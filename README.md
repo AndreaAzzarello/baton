@@ -51,6 +51,7 @@ Details in [PRIVACY.md](PRIVACY.md).
 - **Duplicates**: warns before downloading the same file again, even one removed from the list (the history keeps no address, only a keyed hash).
 - **Clipboard** (optional, off by default): offers to download a link you copy; the copied text is never stored.
 - **Command line**: `batonctl` adds and controls downloads from scripts, see [docs/CLI.md](docs/CLI.md).
+- **MCP server** (off by default): `batonctl mcp` lets AI agents such as Claude Code list and control downloads, with levels and fixed limits, see [docs/MCP.md](docs/MCP.md).
 - **Local API** (off by default): a token-protected REST API on `127.0.0.1` for scripts and agents, never reachable from the network, see [docs/API.md](docs/API.md).
 - **Rules**: the first matching rule (site, address, type, size, origin) picks folder, queue, name and more when a download is added; every application is in the activity log.
 - **Signed updates** (ECDSA P-256) with automatic rollback; settings and rules export and import.
@@ -173,8 +174,7 @@ To contribute, read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Roadmap
 
-- **Now (1.4.1)**: local API, automatic rules and the activity log, after 1.4.0 (command line, duplicates, clipboard monitor, IDM-style save folders). No Authenticode signature: SignPath Foundation declined the application. Winget: not available yet.
-- **Next, 1.4.2 "Automation"**: an MCP server for AI agents.
+- **Now (1.4.2)**: MCP server for AI agents (`batonctl mcp`), after 1.4.1 (local API, automatic rules, activity log) and 1.4.0 (command line, duplicates, clipboard monitor, IDM-style save folders). No Authenticode signature: SignPath Foundation declined the application. Winget: not available yet.
 - **Then, 1.5 "AI, optional and privacy-first"**: natural-language commands and smarter grabber filters, off by default, your own API key.
 - **Exploring**: Metalink, archive extraction, browser stores, more languages, a cross-platform 2.x.
 

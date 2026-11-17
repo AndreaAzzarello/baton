@@ -481,6 +481,23 @@ controllo si ripete a ogni connessione e a ogni redirect, anche per FTP. L'API s
 non apre mai file. Rifiuti e modifiche finiscono nel **Registro attività** (Impostazioni › Automazione). Rotte, livelli e
 dettagli: [docs/API.md](docs/API.md) e [docs/openapi.json](docs/openapi.json).
 
+## Server MCP (agenti AI)
+
+`batonctl mcp` fa di Baton un server [MCP](https://modelcontextprotocol.io): agenti come Claude Code o Claude Desktop possono
+elencare e comandare i download. Parla con l'agente su input e output standard e con Baton tramite la stessa pipe locale della
+riga di comando; niente passa dalla rete. È **spento di default**: Impostazioni › Automazione › Agenti AI (MCP), dove scegli
+il livello (spento, sola lettura, lettura e aggiunta, controllo esteso) e premi **Copia la configurazione MCP** per avere il
+testo da incollare nel file dei server MCP del tuo client, con il percorso reale di `batonctl.exe`.
+
+- Strumenti: elencare, leggere, aggiungere (fino a 50 indirizzi per chiamata), controllare un indirizzo senza scaricarlo,
+  mettere in pausa, riprendere, riprovare, togliere dalla lista (solo id espliciti, mai «tutti») e avviare o fermare le code.
+- Limiti fissi, qualunque sia il livello: nessuno strumento apre file o programmi, cancella file dal disco o cambia
+  impostazioni; al massimo 50 elementi per chiamata, 2 chiamate in volo, 120 richieste al minuto; indirizzi solo http, https e ftp,
+  mai quelli del computer o della rete locale (salvo l'impostazione apposita).
+- Tutto ciò che fa un agente è nel registro delle attività (origine `mcp`), anche i rifiuti.
+- Un agente che ha una shell può usare `batonctl` direttamente: nelle sue regole di permesso nega `batonctl` e tieni basso il livello.
+  Vedi [docs/MCP.md](docs/MCP.md) (in inglese).
+
 ## Regole automatiche
 
 La finestra **Regole** (pulsante nella barra, oppure Impostazioni › Automazione › Regole) decide da sola cartella, coda, nome e
@@ -1009,7 +1026,7 @@ Restano aperte finché un test non le conferma o le esclude; le segnalazioni son
 ## Roadmap
 
 - **Ora (1.4.0 uscita)**: riga di comando `batonctl`, duplicati, monitor degli appunti, cartelle «alla IDM». La firma Authenticode non c'è: SignPath Foundation ha rifiutato la domanda. Winget: non ancora disponibile.
-- **Poi, 1.4.1 e 1.4.2 "Automation"**: API locale e regole automatiche; server MCP per gli agenti AI.
+- **Fatto, 1.4.1 e 1.4.2 "Automation"**: API locale e regole automatiche; server MCP per gli agenti AI.
 - **Quindi, 1.5 "AI, opzionale e rispettosa della privacy"**: comandi in linguaggio naturale e filtri del grabber assistiti, spenta all'inizio, con la tua chiave API.
 - **Da valutare**: Metalink, estrazione degli archivi, store dei browser, altre lingue, una 2.x multipiattaforma.
 

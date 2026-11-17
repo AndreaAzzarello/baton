@@ -38,8 +38,8 @@ Where Baton is heading. There are no dates: each item ships when it is ready, te
 
 ### 1.4.2 — "Automation", MCP
 
-- **MCP server**, so AI agents (Claude Code, Claude Desktop and others) can control Baton: add downloads, read their
-  state, manage queues.
+- **MCP server** (`batonctl mcp`), so AI agents (Claude Code, Claude Desktop and others) can control Baton: add downloads, read
+  their state, manage queues, with levels, fixed limits and an activity log. See [docs/MCP.md](docs/MCP.md).
 
 ### 1.5 — "AI, optional and privacy-first"
 
@@ -72,8 +72,8 @@ Dove va Baton, senza date: ogni punto esce quando è pronto, provato e firmato. 
 - **In progress — 1.3.x**: l'estensione del browser aggiornata insieme all'app; pacchetti (winget) e firma del codice
   tramite SignPath Foundation.
 - **Fatto — 1.4.0**: riga di comando (`batonctl`), rilevamento dei duplicati, monitor degli appunti, cartelle «alla IDM».
-- **In arrivo — 1.4.1**: API locale, regole automatiche e registro delle attività.
-- **Planned — 1.4.2**: server MCP perché gli agenti AI (Claude Code, Claude Desktop…) possano comandare Baton.
+- **Fatto — 1.4.1**: API locale, regole automatiche e registro delle attività.
+- **Fatto — 1.4.2**: server MCP (`batonctl mcp`) perché gli agenti AI (Claude Code, Claude Desktop…) possano comandare Baton.
 - **Planned — 1.5 "AI, opzionale e rispettosa della privacy"**: comandi in linguaggio naturale, filtri del grabber
   assistiti, nomi dei file intelligenti, spiegazione degli errori in parole semplici. Spenta all'inizio, con la tua chiave
   API; cookie e password mai inviati.

@@ -30,6 +30,7 @@ for it to answer; `batonctl version` never starts it.
 | `remove <id>` | Removes a download **from the list**; the file stays on the disk. |
 | `remove --all-completed` | Removes all completed downloads from the list. |
 | `version` | Versions of `batonctl` and of the running Baton. |
+| `mcp` | Runs as an MCP server on standard input and output, for AI agents: see [MCP.md](MCP.md). |
 
 Options of `add`:
 
@@ -88,7 +89,7 @@ Errors: `{"ok":false,"error":"…"}` (on the standard output with `--json`). Oth
   "addedUtc":"…","completedUtc":null}]}
 
 // version
-{"cli":"1.4.1","app":"1.4.1","running":true}
+{"cli":"1.4.2","app":"1.4.2","running":true}
 ```
 
 Downloads in the answers never carry cookies, passwords, tokens, form fields or the query string of the address.

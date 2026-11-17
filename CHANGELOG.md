@@ -4,6 +4,22 @@ Versioni di Baton (app ed estensione), che fino alla 1.1 si chiamava **DownloadM
 [Keep a Changelog](https://keepachangelog.com/it-IT/1.1.0/); numerazione [SemVer](https://semver.org/lang/it/). Le date sono
 quelle dei commit.
 
+## [1.4.2] — 2026-11-17
+
+Terza tappa di «Automation»: il server MCP.
+
+- **Nuovo: server MCP** (`batonctl mcp`, spento di default; Impostazioni › Automazione › Agenti AI). Gli agenti AI (Claude Code,
+  Claude Desktop…) elencano e comandano i download con 11 strumenti, filtrati dal livello scelto (sola lettura, lettura e aggiunta,
+  controllo esteso). Solo id espliciti (mai «tutti»), al massimo 50 elementi per chiamata, 2 chiamate in volo, 120 richieste al
+  minuto, indirizzi solo pubblici; nomi e testi che vengono dai siti sono ripuliti da caratteri nascosti e di controllo. Il pulsante
+  «Copia la configurazione MCP» dà il testo da incollare nel client. Ogni chiamata è nel registro delle attività (origine `mcp`).
+  Vedi [docs/MCP.md](docs/MCP.md).
+- Protocollo con l'app 5 (retrocompatibile): `probe` (a livello «lettura e aggiunta»), `capabilities`, elenco a pagine e un codice
+  d'errore stabile nelle risposte (`ChannelReply.Code`). L'API 1.4.1 e `batonctl --json` non cambiano nei campi né negli status.
+- `batonctl probe <url>`; `batonctl` non reinvia più un comando se la connessione si è chiusa dopo l'invio (rischio di doppia
+  aggiunta) e avvia Baton senza fargli ereditare l'output.
+- Righe di fine riga uniformi (LF) in tutto il repository, con controlli in `/fine-fase`.
+
 ## [1.4.1] — 2026-11-16
 
 Seconda tappa di «Automation»: API locale, regole automatiche e registro delle attività. Il server MCP arriva con la 1.4.2.
