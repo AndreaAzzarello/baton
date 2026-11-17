@@ -37,6 +37,7 @@ Terza tappa di «Automation»: il server MCP.
   emoji» (U+FE0F) che segue molte emoji. Un file chiamato «❤️.jpg» viene salvato come «❤.jpg» (stesso disegno, senza il selettore);
   nelle sequenze unite da ZWJ (U+200D), come la bandiera arcobaleno, le parti restano separate. I download già nell'elenco non cambiano
   nome. Un test fissa il comportamento.
+- Riga di comando e MCP, dopo le prove reali: con Baton avviato come amministratore `batonctl` dice «Baton è avviato come amministratore: avvialo normalmente oppure usa batonctl da un terminale amministratore» (esito 3, `"code":"appElevated"` con `--json`) e MCP risponde con l'errore `appElevated`, invece di una chiave di risorsa .NET o di «An error occurred.»; gli errori che arrivano da Baton (`noDownload`, `noCategory`, `noQueue`, ogni codice) sono scritti in italiano quando Windows lo è (`--json` resta in inglese); la finestra di fine coda di una coda avviata da un agente si intitola «Coda finita» invece di «… tra poco», perché non parte da sola. Il comportamento del collegamento del browser verso un Baton avviato come amministratore non è verificato.
 - Righe di fine riga uniformi (LF) in tutto il repository, con controlli in `/fine-fase`.
 
 ## [1.4.1] — 2026-11-16
