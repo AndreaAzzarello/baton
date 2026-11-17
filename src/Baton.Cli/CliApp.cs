@@ -145,7 +145,8 @@ internal sealed class CliApp(TextWriter output, TextWriter error, TextReader inp
             {
                 for (var line = await input.ReadLineAsync(); line is not null; line = await input.ReadLineAsync())
                 {
-                    if (line.Trim() is { Length: > 0 } text)
+                    // A file saved with a BOM (Notepad, PowerShell 5.1 Out-File) starts with U+FEFF, which Trim() does not remove.
+                    if (line.Trim().TrimStart('﻿').Trim() is { Length: > 0 } text)
                         urls.Add(text);
                 }
             }

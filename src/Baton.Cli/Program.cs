@@ -7,6 +7,18 @@ var exeFolder = AppContext.BaseDirectory.TrimEnd('\\', '/');
 var pipe = PipeNames.For(exeFolder);
 var version = typeof(CliApp).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "0";
 
+// Windows consoles default to an OEM code page (850): Italian letters in names and messages would come out altered.
+// UTF-8 without a BOM on the way out; on the way in, UTF-8 too (a BOM that does come is dropped by the reader of the addresses).
+try
+{
+    Console.OutputEncoding = new System.Text.UTF8Encoding(false);
+    Console.InputEncoding = new System.Text.UTF8Encoding(false);
+}
+catch (IOException)
+{
+    // no console attached (a service, a test host): nothing to set
+}
+
 Task<ChannelReply?> Send(ChannelMessage message) => ChannelClient.SendAsync(pipe, message, TimeSpan.FromSeconds(2));
 
 // Baton.exe sits next to batonctl.exe (installed, portable and Scoop all keep them together).

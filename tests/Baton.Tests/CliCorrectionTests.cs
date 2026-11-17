@@ -139,4 +139,15 @@ public sealed class CliCorrectionTests
         Assert.Contains("https://a.test/2.zip", text.Err.ToString());
         Assert.Contains("not attempted", text.Err.ToString());
     }
+
+    // ------------------------------------------------------------------ B5: a BOM at the start of the input is not part of the address
+
+    [Fact]
+    public async Task B5_ABomAtTheStartOfStandardInput_IsIgnored()
+    {
+        var run = new Run();
+        var code = await run.ExecuteAsync(["add", "-"], _ => new ChannelReply(true, Result: "added", Id: 3), input: "﻿https://a.test/1.zip\nhttps://a.test/2.zip\n");
+        Assert.Equal(0, code);
+        Assert.Equal(["https://a.test/1.zip", "https://a.test/2.zip"], run.Sent.Select(m => m.Download!.Url));
+    }
 }
