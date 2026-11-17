@@ -1,6 +1,16 @@
-﻿param([string]$Window, [string]$Action, [string]$Name, [string]$Value)
+﻿param([string]$Window, [string]$Action, [string]$Name, [string]$Value, [int]$ProcessId)
 # Minimal UI Automation driver: invoke a button/menu item, set a text box, select an item or dump the tree.
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+# Only the trial app's windows: with -ProcessId that process, without it the only Baton process there is. With several Baton processes
+# (the real app in the notification area is one) a window of the real app could be driven, so it refuses instead of guessing.
+$batonNames = "Baton", "DownloadManager"
+$batonProcesses = @(Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.ProcessName -in $batonNames })
+if ($ProcessId) {
+  if (-not ($batonProcesses | Where-Object { $_.Id -eq $ProcessId })) { Write-Output "refusing: process $ProcessId is not a Baton process"; exit 2 }
+} elseif ($batonProcesses.Count -gt 1) {
+  Write-Output "refusing: $($batonProcesses.Count) Baton processes are running (the real app may be one); pass -ProcessId <pid of the trial app>"; exit 2
+}
+function Mine($id) { if ($ProcessId) { $id -eq $ProcessId } else { (Get-Process -Id $id -ErrorAction SilentlyContinue).ProcessName -in $batonNames } }
 $root = [System.Windows.Automation.AutomationElement]::RootElement
 $cond = New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::NameProperty, $Window)
 $win = $null
@@ -11,7 +21,7 @@ for ($i = 0; $i -lt 20 -and -not $win; $i++) {
     $wcond = New-Object System.Windows.Automation.AndCondition($cond, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window)))
     foreach ($top in $root.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
       $owner = $top.Current.ProcessId
-      if ($owner -and (Get-Process -Id $owner -ErrorAction SilentlyContinue).ProcessName -in "Baton", "DownloadManager") {
+      if ($owner -and (Mine $owner)) {
         $win = $top.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $wcond)
         if ($win) { break }
       }
@@ -22,7 +32,7 @@ for ($i = 0; $i -lt 20 -and -not $win; $i++) {
 if (-not $win) {
   # Titles that change (such as "25% Â· file") are matched by substring.
   foreach ($top in $root.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)) {
-    if ((Get-Process -Id $top.Current.ProcessId -ErrorAction SilentlyContinue).ProcessName -notin "Baton", "DownloadManager") { continue }
+    if (-not (Mine $top.Current.ProcessId)) { continue }
     foreach ($w in @($top) + @($top.FindAll([System.Windows.Automation.TreeScope]::Descendants, (New-Object System.Windows.Automation.PropertyCondition([System.Windows.Automation.AutomationElement]::ControlTypeProperty, [System.Windows.Automation.ControlType]::Window))))) {
       if ($w.Current.Name -like "*$Window*") { $win = $w; break }
     }

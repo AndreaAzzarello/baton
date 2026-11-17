@@ -26,6 +26,8 @@ Esegui da `tools\trials` (ogni riga stampa `OK`/`FAIL` con i dettagli; screensho
 Coprono: verifica connessione, popup, intercettazione, Alt+clic, modulo POST, pulsante video con qualità e invio, DRM
 (Clear Key); `chromium-trial.mjs ... --batch` invia anche "Scarica tutto".
 
+**`ui.ps1` e il processo giusto**: con più di un processo Baton in esecuzione (la tua app vera nel vassoio è uno) `ui.ps1` si rifiuta di agire (esito 2): passa `-ProcessId <pid dell'app di prova>` come in `shot.ps1`. Test: `powershell -File tools	rials	est-ui-guard.ps1` (usa due finti `Baton.exe`, mai l'app vera). Gli script `*-trial.ps1` che chiamano `ui.ps1` senza `-ProcessId` vanno aggiornati quando si usano con l'app vera aperta.
+
 "Scarica tutto" apre una finestra nell'app isolata: controllala con `tools\trials\ui.ps1 -Window "Scarica tutto" -Action dump`
 (azioni `set`, `invoke`, `select`) e `shot.ps1 -Title "Scarica tutto" -Out <png> -NoFront`, poi chiudila con `-Action invoke -Name Annulla` (gli script dei browser la chiudono da soli a fine prova: finché è aperta,
 le richieste successive dei browser restano in attesa nell'app e la prova seguente sembra fallire).
