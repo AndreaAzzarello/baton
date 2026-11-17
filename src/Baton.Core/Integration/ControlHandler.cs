@@ -269,7 +269,9 @@ public sealed class ControlHandler(DownloadService service, Func<AutomationLevel
         if (!string.IsNullOrWhiteSpace(d.Category))
         {
             var wanted = d.Category.Trim();
+            // The stored name, the name the interface shows (a built-in one follows the language) and the stable key all find it.
             categoryId = service.Categories.FirstOrDefault(c => string.Equals(c.Name, wanted, StringComparison.CurrentCultureIgnoreCase)
+                                                               || string.Equals(c.DisplayName, wanted, StringComparison.CurrentCultureIgnoreCase)
                                                                || string.Equals(c.Key, wanted, StringComparison.OrdinalIgnoreCase))?.Id;
             if (categoryId is null)
                 return Fail(ReplyCode.NoCategory, "No category with this name.");

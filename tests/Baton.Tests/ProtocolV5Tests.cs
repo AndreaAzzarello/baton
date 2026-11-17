@@ -131,6 +131,26 @@ public sealed class ProtocolV5Tests : IAsyncLifetime
         Assert.Equal(Messages.ProtocolVersion, (await control.HandleAsync(Msg(Messages.Capabilities, Origins.Mcp))).Protocol);
     }
 
+    /// <summary>C5: a built-in category stored as "Music" is shown as "Musica" in Italian; the name the person sees must find it too.</summary>
+    [Theory]
+    [InlineData("Musica")]
+    [InlineData("music")]
+    [InlineData("Music")]
+    public async Task Add_FindsACategory_ByTheNameShownInTheInterface_ByItsStoredName_AndByItsKey_C5(string wanted)
+    {
+        using var store = Store();
+        await using var service = new DownloadService(store, engineTemplate: Fast, autoTick: false);
+        var music = service.Categories.Single(c => c.Key == Categories.MusicKey).Clone();
+        music.Name = "Music";                                  // what a database created in English holds
+        service.SaveCategory(music);
+        Assert.Equal("Musica", service.Categories.Single(c => c.Key == Categories.MusicKey).DisplayName); // the tests run in Italian
+
+        var url = _server.Add("song.bin", new ServedFile { Content = new byte[10] });
+        var reply = await Handler(service).HandleAsync(Msg(Messages.Add, Origins.Cli, download: new BrowserDownload(url, Category: wanted, Start: false)));
+        Assert.True(reply.Ok, reply.Error);
+        Assert.Equal("added", reply.Result);
+    }
+
     // ------------------------------------------------------------------ stable error codes (A3)
 
     [Fact]
